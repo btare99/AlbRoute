@@ -1,0 +1,12 @@
+useStore.ts - (store/state management)
+MapView.tsx - (harta kryesore)
+BusTracker.tsx - (tracker i autobuseve)
+TripPlanner.tsx - (planifikuesi i udhëtimit)
+Sidebar.tsx - (sidebar me linjat)
+AppShell.tsx - (struktura kryesore)
+page.tsx - (faqja kryesore)
+layout.tsx - (layout-i)
+globals.css - (stilet globale)
+Fillo me useStore.ts ! 🚀
+
+

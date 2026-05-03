@@ -1,0 +1,910 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ═══════════════════════════════════════════════════
+   VARIABLAT KRYESORE
+═══════════════════════════════════════════════════ */
+:root {
+  /* Background */
+  --bg-dark: #0a0f1a;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2233;
+  --bg-secondary: rgba(255, 255, 255, 0.04);
+
+  /* Border */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.14);
+
+  /* Brand */
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --primary-glow: rgba(59, 130, 246, 0.2);
+
+  /* Status */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #6366f1;
+
+  /* Text */
+  --text: #f1f5f9;
+  --text-muted: #64748b;
+  --text-dim: #334155;
+
+  /* Shape */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+
+  /* Motion */
+  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+
+  /* ─── Ngjyrat Zyrtare të Linjave të Urbanit Tiranë ─── */
+
+  /* Linja 1  — Atlas ↔ Selitë */
+  --line-1: #e53935;
+  /* Linja 1a — Atlas ↔ Kadre e Diellit */
+  --line-1a: #ef5350;
+  /* Linja 2  — Terminali Jugilor ↔ Stacioni Trenit */
+  --line-2: #fb8c00;
+  /* Linja 3  — Kashar Orar */
+  --line-3: #7b1fa2;
+  /* Linja 3a — Kashar Antiorar */
+  --line-3a: #ab47bc;
+  /* Linja 4  — Qendër ↔ City Park */
+  --line-4: #1565c0;
+  /* Linja 5  — Qendër ↔ Uzina Automotorë */
+  --line-5: #00897b;
+  /* Linja 5a — Qendër ↔ Institut */
+  --line-5a: #26a69a;
+  /* Linja 6  — Qendër ↔ Laprake */
+  --line-6: #f06292;
+  /* Linja 8  — Qendër ↔ Terminal Jugilor */
+  --line-8: #5c6bc0;
+  /* Linja 8a — Qendër ↔ Sanatorium */
+  --line-8a: #7986cb;
+  /* Linja 9  — Qendër ↔ Sadi i Vjetër */
+  --line-9: #00acc1;
+  /* Linja 9a — Jordan Maja ↔ Vlast Gjermane */
+  --line-9a: #26c6da;
+  /* Linja 10 — Qendër ↔ Maternitetit i Ri */
+  --line-10: #43a047;
+  /* Linja 10a — Fusha e Aviacionit ↔ Shkreli */
+  --line-10a: #66bb6a;
+  /* Linja 11 — Porcelan ↔ Qendër */
+  --line-11: #8d6e63;
+  /* Linja 12 — Uzina Dinamo ↔ Shami */
+  --line-12: #ff7043;
+  /* Linja 13 — Tirana e Re Orar */
+  --line-13: #fdd835;
+  /* Linja 13a — Tirana e Re Antiorar */
+  --line-13a: #ffee58;
+  /* Linja 14 — Kinostudio */
+  --line-14: #ec407a;
+  /* Linja 15 — Kombinat ↔ Tullë */
+  --line-15: #26a69a;
+  /* Linja 15a — Kombinat ↔ Tullë (v2) */
+  --line-15a: #4db6ac;
+  /* Linja 16 — Linja e Gjelbër Orar */
+  --line-16: #7cb342;
+  /* Linja 16a — Linja e Gjelbër Antiorar */
+  --line-16a: #9ccc65;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════ */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  line-height: 1;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+input::placeholder {
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  transition: var(--transition);
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--primary-glow);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-hover);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.btn-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.22);
+}
+
+/* ═══════════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.card-hover {
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.card-hover:hover {
+  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+.badge-primary {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+}
+
+.badge-info {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--info);
+}
+
+.badge-muted {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════════════════ */
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.input-field {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.input-field::placeholder {
+  color: var(--text-dim);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   BUS LINE COLOR HELPERS
+   .line-bg-1, .line-text-1, .line-border-1 … etj.
+═══════════════════════════════════════════════════ */
+.line-1 {
+  --lc: var(--line-1);
+}
+
+.line-1a {
+  --lc: var(--line-1a);
+}
+
+.line-2 {
+  --lc: var(--line-2);
+}
+
+.line-3 {
+  --lc: var(--line-3);
+}
+
+.line-3a {
+  --lc: var(--line-3a);
+}
+
+.line-4 {
+  --lc: var(--line-4);
+}
+
+.line-5 {
+  --lc: var(--line-5);
+}
+
+.line-5a {
+  --lc: var(--line-5a);
+}
+
+.line-6 {
+  --lc: var(--line-6);
+}
+
+.line-8 {
+  --lc: var(--line-8);
+}
+
+.line-8a {
+  --lc: var(--line-8a);
+}
+
+.line-9 {
+  --lc: var(--line-9);
+}
+
+.line-9a {
+  --lc: var(--line-9a);
+}
+
+.line-10 {
+  --lc: var(--line-10);
+}
+
+.line-10a {
+  --lc: var(--line-10a);
+}
+
+.line-11 {
+  --lc: var(--line-11);
+}
+
+.line-12 {
+  --lc: var(--line-12);
+}
+
+.line-13 {
+  --lc: var(--line-13);
+}
+
+.line-13a {
+  --lc: var(--line-13a);
+}
+
+.line-14 {
+  --lc: var(--line-14);
+}
+
+.line-15 {
+  --lc: var(--line-15);
+}
+
+.line-15a {
+  --lc: var(--line-15a);
+}
+
+.line-16 {
+  --lc: var(--line-16);
+}
+
+.line-16a {
+  --lc: var(--line-16a);
+}
+
+[class^="line-"] .line-color-bg {
+  background: var(--lc);
+}
+
+[class^="line-"] .line-color-text {
+  color: var(--lc);
+}
+
+[class^="line-"] .line-color-border {
+  border-color: var(--lc);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════ */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1
+  }
+
+  50% {
+    opacity: 0.4
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg)
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px)
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px)
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0
+  }
+
+  to {
+    opacity: 1
+  }
+}
+
+.route-arrow {
+  pointer-events: none !important;
+  animation: arrow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes arrow-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.33);
+  }
+
+  80%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.station-tooltip {
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+}
+
+.station-tooltip::before {
+  display: none !important;
+}
+
+@keyframes ping {
+
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease infinite;
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.animate-slide {
+  animation: slideIn 0.28s ease forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.35s ease forwards;
+}
+
+.animate-fade {
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════ */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100%;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 2000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-area {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 📱 MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 280px;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .main-area {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Overlay kur hapet sidebar */
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: flex !important;
+    }
+
+    .header-card span:last-child {
+      display: none;
+      /* Hiq statistikat ne mobile */
+    }
+
+    .header-card {
+      padding: 10px 14px !important;
+    }
+
+    .header-card span {
+      font-size: 13px !important;
+    }
+
+    /* Rregullo butonat djathtas ne mobile */
+    .djathtas-controls {
+      right: 12px !important;
+      top: 72px !important;
+    }
+  }
+
+  .main-area {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .page-header {
+    height: var(--header-height);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 16px;
+    background: rgba(10, 15, 26, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .page-content {
+    flex: 1;
+    padding: 28px;
+    overflow-y: auto;
+  }
+
+  /* ═══════════════════════════════════════════════════
+   MAP (Leaflet)
+═══════════════════════════════════════════════════ */
+  .leaflet-container {
+    background: #0d1929 !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    color: var(--text) !important;
+  }
+
+  .leaflet-popup-tip {
+    background: var(--bg-card) !important;
+  }
+
+  .leaflet-popup-close-button {
+    color: var(--text-muted) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: var(--bg-card-hover) !important;
+  }
+
+  /* ═══════════════════════════════════════════════════
+   NOTIFICATION BAR
+═══════════════════════════════════════════════════ */
+  .notification-enter {
+    animation: slideIn 0.3s ease forwards;
+  }
+
+  .notification-exit {
+    animation: fadeIn 0.25s ease reverse forwards;
+  }
+
+  /* ═══════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    :root {
+      --sidebar-width: 0px;
+      --header-height: 56px;
+    }
+
+    .sidebar {
+      transform: translateX(-100%);
+      width: 260px;
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+      box-shadow: 4px 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .main-area {
+      margin-left: 0;
+    }
+
+    .page-content {
+      padding: 16px;
+    }
+
+    .page-header {
+      padding: 0 16px;
+    }
+
+    /* Hide grid columns on mobile */
+    .hide-mobile {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .btn {
+      font-size: 13px;
+      padding: 9px 14px;
+    }
+
+    .card {
+      padding: 16px;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════ */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gap-2 {
+    gap: 8px;
+  }
+
+  .gap-3 {
+    gap: 12px;
+  }
+
+  .gap-4 {
+    gap: 16px;
+  }
+
+  .w-full {
+    width: 100%;
+  }
+
+  /* Glass effect */
+  .glass {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Glow effects per linjë */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .glow-warning {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+
+  .glow-danger {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+
+}
