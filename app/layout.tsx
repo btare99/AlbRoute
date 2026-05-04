@@ -12,6 +12,10 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "AlbRoute",
   },
+  icons: {
+    icon: "/AlbRouteLogo.png",
+    apple: "/AlbRouteLogo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
