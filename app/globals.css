@@ -686,6 +686,10 @@ input::placeholder {
   .main-area {
     width: 100vw;
   }
+
+  .desktop-controls {
+    display: none !important;
+  }
 }
 
 .page-header {

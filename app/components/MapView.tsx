@@ -514,59 +514,66 @@ export default function MapView() {
       </div>
 
       {/* ── Map Controls Panel (Right) ── */}
-      <div className="djathtas-controls" style={{
+      <div className="map-controls-panel" style={{
         position: 'absolute', top: 20, right: 16, zIndex: 1000,
         display: 'flex', flexDirection: 'column', gap: 12
       }}>
-        {/* Navigation Group */}
-        <div className="glass" style={{
+        {/* Navigation Group (Desktop Only) */}
+        <div className="glass desktop-controls" style={{
           display: 'flex', flexDirection: 'column', borderRadius: 12, overflow: 'hidden',
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
         }}>
           <button onClick={zoomIn} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>+</button>
           <button onClick={zoomOut} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>−</button>
-          <button onClick={centerMap} style={{ width: 42, height: 42, color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Locate size={18} />
-          </button>
         </div>
 
-        {/* Visibility Group */}
-        <div className="glass" style={{
-          padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
+        {/* Locate Button (Always Visible) */}
+        <button onClick={centerMap} className="glass" style={{ 
+          width: 44, height: 44, color: 'var(--primary)', display: 'flex', 
+          alignItems: 'center', justifyContent: 'center', borderRadius: 12,
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
         }}>
-          <button onClick={() => setShowStops(!showStops)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            background: showStops ? 'rgba(59,130,246,0.2)' : 'transparent',
-            color: showStops ? '#3b82f6' : 'var(--text-muted)'
-          }}>🚏</button>
-          <button onClick={() => setShowRoutes(!showRoutes)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            background: showRoutes ? 'rgba(239,68,68,0.2)' : 'transparent',
-            color: showRoutes ? '#ef4444' : 'var(--text-muted)'
-          }}>🛤️</button>
-          <button onClick={() => setShowBuses(!showBuses)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            background: showBuses ? 'rgba(245,158,11,0.2)' : 'transparent',
-            color: showBuses ? '#f59e0b' : 'var(--text-muted)'
-          }}>🚌</button>
-        </div>
+          <Locate size={20} />
+        </button>
 
-        {/* Styles Group */}
-        <div className="glass" style={{
-          padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
-        }}>
-          {(['dark', 'light', 'satellite'] as const).map(s => (
-            <button key={s} onClick={() => setMapStyle(s)} style={{
-              width: 34, height: 34, borderRadius: 8,
-              background: mapStyle === s ? 'var(--primary)' : 'transparent',
-              color: mapStyle === s ? '#fff' : 'var(--text-muted)',
-              fontSize: 14
-            }}>
-              {s === 'dark' ? '🌙' : s === 'light' ? '☀️' : '🛰'}
-            </button>
-          ))}
+        {/* Visibility & Styles Groups (Desktop Only) */}
+        <div className="desktop-controls" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="glass" style={{
+            padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
+          }}>
+            <button onClick={() => setShowStops(!showStops)} style={{
+              width: 34, height: 34, borderRadius: 8, fontSize: 16,
+              background: showStops ? 'rgba(59,130,246,0.2)' : 'transparent',
+              color: showStops ? '#3b82f6' : 'var(--text-muted)'
+            }}>🚏</button>
+            <button onClick={() => setShowRoutes(!showRoutes)} style={{
+              width: 34, height: 34, borderRadius: 8, fontSize: 16,
+              background: showRoutes ? 'rgba(239,68,68,0.2)' : 'transparent',
+              color: showRoutes ? '#ef4444' : 'var(--text-muted)'
+            }}>🛤️</button>
+            <button onClick={() => setShowBuses(!showBuses)} style={{
+              width: 34, height: 34, borderRadius: 8, fontSize: 16,
+              background: showBuses ? 'rgba(245,158,11,0.2)' : 'transparent',
+              color: showBuses ? '#f59e0b' : 'var(--text-muted)'
+            }}>🚌</button>
+          </div>
+
+          <div className="glass" style={{
+            padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
+          }}>
+            {(['dark', 'light', 'satellite'] as const).map(s => (
+              <button key={s} onClick={() => setMapStyle(s)} style={{
+                width: 34, height: 34, borderRadius: 8,
+                background: mapStyle === s ? 'var(--primary)' : 'transparent',
+                color: mapStyle === s ? '#fff' : 'var(--text-muted)',
+                fontSize: 14
+              }}>
+                {s === 'dark' ? '🌙' : s === 'light' ? '☀️' : '🛰'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
