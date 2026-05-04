@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
-import { BUS_ROUTES } from '@/next.config';
+import { BUS_ROUTES } from '../constants/busData';
 import { BUS_SHAPES } from '../store/busShapes';
 import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight } from 'lucide-react';
 
@@ -528,8 +528,8 @@ export default function MapView() {
         </div>
 
         {/* Locate Button (Always Visible) */}
-        <button onClick={centerMap} className="glass" style={{ 
-          width: 44, height: 44, color: 'var(--primary)', display: 'flex', 
+        <button onClick={centerMap} className="glass" style={{
+          width: 44, height: 44, color: 'var(--primary)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', borderRadius: 12,
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
         }}>

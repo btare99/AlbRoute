@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
-import { BUS_ROUTES } from '@/next.config';
+import { BUS_ROUTES } from '../constants/busData';
 import {
   Route, MapPin, ArrowRight, Clock, Banknote, RefreshCcw,
   Navigation, AlertCircle, ChevronDown, Star, Zap, Bus,
