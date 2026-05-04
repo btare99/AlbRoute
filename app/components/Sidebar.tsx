@@ -1,5 +1,5 @@
 'use client';
-import { Map, Navigation, Route, User, Star, LogOut, Bus, Bell, Search, Globe } from 'lucide-react';
+import { Map, Navigation, Route, User, Star, LogOut, Bus, Bell, Search, Globe, X } from 'lucide-react';
 import { useState } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
 import { translations } from '../store/translations';
