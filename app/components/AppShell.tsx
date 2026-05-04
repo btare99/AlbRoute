@@ -57,9 +57,7 @@ export default function AppShell() {
         onClick={() => setSidebarOpen(false)}
       />
       
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <Sidebar />
-      </div>
+      <Sidebar />
 
       <div className="main-area">
         {renderView()}
