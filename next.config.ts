@@ -6,8 +6,7 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  swcMinify: true,
-  disable: false,
+  disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
   },
@@ -15,6 +14,18 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet'],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        async_hooks: false,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);
