@@ -36,7 +36,7 @@ export default function AppShell() {
   };
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" style={{ touchAction: 'manipulation', overflowX: 'hidden' }}>
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <Sidebar />
       </div>
@@ -47,7 +47,7 @@ export default function AppShell() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="mobile-nav" style={{
-        position: 'fixed', bottom: '20px', left: '16px', right: '16px', height: '68px',
+        position: 'fixed', bottom: '24px', left: '16px', right: '16px', height: '68px',
         background: 'rgba(10, 15, 26, 0.85)', backdropFilter: 'blur(16px)',
         border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',

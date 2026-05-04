@@ -289,7 +289,7 @@ export default function MapView() {
             const arrow = L.marker(p1, { 
               icon: L.divIcon({
                 className: 'route-arrow',
-                html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 20px; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
+                html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 20px; font-weight:900; text-shadow: 0 0 3px #fff; pointer-events: none;">➤</div>`,
                 iconSize: [20, 20], iconAnchor: [10, 10]
               }), 
               interactive: false, zIndexOffset: 400 
@@ -327,7 +327,7 @@ export default function MapView() {
               const arrow = L.marker(p1, { 
                 icon: L.divIcon({
                   className: 'route-arrow',
-                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 18px; line-height:1; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
+                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 18px; line-height:1; font-weight:900; text-shadow: 0 0 3px #fff; pointer-events: none;">➤</div>`,
                   iconSize: [18, 18], iconAnchor: [9, 9]
                 }), 
                 interactive: false, zIndexOffset: 400 
@@ -742,14 +742,14 @@ export default function MapView() {
           background: `${activeRoute.color}22`,
           border: `1px solid ${activeRoute.color}66`,
           backdropFilter: 'blur(12px)',
-          borderRadius: 20,
-          padding: '6px 16px',
-          display: 'flex', alignItems: 'center', gap: 8,
+          width: 'max-content', maxWidth: '85vw',
           fontSize: 12, fontWeight: 600,
+          whiteSpace: 'nowrap',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
         }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: activeRoute.color }} />
-          <span style={{ color: activeRoute.color }}>Linja {activeRoute.name}</span>
-          <span style={{ color: 'var(--text-muted)' }}>{activeRoute.label}</span>
+          <div style={{ flexShrink: 0, width: 10, height: 10, borderRadius: '50%', background: activeRoute.color }} />
+          <span style={{ color: activeRoute.color, overflow: 'hidden', textOverflow: 'ellipsis' }}>Linja {activeRoute.name}</span>
+          <span style={{ color: 'var(--text-muted)', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeRoute.label}</span>
           <button onClick={() => setActiveRouteFilter(null)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginLeft: 4 }}>
             <X size={12} />
@@ -777,13 +777,19 @@ export default function MapView() {
           </button>
 
           {isSettingsOpen && (
-            <div className="glass animate-fade-in" style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-              width: 200, padding: 16, borderRadius: 20, zIndex: 1200,
-              border: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex', flexDirection: 'column', gap: 12,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.5)'
-            }}>
+            <>
+              <div 
+                style={{ position: 'fixed', inset: 0, zIndex: 1150 }} 
+                onClick={() => setIsSettingsOpen(false)} 
+              />
+              <div className="glass animate-fade-in" style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                width: 200, padding: 16, borderRadius: 20, zIndex: 1200,
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', flexDirection: 'column', gap: 12,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                userSelect: 'none'
+              }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Harta</div>
 
               <div onClick={() => setShowStops(!showStops)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
@@ -830,14 +836,19 @@ export default function MapView() {
           backdropFilter: 'blur(16px)',
           borderRadius: 24,
           padding: '8px 20px',
-          display: 'flex', alignItems: 'center', gap: 12,
+          display: 'flex', alignItems: 'center', gap: 10,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          width: 'max-content',
+          maxWidth: '90vw',
         }}>
-          <Navigation size={14} color="var(--primary)" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700 }}>
-            <span>{activeTrip.from}</span>
-            <ArrowRight size={12} color="var(--text-muted)" />
-            <span style={{ color: '#10b981' }}>{activeTrip.to}</span>
+          <Navigation size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+          }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeTrip.from}</span>
+            <ArrowRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            <span style={{ color: '#10b981', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeTrip.to}</span>
           </div>
           <div style={{ width: '1px', height: '16px', background: 'var(--border)' }} />
           <button
