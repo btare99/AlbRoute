@@ -4,6 +4,7 @@ import useStore from './store/useStore';
 import LoginPage from './components/LoginPage';
 import AppShell from './components/AppShell';
 import NotificationBar from './components/NotificationBar';
+import SplashScreen from './components/SplashScreen';
 
 export default function Page() {
   const isAuthenticated = useStore((s: any) => s.isAuthenticated);
@@ -18,6 +19,7 @@ export default function Page() {
 
   return (
     <>
+      <SplashScreen />
       <NotificationBar />
       {isAuthenticated ? <AppShell /> : <LoginPage />}
     </>
