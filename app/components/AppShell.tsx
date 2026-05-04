@@ -7,18 +7,21 @@ import ProfileView from './ProfileView';
 import UserFavorites from './UserFavorites';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User } from 'lucide-react';
+import { translations } from '../store/translations';
 
 export default function AppShell() {
   const currentView = useStore((state: any) => state.currentView);
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
+  const language = useStore((state: any) => state.language);
+  const t = translations[language] || translations.al;
 
   const MENU = [
-    { id: 'map', label: 'Harta', icon: Map },
-    { id: 'tracker', label: 'Linjat', icon: Bus },
-    { id: 'planner', label: 'Planet', icon: Navigation },
-    { id: 'favorites', label: 'Ruajtur', icon: Star },
-    { id: 'profile', label: 'Profili', icon: User },
+    { id: 'map', label: t.map, icon: Map },
+    { id: 'tracker', label: t.live_buses, icon: Bus },
+    { id: 'planner', label: t.planner, icon: Navigation },
+    { id: 'favorites', label: t.saved, icon: Star },
+    { id: 'profile', label: t.profile, icon: User },
   ];
 
   const renderView = () => {

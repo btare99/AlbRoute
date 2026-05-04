@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import useStore, { BUS_STOPS } from '../store/useStore';
-import { BUS_ROUTES } from '../constants/busData';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 
 export default function BusTracker() {

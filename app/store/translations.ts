@@ -19,6 +19,9 @@ export const translations: Record<string, any> = {
     normal: "Normal",
     heavy: "I rënduar",
     peak_hour: "Orar Piku",
+    saved: "Të preferuarat",
+    planner: "Planet",
+    map: "Harta",
   },
   en: {
     searchPlaceholder: "Search station...",
@@ -40,6 +43,9 @@ export const translations: Record<string, any> = {
     normal: "Normal",
     heavy: "Heavy",
     peak_hour: "Peak Hour",
+    saved: "Saved",
+    planner: "Planner",
+    map: "Map",
   },
   it: {
     searchPlaceholder: "Cerca stazione...",
@@ -61,5 +67,8 @@ export const translations: Record<string, any> = {
     normal: "Normale",
     heavy: "Pesante",
     peak_hour: "Ora di punta",
+    saved: "Salvati",
+    planner: "Piani",
+    map: "Mappa",
   }
 };

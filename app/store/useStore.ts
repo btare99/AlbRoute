@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { BUS_STOPS, BUS_ROUTES } from '../constants/busData';
+export { BUS_STOPS, BUS_ROUTES };
 
 // ─── INITIAL BUS GENERATION ──────────────────────────────────────────────────
 const createBuses = () => {
@@ -121,7 +122,7 @@ const useStore = create((set: any, get: any) => ({
       if (!route) return bus;
 
       // Përcakto listën e stacioneve bazuar në drejtimin
-      const stopIds = (bus.direction === 1 || !route.returnStops) ? route.stops : route.returnStops;
+      const stopIds = (bus.direction === 'forward' || !route.returnStops) ? route.stops : route.returnStops;
       const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean);
 
       const nextIdx = bus.currentStopIdx + 1;
@@ -131,7 +132,7 @@ const useStore = create((set: any, get: any) => ({
         return {
           ...bus,
           currentStopIdx: 0,
-          direction: bus.direction === 1 ? -1 : 1,
+          direction: bus.direction === 'forward' ? 'return' : 'forward',
           lastUpdate: Date.now()
         };
       }

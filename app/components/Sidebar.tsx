@@ -19,11 +19,11 @@ export default function Sidebar() {
   const t = translations[language] || translations.al;
 
   const MENU = [
-    { id: 'map', label: t.routes, icon: Map },
+    { id: 'map', label: t.map, icon: Map },
     { id: 'tracker', label: t.live_buses, icon: Bus },
-    { id: 'planner', label: t.stations, icon: Route },
-    { id: 'favorites', label: t.profile, icon: Star },
-    { id: 'profile', label: t.settings, icon: User },
+    { id: 'planner', label: t.planner, icon: Route },
+    { id: 'favorites', label: t.saved, icon: Star },
+    { id: 'profile', label: t.profile, icon: User },
   ];
 
   const filteredStops = BUS_STOPS.filter(stop =>

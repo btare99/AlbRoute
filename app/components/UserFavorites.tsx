@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
-import useStore, { BUS_STOPS } from '../store/useStore';
-import { BUS_ROUTES } from '../constants/busData';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import {
   Star, Trash2, Bus, ArrowRight, MapPin, Route,
   Bell, BellOff, Clock, Navigation, Zap, Plus
