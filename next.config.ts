@@ -15,7 +15,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet'],
   turbopack: {},
-  webpack: (config, { isServer }) => {
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

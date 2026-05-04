@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { BUS_SHAPES } from '../store/busShapes';
-import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight } from 'lucide-react';
+import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff } from 'lucide-react';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
@@ -22,6 +22,7 @@ export default function MapView() {
   const [activeRouteFilter, setActiveRouteFilter] = useState<string | null>(null);
   const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'satellite'>('dark');
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const buses = useStore((s: any) => s.buses);
   const userLocation = useStore((s: any) => s.userLocation);
@@ -49,6 +50,8 @@ export default function MapView() {
   const filteredRoutes = activeTrip
     ? BUS_ROUTES.filter(r => activeTrip.legs.some((leg: any) => leg.route?.id === r.id))
     : BUS_ROUTES;
+
+  const activeRoute = BUS_ROUTES.find(r => r.id === activeRouteFilter);
 
   // ── Fly to selected stop and highlight ──
   useEffect(() => {
@@ -131,150 +134,6 @@ export default function MapView() {
 
         L.control.attribution({ prefix: '© OpenStreetMap | Harta Urbane Tiranë' }).addTo(map);
 
-        // ── Shto stacionet ──────────────────────────────────────────────────────
-        BUS_STOPS.forEach(stop => {
-          const stopHtml = `
-            <div style="
-              background: #1a73e8; 
-              width: 18px; 
-              height: 18px; 
-              border-radius: 4px; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              border: 1.5px solid white;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-              cursor: pointer;
-            ">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="white">
-                <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-              </svg>
-            </div>
-          `;
-
-          const marker = L.marker([stop.lat, stop.lng], {
-            icon: L.divIcon({
-              html: stopHtml,
-              className: '',
-              iconSize: [18, 18],
-              iconAnchor: [9, 9],
-            }),
-            zIndexOffset: 100,
-          });
-          const stoppingLines = BUS_ROUTES.filter(r =>
-            r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id))
-          );
-
-          const linesHtml = stoppingLines.length > 0
-            ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
-                ${stoppingLines.map(rl =>
-              `<span style="background:${rl.color};color:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,0.2)">${rl.name}</span>`
-            ).join('')}
-               </div>`
-            : '';
-
-          marker.bindTooltip(`
-            <div style="padding:4px">
-              <div style="font-weight:700;font-size:14px;color:#1e293b">${stop.name}</div>
-              ${linesHtml}
-            </div>`, {
-            permanent: false,
-            direction: 'top',
-            offset: [0, -8],
-            className: 'station-tooltip'
-          });
-          marker.addTo(map);
-          stopMarkersRef.current.push(marker);
-        });
-
-        // ── Helper: Gjen pikën më të afërt në shape ──
-        const findClosestIndex = (coords: [number, number][], point: [number, number]) => {
-          let minIdx = 0;
-          let minDist = Infinity;
-          coords.forEach((coord, i) => {
-            const d = Math.sqrt(Math.pow(coord[0] - point[0], 2) + Math.pow(coord[1] - point[1], 2));
-            if (d < minDist) {
-              minDist = d;
-              minIdx = i;
-            }
-          });
-          return minIdx;
-        };
-
-        // ── Shto linjat ─────────────────────────────────────────────────────────
-        if (activeTrip) {
-          activeTrip.legs.forEach((leg: any) => {
-            const route = BUS_ROUTES.find(r => r.id === leg.route.id);
-            if (!route) return;
-            const startStop = BUS_STOPS.find(s => s.name === leg.boardAt);
-            const endStop = BUS_STOPS.find(s => s.name === leg.alightAt);
-            if (!startStop || !endStop) return;
-
-            const dirs = ['0', '1'];
-            let bestCoords: [number, number][] | null = null;
-            let shortestDist = Infinity;
-
-            dirs.forEach(dir => {
-              const fullCoords = (BUS_SHAPES[`${route.id}_${dir}` as keyof typeof BUS_SHAPES] || []) as [number, number][];
-              if (fullCoords.length === 0) return;
-              const idx1 = findClosestIndex(fullCoords, [startStop.lat, startStop.lng]);
-              const idx2 = findClosestIndex(fullCoords, [endStop.lat, endStop.lng]);
-              let segment = idx1 <= idx2 ? fullCoords.slice(idx1, idx2 + 1) : fullCoords.slice(idx2, idx1 + 1).reverse();
-              if (segment.length >= 2) {
-                const d1 = Math.sqrt(Math.pow(segment[0][0] - startStop.lat, 2) + Math.pow(segment[0][1] - startStop.lng, 2));
-                const d2 = Math.sqrt(Math.pow(segment[segment.length - 1][0] - endStop.lat, 2) + Math.pow(segment[segment.length - 1][1] - endStop.lng, 2));
-                if (d1 + d2 < shortestDist) { shortestDist = d1 + d2; bestCoords = segment; }
-              }
-            });
-
-            if (bestCoords) {
-              const coords = bestCoords as [number, number][];
-              const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: 0.15, interactive: false }).addTo(map);
-              const line = L.polyline(coords, { color: route.color, weight: 4.5, opacity: 0.95, lineCap: 'round' }).addTo(map);
-              for (let i = 0; i < coords.length - 1; i += 8) {
-                const p1 = coords[i]; const p2 = coords[i + 1];
-                const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
-                const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
-                const arrow = L.divIcon({
-                  className: 'route-arrow',
-                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 20px; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
-                  iconSize: [20, 20], iconAnchor: [10, 10]
-                });
-                L.marker(p1, { icon: arrow, interactive: false, zIndexOffset: 400 }).addTo(map);
-              }
-              line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b><br/>${leg.boardAt} ➔ ${leg.alightAt}`, { sticky: true });
-              routeLinesRef.current.push({ line, shadow, routeId: route.id });
-            }
-          });
-        } else {
-          filteredRoutes.forEach((route) => {
-            const dirs = ['0', '1'];
-            dirs.forEach(dir => {
-              const shapeKey = `${route.id}_${dir}`;
-              let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-              if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
-              if (coords.length < 2) return;
-              const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: 0.15, interactive: false }).addTo(map);
-              const line = L.polyline(coords, { color: route.color, weight: 3.5, opacity: 0.85, lineCap: 'round' }).addTo(map);
-              for (let i = 2; i < coords.length - 2; i += 10) {
-                const p1 = coords[i]; const p2 = coords[i + 1];
-                const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
-                const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
-                const arrow = L.divIcon({
-                  className: 'route-arrow',
-                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 18px; line-height:1; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
-                  iconSize: [18, 18], iconAnchor: [9, 9]
-                });
-                L.marker(p1, { icon: arrow, interactive: false, zIndexOffset: 400 }).addTo(map);
-              }
-              line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b>`, { sticky: true });
-              routeLinesRef.current.push({ line, shadow, routeId: route.id });
-            });
-          });
-        }
-
-        // ── Përditësimi i markerit të përdoruesit (Lëvizur në effect më poshtë) ──
-
         mapInstanceRef.current = map;
         setMapReady(true);
       } catch (e) {
@@ -292,36 +151,198 @@ export default function MapView() {
         routeLinesRef.current = [];
       }
     };
-  }, [activeTrip, language]);
+  }, []); // Run only once
 
-  // ── Visibility Logic ────────────────────────────────────────────────────────
+  // ── Vizatimi i Stacioneve (Stops) ───────────────────────────────────────────
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
 
-    // Toggle Stops
-    stopMarkersRef.current.forEach(m => {
-      if (showStops) m.addTo(map);
-      else map.removeLayer(m);
+    // Pastro stacionet ekzistuese
+    stopMarkersRef.current.forEach(m => map.removeLayer(m));
+    stopMarkersRef.current = [];
+
+    if (!showStops) return;
+
+    BUS_STOPS.forEach(stop => {
+      const stopHtml = `
+        <div style="
+          background: #1a73e8; 
+          width: 18px; 
+          height: 18px; 
+          border-radius: 4px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          border: 1.5px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          cursor: pointer;
+        ">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="white">
+            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+          </svg>
+        </div>
+      `;
+
+      const marker = L.marker([stop.lat, stop.lng], {
+        icon: L.divIcon({
+          html: stopHtml,
+          className: '',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+        zIndexOffset: 100,
+      });
+
+      const stoppingLines = BUS_ROUTES.filter(r =>
+        r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id))
+      );
+
+      const linesHtml = stoppingLines.length > 0
+        ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            ${stoppingLines.map(rl =>
+          `<span style="background:${rl.color};color:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,0.2)">${rl.name}</span>`
+        ).join('')}
+           </div>`
+        : '';
+
+      marker.bindTooltip(`
+        <div style="padding:4px">
+          <div style="font-weight:700;font-size:14px;color:#1e293b">${stop.name}</div>
+          ${linesHtml}
+        </div>`, {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -8],
+        className: 'station-tooltip'
+      });
+
+      marker.addTo(map);
+      stopMarkersRef.current.push(marker);
     });
+  }, [showStops, mapReady]);
 
-    // Toggle Routes
+
+
+  // ── Vizatimi i linjave (Routes) ─────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
+
+    // Pastro linjat ekzistuese
     routeLinesRef.current.forEach(r => {
-      if (showRoutes) {
-        r.line.addTo(map);
-        if (r.shadow) r.shadow.addTo(map);
-      } else {
-        map.removeLayer(r.line);
-        if (r.shadow) map.removeLayer(r.shadow);
-      }
+      map.removeLayer(r.line);
+      if (r.shadow) map.removeLayer(r.shadow);
+      if (r.arrows) r.arrows.forEach((a: any) => map.removeLayer(a));
     });
+    routeLinesRef.current = [];
 
-    // Toggle Buses (handled in live updates effect too, but good for instant toggle)
-    Object.values(busMarkersRef.current).forEach((m: any) => {
-      if (showBuses) m.addTo(map);
-      else map.removeLayer(m);
-    });
-  }, [showStops, showRoutes, showBuses, mapReady]);
+    if (!showRoutes) return;
+
+    // Helper: Gjen pikën më të afërt në shape
+    const findClosestIndex = (coords: [number, number][], point: [number, number]) => {
+      let minIdx = 0;
+      let minDist = Infinity;
+      coords.forEach((coord, i) => {
+        const d = Math.sqrt(Math.pow(coord[0] - point[0], 2) + Math.pow(coord[1] - point[1], 2));
+        if (d < minDist) { minDist = d; minIdx = i; }
+      });
+      return minIdx;
+    };
+
+    if (activeTrip) {
+      activeTrip.legs.forEach((leg: any) => {
+        const route = BUS_ROUTES.find(r => r.id === leg.route.id);
+        if (!route) return;
+        const startStop = BUS_STOPS.find(s => s.name === leg.boardAt);
+        const endStop = BUS_STOPS.find(s => s.name === leg.alightAt);
+        if (!startStop || !endStop) return;
+
+        const dirs = ['0', '1'];
+        let bestCoords: [number, number][] | null = null;
+        let shortestDist = Infinity;
+
+        dirs.forEach(dir => {
+          const fullCoords = (BUS_SHAPES[`${route.id}_${dir}` as keyof typeof BUS_SHAPES] || []) as [number, number][];
+          if (fullCoords.length === 0) return;
+          const idx1 = findClosestIndex(fullCoords, [startStop.lat, startStop.lng]);
+          const idx2 = findClosestIndex(fullCoords, [endStop.lat, endStop.lng]);
+          let segment = idx1 <= idx2 ? fullCoords.slice(idx1, idx2 + 1) : fullCoords.slice(idx2, idx1 + 1).reverse();
+          if (segment.length >= 2) {
+            const d1 = Math.sqrt(Math.pow(segment[0][0] - startStop.lat, 2) + Math.pow(segment[0][1] - startStop.lng, 2));
+            const d2 = Math.sqrt(Math.pow(segment[segment.length - 1][0] - endStop.lat, 2) + Math.pow(segment[segment.length - 1][1] - endStop.lng, 2));
+            if (d1 + d2 < shortestDist) { shortestDist = d1 + d2; bestCoords = segment; }
+          }
+        });
+
+        if (bestCoords) {
+          const coords = bestCoords as [number, number][];
+          const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: 0.15, interactive: false }).addTo(map);
+          const line = L.polyline(coords, { color: route.color, weight: 4.5, opacity: 0.95, lineCap: 'round' }).addTo(map);
+          const arrows: any[] = [];
+          for (let i = 0; i < coords.length - 1; i += 8) {
+            const p1 = coords[i]; const p2 = coords[i + 1];
+            const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
+            const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
+            const arrow = L.marker(p1, { 
+              icon: L.divIcon({
+                className: 'route-arrow',
+                html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 20px; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
+                iconSize: [20, 20], iconAnchor: [10, 10]
+              }), 
+              interactive: false, zIndexOffset: 400 
+            }).addTo(map);
+            arrows.push(arrow);
+          }
+          line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b><br/>${leg.boardAt} ➔ ${leg.alightAt}`, { sticky: true });
+          routeLinesRef.current.push({ line, shadow, arrows, routeId: route.id });
+        }
+      });
+    } else {
+      filteredRoutes.forEach((route) => {
+        const dirs = ['0', '1'];
+        dirs.forEach(dir => {
+          const shapeKey = `${route.id}_${dir}`;
+          let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+          if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+          if (coords.length < 2) return;
+          
+          const isActive = !activeRouteFilter || route.id === activeRouteFilter;
+          const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: isActive ? 0.15 : 0.05, interactive: false }).addTo(map);
+          const line = L.polyline(coords, { 
+            color: route.color, 
+            weight: isActive ? 3.5 : 2, 
+            opacity: isActive ? 0.85 : 0.2, 
+            lineCap: 'round' 
+          }).addTo(map);
+          
+          const arrows: any[] = [];
+          if (isActive) {
+            for (let i = 2; i < coords.length - 2; i += 10) {
+              const p1 = coords[i]; const p2 = coords[i + 1];
+              const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
+              const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
+              const arrow = L.marker(p1, { 
+                icon: L.divIcon({
+                  className: 'route-arrow',
+                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 18px; line-height:1; font-weight:900; text-shadow: 0 0 3px #fff;">➤</div>`,
+                  iconSize: [18, 18], iconAnchor: [9, 9]
+                }), 
+                interactive: false, zIndexOffset: 400 
+              }).addTo(map);
+              arrows.push(arrow);
+            }
+          }
+          line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b>`, { sticky: true });
+          routeLinesRef.current.push({ line, shadow, arrows, routeId: route.id });
+        });
+      });
+    }
+  }, [activeTrip, activeRouteFilter, showRoutes, language, mapReady]);
+
+
 
   // ── Ndrysho stilin e hartës ──────────────────────────────────────────────────
   useEffect(() => {
@@ -335,37 +356,7 @@ export default function MapView() {
     (map as any)._tileLayer = newTile;
   }, [mapStyle]);
 
-  // ── Trego/fshih stacionet ────────────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !mapReady) return;
-    stopMarkersRef.current.forEach(m => {
-      if (showStops) m.addTo(map);
-      else map.removeLayer(m);
-    });
-  }, [showStops, mapReady]);
 
-  // ── Trego/fshih linjat & filtër ─────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !mapReady) return;
-    routeLinesRef.current.forEach(({ line, shadow, routeId }) => {
-      const visible = showRoutes && (!activeRouteFilter || routeId === activeRouteFilter);
-      if (visible) {
-        line.addTo(map);
-        shadow.addTo(map);
-        line.setStyle({ opacity: 0.85, weight: 4 });
-      } else if (!showRoutes) {
-        map.removeLayer(line);
-        map.removeLayer(shadow);
-      } else {
-        line.setStyle({ opacity: 0.15, weight: 2 });
-        shadow.setStyle({ opacity: 0.05 });
-        line.addTo(map);
-        shadow.addTo(map);
-      }
-    });
-  }, [showRoutes, activeRouteFilter, mapReady]);
 
   // ── Përditëso vendndodhjen e përdoruesit ─────────────────────────────────────
   useEffect(() => {
@@ -398,7 +389,15 @@ export default function MapView() {
     if (!map || !L || !mapReady) return;
 
     buses.forEach((bus: any) => {
-      // Filtro sipas linjës aktive
+      // Filtro sipas linjës aktive dhe shikueshmërisë
+      if (!showBuses) {
+        if (busMarkersRef.current[bus.id]) {
+          map.removeLayer(busMarkersRef.current[bus.id]);
+          delete busMarkersRef.current[bus.id];
+        }
+        return;
+      }
+
       const isActive = !activeRouteFilter || bus.routeId === activeRouteFilter;
       const opacity = isActive ? 1 : 0.2;
 
@@ -460,7 +459,7 @@ export default function MapView() {
         busMarkersRef.current[bus.id] = marker;
       }
     });
-  }, [buses, mapReady, activeRouteFilter, setSelectedBus]);
+  }, [buses, mapReady, activeRouteFilter, setSelectedBus, showBuses]);
 
   // ── Kontrolle hartë ──────────────────────────────────────────────────────────
   const zoomIn = () => mapInstanceRef.current?.zoomIn();
@@ -470,12 +469,34 @@ export default function MapView() {
     mapInstanceRef.current?.setView([userLocation.lat, userLocation.lng], 16, { animate: true });
   };
 
-  const activeRoute = BUS_ROUTES.find(r => r.id === activeRouteFilter);
-
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
       {/* ── Harta ── */}
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+
+      {/* ── Legenda ── */}
+      <div className="card desktop-only" style={{
+        position: 'absolute', bottom: 16, left: 16, zIndex: 1000,
+        padding: '8px 12px',
+        background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',
+        fontSize: 10, display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+        <div style={{ fontWeight: 700, marginBottom: 2, fontSize: 11 }}>Legjenda</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 16, height: 3, background: '#60a5fa', borderRadius: 2 }} />
+          <span style={{ color: 'var(--text-muted)' }}>Linja urbane</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 12, height: 12, background: '#1a73e8', borderRadius: 3, border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: 7, color: '#fff' }}>🚌</div>
+          </div>
+          <span style={{ color: 'var(--text-muted)' }}>Stacion</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%' }} />
+          <span style={{ color: 'var(--text-muted)' }}>Vendndodhja juaj</span>
+        </div>
+      </div>
 
       {/* ── CSS Animacione ── */}
       <style>{`
@@ -483,10 +504,45 @@ export default function MapView() {
           0% { transform: scale(0.5); opacity: 0.8; }
           100% { transform: scale(2.5); opacity: 0; }
         }
+        @media (max-width: 900px) {
+          .desktop-only { display: none !important; }
+          .mobile-only { display: flex !important; }
+          .mobile-only-grid { display: grid !important; }
+        }
+        @media (min-width: 901px) {
+          .mobile-only, .mobile-only-grid { display: none !important; }
+        }
       `}</style>
 
+      {/* ── Desktop Header ── */}
+      <div className="desktop-only" style={{
+        position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1000,
+        display: 'flex', gap: 10, alignItems: 'center',
+      }}>
+        <div className="card" style={{
+          flex: 1, padding: '10px 18px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          backdropFilter: 'blur(12px)',
+          background: 'rgba(15,23,42,0.85)',
+        }}>
+          <div style={{
+            width: 8, height: 8, background: 'var(--success)',
+            borderRadius: '50%', animation: 'pulse 2s infinite',
+          }} />
+          <span style={{ fontSize: 14, fontWeight: 700 }}>
+            Harta e Linjave Urbane – Tiranë
+          </span>
+          <span style={{
+            marginLeft: 'auto', fontSize: 11,
+            color: 'var(--text-muted)',
+          }}>
+            {BUS_ROUTES.length} linja · {BUS_STOPS.length} stacione
+          </span>
+        </div>
+      </div>
+
       {/* ── Header bar ── */}
-      <div style={{
+      <div className="desktop-only" style={{
         position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1000,
         display: 'flex', gap: 10, alignItems: 'center',
       }}>
@@ -513,7 +569,7 @@ export default function MapView() {
       </div>
 
       {/* ── Map Controls Panel (Right) ── */}
-      <div className="map-controls-panel" style={{
+      <div className="map-controls-panel desktop-only" style={{
         position: 'absolute', top: 20, right: 16, zIndex: 1000,
         display: 'flex', flexDirection: 'column', gap: 12
       }}>
@@ -577,7 +633,7 @@ export default function MapView() {
       </div>
 
       {/* ── Line Filters (Bottom Bar) ── */}
-      <div className="custom-scrollbar" style={{
+      <div className="custom-scrollbar desktop-only" style={{
         position: 'absolute', bottom: 20, left: 16, right: 16, zIndex: 1000,
         overflowX: 'auto', display: 'flex', gap: 8, padding: '10px 0',
         maskImage: 'linear-gradient(to right, black 85%, transparent)',
@@ -701,6 +757,69 @@ export default function MapView() {
         </div>
       )}
 
+      {/* ── MOBILE UI ELEMENTS ── */}
+      {/* Slim Top Bar (Mobile Only - 3 dots only) */}
+      <div className="mobile-only" style={{
+        position: 'absolute', top: 16, right: 16, zIndex: 1100,
+      }}>
+        {/* Options 3 Dots */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="glass"
+            style={{
+              width: 42, height: 42, borderRadius: 12, display: 'flex',
+              alignItems: 'center', justifyContent: 'center', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.1)'
+            }}
+          >
+            <MoreVertical size={22} />
+          </button>
+
+          {isSettingsOpen && (
+            <div className="glass animate-fade-in" style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              width: 200, padding: 16, borderRadius: 20, zIndex: 1200,
+              border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex', flexDirection: 'column', gap: 12,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Harta</div>
+
+              <div onClick={() => setShowStops(!showStops)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
+                <span style={{ fontSize: 14, color: showStops ? '#fff' : 'var(--text-muted)' }}>Stacionet</span>
+                {showStops ? <Eye size={18} color="var(--primary)" /> : <EyeOff size={18} color="var(--text-muted)" />}
+              </div>
+
+              <div onClick={() => setShowBuses(!showBuses)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
+                <span style={{ fontSize: 14, color: showBuses ? '#fff' : 'var(--text-muted)' }}>Autobusët</span>
+                {showBuses ? <Eye size={18} color="#f59e0b" /> : <EyeOff size={18} color="var(--text-muted)" />}
+              </div>
+
+              <div onClick={() => setShowRoutes(!showRoutes)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
+                <span style={{ fontSize: 14, color: showRoutes ? '#fff' : 'var(--text-muted)' }}>Linjat</span>
+                {showRoutes ? <Eye size={18} color="#ef4444" /> : <EyeOff size={18} color="var(--text-muted)" />}
+              </div>
+              
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Floating Locate Button (Mobile Only) */}
+      <button
+        onClick={centerMap}
+        className="mobile-only glass"
+        style={{
+          position: 'absolute', bottom: 104, right: 16, zIndex: 1100,
+          width: 48, height: 48, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--primary)', border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+        }}
+      >
+        <Locate size={22} />
+      </button>
       {/* ── Banner Trip Aktiv ── */}
       {activeTrip && (
         <div style={{
@@ -738,7 +857,7 @@ export default function MapView() {
       )}
 
       {/* ── Legenda ── */}
-      <div className="card" style={{
+      <div className="card desktop-only" style={{
         position: 'absolute', bottom: 16, left: 16, zIndex: 1000,
         padding: '8px 12px',
         background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',

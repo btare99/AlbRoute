@@ -47,10 +47,12 @@ export default function AppShell() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="mobile-nav" style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: '72px',
-        background: '#0a0f1a', borderTop: '1px solid var(--border)',
+        position: 'fixed', bottom: '20px', left: '16px', right: '16px', height: '68px',
+        background: 'rgba(10, 15, 26, 0.85)', backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         zIndex: 2000, display: 'none', alignItems: 'center', justifyContent: 'space-around',
-        paddingBottom: 'env(safe-area-inset-bottom)'
+        padding: '0 10px',
       }}>
         {MENU.map(({ id, label, icon: Icon }) => (
           <button 
@@ -58,8 +60,13 @@ export default function AppShell() {
             onClick={() => setView(id)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              background: 'none', border: 'none', color: currentView === id ? 'var(--primary)' : '#fff',
-              cursor: 'pointer', transition: 'var(--transition)', flex: 1
+              background: currentView === id ? 'rgba(59,130,246,0.1)' : 'transparent',
+              borderRadius: '16px',
+              border: 'none',
+              color: currentView === id ? 'var(--primary)' : '#fff',
+              cursor: 'pointer', transition: 'var(--transition)', flex: 1,
+              padding: '6px 0',
+              boxShadow: currentView === id ? '0 4px 12px rgba(59,130,246,0.2)' : 'none',
             }}
           >
             <Icon size={22} strokeWidth={currentView === id ? 2.5 : 2} />
@@ -74,7 +81,8 @@ export default function AppShell() {
             display: flex !important;
           }
           .main-area {
-            height: calc(100% - 72px) !important;
+            height: 100% !important;
+            padding-bottom: 110px !important;
           }
           .sidebar {
             display: none !important;
