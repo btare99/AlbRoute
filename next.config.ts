@@ -1,10 +1,23 @@
 import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swcMinify: true,
+  disable: false,
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
 
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet'],
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
 // ─── NGJYRAT ZYRTARE PER LINJAT ─────────────────────────────────────────────
 // Bazuar në legendën e hartës zyrtare
 

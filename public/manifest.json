@@ -1,0 +1,22 @@
+{
+  "name": "AlbRoute - Tirana Transit",
+  "short_name": "AlbRoute",
+  "description": "Monitorimi i transportit publik në Tiranë në kohë reale.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/AlbRouteLogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/AlbRouteLogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
