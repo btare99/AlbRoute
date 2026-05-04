@@ -55,7 +55,20 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Brand */}
-      <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
+        <button 
+          onClick={() => useStore.getState().setSidebarOpen(false)}
+          className="mobile-close-btn"
+          style={{
+            position: 'absolute', top: '24px', right: '16px',
+            width: '32px', height: '32px', borderRadius: '8px',
+            display: 'none', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.05)', color: '#fff',
+            border: '1px solid var(--border)'
+          }}
+        >
+          <X size={18} />
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/AlbRouteLogo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

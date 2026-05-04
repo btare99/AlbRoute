@@ -513,144 +513,91 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* ── Kontrollat djathtas (Zoom & Mjetet) ── */}
+      {/* ── Map Controls Panel (Right) ── */}
       <div className="djathtas-controls" style={{
-        position: 'absolute', right: 20, top: 80, zIndex: 1000,
-        display: 'flex', flexDirection: 'column', gap: 10,
+        position: 'absolute', top: 20, right: 16, zIndex: 1000,
+        display: 'flex', flexDirection: 'column', gap: 12
       }}>
-        {/* Zoom In */}
-        <button onClick={zoomIn} className="card" style={{
-          width: 42, height: 42, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', border: '1px solid var(--border)',
-          background: 'rgba(15,23,42,0.9)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: 12,
-          transition: 'all 0.2s',
-          fontSize: '20px', fontWeight: 'bold', color: '#fff'
-        }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-        >
-          +
-        </button>
+        {/* Navigation Group */}
+        <div className="glass" style={{
+          display: 'flex', flexDirection: 'column', borderRadius: 12, overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
+        }}>
+          <button onClick={zoomIn} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>+</button>
+          <button onClick={zoomOut} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>−</button>
+          <button onClick={centerMap} style={{ width: 42, height: 42, color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Locate size={18} />
+          </button>
+        </div>
 
-        {/* Zoom Out */}
-        <button onClick={zoomOut} className="card" style={{
-          width: 42, height: 42, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', border: '1px solid var(--border)',
-          background: 'rgba(15,23,42,0.9)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: 12,
-          transition: 'all 0.2s',
-          fontSize: '20px', fontWeight: 'bold', color: '#fff'
-        }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-        >
-          −
-        </button>
+        {/* Visibility Group */}
+        <div className="glass" style={{
+          padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
+        }}>
+          <button onClick={() => setShowStops(!showStops)} style={{
+            width: 34, height: 34, borderRadius: 8, fontSize: 16,
+            background: showStops ? 'rgba(59,130,246,0.2)' : 'transparent',
+            color: showStops ? '#3b82f6' : 'var(--text-muted)'
+          }}>🚏</button>
+          <button onClick={() => setShowRoutes(!showRoutes)} style={{
+            width: 34, height: 34, borderRadius: 8, fontSize: 16,
+            background: showRoutes ? 'rgba(239,68,68,0.2)' : 'transparent',
+            color: showRoutes ? '#ef4444' : 'var(--text-muted)'
+          }}>🛤️</button>
+          <button onClick={() => setShowBuses(!showBuses)} style={{
+            width: 34, height: 34, borderRadius: 8, fontSize: 16,
+            background: showBuses ? 'rgba(245,158,11,0.2)' : 'transparent',
+            color: showBuses ? '#f59e0b' : 'var(--text-muted)'
+          }}>🚌</button>
+        </div>
 
-        {/* Center Map */}
-        <button onClick={centerMap} className="card" style={{
-          width: 42, height: 42, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', border: '1px solid var(--border)',
-          background: 'rgba(15,23,42,0.9)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: 12,
-          transition: 'all 0.2s',
-          color: 'var(--text-muted)'
-        }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          <Locate size={18} />
-        </button>
-
-        {/* Stil hartes */}
-        <div className="card" style={{
-          padding: '4px', display: 'flex', flexDirection: 'column', gap: 4,
-          background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(12px)',
-          borderRadius: 12,
+        {/* Styles Group */}
+        <div className="glass" style={{
+          padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
         }}>
           {(['dark', 'light', 'satellite'] as const).map(s => (
             <button key={s} onClick={() => setMapStyle(s)} style={{
-              width: 34, height: 34, borderRadius: 8, fontSize: 14,
-              cursor: 'pointer', border: 'none',
+              width: 34, height: 34, borderRadius: 8,
               background: mapStyle === s ? 'var(--primary)' : 'transparent',
               color: mapStyle === s ? '#fff' : 'var(--text-muted)',
-              transition: 'all 0.2s',
+              fontSize: 14
             }}>
               {s === 'dark' ? '🌙' : s === 'light' ? '☀️' : '🛰'}
             </button>
           ))}
         </div>
-
-        {/* Visibility Toggles */}
-        <div className="card" style={{
-          padding: '4px', display: 'flex', flexDirection: 'column', gap: 4,
-          background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(12px)',
-          borderRadius: 12,
-        }}>
-          <button onClick={() => setShowStops(!showStops)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            cursor: 'pointer', border: 'none',
-            background: showStops ? 'rgba(59,130,246,0.2)' : 'transparent',
-            color: showStops ? '#3b82f6' : 'var(--text-muted)',
-            transition: 'all 0.2s',
-          }} title="Show Stops">
-            🚏
-          </button>
-          <button onClick={() => setShowRoutes(!showRoutes)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            cursor: 'pointer', border: 'none',
-            background: showRoutes ? 'rgba(239,68,68,0.2)' : 'transparent',
-            color: showRoutes ? '#ef4444' : 'var(--text-muted)',
-            transition: 'all 0.2s',
-          }} title="Show Routes">
-            🛤️
-          </button>
-          <button onClick={() => setShowBuses(!showBuses)} style={{
-            width: 34, height: 34, borderRadius: 8, fontSize: 16,
-            cursor: 'pointer', border: 'none',
-            background: showBuses ? 'rgba(245,158,11,0.2)' : 'transparent',
-            color: showBuses ? '#f59e0b' : 'var(--text-muted)',
-            transition: 'all 0.2s',
-          }} title="Show Live Buses">
-            🚌
-          </button>
-        </div>
       </div>
 
-      {/* ── Filtër linjash (poshtë-majtas) ── */}
-      <div style={{
-        position: 'absolute', bottom: 100, left: 16, zIndex: 1000,
-        maxWidth: 'calc(100% - 32px)', overflowX: 'auto',
-        display: 'flex', gap: 6, paddingBottom: 4,
+      {/* ── Line Filters (Bottom Bar) ── */}
+      <div className="custom-scrollbar" style={{
+        position: 'absolute', bottom: 20, left: 16, right: 16, zIndex: 1000,
+        overflowX: 'auto', display: 'flex', gap: 8, padding: '10px 0',
+        maskImage: 'linear-gradient(to right, black 85%, transparent)',
+        WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent)',
       }}>
         <button
           onClick={() => setActiveRouteFilter(null)}
           style={{
-            padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+            padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700,
             cursor: 'pointer', border: '1px solid',
             borderColor: !activeRouteFilter ? 'var(--primary)' : 'var(--border)',
-            background: !activeRouteFilter ? 'rgba(99,102,241,0.2)' : 'rgba(15,23,42,0.85)',
+            background: !activeRouteFilter ? 'rgba(59,130,246,0.15)' : 'rgba(15,23,42,0.85)',
             color: !activeRouteFilter ? 'var(--primary)' : 'var(--text-muted)',
             backdropFilter: 'blur(8px)',
             whiteSpace: 'nowrap',
             transition: 'var(--transition)',
           }}>
-          Të gjitha
+          {language === 'al' ? 'Të gjitha' : 'All'}
         </button>
         {BUS_ROUTES.map(route => (
           <button
             key={route.id}
             onClick={() => setActiveRouteFilter(activeRouteFilter === route.id ? null : route.id)}
             style={{
-              padding: '5px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-              cursor: 'pointer', border: '2px solid',
+              padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', border: '1px solid',
               borderColor: activeRouteFilter === route.id ? route.color : 'transparent',
               background: activeRouteFilter === route.id ? `${route.color}33` : 'rgba(15,23,42,0.75)',
               color: activeRouteFilter === route.id ? route.color : 'var(--text-muted)',
