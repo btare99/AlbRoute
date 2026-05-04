@@ -710,168 +710,171 @@ input::placeholder {
 }
 
 @media (max-width: 600px) {
-  .page-header { padding: 0 16px; }
-  .page-content { padding: 16px; }
+  .page-header {
+    padding: 0 16px;
+  }
+
+  .page-content {
+    padding: 16px;
+  }
 }
 
-  /* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MAP (Leaflet)
 ═══════════════════════════════════════════════════ */
-  .leaflet-container {
-    background: #0d1929 !important;
-    font-family: 'Inter', sans-serif !important;
-  }
+.leaflet-container {
+  background: #0d1929 !important;
+  font-family: 'Inter', sans-serif !important;
+}
 
-  .leaflet-popup-content-wrapper {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-    color: var(--text) !important;
-  }
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  color: var(--text) !important;
+}
 
-  .leaflet-popup-tip {
-    background: var(--bg-card) !important;
-  }
+.leaflet-popup-tip {
+  background: var(--bg-card) !important;
+}
 
-  .leaflet-popup-close-button {
-    color: var(--text-muted) !important;
-  }
+.leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+}
 
-  .leaflet-control-zoom a {
-    background: var(--bg-card) !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-  }
+.leaflet-control-zoom a {
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
 
-  .leaflet-control-zoom a:hover {
-    background: var(--bg-card-hover) !important;
-  }
+.leaflet-control-zoom a:hover {
+  background: var(--bg-card-hover) !important;
+}
 
-  /* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    NOTIFICATION BAR
 ═══════════════════════════════════════════════════ */
-  .notification-enter {
-    animation: slideIn 0.3s ease forwards;
-  }
+.notification-enter {
+  animation: slideIn 0.3s ease forwards;
+}
 
-  .notification-exit {
-    animation: fadeIn 0.25s ease reverse forwards;
-  }
+.notification-exit {
+  animation: fadeIn 0.25s ease reverse forwards;
+}
 
-  /* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MOBILE RESPONSIVE
 ═══════════════════════════════════════════════════ */
-  @media (max-width: 768px) {
-    :root {
-      --sidebar-width: 0px;
-      --header-height: 56px;
-    }
-
-    .sidebar {
-      transform: translateX(-100%);
-      width: 260px;
-    }
-
-    .sidebar.open {
-      transform: translateX(0);
-      box-shadow: 4px 0 40px rgba(0, 0, 0, 0.5);
-    }
-
-    .main-area {
-      margin-left: 0;
-    }
-
-    .page-content {
-      padding: 16px;
-    }
-
-    .page-header {
-      padding: 0 16px;
-    }
-
-    /* Hide grid columns on mobile */
-    .hide-mobile {
-      display: none !important;
-    }
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --header-height: 56px;
   }
 
-  @media (max-width: 480px) {
-    .btn {
-      font-size: 13px;
-      padding: 9px 14px;
-    }
-
-    .card {
-      padding: 16px;
-    }
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
   }
 
-  /* ═══════════════════════════════════════════════════
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .main-area {
+    margin-left: 0;
+  }
+
+  .page-content {
+    padding: 16px;
+  }
+
+  .page-header {
+    padding: 0 16px;
+  }
+
+  /* Hide grid columns on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    font-size: 13px;
+    padding: 9px 14px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════ */
-  .truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-  }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
 
-  .flex-center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .gap-2 {
-    gap: 8px;
-  }
+.gap-2 {
+  gap: 8px;
+}
 
-  .gap-3 {
-    gap: 12px;
-  }
+.gap-3 {
+  gap: 12px;
+}
 
-  .gap-4 {
-    gap: 16px;
-  }
+.gap-4 {
+  gap: 16px;
+}
 
-  .w-full {
-    width: 100%;
-  }
+.w-full {
+  width: 100%;
+}
 
-  /* Glass effect */
-  .glass {
-    background: rgba(17, 24, 39, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
+/* Glass effect */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-  /* Glow effects per linjë */
-  .glow-primary {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-  }
+/* Glow effects per linjë */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
 
-  .glow-success {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-  }
+.glow-success {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
 
-  .glow-warning {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-  }
+.glow-warning {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
 
-  .glow-danger {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-  }
-
+.glow-danger {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
 }
