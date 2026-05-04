@@ -36,6 +36,22 @@ export default function Sidebar() {
     { id: 'it', flag: '🇮🇹', name: 'Italiano' },
   ];
 
+  const handleViewChange = (id: string) => {
+    setView(id);
+    if (window.innerWidth <= 900) {
+      useStore.getState().setSidebarOpen(false);
+    }
+  };
+
+  const handleStopSelect = (stop: any) => {
+    setSelectedStop(stop);
+    setSearchQuery('');
+    setView('map');
+    if (window.innerWidth <= 900) {
+      useStore.getState().setSidebarOpen(false);
+    }
+  };
+
   return (
     <aside className="sidebar">
       {/* Brand */}
@@ -92,11 +108,7 @@ export default function Sidebar() {
                 filteredStops.map((stop: any) => (
                   <button
                     key={stop.id}
-                    onClick={() => {
-                      setSelectedStop(stop);
-                      setSearchQuery('');
-                      setView('map');
-                    }}
+                    onClick={() => handleStopSelect(stop)}
                     style={{
                       width: '100%', padding: '10px 14px',
                       display: 'flex', flexDirection: 'column', gap: '2px',
@@ -124,7 +136,7 @@ export default function Sidebar() {
       {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
         {MENU.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setView(id)}
+          <button key={id} onClick={() => handleViewChange(id)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
               padding: '11px 14px', borderRadius: '10px', marginBottom: '2px',

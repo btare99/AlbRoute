@@ -640,6 +640,7 @@ input::placeholder {
   flex-direction: column;
   z-index: 2000;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .main-area {
@@ -647,14 +648,29 @@ input::placeholder {
   height: 100%;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* 📱 MOBILE RESPONSIVENESS */
-@media (max-width: 768px) {
-  :root {
-    --sidebar-width: 280px;
-  }
-
+@media (max-width: 900px) {
   .sidebar {
     position: fixed;
     left: 0;
@@ -667,85 +683,36 @@ input::placeholder {
     transform: translateX(0);
   }
 
-  .app-layout {
-    flex-direction: column;
-  }
-
   .main-area {
     width: 100vw;
-    height: 100vh;
   }
+}
 
-  /* Overlay kur hapet sidebar */
-  .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 1999;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
+.page-header {
+  height: var(--header-height);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  background: rgba(10, 15, 26, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
 
-  .sidebar-overlay.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
+.page-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
 
-  @media (max-width: 768px) {
-    .mobile-menu-btn {
-      display: flex !important;
-    }
-
-    .header-card span:last-child {
-      display: none;
-      /* Hiq statistikat ne mobile */
-    }
-
-    .header-card {
-      padding: 10px 14px !important;
-    }
-
-    .header-card span {
-      font-size: 13px !important;
-    }
-
-    /* Rregullo butonat djathtas ne mobile */
-    .djathtas-controls {
-      right: 12px !important;
-      top: 72px !important;
-    }
-  }
-
-  .main-area {
-    flex: 1;
-    margin-left: var(--sidebar-width);
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .page-header {
-    height: var(--header-height);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 28px;
-    gap: 16px;
-    background: rgba(10, 15, 26, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    position: sticky;
-    top: 0;
-    z-index: 200;
-  }
-
-  .page-content {
-    flex: 1;
-    padding: 28px;
-    overflow-y: auto;
-  }
+@media (max-width: 600px) {
+  .page-header { padding: 0 16px; }
+  .page-content { padding: 16px; }
+}
 
   /* ═══════════════════════════════════════════════════
    MAP (Leaflet)
