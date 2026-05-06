@@ -11,8 +11,8 @@ export const metadata: Metadata = {
     title: "AlbRoute",
   },
   icons: {
-    icon: "/AlbRouteLogo.png",
-    apple: "/AlbRouteLogo.png",
+    icon: "/logo-Urban.png",
+    apple: "/logo-Urban.png",
   },
 };
 

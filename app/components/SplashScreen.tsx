@@ -75,7 +75,7 @@ export default function SplashScreen() {
           animation: 'splash-logo 1.5s ease-out'
         }}>
           <img 
-            src="/AlbRouteLogo.png" 
+            src="/logo-Urban.png" 
             alt="AlbRoute Logo" 
             style={{ width: '80%', height: '80%', objectFit: 'contain' }}
           />

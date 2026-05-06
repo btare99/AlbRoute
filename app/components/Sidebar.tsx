@@ -1,5 +1,5 @@
 'use client';
-import { Map, Navigation, Route, User, Star, LogOut, Bus, Bell, Search, Globe, X } from 'lucide-react';
+import { Map, Navigation, Route, User, Star, LogOut, Bus, Bell, Search, Globe, X, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
 import { translations } from '../store/translations';
@@ -24,6 +24,7 @@ export default function Sidebar() {
     { id: 'planner', label: t.planner, icon: Route },
     { id: 'favorites', label: t.saved, icon: Star },
     { id: 'profile', label: t.profile, icon: User },
+    { id: 'admin', label: 'Admin Panel', icon: ShieldCheck },
   ];
 
   const filteredStops = BUS_STOPS.filter(stop =>
@@ -58,7 +59,7 @@ export default function Sidebar() {
     <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
       {/* Brand */}
       <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-        <button 
+        <button
           onClick={() => useStore.getState().setSidebarOpen(false)}
           className="mobile-close-btn"
           style={{
@@ -73,10 +74,10 @@ export default function Sidebar() {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/AlbRouteLogo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="/logo-Urban.png" alt="Urban Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', lineHeight: '1', color: '#fff' }}>AlbRoute</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', lineHeight: '1', color: '#fff' }}>Urbani Im</h2>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Tirana Transit</p>
           </div>
         </div>

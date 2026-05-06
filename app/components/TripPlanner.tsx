@@ -7,7 +7,7 @@ import {
   ArrowUpDown, Search, X, CheckCircle2, Info, Locate
 } from 'lucide-react';
 
-const STOP_NAMES = BUS_STOPS.map(s => s.name).sort();
+const STOP_NAMES = Array.from(new Set(BUS_STOPS.map(s => s.name))).sort();
 
 // Popular routes based on Tirana map
 const POPULAR_ROUTES = [
@@ -203,9 +203,9 @@ export default function TripPlanner() {
 
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude, longitude } = pos.coords;
-      const nearest = findNearestStop(latitude, longitude);
-      setTripFrom(nearest.name);
-      addNotification(`U zgjodh stacioni më i afërt: ${nearest.name}`, 'info');
+      useStore.getState().setTripOriginCoords({ lat: latitude, lng: longitude });
+      setTripFrom('📍 Vendndodhja Ime');
+      addNotification('U mor vendndodhja juaj!', 'info');
     }, (err) => {
       addNotification('Dështoi marrja e vendndodhjes.', 'danger');
     });
@@ -244,94 +244,106 @@ export default function TripPlanner() {
       <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
         <form onSubmit={handlePlan} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          <div style={{ position: 'relative' }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: '20px',
+            padding: '16px',
+            border: '1px solid rgba(255,255,255,0.05)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            position: 'relative'
+          }}>
+            <div style={{ position: 'relative' }}>
+              <StopInput
+                label="📍 NGA — NISJA"
+                value={tripFrom}
+                onChange={setTripFrom}
+                placeholder="Zgjidh stacionin e nisjes..."
+                icon={Navigation}
+                iconColor="var(--primary, #3b82f6)"
+              />
+              <button
+                type="button"
+                onClick={useMyLocation}
+                style={{
+                  position: 'absolute', right: '48px', top: '34px',
+                  background: 'rgba(59, 130, 246, 0.1)', border: 'none', cursor: 'pointer',
+                  color: 'var(--primary)', display: 'flex', alignItems: 'center',
+                  gap: '6px', fontSize: '11px', fontWeight: '800', padding: '6px 10px',
+                  borderRadius: '8px', transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+              >
+                <Locate size={12} /> IME
+              </button>
+            </div>
+
+            {/* Sleek Swap button */}
+            <div style={{ position: 'relative', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+              <div style={{ position: 'absolute', left: '20px', right: '20px', height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+              <button type="button" onClick={swapStops} style={{
+                width: '32px', height: '32px', borderRadius: '10px',
+                background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', color: 'var(--text-muted)',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 2,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'scale(1.1) rotate(180deg)';
+                  e.currentTarget.style.color = 'var(--primary)';
+                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                  e.currentTarget.style.color = 'var(--text-muted)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                }}
+                title="Ndrro stacionet"
+              >
+                <ArrowUpDown size={14} />
+              </button>
+            </div>
+
             <StopInput
-              label="📍 Nga — Stacioni i nisjes"
-              value={tripFrom}
-              onChange={setTripFrom}
-              placeholder="p.sh. Sheshi Skënderbej"
-              icon={Navigation}
-              iconColor="var(--primary, #3b82f6)"
+              label="🏁 DERI — DESTINACIONI"
+              value={tripTo}
+              onChange={setTripTo}
+              placeholder="Zgjidh destinacionin..."
+              icon={MapPin}
+              iconColor="#10b981"
             />
-            <button
-              type="button"
-              onClick={useMyLocation}
-              style={{
-                position: 'absolute', right: '48px', top: '38px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--primary)', display: 'flex', alignItems: 'center',
-                gap: '4px', fontSize: '11px', fontWeight: '700'
-              }}
-            >
-              <Locate size={12} /> IME
-            </button>
           </div>
-
-          {/* Swap button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            <button type="button" onClick={swapStops} style={{
-              width: '38px', height: '38px', borderRadius: '50%',
-              background: 'var(--bg-secondary, rgba(255,255,255,0.06))',
-              border: '1.5px solid var(--border)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', color: 'var(--text-muted)',
-              transition: 'all 0.2s', flexShrink: 0,
-            }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'var(--primary, #3b82f6)';
-                e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.borderColor = 'var(--primary, #3b82f6)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'var(--bg-secondary, rgba(255,255,255,0.06))';
-                e.currentTarget.style.color = 'var(--text-muted)';
-                e.currentTarget.style.borderColor = 'var(--border)';
-              }}
-              title="Ndrro stacionet"
-            >
-              <ArrowUpDown size={15} />
-            </button>
-            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-          </div>
-
-          <StopInput
-            label="🏁 Deri — Destinacioni"
-            value={tripTo}
-            onChange={setTripTo}
-            placeholder="p.sh. Kombinat"
-            icon={MapPin}
-            iconColor="#10b981"
-          />
 
           <button
             type="submit"
             disabled={loading}
             style={{
-              marginTop: '4px',
-              padding: '14px', borderRadius: '12px',
-              background: loading ? 'var(--border)' : 'linear-gradient(135deg, var(--primary, #3b82f6), #6366f1)',
-              color: '#fff', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '700', fontSize: '15px',
+              marginTop: '8px', padding: '16px', borderRadius: '16px',
+              background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+              color: loading ? 'var(--text-muted)' : '#fff', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: '800', fontSize: '16px', letterSpacing: '0.03em', textTransform: 'uppercase',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              transition: 'all 0.2s', boxShadow: loading ? 'none' : '0 4px 16px rgba(99,102,241,0.3)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: loading ? 'none' : '0 10px 25px -5px rgba(99,102,241,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset',
             }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             {loading ? (
               <>
                 <span style={{
-                  width: '18px', height: '18px',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#fff', borderRadius: '50%',
+                  width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.1)',
+                  borderTopColor: 'var(--primary)', borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite', display: 'inline-block'
                 }} />
-                Duke kërkuar rrugën...
+                Po llogarit...
               </>
             ) : (
               <>
-                <Search size={16} />
-                Gjej Rrugën
-                <ArrowRight size={16} />
+                <Search size={18} />
+                GJEJ RRUGËN MË TË SHPEJTË
+                <ArrowRight size={18} />
               </>
             )}
           </button>
@@ -402,73 +414,100 @@ export default function TripPlanner() {
         ) : (
           <div>
 
-            {/* Summary card */}
-            <div className="card" style={{
-              marginBottom: '16px', padding: '24px',
-              background: 'rgba(59,130,246,0.05)',
-              borderColor: 'rgba(59,130,246,0.2)',
-              position: 'relative', overflow: 'hidden'
+            {/* TICKET SUMMARY CARD */}
+            <div style={{
+              marginBottom: '20px', background: 'var(--bg-card)',
+              borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)',
+              overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.2)'
             }}>
-              {/* Decorative circle */}
+              {/* Ticket Header */}
               <div style={{
-                position: 'absolute', top: '-30px', right: '-30px',
-                width: '120px', height: '120px', borderRadius: '50%',
-                background: 'rgba(99,102,241,0.08)', pointerEvents: 'none'
-              }} />
+                padding: '20px 24px', background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.1))',
+                borderBottom: '2px dashed rgba(255,255,255,0.1)', position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute', bottom: '-10px', left: '-10px', width: '20px', height: '20px',
+                  borderRadius: '50%', background: 'var(--bg-app)', borderRight: '1px solid rgba(255,255,255,0.08)'
+                }} />
+                <div style={{
+                  position: 'absolute', bottom: '-10px', right: '-10px', width: '20px', height: '20px',
+                  borderRadius: '50%', background: 'var(--bg-app)', borderLeft: '1px solid rgba(255,255,255,0.08)'
+                }} />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <CheckCircle2 size={18} style={{ color: '#10b981' }} />
-                    <h2 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>Rruga u gjet!</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ background: '#10b981', color: '#000', padding: '4px', borderRadius: '50%' }}>
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981' }}>Rruga Më E Mirë</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--primary)' }}>{tripResult.from}</span>
-                    <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontWeight: '600', fontSize: '14px', color: '#10b981' }}>{tripResult.to}</span>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Urbani Im AI</div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', marginBottom: '4px' }}>Nisja</div>
+                    <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tripResult.from}</div>
+                  </div>
+                  <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--primary)', fontWeight: '800', fontSize: '14px', marginBottom: '2px' }}>{tripResult.travelTime} min</div>
+                    <div style={{ width: '40px', height: '2px', background: 'var(--primary)', position: 'relative', borderRadius: '2px' }}>
+                      <div style={{ position: 'absolute', right: '-4px', top: '-4px', width: '0', height: '0', borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '6px solid var(--primary)' }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', marginBottom: '4px' }}>Mbërritja</div>
+                    <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tripResult.to}</div>
                   </div>
                 </div>
-                <span style={{
-                  padding: '4px 12px', borderRadius: '20px',
-                  background: 'rgba(16,185,129,0.15)', color: '#10b981',
-                  fontSize: '11px', fontWeight: '700', flexShrink: 0,
-                  border: '1px solid rgba(16,185,129,0.3)'
-                }}>
-                  ✓ Optimal
-                </span>
               </div>
 
-              {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                {[
-                  {
-                    icon: <Clock size={18} style={{ color: 'var(--primary)' }} />,
-                    value: `${tripResult.travelTime} min`,
-                    label: 'Kohëzgjatja',
-                    bg: 'rgba(59,130,246,0.08)'
-                  },
-                  {
-                    icon: <Banknote size={18} style={{ color: '#10b981' }} />,
-                    value: `${tripResult.totalPrice} L`,
-                    label: 'Çmimi total',
-                    bg: 'rgba(16,185,129,0.08)'
-                  },
-                  {
-                    icon: <Route size={18} style={{ color: 'var(--warning, #f59e0b)' }} />,
-                    value: tripResult.transfers === 0 ? 'Direkt' : `${tripResult.transfers}×`,
-                    label: tripResult.transfers === 0 ? 'Pa ndërrim' : 'Ndërrime',
-                    bg: 'rgba(245,158,11,0.08)'
-                  },
-                ].map(({ icon, value, label, bg }) => (
-                  <div key={label} style={{
-                    padding: '14px 12px', borderRadius: '12px',
-                    background: bg, textAlign: 'center'
+              {/* Ticket Body */}
+              <div style={{ padding: '20px 24px' }}>
+
+                {tripResult.walkingDist > 0 && (
+                  <div style={{
+                    marginBottom: '16px', padding: '10px 14px', borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>{icon}</div>
-                    <p style={{ fontSize: '18px', fontWeight: '800', margin: 0, marginBottom: '2px' }}>{value}</p>
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{label}</p>
+                    <Locate size={16} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        Nga vendndodhja juaj, stacioni më i afërt është <strong style={{ color: 'var(--text)' }}>{tripResult.actualFrom}</strong>.
+                      </div>
+                      <div style={{ marginTop: '4px', display: 'flex', gap: '12px', fontWeight: '600', color: 'var(--text)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          🚶‍♂️ {tripResult.walkingDist} metra
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)' }}>
+                          ⏱ {tripResult.walkingTime} min ecje
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                  {[
+                    { icon: <Clock size={16} color="var(--primary)" />, value: `${tripResult.travelTime}m`, label: 'Koha', bg: 'rgba(59,130,246,0.1)' },
+                    { icon: <MapPin size={16} color="#8b5cf6" />, value: `${tripResult.totalStops}`, label: 'Stacione', bg: 'rgba(139,92,246,0.1)' },
+                    { icon: <Banknote size={16} color="#10b981" />, value: `${tripResult.totalPrice}L`, label: 'Kosto', bg: 'rgba(16,185,129,0.1)' },
+                    { icon: <Route size={16} color="#f59e0b" />, value: tripResult.transfers.toString(), label: 'Ndërrime', bg: 'rgba(245,158,11,0.1)' },
+                  ].map(({ icon, value, label, bg }) => (
+                    <div key={label} style={{
+                      padding: '12px', borderRadius: '14px', background: bg,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'
+                    }}>
+                      {icon}
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: '800', lineHeight: 1, color: 'var(--text)', textAlign: 'center' }}>{value}</div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center' }}>{label}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -478,6 +517,36 @@ export default function TripPlanner() {
             </h3>
 
             {tripResult.legs.map((leg: any, i: number) => {
+              if (leg.isWalking) {
+                return (
+                  <div key={i} className="card" style={{
+                    marginBottom: '10px', padding: '16px',
+                    borderLeft: `4px dashed #10b981`,
+                    transition: 'box-shadow 0.2s',
+                    display: 'flex', gap: '14px', alignItems: 'center'
+                  }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      background: 'rgba(16, 185, 129, 0.15)', color: '#10b981',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      <Locate size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '2px' }}>
+                        Ndërrim i linjës (Ecje)
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
+                        Nga {leg.boardAt} te {leg.alightAt}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: 700 }}>
+                        🚶‍♂️ {leg.walkingDist} metra • ⏱ {leg.walkingTime} min
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
               const color = r?.color || '#888';
               const allShown = showAllStops[i];

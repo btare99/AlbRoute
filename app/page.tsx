@@ -13,7 +13,7 @@ export default function Page() {
   useEffect(() => {
     const interval = setInterval(() => {
       moveBuses();
-    }, 1500);
+    }, 100);
     return () => clearInterval(interval);
   }, [moveBuses]);
 

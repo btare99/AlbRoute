@@ -139,7 +139,7 @@ export const BUS_STOPS = [
   { id: 'asllan_rusi_r_a', name: 'Asllan Rusi R ', lat: 41.33413205259879, lng: 19.80091783982226 },
   { id: 'qemal_stafa', name: 'Qemal Stafa', lat: 41.33236109136387, lng: 19.80612639376832 },
 
-  { id: 'pesembedhjete_kateshet', name: '15 Katëshat', lat: 41.3298, lng: 19.8184 },
+  { id: 'pesembedhjete_kateshet', name: '15 Katëshat', lat: 41.330567730323644, lng: 19.81913830820661 },
 
   // ── LINJA 3C: Qender - Yrshek ───────────────────────────────────────────── 
   { id: 'top_channel', name: 'Top Channel ', lat: 41.340910291422425, lng: 19.760677023177987 },
@@ -250,11 +250,131 @@ export const BUS_STOPS = [
   { id: 'seit_bathorja', name: 'Seit Bathorja', lat: 41.3032707019727, lng: 19.835061647209113 },
   { id: 'rethrrotullimi_v', name: 'Rrethrotullimi', lat: 41.30722631194845, lng: 19.84001447917246 },
 
+  // ── LINJA 9A: Jordan Misja - Qyteti Studentit ─────────────────────────────
+  { id: 'collakut', name: 'Collakut', lat: 41.320677563630305, lng: 19.854775796094252 },
+  { id: 'binak_alia', name: 'Binak Alia', lat: 41.321062314496736, lng: 19.853340814299667 },
+  { id: 'depo_ujit_a', name: 'Depo Ujit A', lat: 41.322376591652635, lng: 19.849827033328026 },
+  { id: 'naum_prifti', name: 'Naum Prifti', lat: 41.321291795697725, lng: 19.844741926029382 },
+  { id: 'haki_gjici', name: 'Haki Gjici', lat: 41.32126762302041, lng: 19.8449725960001 },
+  { id: 'kristaq_capo', name: 'Kristaq Capo', lat: 41.321012717949614, lng: 19.843464807492197 },
+  { id: 'kompleksi', name: 'Kompleksi', lat: 41.3205321483864, lng: 19.839740696688764 },
+  { id: 'godina_26', name: 'Godina 26', lat: 41.32139910588096, lng: 19.83615788945764 },
+  { id: 'godina_15', name: 'Godina 15', lat: 41.31990800611366, lng: 19.83492212883135 },
+  { id: 'ekonomiku', name: 'Ekonomiku', lat: 41.31887299306676, lng: 19.831235501511372 },
+  { id: 'stacioni_trenit_p', name: 'Stacioni Trenit', lat: 41.33579240948087, lng: 19.81477323137428 },
+  { id: 'burgu', name: 'Burgu', lat: 41.33699973522266, lng: 19.81199631092415 },
+  { id: 'kolegji', name: 'Kolegji', lat: 41.33914454866746, lng: 19.81085814023273 },
+  { id: 'rruga_vjosa', name: 'Rruga Vjosa', lat: 41.34091634852547, lng: 19.810385197742928 },
+  { id: 'ali_progri', name: 'Ali Progri', lat: 41.343769940699346, lng: 19.80873756533525 },
+  { id: 'rruga_sejdini', name: 'Rruga Sejdini', lat: 41.34570700023389, lng: 19.807832640534794 },
+  { id: 'uzina_dinamo', name: 'Uzina Dinamo', lat: 41.347355009810556, lng: 19.80668811733669 },
+
+  // ── LINJA 9B: Jordan Misja - Vilat Gjermane ─────────────────────────────
+  { id: 'irfan_tershana', name: 'Irfan Tershana', lat: 41.3182123935054, lng: 19.845708512329114 },
+  { id: 'bicaket', name: 'Bicaket', lat: 41.31744425273962, lng: 19.84293989974941 },
+  { id: 'jup_kastrati', name: 'Jup Kastrati', lat: 41.316565921178764, lng: 19.839968012183615 },
+  { id: 'ambasada_palestines', name: 'Ambasada Palestines', lat: 41.316667744340485, lng: 19.836429634377495 },
+  { id: 'vellezerit_kondi', name: 'Vellezerit Kondi', lat: 41.31713363121546, lng: 19.834540601477556 },
+
+  // ── LINJA 10A: Qender – Marteniteti Ri ─────────────────────────────────────────
+  { id: 'depo_ujit_b', name: 'Depo Ujit B', lat: 41.32438156582706, lng: 19.849880475371332 },
+  { id: 'pal_engjelli', name: 'Pal Engjelli', lat: 41.32757001015527, lng: 19.84890144314062 },
+  { id: 'teqi_tartari', name: 'Teki Tartari', lat: 41.32848647452588, lng: 19.847199935686987 },
+  { id: 'ura', name: 'Ura', lat: 41.32984149719154, lng: 19.845285754489325 },
+  { id: 'pasho_hysa', name: 'Pasho Hysa', lat: 41.33140235874708, lng: 19.844555943232628 },
+  { id: 'sabri_koci', name: 'Sabri Koci', lat: 41.332650356687424, lng: 19.84387519278399 },
+  { id: 'selman_riza', name: 'Selman Riza', lat: 41.333081559109345, lng: 19.84343242531492 },
+  { id: 'odise_grillo', name: 'Odhise Grillo', lat: 41.33326500703079, lng: 19.840592877346463 },
+  { id: 'marteniteri_ri_a', name: 'Marteniteri Ri', lat: 41.331806840749444, lng: 19.83677877616114 },
+  { id: 'ministria_shendetesise', name: 'Ministria Shendetesise', lat: 41.32925035509754, lng: 19.83235464049404 },
+  { id: 'marteniteri_ri', name: 'Marteniteri Ri', lat: 41.3315772580336, lng: 19.837695572642023 },
+
+  // ── LINJA 10B: Qender – Mihal Grameno ─────────────────────────────────────────
+  { id: 'abedin_pash_dino', name: 'Abedin Pashe Dino', lat: 41.32207940004562, lng: 19.840065007549434 },
+  { id: 'ali_visha', name: 'Ali Visha', lat: 41.32342585854858, lng: 19.837304750597436 },
+  { id: 'mihal_grameno', name: 'Mihal Grameno', lat: 41.32411397654377, lng: 19.835232771383204 },
+  { id: 'tregu_elektrik', name: 'Tregu Elektrik', lat: 41.32563792454284, lng: 19.833239219510606 },
+  { id: 'njesia_2', name: 'Njesia 2', lat: 41.32570603991613, lng: 19.829979848513055 },
+  { id: 'shkolla_baletit', name: 'Shkolla Baletit', lat: 41.32542079554202, lng: 19.827040364701368 },
+
+  // ── LINJA 10C: Fusha Aviacionit – Shkoze ─────────────────────────────────────────────
+  { id: 'marketi', name: 'Marketi', lat: 41.3326996597304, lng: 19.840995050759343 },
+  { id: 'kopshti_56', name: 'Kopshti 56', lat: 41.3331615403104, lng: 19.844889989171563 },
+  { id: 'shkoze_stop1', name: 'Shkoze', lat: 41.33391513985811, lng: 19.849070638819303 },
+  { id: 'shkoze_stop2', name: 'Shkoze', lat: 41.33441863770382, lng: 19.849291921058654 },
+  { id: 'zjarrefiksja', name: 'Zjarrefiksja', lat: 41.32817273499537, lng: 19.80048506735022 },
+  { id: 'konviktet', name: 'Konviktet', lat: 41.3293090400562, lng: 19.800584982493266 },
+  { id: 'fusha_aviacionit_stop1', name: 'Fusha Aviacionit', lat: 41.33021433494017, lng: 19.79745047693554 },
+  { id: 'fusha_aviacionit_stop2', name: 'Fusha Aviacionit', lat: 41.33002064500143, lng: 19.797315900668536 },
+  { id: 'helikopteret', name: 'Helikopteret', lat: 41.3314646986075, lng: 19.794531631919703 },
+  { id: 'simon_gjoni', name: 'Simon Gjoni', lat: 41.333321405691045, lng: 19.79120040869184 },
+  { id: 'dhora_leka', name: 'Dhora Leka', lat: 41.335358289270395, lng: 19.78769301968793 },
+
+  // ── LINJA 12: Uzina Dinamo – Sharrë ──────────────────────────────────────────
+  { id: 'ura_paskuqanit', name: 'Ura e Paskuqanit', lat: 41.34781681358328, lng: 19.808750781680693 },
+  { id: 'asllan_lala', name: 'Asllan Lala', lat: 41.34774020716616, lng: 19.811676985096906 },
+  { id: 'nenstacioni_elektrik', name: 'Nenstacioni Elektrik', lat: 41.34588597674461, lng: 19.81434073857203 },
+  { id: 'rruga_besa', name: 'Rruga Besa', lat: 41.34249006872084, lng: 19.816120754922782 },
+  { id: 'frigoriferi', name: 'Frigoriferi', lat: 41.34061345442758, lng: 19.817394722115505 },
+  { id: 'siri_kodra_stop1', name: 'Siri Kodra', lat: 41.33832149931276, lng: 19.818948362920473 },
+  { id: 'siri_kodra_stop2', name: 'Siri Kodra', lat: 41.33769710102745, lng: 19.819623956609522 },
+  { id: 'misto_mame', name: 'Misto Mame', lat: 41.318945254358376, lng: 19.78142194529472 },
+  { id: 'ukt', name: 'UKT', lat: 41.317792250369955, lng: 19.77726844409436 },
+  { id: 'mapo', name: 'Mapo', lat: 41.31577988545304, lng: 19.771461745610516 },
+  { id: 'kombinat', name: 'Kombinat', lat: 41.3142061334698, lng: 19.76761191947786 },
+  { id: 'komisariati_6', name: 'Komisariati 6', lat: 41.31271529507327, lng: 19.763904610856333 },
+  { id: 'varrezat_sharre', name: 'Varrezat Sharre', lat: 41.31049383822419, lng: 19.759550762690342 },
+  { id: 'kthesa_sharre', name: 'Kthesa Sharre', lat: 41.306682129689676, lng: 19.757215918373024 },
+  { id: 'prush', name: 'Prush', lat: 41.30569804048908, lng: 19.75449031508163 },
+  { id: 'fabrika_tullave', name: 'Fabrika Tullave', lat: 41.304903948127674, lng: 19.750717975372414 },
+  { id: 'karburanti', name: 'Karburanti', lat: 41.30326232377927, lng: 19.745399579714498 },
+  { id: 'filip_jano', name: 'Filip Jano', lat: 41.345013852832125, lng: 19.808752845785687 },
+
+  // ── LINJA 13A: Tirana e Re Orar ─────────────────────────────────────────────
+  { id: 'komuna_e_parisit_stop2', name: 'Komuna Parisit', lat: 41.31877300236136, lng: 19.808346342666322 },
+  { id: 'stadiumi_dinamo_stop2', name: 'Stadiumi Dinamo', lat: 41.31888283303763, lng: 19.808570920477415 },
+  { id: 'vasil_shanto_stop1', name: 'Vasil Shanto', lat: 41.32170310174288, lng: 19.80461203048531 },
+  { id: 'vasil_shanto_stop2', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
+  { id: 'pallati_me_shigjeta_stop1', name: 'Pallati me Shigjeta', lat: 41.321856143000744, lng: 19.792794178141932 },
+  { id: 'pallati_me_shigjeta_stop2', name: 'Pallati me Shigjeta', lat: 41.320901112330496, lng: 19.793524687394115 },
+  { id: 'teodor_keko_stop1', name: 'Teodor Keko', lat: 41.324036164179724, lng: 19.788755916536957 },
+  { id: 'teodor_keko_stop2', name: 'Teodor Keko', lat: 41.3227706320602, lng: 19.78869990749091 },
+  { id: 'kristaq_dollaku_stop1', name: 'Kristaq Dollaku', lat: 41.32625006633775, lng: 19.787244395061975 },
+  { id: 'kristaq_dollaku_stop2', name: 'Kristaq Dollaku', lat: 41.3261749559414, lng: 19.786647653563946 },
+  { id: 'don_bosko_orar', name: 'Don Bosko', lat: 41.33462483538115, lng: 19.807838070186605 },
+  { id: 'harry_fultz_orar', name: 'Harry Fultz', lat: 41.3351525054002, lng: 19.810826639457304 },
+
+  // ── LINJA 15A: Kombinat – Kinostudio ─────────────────────────────────────────────
+  { id: 'aleksander_moisiu', name: 'Aleksander Moisiu', lat: 41.34547193825165, lng: 19.850521543444863 },
+  { id: 'kinostudio_stop1', name: 'Kinostudio', lat: 41.346938705732185, lng: 19.846370250440746 },
+  { id: 'kinostudio_stop2', name: 'Kinostudio', lat: 41.3468207963958, lng: 19.84637527195811 },
+  { id: 'rruga_ura_stop1', name: 'Rruga Ura', lat: 41.34596097377481, lng: 19.84082795200048 },
+  { id: 'rruga_ura_stop2', name: 'Rruga Ura', lat: 41.345746731667596, lng: 19.840635989971382 },
+  { id: 'medreseja_stop1', name: 'Medreseja', lat: 41.33824469248576, lng: 19.82585028308114 },
+  { id: 'medreseja_stop2', name: 'Medreseja', lat: 41.33825893777831, lng: 19.82616394412093 },
+  { id: 'selvia_stop1', name: 'Selvia', lat: 41.33307708029375, lng: 19.82274624415947 },
+  { id: 'selvia_stop2', name: 'Selvia', lat: 41.333447783398825, lng: 19.823062071729957 },
+
+  // ── LINJA 15B: Kombinat – Tufinë ───────────────────────────────────────────
+  { id: 'rruga_arberit', name: 'Rruga Arberit', lat: 41.36987385402107, lng: 19.855007364435117 },
+  { id: 'xhamia_stop1', name: 'Xhamia', lat: 41.36707736969902, lng: 19.853757919194276 },
+  { id: 'xhamia_stop2', name: 'Xhamia', lat: 41.367363007437, lng: 19.85407095872192 },
+  { id: 'varrezat_tufine_stop1', name: 'Varrezat Tufinë', lat: 41.36146770728299, lng: 19.85172356502851 },
+  { id: 'varrezat_tufine_stop2', name: 'Varrezat Tufinë', lat: 41.36150320385792, lng: 19.851951025404713 },
+  { id: 'instituti_ndertimit_stop1', name: 'Instituti Ndertimit', lat: 41.35971422542996, lng: 19.850161118049343 },
+  { id: 'instituti_ndertimit_stop2', name: 'Instituti Ndertimit', lat: 41.35966858571836, lng: 19.85041785550367 },
+  { id: 'elez_isufi_stop1', name: 'Elez Isufi', lat: 41.35733811816766, lng: 19.847518931768512 },
+  { id: 'elez_isufi_stop2', name: 'Elez Isufi', lat: 41.35731614269344, lng: 19.847656308827407 },
+  { id: 'profarma_stop1', name: 'Profarma', lat: 41.354076913522356, lng: 19.84614223953766 },
+  { id: 'profarma_stop2', name: 'Profarma', lat: 41.35498592719514, lng: 19.84670084112889 },
+  { id: 'shefqet_kuka_stop1', name: 'Shefqet Kuka', lat: 41.35230724140207, lng: 19.845126730423065 },
+  { id: 'shefqet_kuka_stop2', name: 'Shefqet Kuka', lat: 41.35217608152568, lng: 19.845252027071574 },
+  { id: 'ura_gjorices_stop1', name: 'Ura Gjorices', lat: 41.35037350277216, lng: 19.84386707921066 },
+  { id: 'ura_gjorices_stop2', name: 'Ura Gjorices', lat: 41.35007061760878, lng: 19.843887770400325 },
+
 ];
 
 export const BUS_ROUTES = [
-
-
   // ── LINJA 1A: Allias – Selitë ─────────────────────────────────────────────
   {
     id: 'L1A', name: '1A', label: 'Allias – Selitë', color: '#e63946',
@@ -308,24 +428,47 @@ export const BUS_ROUTES = [
     ]
   },
 
-  // ── LINJA 11: Porcelan – Qëndër ─────────────────────────────────────────────
+  // ── LINJA 3A: Kashar Orar ───────────────────────────────────────────────────
   {
-    id: 'L11', name: '11', label: 'Porcelan – Qëndër', color: '#2951dfff',
+    id: 'L3A', name: '3A', label: 'Kashar Orar', color: '#7ecce4',
     stops: [
-      'biblioteka', 'pazari_ri', 'optika', 'hoxha_tahsim', 'xhamlliku', 'varri_bamit',
-      'oxhaku_l', 'artistike_migjeni_r', 'fresku', 'ikv', 'qendra_shendetesore',
-      'kabina_elektrike', 'hysen_bastari', 'stacioni_shkolles_re', 'thesari'
-    ],
-    returnStops: [
-      'thesari', '17_shkurti', 'bunkart_1', 'aziz_deliiu', 'thoma_filipeu',
-      'fizika_berthamore', 'fresku', 'artistike_migjeni_l', 'oxhaku_l', 'varri_bamit',
-      'xhamlliku', 'hoxha_tahsim', 'optika', 'pazari_ri', 'biblioteka'
+      'banka_shqiperise_a', 'kisha_katolike_a', 'poliklinika_9_a', 'ura_teknologjike_a',
+      'tregu_a', 'kombinati_mishit_a', 'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a',
+      'yzberisht_a', 'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'serat_a',
+      'erzen_lita_a', 'loni_ligori_a', 'njesia_kashar_a', 'nexho_konomi', 'kristaq_mone',
+      'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a', 'pallatet_arabe_a',
+      'ana_komena', 'asllan_rusi_r_a', 'qemal_stafa', 'banka_shqiperise_a'
     ]
   },
 
-  // ── LINJA 4: Qender - City Park ──────────────────────────────────────────
+  // ── LINJA 3B: Kashar Antiorar ──────────────────────────────────────────────
   {
-    id: 'L4', name: '4', label: 'Qender - City Park', color: '#9b59b6',
+    id: 'L3B', name: '3B', label: 'Kashar Antiorar', color: '#7ecce4',
+    stops: [
+      'biblioteka', 'mine_peza', 'asllan_rusi_r', 'pandi_dardha',
+      'pallatet_arabe', 'blloku_gintash', 'sheshi_shqiponja', 'lumi_lane', 'aleksandri_madh',
+      'kryqezimi_kashar', 'tom_plezhra', 'njesia_kashar', 'loni_ligori', 'erzen_lita',
+      'serat', 'mezez', 'ish_xhenio', 'pallati_minierave', 'yzberisht', 'besim_alla',
+      'bego_hoxha', 'joklin_persi', 'komabinati_mishit', 'kthesa_yzberisht', 'tregu',
+      'ura_teknologjike', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'biblioteka'
+    ]
+  },
+
+  // ── LINJA 3C: Qendër - Yrshek ──────────────────────────────────────────────
+  {
+    id: 'L3C', name: '3C', label: 'Qendër – Yrshek', color: '#749bc2',
+    stops: [
+      'biblioteka', 'pesembedhjete_kateshet', 'banka_shqiperise_a', 'kisha_katolike_a',
+      'poliklinika_9_a', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
+      'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
+      'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel',
+      'radio_planet', 'pasqyra', 'rruga_demokracia', 'xhamia', 'fusha_sportit', '100_vjetori'
+    ]
+  },
+
+  // ── LINJA 4: Qendër – City Park ──────────────────────────────────────────
+  {
+    id: 'L4', name: '4', label: 'Qendër – City Park', color: '#a62639',
     stops: [
       'muzeu_kombetar', 'mine_peza', 'asllan_rusi_r', 'pandi_dardha', 'pallatet_arabe',
       'blloku_gintash', 'kthesa_kamzes', 'shkolla', 'at_zef_pellumbi', 'gryka_kacanikut',
@@ -341,9 +484,9 @@ export const BUS_ROUTES = [
     ]
   },
 
-  // ── LINJA 5A: Lanabregas – 1 Maji ──────────────────────────────────────────
+  // ── LINJA 5A: Qendër – Uzina Autotraktori ──────────────────────────────────
   {
-    id: 'L5A', name: '5A', label: 'Lanabregas – 1 Maji', color: '#2ecc71',
+    id: 'L5A', name: '5A', label: 'Qendër – Uzina Autotraktori', color: '#7ca18d',
     stops: [
       'lanabregas', 'autotraktoret', 'banesat_sociale', 'rruga_spahiu', 'novruz_qosja',
       'pallatet_shkoze', 'ura_shkoze', 'poligrafiku', 'markata', 'dali_ndreu',
@@ -358,9 +501,10 @@ export const BUS_ROUTES = [
       'banesat_sociale', 'autotraktoret',
     ]
   },
-  // ── LINJA 5B: Institut – Gjethja ─────────────────────────────────────────────
+
+  // ── LINJA 5B: Qendër – Institut ─────────────────────────────────────────────
   {
-    id: 'L5B', name: '5B', label: 'Institut – Gjethja', color: '#1abc9c',
+    id: 'L5B', name: '5B', label: 'Qendër – Institut', color: '#218c54',
     stops: [
       'instituti_bujqesor', 'koder_kamez', 'ura_paskuqanit', 'treshi', 'rruga_kastriotet',
       'terminali_c', 'blloku_gintash_a', 'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r',
@@ -373,9 +517,9 @@ export const BUS_ROUTES = [
     ]
   },
 
-  // ── LINJA 6: Laprakë – Qendër ─────────────────────────────────────────────
+  // ── LINJA 6: Qendër – Laprakë ─────────────────────────────────────────────
   {
-    id: 'L6', name: '6', label: 'Laprakë – Qendër', color: '#f39c12',
+    id: 'L6', name: '6', label: 'Qendër – Laprakë', color: '#e02b74',
     stops: [
       'pesembedhjete_kateshet', 'materniteti', 'harry_fultz', 'don_bosko', 'vizion_plus',
       'rruga_muzaket', 'ptuu', 'administrativja', 'spitali_ushtarak', 'laprake',
@@ -389,9 +533,10 @@ export const BUS_ROUTES = [
       'harry_fultz', 'stacioni_i_trenit', 'pesembedhjete_kateshet'
     ]
   },
-  // ── LINJA 8A: Terminali Juglindor – Qendër ──────────────────────────────────
+
+  // ── LINJA 8A: Qendër – Terminali Juglindor ──────────────────────────────────
   {
-    id: 'L8A', name: '8A', label: 'Terminali Juglindor – Qendër', color: '#3498db',
+    id: 'L8A', name: '8A', label: 'Qendër – Terminali Juglindor', color: '#5d59a6',
     stops: [
       'terminal_jugilor', 'teg', 'haxhi_dushku', 'panorama_liqenit', 'hamid_dalipi',
       'policia_ushtarake', 'spitali_veterinar', 'rethrrotullimi', 'deshmoret',
@@ -405,9 +550,9 @@ export const BUS_ROUTES = [
     ]
   },
 
-  // ── LINJA 8B: Qender - Sanatorium ──────────────────────────────────
+  // ── LINJA 8B: Qendër – Sanatorium ──────────────────────────────────
   {
-    id: 'L8B', name: '8B', label: 'Qender - Sanatorium', color: '#0c5f96ff',
+    id: 'L8B', name: '8B', label: 'Qendër – Sanatorium', color: '#b7a2d4',
     stops: [
       'sanatoriumi', 'nuri_arapi', 'shefqet_ndroqi', 'zona_industriale', 'rethrrotullimi',
       'deshmoret', 'haki_shehu', 'vilat_gjermane', 'filologjiku', 'liceu_artistik',
@@ -418,9 +563,10 @@ export const BUS_ROUTES = [
       'haki_shehu', 'pallati_brigadave', 'rethrrotullimi', 'shefqet_ndroqi', 'nuri_arapi', 'sanatoriumi'
     ]
   },
-  // ── LINJA 8C: Qender - Sauk i Vjeter ─────────────────────────────
+
+  // ── LINJA 8C: Qendër – Sauk i Vjeter ─────────────────────────────
   {
-    id: 'L8C', name: '8C', label: 'Qender - Sauk i Vjeter', color: '#4c69a4ff',
+    id: 'L8C', name: '8C', label: 'Qendër – Sauk i Vjeter', color: '#d9d2e9',
     stops: [
       'sauk_i_vjeter', 'ibrahim_braja', 'seit_bathorja', 'rethrrotullimi',
       'deshmoret', 'haki_shehu', 'vilat_gjermane', 'filologjiku', 'liceu_artistik',
@@ -433,41 +579,199 @@ export const BUS_ROUTES = [
     ]
   },
 
-  // ── LINJA 3A: Kashar ───────────────────────────────────────────────────────
+  // ── LINJA 9A: Jordan Misja – Qytet Studenti ─────────────────────────────
   {
-    id: 'L3A', name: '3A', label: 'Kashar (Banka Shqipërisë - Unazë)', color: '#ef4444',
+    id: 'L9A', name: '9A', label: 'Jordan Misja – Qytet Studenti', color: '#b8c734',
     stops: [
-      'banka_shqiperise_a', 'kisha_katolike_a', 'poliklinika_9_a', 'ura_teknologjike_a',
-      'tregu_a', 'kombinati_mishit_a', 'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a',
-      'yzberisht_a', 'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'serat_a',
-      'erzen_lita_a', 'loni_ligori_a', 'njesia_kashar_a', 'nexho_konomi', 'kristaq_mone',
-      'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a', 'pallatet_arabe_a',
-      'ana_komena', 'asllan_rusi_r_a', 'qemal_stafa', 'banka_shqiperise_a'
+      'biblioteka', 'materniteti', 'stacioni_trenit_p', 'burgu', 'rruga_vjosa',
+      'ali_progri', 'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
+      'rruga_vjosa', 'kolegji', 'burgu', 'shkencat_natyres', 'dollari', 'parlamenti',
+      'posta_1', 'liceu_artistik', 'filologjiku', 'ekonomiku', 'godina_15',
+      'godina_26', 'kompleksi', 'kristaq_capo', 'haki_gjici', 'naum_prifti',
+      'depo_ujit_a', 'binak_alia', 'collakut'
+    ],
+    returnStops: [
+      'collakut', 'binak_alia', 'depo_ujit_a', 'naum_prifti', 'haki_gjici',
+      'kristaq_capo', 'kompleksi', 'godina_26', 'godina_15', 'ekonomiku',
+      'filologjiku', 'liceu_artistik', 'posta_1', 'parlamenti', 'dollari',
+      'shkencat_natyres', 'burgu', 'kolegji', 'rruga_vjosa', 'ali_progri',
+      'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
+      'rruga_vjosa', 'burgu', 'stacioni_trenit_p', 'materniteti', 'biblioteka'
     ]
   },
 
-  // ── LINJA 3C: Qendër - Yrshek ──────────────────────────────────────────────
+  // ── LINJA 9B: Jordan Misja – Vilat Gjermane ─────────────────────────────
   {
-    id: 'L3C', name: '3C', label: 'Qendër – Yrshek (Top Channel)', color: '#f59e0b',
+    id: 'L9B', name: '9B', label: 'Jordan Misja – Vilat Gjermane', color: '#9b59b6',
     stops: [
-      'biblioteka', 'pesembedhjete_kateshet', 'banka_shqiperise_a', 'kisha_katolike_a',
-      'poliklinika_9_a', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
-      'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
-      'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel',
-      'radio_planet', 'pasqyra', 'rruga_demokracia', 'xhamia', 'fusha_sportit', '100_vjetori'
+      'biblioteka', 'materniteti', 'stacioni_trenit_p', 'burgu', 'rruga_vjosa',
+      'ali_progri', 'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
+      'rruga_vjosa', 'kolegji', 'burgu', 'shkencat_natyres', 'dollari', 'parlamenti',
+      'posta_1', 'liceu_artistik', 'filologjiku', 'vellezerit_kondi', 'ambasada_palestines',
+      'jup_kastrati', 'bicaket', 'irfan_tershana'
+    ],
+    returnStops: [
+      'irfan_tershana', 'bicaket', 'jup_kastrati', 'ambasada_palestines', 'vellezerit_kondi',
+      'filologjiku', 'liceu_artistik', 'posta_1', 'parlamenti', 'dollari',
+      'shkencat_natyres', 'burgu', 'kolegji', 'rruga_vjosa', 'ali_progri',
+      'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
+      'rruga_vjosa', 'burgu', 'stacioni_trenit_p', 'materniteti', 'biblioteka'
     ]
   },
 
-  // ── LINJA 3B: Kashar (One Way) ──────────────────────────────────────────────
+  // ── LINJA 10A: Tiranë – Materniteti Ri ─────────────────────────────────────────
   {
-    id: 'L3B', name: '3B', label: 'Kashar (Unaza)', color: '#2a9d8f',
+    id: 'L10A', name: '10A', label: 'Tiranë – Materniteti Ri', color: '#43a047',
     stops: [
-      'biblioteka', 'mine_peza', 'asllan_rusi_r', 'pandi_dardha',
-      'pallatet_arabe', 'blloku_gintash', 'sheshi_shqiponja', 'lumi_lane', 'aleksandri_madh',
-      'kryqezimi_kashar', 'tom_plezhra', 'njesia_kashar', 'loni_ligori', 'erzen_lita',
-      'serat', 'mezez', 'ish_xhenio', 'pallati_minierave', 'yzberisht', 'besim_alla',
-      'bego_hoxha', 'joklin_persi', 'komabinati_mishit', 'kthesa_yzberisht', 'tregu',
-      'ura_teknologjike', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'biblioteka'
+      'depo_ujit_b', 'pal_engjelli', 'teqi_tartari', 'ura', 'pasho_hysa',
+      'sabri_koci', 'selman_riza', 'odise_grillo', 'marteniteri_ri_a',
+      'brryli', 'ministria_jashtme', 'atsh', 'biblioteka'
+    ],
+    returnStops: [
+      'biblioteka', 'dollari', 'parlamenti', 'shkolla_baletit', 'sheshi_ali_demi',
+      'ministria_shendetesise', 'leopold_berthold', 'marteniteri_ri',
+      'pasho_hysa', 'ura',
+      'teqi_tartari', 'pal_engjelli', 'depo_ujit_b'
     ]
+  },
+
+  // ── LINJA 10B: Qendër – Mihal Grameno ─────────────────────────────────────────
+  {
+    id: 'L10B', name: '10B', label: 'Qendër – Mihal Grameno', color: '#d1703e',
+    stops: [
+      'biblioteka', 'dollari', 'parlamenti', 'shkolla_baletit', 'njesia_2', 'tregu_elektrik',
+      'mihal_grameno', 'ali_visha', 'abedin_pash_dino', 'kristaq_capo', 'haki_gjici',
+      'naum_prifti', 'depo_ujit_a', 'binak_alia', 'collakut'
+    ],
+    returnStops: [
+      'collakut', 'binak_alia', 'depo_ujit_a', 'naum_prifti', 'haki_gjici', 'kristaq_capo',
+      'abedin_pash_dino', 'ali_visha', 'mihal_grameno', 'tregu_elektrik',
+      'njesia_2', 'shkolla_baletit', 'biblioteka'
+    ]
+  },
+
+  // ── LINJA 10C: Fusha e Aviacionit – Shkozë ──────────────────────────────────
+  {
+    id: 'L10C', name: '10C', label: 'Fusha e Aviacionit – Shkozë', color: '#ad7e4e',
+    stops: [
+      'dhora_leka', 'simon_gjoni', 'helikopteret', 'fusha_aviacionit_stop2', 'konviktet', 'zjarrefiksja',
+      'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'parlamenti', 'shkolla_baletit', 'sheshi_ali_demi',
+      'ministria_shendetesise', 'leopold_berthold', 'marteniteri_ri', 'marketi',
+      'kopshti_56', 'shkoze_stop1'
+    ],
+    returnStops: [
+      'shkoze_stop2', 'selman_riza', 'odise_grillo', 'marteniteri_ri_a', 'brryli',
+      'ministria_jashtme', 'atsh', 'biblioteka',
+      'zjarrefiksja', 'konviktet', 'fusha_aviacionit_stop2', 'helikopteret', 'simon_gjoni', 'dhora_leka'
+    ]
+  },
+
+  // ── LINJA 11: Porcelan – Qëndër ─────────────────────────────────────────────
+  {
+    id: 'L11', name: '11', label: 'Porcelan – Qëndër', color: '#2951dfff',
+    stops: [
+      'biblioteka', 'pazari_ri', 'optika', 'hoxha_tahsim', 'xhamlliku', 'varri_bamit',
+      'oxhaku_l', 'artistike_migjeni_r', 'fresku', 'ikv', 'qendra_shendetesore',
+      'kabina_elektrike', 'hysen_bastari', 'stacioni_shkolles_re', 'thesari'
+    ],
+    returnStops: [
+      'thesari', '17_shkurti', 'bunkart_1', 'aziz_deliiu', 'thoma_filipeu',
+      'fizika_berthamore', 'fresku', 'artistike_migjeni_l', 'oxhaku_l', 'varri_bamit',
+      'xhamlliku', 'hoxha_tahsim', 'optika', 'pazari_ri', 'biblioteka'
+    ]
+  },
+
+  // ── LINJA 12: Uzina Dinamo – Sharrë ────────────────────────────────────────
+  {
+    id: 'L12', name: '12', label: 'Uzina Dinamo – Sharrë', color: '#99d19c',
+    stops: [
+      'uzina_dinamo', 'ura_paskuqanit', 'asllan_lala', 'nenstacioni_elektrik', 'rruga_besa',
+      'frigoriferi', 'siri_kodra_stop1', 'shkencat_natyres', 'banka_e_shqiperise', 'kisha_katolike',
+      'poliklinika_9', 'ndre_mjeda', 'ura_teknologjike',
+      'misto_mame', 'ukt', 'mapo', 'kombinat', 'komisariati_6', 'varrezat_sharre',
+      'kthesa_sharre', 'prush', 'fabrika_tullave', 'karburanti'
+    ],
+    returnStops: [
+      'karburanti', 'fabrika_tullave', 'prush', 'kthesa_sharre', 'varrezat_sharre', 'komisariati_6',
+      'kombinat', 'mapo', 'ukt', 'misto_mame',
+      'ura_teknologjike', 'ndre_mjeda', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'shkencat_natyres', 'siri_kodra_stop2', 'frigoriferi', 'rruga_besa', 'nenstacioni_elektrik',
+      'filip_jano', 'uzina_dinamo'
+    ]
+  },
+
+  // ── LINJA 13A: Tirana e Re Orar ─────────────────────────────────────────────
+  {
+    id: 'L13A', name: '13A', label: 'Tirana e Re Orar', color: '#ba68c8',
+    stops: [
+      'muzeu_kombetar', 'parku_rinia', 'piramida1', 'libri_universitar', 'stadiumi_dinamo_stop2',
+      'vasil_shanto_stop1', 'pallati_me_shigjeta_stop1', 'teodor_keko_stop1', 'kristaq_dollaku_stop1',
+      'nexho_konomi', 'kristaq_mone', 'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a',
+      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz', 'shkencat_natyres', 'muzeu_kombetar'
+    ]
+  },
+
+  // ── LINJA 13B: Tirana e Re Antiorar ──────────────────────────────────────────
+  {
+    id: 'L13B', name: '13B', label: 'Tirana e Re Antiorar', color: '#ba68c8',
+    stops: [
+      'pesembedhjete_kateshet', 'materniteti', 'harry_fultz_orar', 'don_bosko_orar',
+      'asllan_rusi_r', 'pandi_dardha', 'pallatet_arabe', 'blloku_gintash', 'kthesa_kamzes', 'sheshi_shqiponja', 'lumi_lane',
+      'aleksandri_madh', 'kryqezimi_kashar',
+      'kristaq_dollaku_stop2', 'teodor_keko_stop2', 'pallati_me_shigjeta_stop2', 'vasil_shanto_stop2',
+      'komuna_e_parisit_stop2', 'posta_8', 'libri_universitar', 'rektorati', 'piramida2', 'pesembedhjete_kateshet'
+    ]
+  },
+
+  // ── LINJA 15A: Kombinat – Kinostudio ────────────────────────────────────────
+  {
+    id: 'L15A', name: '15A', label: 'Kombinat – Kinostudio', color: '#d35400',
+    stops: [
+      'kinostudio_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
+      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
+      'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
+      'tregu_a', 'kthesa_yzberisht', 'misto_mame', 'ukt', 'mapo', 'kombinat'
+    ],
+    returnStops: [
+      'kombinat', 'mapo', 'ukt', 'misto_mame', 'kthesa_yzberisht', 'tregu', 'ura_teknologjike',
+      'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'kateshet_a',
+      'selvia_stop2', 'medreseja_stop2', 'qsut', 'mjekesia', 'shkolla_bashkuar',
+      'rruga_ura_stop2', 'kinostudio_stop2', 'aleksander_moisiu'
+    ]
+  },
+
+  // ── LINJA 15B: Kombinat – Tufinë ───────────────────────────────────────────
+  {
+    id: 'L15B', name: '15B', label: 'Kombinat – Tufinë', color: '#f39c12',
+    stops: [
+      'rruga_arberit', 'xhamia_stop1', 'varrezat_tufine_stop1', 'instituti_ndertimit_stop1',
+      'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
+      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
+      'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
+      'tregu_a', 'kthesa_yzberisht', 'misto_mame', 'ukt', 'mapo', 'kombinat'
+    ],
+    returnStops: [
+      'kombinat', 'mapo', 'ukt', 'misto_mame', 'kthesa_yzberisht', 'tregu', 'ura_teknologjike',
+      'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'kateshet_a',
+      'selvia_stop2', 'medreseja_stop2', 'qsut', 'mjekesia', 'shkolla_bashkuar',
+      'rruga_ura_stop2', 'ura_gjorices_stop2', 'shefqet_kuka_stop2', 'profarma_stop2',
+      'elez_isufi_stop2', 'instituti_ndertimit_stop2', 'varrezat_tufine_stop2', 'xhamia_stop2', 'rruga_arberit'
+    ]
+  },
+
+  // ── LINJA 16A: Linja e Gjelbër Orar ─────────────────────────────────────────
+  {
+    id: 'L16A', name: '16A', label: 'Linja e Gjelbër Orar', color: '#2ecc71',
+    stops: [],
+    returnStops: []
+  },
+
+  // ── LINJA 16B: Linja e Gjelbër Antiorar ──────────────────────────────────────
+  {
+    id: 'L16B', name: '16B', label: 'Linja e Gjelbër Antiorar', color: '#2ecc71',
+    stops: [],
+    returnStops: []
   },
 ];

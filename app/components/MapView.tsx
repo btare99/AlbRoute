@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { BUS_SHAPES } from '../store/busShapes';
-import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff } from 'lucide-react';
+import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, Moon, Sun, Globe, Bus, Route, MapPin } from 'lucide-react';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
@@ -15,14 +15,13 @@ export default function MapView() {
   const stopMarkersRef = useRef<any[]>([]);
   const routeLinesRef = useRef<any[]>([]);
   const LRef = useRef<any>(null);
-  const userMarkerRef = useRef<any>(null); // U rikthye
+  const userMarkerRef = useRef<any>(null);
+  const routeScrollerRef = useRef<HTMLDivElement>(null);
 
   const [mapReady, setMapReady] = useState(false);
   const [infoPanel, setInfoPanel] = useState<any>(null);
   const [activeRouteFilter, setActiveRouteFilter] = useState<string | null>(null);
   const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'satellite'>('dark');
-  const [isLayersOpen, setIsLayersOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const buses = useStore((s: any) => s.buses);
   const userLocation = useStore((s: any) => s.userLocation);
@@ -31,320 +30,125 @@ export default function MapView() {
   const selectedStop = useStore((s: any) => s.selectedStop);
   const language = useStore((s: any) => s.language);
   const activeTrip = useStore((s: any) => s.activeTrip);
-  const setActiveTrip = useStore((s: any) => s.setActiveTrip);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
+  const startTracking = useStore((s: any) => s.startTracking);
+  const stopTracking = useStore((s: any) => s.stopTracking);
 
-  // Map Settings from Global Store
+  const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
+
+  useEffect(() => {
+    if (!activeTrip) {
+      setWalkingShapes({});
+      return;
+    }
+
+    const fetchShapes = async () => {
+      const newShapes: Record<string, [number, number][]> = {};
+
+      // 1. OSRM për ecjen nga pika e nisjes (nëse ka)
+      const origin = useStore.getState().tripOriginCoords;
+      if (activeTrip.walkingDist > 0 && origin) {
+        const firstStop = BUS_STOPS.find(s => s.name === activeTrip.actualFrom);
+        if (firstStop) {
+          try {
+            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${origin.lng},${origin.lat};${firstStop.lng},${firstStop.lat}?overview=full&geometries=geojson`);
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+              newShapes['origin'] = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
+            }
+          } catch (err) { console.error('OSRM origin fetch error:', err); }
+        }
+      }
+
+      // 2. OSRM për ndërrimet me ecje midis linjave
+      if (activeTrip.legs) {
+        for (let i = 0; i < activeTrip.legs.length; i++) {
+          const leg = activeTrip.legs[i];
+          if (leg.isWalking) {
+            const bStop = leg.boardNodeId ? BUS_STOPS.find(s => s.id === leg.boardNodeId) : BUS_STOPS.find(s => s.name === leg.boardAt);
+            const aStop = leg.alightNodeId ? BUS_STOPS.find(s => s.id === leg.alightNodeId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+            if (bStop && aStop) {
+              try {
+                const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${bStop.lng},${bStop.lat};${aStop.lng},${aStop.lat}?overview=full&geometries=geojson`);
+                const data = await res.json();
+                if (data.routes && data.routes.length > 0) {
+                  newShapes[`walk_${i}`] = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
+                }
+              } catch (err) { console.error(`OSRM walk_${i} fetch error:`, err); }
+            }
+          }
+        }
+      }
+
+      setWalkingShapes(newShapes);
+    };
+
+    fetchShapes();
+  }, [activeTrip]);
+
+  useEffect(() => {
+    startTracking();
+    return () => stopTracking();
+  }, []);
+
   const showStops = useStore((s: any) => s.showStops);
   const showRoutes = useStore((s: any) => s.showRoutes);
   const showBuses = useStore((s: any) => s.showBuses);
   const setShowStops = useStore((s: any) => s.setShowStops);
   const setShowRoutes = useStore((s: any) => s.setShowRoutes);
   const setShowBuses = useStore((s: any) => s.setShowBuses);
-
   const setSelectedStop = useStore((s: any) => s.setSelectedStop);
   const highlightMarkerRef = useRef<any>(null);
 
-  // ── LOGJIKA E FILTRIMIT ───────────────────────────────────────────────────
-  // Nëse kemi një trip aktiv, tregojmë vetëm linjat e përfshira në atë trip
-  const filteredRoutes = activeTrip
-    ? BUS_ROUTES.filter(r => activeTrip.legs.some((leg: any) => leg.route?.id === r.id))
-    : BUS_ROUTES;
-
-  const activeRoute = BUS_ROUTES.find(r => r.id === activeRouteFilter);
-
-  // ── Fly to selected stop and highlight ──
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const L = LRef.current;
-    if (selectedStop && map && L) {
-      // Fly to stop
-      map.flyTo([selectedStop.lat, selectedStop.lng], 17, {
-        duration: 1.5,
-        easeLinearity: 0.25
-      });
-
-      // Remove previous highlight
-      if (highlightMarkerRef.current) {
-        map.removeLayer(highlightMarkerRef.current);
-      }
-
-      // Create highlight marker
-      const pulseHtml = `
-        <div style="position:relative;width:40px;height:40px">
-          <div style="position:absolute;inset:0;background:var(--primary);border-radius:50%;opacity:0.4;animation:pulse-ring 1.5s ease infinite"></div>
-          <div style="position:absolute;inset:10px;background:var(--primary);border:3px solid #fff;border-radius:50%;box-shadow:0 0 15px var(--primary)"></div>
-        </div>`;
-
-      const highlightMarker = L.marker([selectedStop.lat, selectedStop.lng], {
-        icon: L.divIcon({ html: pulseHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }),
-        zIndexOffset: 1000,
-      }).addTo(map);
-
-      highlightMarker.bindPopup(`
-        <div style="text-align:center;padding:5px">
-          <b style="font-size:14px;display:block;margin-bottom:4px">${selectedStop.name}</b>
-          <span style="font-size:11px;color:var(--text-muted)">Stacion i përzgjedhur</span>
-        </div>
-      `, { closeButton: false, offset: [0, -10] }).openPopup();
-
-      highlightMarkerRef.current = highlightMarker;
-
-      // Auto-clear after some time
-      const timer = setTimeout(() => {
-        if (highlightMarkerRef.current) {
-          map.removeLayer(highlightMarkerRef.current);
-          highlightMarkerRef.current = null;
-        }
-        setSelectedStop(null);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [selectedStop, setSelectedStop]);
-
-  // ── Tile URLs ────────────────────────────────────────────────────────────────
   const TILES = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   };
 
-  // ── Map init ─────────────────────────────────────────────────────────────────
+  // ─── EFFECTS ───────────────────────────────────────────────────────────────
+
   useEffect(() => {
+    let isMounted = true;
     const init = async () => {
       if (mapInstanceRef.current || !mapContainerRef.current) return;
-      if ((mapContainerRef.current as any)._leaflet_id) return;
-
       try {
         const L = (await import('leaflet')).default;
         await import('leaflet/dist/leaflet.css');
+        if (!isMounted) return;
         LRef.current = L;
 
-        const map = L.map(mapContainerRef.current, {
+        // Pastro instancën e vjetër nëse ekziston në element
+        const container = mapContainerRef.current;
+        if (container && (container as any)._leaflet_id) {
+          (container as any)._leaflet_id = null;
+        }
+
+        const map = L.map(container, {
           zoomControl: false,
           attributionControl: false,
-          preferCanvas: true, // Performancë më e mirë me shumë elementë
+          preferCanvas: true
         }).setView(TIRANA_CENTER, DEFAULT_ZOOM);
 
-        // Tile layer
         const tileLayer = L.tileLayer(TILES.dark, { maxZoom: 19 });
         tileLayer.addTo(map);
         (map as any)._tileLayer = tileLayer;
-
-        L.control.attribution({ prefix: '© OpenStreetMap | Harta Urbane Tiranë' }).addTo(map);
-
         mapInstanceRef.current = map;
         setMapReady(true);
-      } catch (e) {
-        console.error('Gabim gjatë inicializimit të hartës:', e);
-      }
+      } catch (e) { console.error('Error init map:', e); }
     };
-
     init();
     return () => {
+      isMounted = false;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-        busMarkersRef.current = {};
-        stopMarkersRef.current = [];
-        routeLinesRef.current = [];
+      } else if (mapContainerRef.current && (mapContainerRef.current as any)._leaflet_id) {
+        (mapContainerRef.current as any)._leaflet_id = null;
       }
     };
-  }, []); // Run only once
+  }, []);
 
-  // ── Vizatimi i Stacioneve (Stops) ───────────────────────────────────────────
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const L = LRef.current;
-    if (!map || !L || !mapReady) return;
-
-    // Pastro stacionet ekzistuese
-    stopMarkersRef.current.forEach(m => map.removeLayer(m));
-    stopMarkersRef.current = [];
-
-    if (!showStops) return;
-
-    BUS_STOPS.forEach(stop => {
-      const stopHtml = `
-        <div style="
-          background: #1a73e8; 
-          width: 18px; 
-          height: 18px; 
-          border-radius: 4px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          border: 1.5px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          cursor: pointer;
-        ">
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="white">
-            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-          </svg>
-        </div>
-      `;
-
-      const marker = L.marker([stop.lat, stop.lng], {
-        icon: L.divIcon({
-          html: stopHtml,
-          className: '',
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
-        }),
-        zIndexOffset: 100,
-      });
-
-      const stoppingLines = BUS_ROUTES.filter(r =>
-        r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id))
-      );
-
-      const linesHtml = stoppingLines.length > 0
-        ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
-            ${stoppingLines.map(rl =>
-          `<span style="background:${rl.color};color:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,0.2)">${rl.name}</span>`
-        ).join('')}
-           </div>`
-        : '';
-
-      marker.bindTooltip(`
-        <div style="padding:4px">
-          <div style="font-weight:700;font-size:14px;color:#1e293b">${stop.name}</div>
-          ${linesHtml}
-        </div>`, {
-        permanent: false,
-        direction: 'top',
-        offset: [0, -8],
-        className: 'station-tooltip'
-      });
-
-      marker.addTo(map);
-      stopMarkersRef.current.push(marker);
-    });
-  }, [showStops, mapReady]);
-
-
-
-  // ── Vizatimi i linjave (Routes) ─────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const L = LRef.current;
-    if (!map || !L || !mapReady) return;
-
-    // Pastro linjat ekzistuese
-    routeLinesRef.current.forEach(r => {
-      map.removeLayer(r.line);
-      if (r.shadow) map.removeLayer(r.shadow);
-      if (r.arrows) r.arrows.forEach((a: any) => map.removeLayer(a));
-    });
-    routeLinesRef.current = [];
-
-    if (!showRoutes) return;
-
-    // Helper: Gjen pikën më të afërt në shape
-    const findClosestIndex = (coords: [number, number][], point: [number, number]) => {
-      let minIdx = 0;
-      let minDist = Infinity;
-      coords.forEach((coord, i) => {
-        const d = Math.sqrt(Math.pow(coord[0] - point[0], 2) + Math.pow(coord[1] - point[1], 2));
-        if (d < minDist) { minDist = d; minIdx = i; }
-      });
-      return minIdx;
-    };
-
-    if (activeTrip) {
-      activeTrip.legs.forEach((leg: any) => {
-        const route = BUS_ROUTES.find(r => r.id === leg.route.id);
-        if (!route) return;
-        const startStop = BUS_STOPS.find(s => s.name === leg.boardAt);
-        const endStop = BUS_STOPS.find(s => s.name === leg.alightAt);
-        if (!startStop || !endStop) return;
-
-        const dirs = ['0', '1'];
-        let bestCoords: [number, number][] | null = null;
-        let shortestDist = Infinity;
-
-        dirs.forEach(dir => {
-          const fullCoords = (BUS_SHAPES[`${route.id}_${dir}` as keyof typeof BUS_SHAPES] || []) as [number, number][];
-          if (fullCoords.length === 0) return;
-          const idx1 = findClosestIndex(fullCoords, [startStop.lat, startStop.lng]);
-          const idx2 = findClosestIndex(fullCoords, [endStop.lat, endStop.lng]);
-          let segment = idx1 <= idx2 ? fullCoords.slice(idx1, idx2 + 1) : fullCoords.slice(idx2, idx1 + 1).reverse();
-          if (segment.length >= 2) {
-            const d1 = Math.sqrt(Math.pow(segment[0][0] - startStop.lat, 2) + Math.pow(segment[0][1] - startStop.lng, 2));
-            const d2 = Math.sqrt(Math.pow(segment[segment.length - 1][0] - endStop.lat, 2) + Math.pow(segment[segment.length - 1][1] - endStop.lng, 2));
-            if (d1 + d2 < shortestDist) { shortestDist = d1 + d2; bestCoords = segment; }
-          }
-        });
-
-        if (bestCoords) {
-          const coords = bestCoords as [number, number][];
-          const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: 0.15, interactive: false }).addTo(map);
-          const line = L.polyline(coords, { color: route.color, weight: 4.5, opacity: 0.95, lineCap: 'round' }).addTo(map);
-          const arrows: any[] = [];
-          for (let i = 0; i < coords.length - 1; i += 8) {
-            const p1 = coords[i]; const p2 = coords[i + 1];
-            const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
-            const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
-            const arrow = L.marker(p1, { 
-              icon: L.divIcon({
-                className: 'route-arrow',
-                html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 20px; font-weight:900; text-shadow: 0 0 3px #fff; pointer-events: none;">➤</div>`,
-                iconSize: [20, 20], iconAnchor: [10, 10]
-              }), 
-              interactive: false, zIndexOffset: 400 
-            }).addTo(map);
-            arrows.push(arrow);
-          }
-          line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b><br/>${leg.boardAt} ➔ ${leg.alightAt}`, { sticky: true });
-          routeLinesRef.current.push({ line, shadow, arrows, routeId: route.id });
-        }
-      });
-    } else {
-      filteredRoutes.forEach((route) => {
-        const dirs = ['0', '1'];
-        dirs.forEach(dir => {
-          const shapeKey = `${route.id}_${dir}`;
-          let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-          if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
-          if (coords.length < 2) return;
-          
-          const isActive = !activeRouteFilter || route.id === activeRouteFilter;
-          const shadow = L.polyline(coords, { color: '#000', weight: 6, opacity: isActive ? 0.15 : 0.05, interactive: false }).addTo(map);
-          const line = L.polyline(coords, { 
-            color: route.color, 
-            weight: isActive ? 3.5 : 2, 
-            opacity: isActive ? 0.85 : 0.2, 
-            lineCap: 'round' 
-          }).addTo(map);
-          
-          const arrows: any[] = [];
-          if (isActive) {
-            for (let i = 2; i < coords.length - 2; i += 10) {
-              const p1 = coords[i]; const p2 = coords[i + 1];
-              const dLat = p2[0] - p1[0]; const dLng = p2[1] - p1[1];
-              const angle = Math.atan2(dLat, dLng) * (180 / Math.PI);
-              const arrow = L.marker(p1, { 
-                icon: L.divIcon({
-                  className: 'route-arrow',
-                  html: `<div style="transform: rotate(${-angle}deg); color: ${route.color}; font-size: 18px; line-height:1; font-weight:900; text-shadow: 0 0 3px #fff; pointer-events: none;">➤</div>`,
-                  iconSize: [18, 18], iconAnchor: [9, 9]
-                }), 
-                interactive: false, zIndexOffset: 400 
-              }).addTo(map);
-              arrows.push(arrow);
-            }
-          }
-          line.bindTooltip(`<b>${language === 'al' ? 'Linja' : language === 'it' ? 'Linea' : 'Line'} ${route.name}</b>`, { sticky: true });
-          routeLinesRef.current.push({ line, shadow, arrows, routeId: route.id });
-        });
-      });
-    }
-  }, [activeTrip, activeRouteFilter, showRoutes, language, mapReady]);
-
-
-
-  // ── Ndrysho stilin e hartës ──────────────────────────────────────────────────
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
@@ -356,40 +160,212 @@ export default function MapView() {
     (map as any)._tileLayer = newTile;
   }, [mapStyle]);
 
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
+    stopMarkersRef.current.forEach(m => map.removeLayer(m));
+    stopMarkersRef.current = [];
+    if (!showStops) return;
 
+    BUS_STOPS.forEach(stop => {
+      const stopHtml = `<div style="background:#1a73e8;width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1.5px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;"><svg viewBox="0 0 24 24" width="11" height="11" fill="white"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg></div>`;
+      const marker = L.marker([stop.lat, stop.lng], {
+        icon: L.divIcon({ html: stopHtml, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }),
+        zIndexOffset: 100
+      });
 
-  // ── Përditëso vendndodhjen e përdoruesit ─────────────────────────────────────
+      const stoppingLines = BUS_ROUTES.filter(r => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
+      const linesHtml = stoppingLines.map(l => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
+
+      marker.bindTooltip(`
+        <div style="padding:4px; border-radius:0; min-width:120px;">
+          <div style="font-weight:800;margin-bottom:6px;font-size:13px;color:#000;border-bottom:1px solid #eee;padding-bottom:2px;">${stop.name}</div>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:2px;width:100%;">${linesHtml}</div>
+        </div>`, { direction: 'top', offset: [0, -8], className: 'square-tooltip' });
+
+      marker.addTo(map);
+      stopMarkersRef.current.push(marker);
+    });
+  }, [showStops, mapReady]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
+    routeLinesRef.current.forEach(r => { map.removeLayer(r.line); });
+    routeLinesRef.current = [];
+    if (!showRoutes) return;
+
+    if (activeTrip) {
+      // 1. Draw Walking Path
+      const tripOriginCoords = useStore.getState().tripOriginCoords;
+      if (activeTrip.walkingDist > 0 && tripOriginCoords) {
+        const firstStop = BUS_STOPS.find(s => s.name === activeTrip.actualFrom);
+        if (firstStop) {
+          const walkCoords: [number, number][] = walkingShapes['origin'] || [
+            [tripOriginCoords.lat, tripOriginCoords.lng],
+            [firstStop.lat, firstStop.lng]
+          ];
+          const walkLine = L.polyline(walkCoords, {
+            color: '#10b981', // green for walking
+            weight: 5,
+            dashArray: '8, 8', // dashed/dotted line
+            opacity: 0.9
+          }).addTo(map);
+          routeLinesRef.current.push({ line: walkLine, routeId: 'walk' });
+        }
+      }
+
+      // 2. Draw Legs
+      activeTrip.legs.forEach((leg: any, idx: number) => {
+        if (leg.isWalking) {
+          const bStop = leg.boardNodeId ? BUS_STOPS.find(s => s.id === leg.boardNodeId) : BUS_STOPS.find(s => s.name === leg.boardAt);
+          const aStop = leg.alightNodeId ? BUS_STOPS.find(s => s.id === leg.alightNodeId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+          if (bStop && aStop) {
+            const walkCoords = walkingShapes[`walk_${idx}`] || [
+              [bStop.lat, bStop.lng],
+              [aStop.lat, aStop.lng]
+            ];
+            const transferLine = L.polyline(walkCoords, {
+              color: '#10b981',
+              weight: 5,
+              dashArray: '8, 8',
+              opacity: 0.9
+            }).addTo(map);
+            routeLinesRef.current.push({ line: transferLine, routeId: `transfer_walk_${idx}` });
+          }
+          return;
+        }
+
+        const route = leg.route;
+        if (!route) return;
+
+        let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
+        let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
+
+        const boardStop = boardStopId ? BUS_STOPS.find(s => s.id === boardStopId) : BUS_STOPS.find(s => s.name === leg.boardAt);
+        const alightStop = alightStopId ? BUS_STOPS.find(s => s.id === alightStopId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+
+        let legCoords: [number, number][] = [];
+        let sliced = false;
+
+        // Try to slice the shape from the start stop to end stop
+        if (boardStop && alightStop) {
+          const dirs = ['0', '1'];
+          for (const dir of dirs) {
+            const shapeKey = `${route.id}_${dir}`;
+            let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+            if (shapeCoords.length === 0 && dir === '0') shapeCoords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+
+            if (shapeCoords.length > 0) {
+              let boardIdx = 0, alightIdx = 0;
+              let minDistBoard = Infinity, minDistAlight = Infinity;
+
+              shapeCoords.forEach((pt, idx) => {
+                const db = Math.pow(pt[0] - boardStop.lat, 2) + Math.pow(pt[1] - boardStop.lng, 2);
+                if (db < minDistBoard) { minDistBoard = db; boardIdx = idx; }
+
+                const da = Math.pow(pt[0] - alightStop.lat, 2) + Math.pow(pt[1] - alightStop.lng, 2);
+                if (da < minDistAlight) { minDistAlight = da; alightIdx = idx; }
+              });
+
+              // If direction makes sense
+              if (boardIdx <= alightIdx) {
+                legCoords = shapeCoords.slice(boardIdx, alightIdx + 1);
+                sliced = true;
+                break;
+              } else if (Math.abs(boardIdx - alightIdx) > 0) {
+                // If it's reverse on this shape but we don't have the reverse shape, slice and reverse
+                legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse();
+                sliced = true;
+              }
+            }
+          }
+        }
+
+        // Fallback to direct lines between stops using exact IDs
+        if (!sliced || legCoords.length < 2) {
+          if (leg.stopIds) {
+            legCoords = leg.stopIds.map((id: string) => {
+              const st = BUS_STOPS.find(s => s.id === id);
+              return st ? [st.lat, st.lng] : null;
+            }).filter(Boolean) as [number, number][];
+          } else {
+            legCoords = leg.stops.map((name: string) => {
+              const st = BUS_STOPS.find(s => s.name === name);
+              return st ? [st.lat, st.lng] : null;
+            }).filter(Boolean) as [number, number][];
+          }
+        }
+
+        if (legCoords.length >= 2) {
+          const line = L.polyline(legCoords, {
+            color: route.color,
+            weight: 6,
+            opacity: 1
+          }).addTo(map);
+          routeLinesRef.current.push({ line, routeId: route.id });
+        }
+      });
+
+    } else {
+      // Draw All Routes (Default)
+      BUS_ROUTES.forEach((route) => {
+        const dirs = ['0', '1'];
+        dirs.forEach(dir => {
+          const shapeKey = `${route.id}_${dir}`;
+          let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+          if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+          if (coords.length < 2) return;
+          const isActive = !activeRouteFilter || route.id === activeRouteFilter;
+          const line = L.polyline(coords, { color: route.color, weight: isActive ? 4 : 2, opacity: isActive ? 0.9 : 0.2 }).addTo(map);
+          routeLinesRef.current.push({ line, routeId: route.id });
+        });
+      });
+    }
+  }, [activeTrip, activeRouteFilter, showRoutes, mapReady, walkingShapes]);
+
+  // ── USER LOCATION MARKER ──────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
 
-    const pulseHtml = `
-      <div style="position:relative;width:20px;height:20px">
-        <div style="position:absolute;inset:0;background:#10b981;border-radius:50%;opacity:0.3;animation:pulse-ring 2s ease infinite"></div>
-        <div style="position:absolute;inset:3px;background:#10b981;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(16,185,129,0.8)"></div>
-      </div>`;
+    const html = `
+    <div style="position:relative;width:24px;height:24px">
+      <div style="
+        position:absolute;inset:0;border-radius:50%;
+        background:rgba(59,130,246,0.15);
+        animation:pulse-ring 2.5s ease-out infinite
+      "></div>
+      <div style="
+        position:absolute;inset:5px;border-radius:50%;
+        background:#3b82f6;
+        border:2.5px solid #fff;
+        box-shadow:0 0 0 1px rgba(59,130,246,0.4)
+      "></div>
+    </div>
+  `;
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
     } else {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: L.divIcon({ html: pulseHtml, className: '', iconSize: [20, 20], iconAnchor: [10, 10] }),
+        icon: L.divIcon({ html, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }),
         zIndexOffset: 999,
-      })
-        .bindTooltip('<b>Vendndodhja juaj</b>', { permanent: false, direction: 'top' })
-        .addTo(map);
+      }).addTo(map);
     }
   }, [userLocation, mapReady]);
 
-  // ── Përditëso autobuzët ──────────────────────────────────────────────────────
+
+  // ── BUS MARKERS ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
 
     buses.forEach((bus: any) => {
-      // Filtro sipas linjës aktive dhe shikueshmërisë
       if (!showBuses) {
         if (busMarkersRef.current[bus.id]) {
           map.removeLayer(busMarkersRef.current[bus.id]);
@@ -398,498 +374,445 @@ export default function MapView() {
         return;
       }
 
-      const isActive = !activeRouteFilter || bus.routeId === activeRouteFilter;
-      const opacity = isActive ? 1 : 0.2;
+      let isActive = true;
+      if (activeTrip) {
+        isActive = activeTrip.legs.some((leg: any) => leg.route?.id === bus.routeId);
+      } else if (activeRouteFilter) {
+        isActive = bus.routeId === activeRouteFilter;
+      }
 
-      const load = bus.passengerLoad;
-      const loadColor = load > 40 ? '#ef4444' : load > 25 ? '#f59e0b' : '#10b981';
-      const loadBar = Math.round((load / 50) * 10);
+      const load = bus.passengerLoad ?? 0;
+      const loadPct = Math.min(100, Math.round((load / 50) * 100));
+      const loadColor = load > 40 ? '#ef4444' : load > 25 ? '#f59e0b' : '#22c55e';
+      const opacity = isActive ? 1 : 0.18;
+      const label = (bus.routeName || bus.routeId.replace('L', '')).toString();
 
-      const html = `
+      // Marker pill
+      const markerHtml = `
+      <div style="
+        display:inline-flex;flex-direction:column;align-items:center;
+        opacity:${opacity};transition:opacity 0.3s;
+      ">
         <div style="
+          background:${bus.routeColor};color:#fff;
+          padding:5px 9px;border-radius:8px;
+          font-size:11px;font-weight:700;letter-spacing:0.04em;
+          white-space:nowrap;line-height:1;
+          box-shadow:0 2px 8px rgba(0,0,0,0.35),0 0 0 1.5px rgba(255,255,255,0.25) inset;
           position:relative;
-          background:${bus.routeColor};
-          color:#fff;
-          padding:3px 7px;
-          border-radius:6px;
-          font-size:11px;
-          font-weight:800;
-          box-shadow:0 2px 8px rgba(0,0,0,0.6);
-          cursor:pointer;
-          opacity:${opacity};
-          letter-spacing:0.5px;
-          white-space:nowrap;
-          border: 1.5px solid rgba(255,255,255,0.4);
         ">
-          ${bus.routeName || bus.routeId.replace('L', '')}
-          <div style="position:absolute;bottom:-3px;left:2px;right:2px;height:3px;background:rgba(0,0,0,0.3);border-radius:2px">
-            <div style="height:100%;width:${loadBar * 10}%;background:${loadColor};border-radius:2px"></div>
+          ${label}
+          <div style="
+            position:absolute;bottom:0;left:6px;right:6px;height:2.5px;
+            background:rgba(0,0,0,0.18);border-radius:0 0 6px 6px;overflow:hidden;
+          ">
+            <div style="height:100%;width:${loadPct}%;background:${loadColor};border-radius:inherit;transition:width 0.4s"></div>
           </div>
-        </div>`;
+        </div>
+        <div style="
+          width:0;height:0;
+          border-left:5px solid transparent;
+          border-right:5px solid transparent;
+          border-top:5px solid ${bus.routeColor};
+          margin-top:-1px;
+          filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+        "></div>
+      </div>
+    `;
+
+      // Tooltip card
+      const loadLabel = load > 40 ? 'Plot' : load > 25 ? 'Mesatar' : 'Lirë';
+      const loadBadgeBg = load > 40 ? '#fef2f2' : load > 25 ? '#fffbeb' : '#f0fdf4';
+      const loadBadgeColor = load > 40 ? '#dc2626' : load > 25 ? '#d97706' : '#16a34a';
+
+      const tooltipHtml = `
+      <div style="
+        min-width:180px;padding:12px;
+        font-family:system-ui,sans-serif;
+        background:#fff;border-radius:12px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.12);
+        border:1px solid rgba(0,0,0,0.06);
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div style="
+              width:10px;height:10px;border-radius:50%;
+              background:${bus.routeColor};flex-shrink:0
+            "></div>
+            <span style="font-size:13px;font-weight:700;color:#0f172a">Linja ${bus.routeName}</span>
+          </div>
+          <span style="
+            font-size:9px;font-weight:700;letter-spacing:0.08em;
+            background:#ecfdf5;color:#059669;
+            padding:3px 7px;border-radius:20px;
+          ">● LIVE</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#64748b">Stacioni radhës</span>
+            <span style="font-size:11px;font-weight:600;color:#0f172a">${bus.nextStop || '—'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#64748b">Shpejtësia</span>
+            <span style="font-size:11px;font-weight:600;color:#0f172a">${Math.round(bus.speed)} km/h</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#64748b">Ngarkesa</span>
+            <span style="
+              font-size:10px;font-weight:700;
+              background:${loadBadgeBg};color:${loadBadgeColor};
+              padding:2px 8px;border-radius:20px;
+            ">${load}/50 · ${loadLabel}</span>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;height:4px;background:#f1f5f9;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${loadPct}%;background:${loadColor};border-radius:4px;transition:width 0.4s"></div>
+        </div>
+      </div>
+    `;
 
       if (busMarkersRef.current[bus.id]) {
-        busMarkersRef.current[bus.id].setLatLng([bus.lat, bus.lng]);
-        busMarkersRef.current[bus.id].setIcon(L.divIcon({
-          html,
-          className: '',
-          iconSize: [36, 22],
-          iconAnchor: [18, 11],
-        }));
+        const marker = busMarkersRef.current[bus.id];
+        marker.setLatLng([bus.lat, bus.lng]);
+        marker.setIcon(L.divIcon({ html: markerHtml, className: '', iconSize: [44, 36], iconAnchor: [22, 36] }));
+        marker.setTooltipContent(tooltipHtml);
       } else {
         const marker = L.marker([bus.lat, bus.lng], {
-          icon: L.divIcon({ html, className: '', iconSize: [36, 22], iconAnchor: [18, 11] }),
+          icon: L.divIcon({ html: markerHtml, className: '', iconSize: [44, 36], iconAnchor: [22, 36] }),
           zIndexOffset: 500,
         });
-        marker.bindTooltip(`
-          <div style="min-width:160px">
-            <b style="font-size:13px">Linja ${bus.routeName}</b><br>
-            <span style="font-size:11px;opacity:0.8">${bus.routeLabel}</span><br>
-            <span style="font-size:11px">▶ ${bus.nextStop}</span><br>
-            <span style="font-size:11px">👥 ${bus.passengerLoad}/50 · ${Math.round(bus.speed)} km/h</span>
-            ${bus.delay > 0 ? `<br><span style="color:#f59e0b;font-size:11px">⚠ ${bus.delay} min vonesë</span>` : ''}
-          </div>`, {
-          direction: 'top',
-          offset: [0, -12],
+        marker.bindTooltip(tooltipHtml, {
+          direction: 'top', offset: [0, -38],
+          className: 'bus-tooltip-clean', opacity: 1,
         });
-        marker.on('click', () => {
-          setInfoPanel(bus);
-          setSelectedBus(bus);
-        });
+        marker.on('click', () => { setInfoPanel(bus); setSelectedBus(bus); });
         marker.addTo(map);
         busMarkersRef.current[bus.id] = marker;
       }
     });
-  }, [buses, mapReady, activeRouteFilter, setSelectedBus, showBuses]);
+  }, [buses, mapReady, activeRouteFilter, showBuses, activeTrip]);
 
-  // ── Kontrolle hartë ──────────────────────────────────────────────────────────
-  const zoomIn = () => mapInstanceRef.current?.zoomIn();
-  const zoomOut = () => mapInstanceRef.current?.zoomOut();
-  const centerMap = () => {
-    fetchUserLocation();
-    mapInstanceRef.current?.setView([userLocation.lat, userLocation.lng], 16, { animate: true });
+
+  // ── SELECTED STOP HIGHLIGHT ───────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!selectedStop || !map || !L) return;
+
+    map.flyTo([selectedStop.lat, selectedStop.lng], 17, { duration: 1.2, easeLinearity: 0.35 });
+
+    if (highlightMarkerRef.current) map.removeLayer(highlightMarkerRef.current);
+
+    const pulseHtml = `
+    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+      <div style="
+        position:absolute;inset:0;border-radius:50%;
+        background:rgba(99,102,241,0.12);
+        animation:pulse-ring 1.8s ease-out infinite
+      "></div>
+      <div style="
+        position:absolute;inset:8px;border-radius:50%;
+        background:rgba(99,102,241,0.18);
+        animation:pulse-ring 1.8s ease-out 0.4s infinite
+      "></div>
+      <div style="
+        width:16px;height:16px;border-radius:50%;
+        background:#6366f1;
+        border:3px solid #fff;
+        box-shadow:0 0 0 2px rgba(99,102,241,0.5),0 4px 12px rgba(99,102,241,0.4);
+        position:relative;z-index:2;
+      "></div>
+    </div>
+  `;
+
+    highlightMarkerRef.current = L.marker([selectedStop.lat, selectedStop.lng], {
+      icon: L.divIcon({ html: pulseHtml, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }),
+      zIndexOffset: 1000,
+    }).addTo(map);
+
+    const timer = setTimeout(() => setSelectedStop(null), 5000);
+    return () => clearTimeout(timer);
+  }, [selectedStop]);
+
+  const scrollRoutes = (direction: 'left' | 'right') => {
+    if (routeScrollerRef.current) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      routeScrollerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
-      {/* ── Harta ── */}
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+    <div className="full-screen-map">
+      <div ref={mapContainerRef} className="map-container" />
 
-      {/* ── Legenda ── */}
-      <div className="card desktop-only" style={{
-        position: 'absolute', bottom: 16, left: 16, zIndex: 1000,
-        padding: '8px 12px',
-        background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',
-        fontSize: 10, display: 'flex', flexDirection: 'column', gap: 4,
-      }}>
-        <div style={{ fontWeight: 700, marginBottom: 2, fontSize: 11 }}>Legjenda</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 16, height: 3, background: '#60a5fa', borderRadius: 2 }} />
-          <span style={{ color: 'var(--text-muted)' }}>Linja urbane</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 12, height: 12, background: '#1a73e8', borderRadius: 3, border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 7, color: '#fff' }}>🚌</div>
-          </div>
-          <span style={{ color: 'var(--text-muted)' }}>Stacion</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%' }} />
-          <span style={{ color: 'var(--text-muted)' }}>Vendndodhja juaj</span>
-        </div>
-      </div>
-
-      {/* ── CSS Animacione ── */}
-      <style>{`
-        @keyframes pulse-ring {
-          0% { transform: scale(0.5); opacity: 0.8; }
-          100% { transform: scale(2.5); opacity: 0; }
-        }
-        @media (max-width: 900px) {
-          .desktop-only { display: none !important; }
-          .mobile-only { display: flex !important; }
-          .mobile-only-grid { display: grid !important; }
-        }
-        @media (min-width: 901px) {
-          .mobile-only, .mobile-only-grid { display: none !important; }
-        }
-      `}</style>
-
-      {/* ── Desktop Header ── */}
-      <div className="desktop-only" style={{
-        position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1000,
-        display: 'flex', gap: 10, alignItems: 'center',
-      }}>
-        <div className="card" style={{
-          flex: 1, padding: '10px 18px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          backdropFilter: 'blur(12px)',
-          background: 'rgba(15,23,42,0.85)',
-        }}>
-          <div style={{
-            width: 8, height: 8, background: 'var(--success)',
-            borderRadius: '50%', animation: 'pulse 2s infinite',
-          }} />
-          <span style={{ fontSize: 14, fontWeight: 700 }}>
-            Harta e Linjave Urbane – Tiranë
-          </span>
-          <span style={{
-            marginLeft: 'auto', fontSize: 11,
-            color: 'var(--text-muted)',
-          }}>
-            {BUS_ROUTES.length} linja · {BUS_STOPS.length} stacione
-          </span>
-        </div>
-      </div>
-
-      {/* ── Header bar ── */}
-      <div className="desktop-only" style={{
-        position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1000,
-        display: 'flex', gap: 10, alignItems: 'center',
-      }}>
-        <div className="card" style={{
-          flex: 1, padding: '10px 18px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          backdropFilter: 'blur(12px)',
-          background: 'rgba(15,23,42,0.85)',
-        }}>
-          <div style={{
-            width: 8, height: 8, background: 'var(--success)',
-            borderRadius: '50%', animation: 'pulse 2s infinite',
-          }} />
-          <span style={{ fontSize: 14, fontWeight: 700 }}>
-            Harta e Linjave Urbane – Tiranë
-          </span>
-          <span style={{
-            marginLeft: 'auto', fontSize: 11,
-            color: 'var(--text-muted)',
-          }}>
-            {BUS_ROUTES.length} linja · {BUS_STOPS.length} stacione
-          </span>
-        </div>
-      </div>
-
-      {/* ── Map Controls Panel (Right) ── */}
-      <div className="map-controls-panel desktop-only" style={{
-        position: 'absolute', top: 20, right: 16, zIndex: 1000,
-        display: 'flex', flexDirection: 'column', gap: 12
-      }}>
-        {/* Navigation Group (Desktop Only) */}
-        <div className="glass desktop-controls" style={{
-          display: 'flex', flexDirection: 'column', borderRadius: 12, overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
-        }}>
-          <button onClick={zoomIn} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>+</button>
-          <button onClick={zoomOut} style={{ width: 42, height: 42, color: '#fff', fontSize: 20, borderBottom: '1px solid var(--border)' }}>−</button>
-        </div>
-
-        {/* Locate Button (Always Visible) */}
-        <button onClick={centerMap} className="glass" style={{
-          width: 44, height: 44, color: 'var(--primary)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
-        }}>
-          <Locate size={20} />
-        </button>
-
-        {/* Visibility & Styles Groups (Desktop Only) */}
-        <div className="desktop-controls" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="glass" style={{
-            padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
-          }}>
-            <button onClick={() => setShowStops(!showStops)} style={{
-              width: 34, height: 34, borderRadius: 8, fontSize: 16,
-              background: showStops ? 'rgba(59,130,246,0.2)' : 'transparent',
-              color: showStops ? '#3b82f6' : 'var(--text-muted)'
-            }}>🚏</button>
-            <button onClick={() => setShowRoutes(!showRoutes)} style={{
-              width: 34, height: 34, borderRadius: 8, fontSize: 16,
-              background: showRoutes ? 'rgba(239,68,68,0.2)' : 'transparent',
-              color: showRoutes ? '#ef4444' : 'var(--text-muted)'
-            }}>🛤️</button>
-            <button onClick={() => setShowBuses(!showBuses)} style={{
-              width: 34, height: 34, borderRadius: 8, fontSize: 16,
-              background: showBuses ? 'rgba(245,158,11,0.2)' : 'transparent',
-              color: showBuses ? '#f59e0b' : 'var(--text-muted)'
-            }}>🚌</button>
-          </div>
-
-          <div className="glass" style={{
-            padding: 4, display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid var(--border)'
-          }}>
-            {(['dark', 'light', 'satellite'] as const).map(s => (
-              <button key={s} onClick={() => setMapStyle(s)} style={{
-                width: 34, height: 34, borderRadius: 8,
-                background: mapStyle === s ? 'var(--primary)' : 'transparent',
-                color: mapStyle === s ? '#fff' : 'var(--text-muted)',
-                fontSize: 14
-              }}>
-                {s === 'dark' ? '🌙' : s === 'light' ? '☀️' : '🛰'}
-              </button>
-            ))}
+      {/* ── TOP OVERLAY: BRANDING ── */}
+      <div className="overlay-top-left">
+        <div className="glass-panel main-brand-panel">
+          <div className="brand-dot animate-pulse" />
+          <div className="brand-info">
+            <h1>Urbani Im</h1>
+            <p>Tiranë Live Map</p>
           </div>
         </div>
       </div>
 
-      {/* ── Line Filters (Bottom Bar) ── */}
-      <div className="custom-scrollbar desktop-only" style={{
-        position: 'absolute', bottom: 20, left: 16, right: 16, zIndex: 1000,
-        overflowX: 'auto', display: 'flex', gap: 8, padding: '10px 0',
-        maskImage: 'linear-gradient(to right, black 85%, transparent)',
-        WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent)',
-      }}>
-        <button
-          onClick={() => setActiveRouteFilter(null)}
-          style={{
-            padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-            cursor: 'pointer', border: '1px solid',
-            borderColor: !activeRouteFilter ? 'var(--primary)' : 'var(--border)',
-            background: !activeRouteFilter ? 'rgba(59,130,246,0.15)' : 'rgba(15,23,42,0.85)',
-            color: !activeRouteFilter ? 'var(--primary)' : 'var(--text-muted)',
-            backdropFilter: 'blur(8px)',
-            whiteSpace: 'nowrap',
-            transition: 'var(--transition)',
-          }}>
-          {language === 'al' ? 'Të gjitha' : 'All'}
-        </button>
-        {BUS_ROUTES.map(route => (
+      {/* ── RIGHT OVERLAY: ALL CONTROLS IN ONE COLUMN ── */}
+      <div className="overlay-right-center">
+        <div className="controls-column">
+          {/* Layer Selector - Vertical */}
+          <div className="glass-panel vertical-group">
+            <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title="Dark Mode"><Moon size={20} /></button>
+            <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title="Light Mode"><Sun size={20} /></button>
+            <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title="Satellite"><Globe size={20} /></button>
+          </div>
+
+          <div className="v-spacer" />
+
+          {/* Zoom Controls */}
+          <div className="glass-panel vertical-group">
+            <button onClick={() => mapInstanceRef.current?.zoomIn()}><ZoomIn size={20} /></button>
+            <button onClick={() => mapInstanceRef.current?.zoomOut()}><ZoomOut size={20} /></button>
+          </div>
+
+          <div className="v-spacer" />
+
+          {/* Locate Button */}
           <button
-            key={route.id}
-            onClick={() => setActiveRouteFilter(activeRouteFilter === route.id ? null : route.id)}
-            style={{
-              padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-              cursor: 'pointer', border: '1px solid',
-              borderColor: activeRouteFilter === route.id ? route.color : 'transparent',
-              background: activeRouteFilter === route.id ? `${route.color}33` : 'rgba(15,23,42,0.75)',
-              color: activeRouteFilter === route.id ? route.color : 'var(--text-muted)',
-              backdropFilter: 'blur(8px)',
-              whiteSpace: 'nowrap',
-              transition: 'var(--transition)',
-            }}>
-            {route.name}
+            className="glass-panel action-btn locate-btn"
+            onClick={() => { fetchUserLocation(); mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 16); }}
+          >
+            <Locate size={22} />
           </button>
-        ))}
+
+          <div className="v-spacer" />
+
+          {/* Visibility Toggles */}
+          <div className="glass-panel vertical-group toggles">
+            <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title="Stops"><MapPin size={20} /></button>
+            <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title="Buses"><Bus size={20} /></button>
+            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title="Routes"><Route size={20} /></button>
+          </div>
+        </div>
       </div>
 
-      {/* ── Info panel autobuzi ── */}
-      {infoPanel && (
-        <div className="card animate-slide" style={{
-          position: 'absolute', bottom: 160, right: 16, zIndex: 1000,
-          width: 270, backdropFilter: 'blur(16px)',
-          background: 'rgba(15,23,42,0.92)',
-          border: `1px solid ${infoPanel.routeColor}55`,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                background: infoPanel.routeColor,
-                color: '#fff', fontWeight: 800, fontSize: 13,
-                padding: '3px 10px', borderRadius: 6,
-              }}>
-                {infoPanel.routeName || infoPanel.routeId.replace('L', '')}
+      {/* ── BOTTOM OVERLAY: ROUTE SELECTOR WITH ARROWS ── */}
+      <div className="overlay-bottom-center">
+        {activeTrip ? (
+          <div className="glass-panel" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Navigation size={20} style={{ color: 'var(--primary)' }} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Udhëtimi Aktiv
+                </span>
+                <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px' }}>
+                  {activeTrip.from} ➔ {activeTrip.to}
+                </span>
               </div>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Live</span>
             </div>
-            <button onClick={() => setInfoPanel(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-              <X size={16} />
+            <button
+              onClick={() => {
+                useStore.getState().setActiveTrip(null);
+                setWalkingShapes({});
+              }}
+              style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; }}
+            >
+              <X size={16} /> Mbyll
             </button>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>{infoPanel.routeLabel}</p>
+        ) : (
+          <div className="scroller-wrapper">
+            <button className="nav-arrow left" onClick={() => scrollRoutes('left')}><ChevronLeft size={24} /></button>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Stacioni tjetër</span>
-              <b>{infoPanel.nextStop}</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Pasagjerë</span>
-              <b>{infoPanel.passengerLoad} / 50</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Shpejtësia</span>
-              <b>{Math.round(infoPanel.speed)} km/h</b>
-            </div>
-            {infoPanel.delay > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#f59e0b' }}>Vonesë</span>
-                <b style={{ color: '#f59e0b' }}>{infoPanel.delay} min</b>
+            <div className="route-scroller-container">
+              <div ref={routeScrollerRef} className="glass-panel route-scroller route-scrollbar">
+                <button
+                  className={`route-item all ${!activeRouteFilter ? 'active' : ''}`}
+                  onClick={() => setActiveRouteFilter(null)}
+                >
+                  Të gjitha
+                </button>
+                {BUS_ROUTES.map(route => (
+                  <button
+                    key={route.id}
+                    className={`route-item ${activeRouteFilter === route.id ? 'active' : ''}`}
+                    style={{ '--route-color': route.color } as any}
+                    onClick={() => setActiveRouteFilter(activeRouteFilter === route.id ? null : route.id)}
+                  >
+                    {route.name}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+
+            <button className="nav-arrow right" onClick={() => scrollRoutes('right')}><ChevronRight size={24} /></button>
           </div>
-
-          {/* Barra e ngarkesës */}
-          <div style={{ marginTop: 12, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-            <div style={{
-              height: '100%', borderRadius: 2, transition: 'width 0.8s ease',
-              width: `${(infoPanel.passengerLoad / 50) * 100}%`,
-              background: infoPanel.passengerLoad > 40 ? 'var(--danger)' : infoPanel.passengerLoad > 25 ? 'var(--warning)' : 'var(--success)',
-            }} />
-          </div>
-
-          <button className="btn btn-primary" style={{ width: '100%', marginTop: 12, fontSize: 13 }}
-            onClick={() => setView('tracker')}>
-            Shiko Detajet →
-          </button>
-        </div>
-      )}
-
-      {/* ── Banner linja aktive ── */}
-      {activeRoute && !activeTrip && (
-        <div style={{
-          position: 'absolute', top: 72, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: `${activeRoute.color}22`,
-          border: `1px solid ${activeRoute.color}66`,
-          backdropFilter: 'blur(12px)',
-          width: 'max-content', maxWidth: '85vw',
-          fontSize: 12, fontWeight: 600,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-        }}>
-          <div style={{ flexShrink: 0, width: 10, height: 10, borderRadius: '50%', background: activeRoute.color }} />
-          <span style={{ color: activeRoute.color, overflow: 'hidden', textOverflow: 'ellipsis' }}>Linja {activeRoute.name}</span>
-          <span style={{ color: 'var(--text-muted)', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeRoute.label}</span>
-          <button onClick={() => setActiveRouteFilter(null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginLeft: 4 }}>
-            <X size={12} />
-          </button>
-        </div>
-      )}
-
-      {/* ── MOBILE UI ELEMENTS ── */}
-      {/* Slim Top Bar (Mobile Only - 3 dots only) */}
-      <div className="mobile-only" style={{
-        position: 'absolute', top: 16, right: 16, zIndex: 1100,
-      }}>
-        {/* Options 3 Dots */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className="glass"
-            style={{
-              width: 42, height: 42, borderRadius: 12, display: 'flex',
-              alignItems: 'center', justifyContent: 'center', color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}
-          >
-            <MoreVertical size={22} />
-          </button>
-
-          {isSettingsOpen && (
-            <>
-              <div 
-                style={{ position: 'fixed', inset: 0, zIndex: 1150 }} 
-                onClick={() => setIsSettingsOpen(false)} 
-              />
-              <div className="glass animate-fade-in" style={{
-                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                width: 200, padding: 16, borderRadius: 20, zIndex: 1200,
-                border: '1px solid rgba(255,255,255,0.1)',
-                display: 'flex', flexDirection: 'column', gap: 12,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-                userSelect: 'none'
-              }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Harta</div>
-
-              <div onClick={() => setShowStops(!showStops)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
-                <span style={{ fontSize: 14, color: showStops ? '#fff' : 'var(--text-muted)' }}>Stacionet</span>
-                {showStops ? <Eye size={18} color="var(--primary)" /> : <EyeOff size={18} color="var(--text-muted)" />}
-              </div>
-
-              <div onClick={() => setShowBuses(!showBuses)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
-                <span style={{ fontSize: 14, color: showBuses ? '#fff' : 'var(--text-muted)' }}>Autobusët</span>
-                {showBuses ? <Eye size={18} color="#f59e0b" /> : <EyeOff size={18} color="var(--text-muted)" />}
-              </div>
-
-              <div onClick={() => setShowRoutes(!showRoutes)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 0' }}>
-                <span style={{ fontSize: 14, color: showRoutes ? '#fff' : 'var(--text-muted)' }}>Linjat</span>
-                {showRoutes ? <Eye size={18} color="#ef4444" /> : <EyeOff size={18} color="var(--text-muted)" />}
-              </div>
-              
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Floating Locate Button (Mobile Only) */}
-      <button
-        onClick={centerMap}
-        className="mobile-only glass"
-        style={{
-          position: 'absolute', bottom: 104, right: 16, zIndex: 1100,
-          width: 48, height: 48, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--primary)', border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
-        }}
-      >
-        <Locate size={22} />
-      </button>
-      {/* ── Banner Trip Aktiv ── */}
-      {activeTrip && (
-        <div style={{
-          position: 'absolute', top: 72, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: 'rgba(59,130,246,0.15)',
-          border: '1.5px solid rgba(59,130,246,0.4)',
-          backdropFilter: 'blur(16px)',
-          borderRadius: 24,
-          padding: '8px 20px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          width: 'max-content',
-          maxWidth: '90vw',
-        }}>
-          <Navigation size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-          }}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeTrip.from}</span>
-            <ArrowRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <span style={{ color: '#10b981', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeTrip.to}</span>
+      {/* ── BUS INFO PANEL ── */}
+      {infoPanel && (
+        <div className="bus-info-card animate-slide-up">
+          <div className="card-header" style={{ background: infoPanel.routeColor }}>
+            <div className="header-main">
+              <span className="route-num">{infoPanel.routeName}</span>
+              <div className="route-texts">
+                <h3>{infoPanel.routeLabel}</h3>
+                <p>Në lëvizje • Live</p>
+              </div>
+            </div>
+            <button className="close-btn" onClick={() => setInfoPanel(null)}><X size={20} /></button>
           </div>
-          <div style={{ width: '1px', height: '16px', background: 'var(--border)' }} />
-          <button
-            onClick={() => { setActiveTrip(null); }}
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px', height: '24px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#ef4444'
-            }}
-          >
-            <X size={14} />
-          </button>
+          <div className="card-body">
+            <div className="data-grid">
+              <div className="data-item">
+                <label>Stacioni Radhës</label>
+                <b>{infoPanel.nextStop || 'Duke llogaritur...'}</b>
+              </div>
+              <div className="data-item">
+                <label>Pasagjerë</label>
+                <div className="load-bar">
+                  <div className="load-fill" style={{ width: `${(infoPanel.passengerLoad / 50) * 100}%`, background: infoPanel.passengerLoad > 40 ? 'var(--danger)' : 'var(--success)' }} />
+                </div>
+                <b>{infoPanel.passengerLoad} / 50</b>
+              </div>
+              <div className="data-item">
+                <label>Shpejtësia</label>
+                <b>{Math.round(infoPanel.speed)} km/h</b>
+              </div>
+            </div>
+            <button className="view-details-btn" onClick={() => setView('tracker')}>
+              Shiko Detajet <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* ── Legenda ── */}
-      <div className="card desktop-only" style={{
-        position: 'absolute', bottom: 16, left: 16, zIndex: 1000,
-        padding: '8px 12px',
-        background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(10px)',
-        fontSize: 10, display: 'flex', flexDirection: 'column', gap: 4,
-      }}>
-        <div style={{ fontWeight: 700, marginBottom: 2, fontSize: 11 }}>Legjenda</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 16, height: 3, background: '#60a5fa', borderRadius: 2 }} />
-          <span style={{ color: 'var(--text-muted)' }}>Linja urbane</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 12, height: 12, background: '#1a73e8', borderRadius: 3, border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 7, color: '#fff' }}>🚌</div>
-          </div>
-          <span style={{ color: 'var(--text-muted)' }}>Stacion</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%' }} />
-          <span style={{ color: 'var(--text-muted)' }}>Vendndodhja juaj</span>
-        </div>
-      </div>
+      <style jsx>{`
+        .full-screen-map {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          background: #0d1929;
+        }
+        .map-container { width: 100%; height: 100%; }
+
+        .overlay-top-left { position: absolute; top: 20px; left: 20px; z-index: 1000; }
+        .overlay-right-center { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 1000; }
+        .overlay-bottom-center { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
+
+        .glass-panel {
+          background: rgba(15, 23, 42, 0.85);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 18px;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ── BRANDING ── */
+        .main-brand-panel { align-items: center; gap: 12px; padding: 12px 24px; display: flex; }
+        .brand-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 12px #10b981; }
+        .brand-info h1 { font-size: 18px; font-weight: 900; color: #fff; margin: 0; letter-spacing: -0.5px; }
+        .brand-info p { font-size: 11px; color: #94a3b8; margin: 2px 0 0; font-weight: 600; }
+
+        /* ── CONTROLS COLUMN ── */
+        .controls-column { display: flex; flex-direction: column; align-items: center; }
+        .vertical-group { display: flex; flex-direction: column; padding: 6px; gap: 4px; }
+        .vertical-group button { 
+          width: 44px; height: 44px; border-radius: 14px; 
+          display: flex; align-items: center; justify-content: center; 
+          color: #cbd5e1; font-size: 20px; transition: 0.2s;
+        }
+        .vertical-group button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .vertical-group button.active { background: var(--primary); color: #fff; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .v-spacer { height: 12px; }
+        .action-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+        .toggles button { font-size: 22px; opacity: 0.4; filter: grayscale(1); }
+        .toggles button.active { opacity: 1; filter: grayscale(0); background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); }
+
+        /* ── BOTTOM SCROLLER ── */
+        .scroller-wrapper { display: flex; align-items: center; gap: 10px; }
+        .nav-arrow {
+          width: 44px; height: 44px; border-radius: 50%; 
+          background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1);
+          color: #fff; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: 0.2s; z-index: 2;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .nav-arrow:hover { background: var(--primary); transform: scale(1.1); }
+        .route-scroller-container { flex: 1; overflow: hidden; position: relative; }
+        .route-scroller {
+          display: flex; gap: 10px; padding: 12px; 
+          overflow-x: auto; scrollbar-width: none;
+          scroll-behavior: smooth;
+        }
+        .route-item {
+          padding: 10px 20px; border-radius: 14px; 
+          font-size: 14px; font-weight: 800; color: #94a3b8;
+          white-space: nowrap; border: 1px solid rgba(255,255,255,0.06);
+          background: rgba(255,255,255,0.04); transition: 0.3s;
+        }
+        .route-item.active {
+          background: var(--route-color, #3b82f6); color: #fff;
+          border-color: rgba(255,255,255,0.3);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+          transform: translateY(-2px);
+        }
+        .route-item.all.active { background: #3b82f6; }
+
+        /* ── BUS INFO PANEL ── */
+        .bus-info-card {
+          position: absolute; bottom: 120px; right: 20px; width: 320px;
+          background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+          z-index: 1000; overflow: hidden;
+        }
+        .card-header { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
+        .header-main { display: flex; align-items: center; gap: 14px; }
+        .route-num { 
+          width: 44px; height: 44px; background: rgba(255,255,255,0.2); 
+          border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+          font-weight: 900; font-size: 18px; border: 1px solid rgba(255,255,255,0.3);
+        }
+        .route-texts h3 { font-size: 15px; margin: 0; font-weight: 800; }
+        .route-texts p { font-size: 11px; opacity: 0.8; margin: 3px 0 0; }
+        .card-body { padding: 22px; }
+        .data-grid { display: flex; flex-direction: column; gap: 16px; }
+        .data-item label { display: block; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; font-weight: 800; }
+        .data-item b { font-size: 16px; color: #f8fafc; }
+        .load-bar { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; margin: 6px 0; overflow: hidden; }
+        .load-fill { height: 100%; border-radius: 3px; }
+        .view-details-btn { 
+          width: 100%; margin-top: 24px; padding: 14px; 
+          background: #1e293b; border-radius: 14px; color: #fff; 
+          font-size: 14px; font-weight: 700; display: flex; 
+          align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+        }
+        .view-details-btn:hover { background: #334155; transform: scale(1.02); }
+
+        .marker-highlight {
+          width: 40px; height: 40px; border-radius: 50%;
+          background: rgba(59, 130, 246, 0.3);
+          border: 3px solid #fff;
+          box-shadow: 0 0 20px #3b82f6;
+          animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        @media (max-width: 900px) {
+          .overlay-top-left { top: 15px; left: 15px; }
+          .overlay-right-center { right: 15px; bottom: 180px; top: auto; transform: none; }
+          .overlay-bottom-center { bottom: 20px; width: 98%; }
+          .nav-arrow { display: none; }
+          .bus-info-card { bottom: 110px; right: 15px; left: 15px; width: auto; }
+        }
+      `}</style>
     </div>
   );
 }
