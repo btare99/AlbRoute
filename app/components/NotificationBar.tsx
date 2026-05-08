@@ -11,7 +11,7 @@ export default function NotificationBar() {
   const notifications = useStore((state: any) => state.notifications);
 
   return (
-    <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:9999, display:'flex', flexDirection:'column', gap:'10px', width:'340px', pointerEvents:'none' }}>
+    <div className="notification-container">
       <AnimatePresence>
         {notifications && notifications.map((n: any) => {
           const Icon = ICONS[n.type] || Info;

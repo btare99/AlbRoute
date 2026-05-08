@@ -132,6 +132,12 @@ button {
   line-height: 1;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 input,
 textarea,
 select {
@@ -567,7 +573,7 @@ input::placeholder {
   border: 1px solid #e2e8f0 !important;
   border-radius: 0 !important;
   padding: 0 !important;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
 }
 
 .bus-tooltip {
@@ -575,11 +581,12 @@ input::placeholder {
   border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
   padding: 8px !important;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
   color: #0f172a !important;
 }
 
-.square-tooltip::before, .bus-tooltip::before {
+.square-tooltip::before,
+.bus-tooltip::before {
   display: none !important;
 }
 
@@ -588,6 +595,7 @@ input::placeholder {
   width: 40px;
   height: 40px;
 }
+
 .marker-highlight::after {
   content: '';
   position: absolute;
@@ -597,6 +605,7 @@ input::placeholder {
   opacity: 0.4;
   animation: pulse-ring 1.5s ease infinite;
 }
+
 .marker-highlight::before {
   content: '';
   position: absolute;
@@ -686,8 +695,9 @@ input::placeholder {
    ═══════════════════════════════════════════════════ */
 .app-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   background: var(--bg-dark);
 }
@@ -751,8 +761,43 @@ input::placeholder {
   .desktop-only {
     display: none !important;
   }
+
   .mobile-only {
     display: flex !important;
+  }
+}
+
+.mobile-close-btn {
+  display: none;
+}
+
+.notification-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 340px);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-close-btn {
+    display: flex !important;
+  }
+
+  .sidebar {
+    width: min(320px, 92vw);
+  }
+}
+
+@media (max-width: 600px) {
+  .notification-container {
+    left: 10px;
+    right: 10px;
+    width: auto;
   }
 }
 
@@ -791,8 +836,11 @@ input::placeholder {
 
 .page-content {
   flex: 1;
+  width: 100%;
+  max-width: 100%;
   padding: 24px;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 @media (max-width: 600px) {

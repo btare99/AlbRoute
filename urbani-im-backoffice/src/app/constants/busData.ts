@@ -372,30 +372,6 @@ export const BUS_STOPS = [
   { id: 'ura_gjorices_stop1', name: 'Ura Gjorices', lat: 41.35037350277216, lng: 19.84386707921066 },
   { id: 'ura_gjorices_stop2', name: 'Ura Gjorices', lat: 41.35007061760878, lng: 19.843887770400325 },
 
-  //── LINJA 15B: Kombinat – Tufinë ───────────────────────────────────────────
-  { id: 'farmacia_10_orar', name: 'Farmacia 10', lat: 41.339657482728626, lng: 19.829279728824417 },
-  { id: 'farmacia_10_antiorar', name: 'Farmacia 10', lat: 41.339478797870434, lng: 19.82964636211673 },
-  { id: 'cajupi_orar', name: 'Cajupi', lat: 41.33652801212278, lng: 19.83142807128291 },
-  { id: 'cajupi_antiorar', name: 'Cajupi', lat: 41.33776436414307, lng: 19.830810583632697 },
-  { id: 'odise_paskali_orar', name: 'Odhise Paskali', lat: 41.335158606229, lng: 19.832355549447712 },
-  { id: 'odise_paskali_antiorar', name: 'Odhise Paskali', lat: 41.33430710628102, lng: 19.833161936092566 },
-  { id: 'bryli_antiorar', name: 'Brryli', lat: 41.33117407920379, lng: 19.834340440679547 },
-  { id: 'shallvaret', name: 'Shallvaret', lat: 41.32379075147708, lng: 19.817893141248348 },
-  { id: 'vellazerit_frasheri', name: 'Vellezerit Frasheri', lat: 41.32337545055907, lng: 19.818774030688935 },
-  { id: 'drejtoria_e_policise_a', name: 'Drejtoria e Policise A', lat: 41.32296306821319, lng: 19.81274012981296 },
-  { id: 'kinema_agimi', name: 'Kinema Agimi', lat: 41.322742551980156, lng: 19.814707449563617 },
-  { id: 'lulishte_cajupi', name: 'Lulishte Cajupi', lat: 41.322145120166354, lng: 19.810986087373745 },
-  { id: 'gjykata', name: 'Gjykata', lat: 41.32205002728075, lng: 19.806850071287958 },
-  { id: 'vasil_shanto_orar', name: 'Vasil Shanto A', lat: 41.32147203611153, lng: 19.806664689577822 },
-  { id: 'sabaudin_gabrani_orar', name: 'Sabaudin Gabrani', lat: 41.32501218348803, lng: 19.803922714106687 },
-  { id: 'sabaudin_gabrani_antiorar', name: 'Sabaudin Gabrani', lat: 41.32500105344963, lng: 19.803675252780803 },
-  { id: 'inxhinieria_orar', name: 'Inxhinieria', lat: 41.328610672791434, lng: 19.802676078863207 },
-  { id: 'inxhinieria_antiorar', name: 'Inxhinieria', lat: 41.32742845111803, lng: 19.802614034003525 },
-  { id: 'karl_topia_orar', name: 'Karl Topia', lat: 41.33190020350803, lng: 19.80438182013802 },
-  { id: 'karl_topia_antiorar', name: 'Karl Topia', lat: 41.33219144381092, lng: 19.804231744574345 },
-
-
-
 ];
 
 export const BUS_ROUTES = [
@@ -788,20 +764,14 @@ export const BUS_ROUTES = [
   // ── LINJA 16A: Linja e Gjelbër Orar ─────────────────────────────────────────
   {
     id: 'L16A', name: '16A', label: 'Linja e Gjelbër Orar', color: '#2ecc71',
-    stops: [
-      'karl_topia_orar', 'farmacia_10_orar', 'cajupi_orar', 'odise_paskali_orar',
-      'bryli_orar', 'ish_ekspozita_orar', 'shallvaret', 'drejtoria_e_policise_a',
-      'gjykata', 'sabaudin_gabrani_orar', 'inxhinieria_orar', 'karl_topia_orar'
-    ]
+    stops: [],
+    returnStops: []
   },
 
   // ── LINJA 16B: Linja e Gjelbër Antiorar ──────────────────────────────────────
   {
     id: 'L16B', name: '16B', label: 'Linja e Gjelbër Antiorar', color: '#2ecc71',
-    stops: [
-      'karl_topia_antiorar', 'inxhinieria_antiorar', 'sabaudin_gabrani_antiorar',
-      'vasil_shanto_antiorar', 'kinema_agimi', 'vellazerit_frasheri', 'bryli_antiorar',
-      'odise_paskali_antiorar', 'cajupi_antiorar', 'farmacia_10_antiorar', 'karl_topia_antiorar'
-    ]
+    stops: [],
+    returnStops: []
   },
 ];

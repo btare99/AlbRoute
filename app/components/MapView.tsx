@@ -365,14 +365,19 @@ export default function MapView() {
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
 
-    buses.forEach((bus: any) => {
-      if (!showBuses) {
-        if (busMarkersRef.current[bus.id]) {
-          map.removeLayer(busMarkersRef.current[bus.id]);
-          delete busMarkersRef.current[bus.id];
-        }
-        return;
+    // 1. Cleanup removed buses or if showBuses is false
+    const currentBusIds = new Set(buses.filter((b: any) => b?.id).map((b: any) => b.id.toString()));
+    Object.keys(busMarkersRef.current).forEach(id => {
+      if (!showBuses || !currentBusIds.has(id)) {
+        map.removeLayer(busMarkersRef.current[id]);
+        delete busMarkersRef.current[id];
       }
+    });
+
+    if (!showBuses) return;
+
+    buses.forEach((bus: any) => {
+      if (!bus.id || !bus.lat || !bus.lng) return;
 
       let isActive = true;
       if (activeTrip) {
@@ -385,7 +390,7 @@ export default function MapView() {
       const loadPct = Math.min(100, Math.round((load / 50) * 100));
       const loadColor = load > 40 ? '#ef4444' : load > 25 ? '#f59e0b' : '#22c55e';
       const opacity = isActive ? 1 : 0.18;
-      const label = (bus.routeName || bus.routeId.replace('L', '')).toString();
+      const label = (bus.routeName || bus.routeId?.replace('L', '') || 'Bus').toString();
 
       // Marker pill
       const markerHtml = `
@@ -478,10 +483,13 @@ export default function MapView() {
         marker.setLatLng([bus.lat, bus.lng]);
         marker.setIcon(L.divIcon({ html: markerHtml, className: '', iconSize: [44, 36], iconAnchor: [22, 36] }));
         marker.setTooltipContent(tooltipHtml);
+        marker.setZIndexOffset(isActive ? 1000 : 500);
+        // Update click listener with fresh bus data
+        marker.off('click').on('click', () => { setInfoPanel(bus); setSelectedBus(bus); });
       } else {
         const marker = L.marker([bus.lat, bus.lng], {
           icon: L.divIcon({ html: markerHtml, className: '', iconSize: [44, 36], iconAnchor: [22, 36] }),
-          zIndexOffset: 500,
+          zIndexOffset: isActive ? 1000 : 500,
         });
         marker.bindTooltip(tooltipHtml, {
           direction: 'top', offset: [0, -38],

@@ -3,100 +3,20 @@ import { BUS_STOPS, BUS_ROUTES } from '../constants/busData';
 import { BUS_SHAPES } from './busShapes';
 export { BUS_STOPS, BUS_ROUTES };
 
-// ─── ADMIN DATA ──────────────────────────────────────────────────────────────
-let adminDrivers: any[] = [];
-let adminInspectors: any[] = [];
-let adminBuses: any[] = [];
-
-BUS_ROUTES.forEach((route) => {
-  for (let i = 0; i < 10; i++) {
-    const busId = `TR ${Math.floor(100 + Math.random() * 899)} ${String.fromCharCode(65+Math.floor(Math.random()*26))}${String.fromCharCode(65+Math.floor(Math.random()*26))}`;
-    const driverId = `d_${route.id}_${i}`;
-    const inspId = `i_${route.id}_${i}`;
-    
-    adminDrivers.push({
-      id: driverId,
-      name: `Shofer ${route.id} - ${i+1}`,
-      phone: `069${Math.floor(1000000 + Math.random() * 9000000)}`,
-      shift: i < 5 ? 'Mëngjes (05:00 - 13:00)' : 'Pasdite (13:00 - 21:00)',
-      status: i < 8 ? 'Aktiv' : 'Pushim',
-      licenseCat: 'D',
-      routeId: route.id,
-      personalId: `I${Math.floor(10000000 + Math.random() * 90000000)}${String.fromCharCode(65+Math.floor(Math.random()*26))}`
-    });
-
-    adminInspectors.push({
-      id: inspId,
-      name: `Faturino ${route.id} - ${i+1}`,
-      phone: `068${Math.floor(1000000 + Math.random() * 9000000)}`,
-      status: i < 8 ? 'Në Linjë' : 'Pushim',
-      posCode: `POS-${route.id}-${i+1}`,
-      routeId: route.id,
-      personalId: `J${Math.floor(10000000 + Math.random() * 90000000)}${String.fromCharCode(65+Math.floor(Math.random()*26))}`
-    });
-
-    adminBuses.push({
-      id: busId,
-      routeId: route.id,
-      driverId: driverId,
-      inspectorId: inspId,
-      year: '2018',
-      brand: 'Mercedes-Benz',
-      status: i < 2 ? 'Aktiv' : 'Në Garazh'
-    });
-  }
-});
-
-// ─── INITIAL BUS GENERATION ──────────────────────────────────────────────────
-const createBuses = () => {
-  const buses: any[] = [];
-  adminBuses.forEach((adminBus) => {
-    if (adminBus.status !== 'Aktiv') return;
-    const route = BUS_ROUTES.find(r => r.id === adminBus.routeId);
-    if (!route) return;
-
-    const isReturn = Math.random() > 0.5;
-    const direction = isReturn ? 'return' : 'forward';
-    const shapeKey = isReturn ? `${route.id}_1` : `${route.id}_0`;
-    
-    let coords = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-    if (coords.length === 0 && !isReturn) coords = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] || [];
-    
-    if (coords.length === 0) {
-      const sIds = isReturn ? (route.returnStops || route.stops) : route.stops;
-      coords = sIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean).map(s => [s!.lat, s!.lng]) as [number, number][];
-    }
-
-    if (coords.length < 2) return;
-
-    const pointIdx = Math.floor(Math.random() * (coords.length - 1));
-    const pos = coords[pointIdx];
-
-    buses.push({
-      id: adminBus.id, // Targa
-      routeId: route.id,
-      routeName: route.name,
-      routeLabel: route.label,
-      routeColor: route.color,
-      driverId: adminBus.driverId,
-      inspectorId: adminBus.inspectorId,
-      lat: pos[0],
-      lng: pos[1],
-      currentPointIdx: pointIdx,
-      direction: direction,
-      speed: 18 + Math.random() * 22,
-      passengerLoad: Math.floor(Math.random() * 50),
-      nextStop: route.stops[0] ? BUS_STOPS.find(s => s.id === route.stops[0])?.name : '',
-      delay: Math.floor(Math.random() * 5),
-      lastUpdate: Date.now(),
-      ticks: Math.floor(Math.random() * 30),
-    });
-  });
-  return buses;
-};
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+export interface StaffAccount {
+  id: string;
+  name: string;
+  username: string;
+  pin: string;
+  role: 'dispatcher' | 'operator' | 'driver' | 'inspector';
+  routeId?: string;
+  status: string;
+}
 
 // ─── STORE ───────────────────────────────────────────────────────────────────
-const useStore = create((set: any, get: any) => ({
+const useStore = create(
+    (set: any, get: any) => ({
   // ── Auth ──
   user: { name: 'Admin', email: 'admin@busal.al', avatar: null },
   staffUser: null,
@@ -127,61 +47,133 @@ const useStore = create((set: any, get: any) => ({
   setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open }),
 
   // ── Admin Data ──
-  adminDrivers,
-  adminInspectors,
-  adminBuses,
+  adminDrivers: [],
+  adminInspectors: [],
+  adminBuses: [],
   setAdminDrivers: (drivers: any[]) => set({ adminDrivers: drivers }),
   setAdminInspectors: (inspectors: any[]) => set({ adminInspectors: inspectors }),
   setAdminBuses: (buses: any[]) => set({ adminBuses: buses }),
+  fetchAdminDrivers: async () => {
+    try {
+      const res = await fetch('/api/admin/staff?role=driver');
+      const drivers = await res.json();
+      set({ adminDrivers: drivers });
+    } catch (error) {
+      console.error('Failed to fetch drivers', error);
+    }
+  },
+  fetchAdminInspectors: async () => {
+    try {
+      const res = await fetch('/api/admin/staff?role=inspector');
+      const inspectors = await res.json();
+      set({ adminInspectors: inspectors });
+    } catch (error) {
+      console.error('Failed to fetch inspectors', error);
+    }
+  },
+  fetchAdminBuses: async () => {
+    try {
+      const res = await fetch('/api/admin/buses');
+      const buses = await res.json();
+      set({ adminBuses: buses });
+    } catch (error) {
+      console.error('Failed to fetch buses', error);
+    }
+  },
   // When admin adds/removes buses, we rebuild the simulation array but preserve existing buses that didn't change
-  syncBusesWithAdmin: () => set((state: any) => {
+  syncBusesWithAdmin: async () => {
+    const { adminBuses } = get();
     const newBuses: any[] = [];
-    state.adminBuses.forEach((adminBus: any) => {
-      if (adminBus.status !== 'Aktiv') return;
-      const existing = state.buses.find((b: any) => b.id === adminBus.id);
-      if (existing) {
-        // Update its assigned driver/inspector/route if changed
-        newBuses.push({ ...existing, routeId: adminBus.routeId, driverId: adminBus.driverId, inspectorId: adminBus.inspectorId });
-      } else {
-        // Spawn a new bus
-        const route = BUS_ROUTES.find(r => r.id === adminBus.routeId);
-        if (!route) return;
-        const isReturn = Math.random() > 0.5;
-        const direction = isReturn ? 'return' : 'forward';
-        const shapeKey = isReturn ? `${route.id}_1` : `${route.id}_0`;
-        let coords = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-        if (coords.length === 0 && !isReturn) coords = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] || [];
-        if (coords.length === 0) {
-          const sIds = isReturn ? (route.returnStops || route.stops) : route.stops;
-          coords = sIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean).map(s => [s!.lat, s!.lng]) as [number, number][];
+    for (const adminBus of adminBuses) {
+      if (adminBus.status !== 'Aktiv') continue;
+      // Check if bus exists in DB
+      try {
+        const res = await fetch(`/api/admin/buses?id=${adminBus.id}`);
+        const existing = await res.json();
+        if (existing) {
+          // Update existing
+          const updated = { ...existing, routeId: adminBus.routeId, driverId: adminBus.driverId, inspectorId: adminBus.inspectorId };
+          await fetch('/api/admin/buses', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: adminBus.id, ...updated }),
+          });
+          newBuses.push(updated);
+        } else {
+          // Create new
+          const route = BUS_ROUTES.find(r => r.id === adminBus.routeId);
+          if (!route) continue;
+          const isReturn = Math.random() > 0.5;
+          const direction = isReturn ? 'return' : 'forward';
+          const shapeKey = isReturn ? `${route.id}_1` : `${route.id}_0`;
+          let coords = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+          if (coords.length === 0 && !isReturn) coords = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] || [];
+          if (coords.length === 0) {
+            const sIds = isReturn ? (route.returnStops || route.stops) : route.stops;
+            coords = sIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean).map(s => [s!.lat, s!.lng]) as [number, number][];
+          }
+          if (coords.length < 2) continue;
+          const pointIdx = Math.floor(Math.random() * (coords.length - 1));
+          const pos = coords[pointIdx];
+          const newBus = {
+            id: adminBus.id,
+            routeId: route.id,
+            routeName: route.name,
+            routeLabel: route.label,
+            routeColor: route.color,
+            driverId: adminBus.driverId,
+            inspectorId: adminBus.inspectorId,
+            lat: pos[0], lng: pos[1], currentPointIdx: pointIdx, direction,
+            speed: 18 + Math.random() * 22, passengerLoad: Math.floor(Math.random() * 50),
+            nextStop: route.stops[0] ? BUS_STOPS.find(s => s.id === route.stops[0])?.name : '',
+            delay: Math.floor(Math.random() * 5), lastUpdate: Date.now(), ticks: 0,
+          };
+          await fetch('/api/admin/buses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newBus),
+          });
+          newBuses.push(newBus);
         }
-        if (coords.length < 2) return;
-        const pointIdx = Math.floor(Math.random() * (coords.length - 1));
-        const pos = coords[pointIdx];
-        newBuses.push({
-          id: adminBus.id,
-          routeId: route.id,
-          routeName: route.name,
-          routeLabel: route.label,
-          routeColor: route.color,
-          driverId: adminBus.driverId,
-          inspectorId: adminBus.inspectorId,
-          lat: pos[0], lng: pos[1], currentPointIdx: pointIdx, direction,
-          speed: 18 + Math.random() * 22, passengerLoad: Math.floor(Math.random() * 50),
-          nextStop: route.stops[0] ? BUS_STOPS.find(s => s.id === route.stops[0])?.name : '',
-          delay: Math.floor(Math.random() * 5), lastUpdate: Date.now(), ticks: 0,
-        });
+      } catch (error) {
+        console.error('Error syncing bus', error);
       }
-    });
-    return { buses: newBuses };
-  }),
+    }
+    set({ buses: newBuses });
+  },
 
   // ── Buses ──
-  buses: createBuses(),
+  buses: [],
   selectedBus: null,
   selectedRoute: null,
   userLocation: { lat: 41.3275, lng: 19.8187 },
   setUserLocation: (loc: { lat: number, lng: number }) => set({ userLocation: loc }),
+  fetchBuses: async () => {
+    try {
+      const res = await fetch('/api/admin/buses');
+      const buses = await res.json();
+      set({ buses });
+    } catch (error) {
+      console.error('Failed to fetch buses', error);
+    }
+  },
+  updateBus: async (busData: any) => {
+    try {
+      const res = await fetch('/api/admin/buses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(busData),
+      });
+      if (res.ok) {
+        const updatedBus = await res.json();
+        set((state: any) => ({
+          buses: state.buses.map((b: any) => b.id === updatedBus.id ? updatedBus : b)
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to update bus', error);
+    }
+  },
   fetchUserLocation: () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -286,10 +278,11 @@ const useStore = create((set: any, get: any) => ({
 
       if (coords.length < 2) return bus;
 
-      const nextPointIdx = bus.currentPointIdx + 1;
+      const currentIdx = typeof bus.currentPointIdx === 'number' ? bus.currentPointIdx : 0;
+      const nextPointIdx = currentIdx + 1;
 
       // Arriti në fund të shape-it
-      if (nextPointIdx >= coords.length) {
+      if (nextPointIdx >= coords.length || !coords[nextPointIdx]) {
         return {
           ...bus,
           currentPointIdx: 0,
@@ -609,6 +602,7 @@ const useStore = create((set: any, get: any) => ({
   setActiveFilter: (f: string) => set({ activeFilter: f }),
   searchQuery: '',
   setSearchQuery: (q: string) => set({ searchQuery: q }),
-}));
+    })
+);
 
 export default useStore;

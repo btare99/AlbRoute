@@ -6,9 +6,7 @@ import TripPlanner from './TripPlanner';
 import ProfileView from './ProfileView';
 import UserFavorites from './UserFavorites';
 import useStore from '../store/useStore';
-import AdminPanel from './AdminPanel';
-import StaffDashboard from './StaffDashboard';
-import { Map, Bus, Navigation, Star, User, ShieldCheck } from 'lucide-react';
+import { Map, Bus, Navigation, Star, User } from 'lucide-react';
 import { translations } from '../store/translations';
 
 export default function AppShell() {
@@ -24,7 +22,6 @@ export default function AppShell() {
     { id: 'planner', label: t.planner, icon: Navigation },
     { id: 'favorites', label: t.saved, icon: Star },
     { id: 'profile', label: t.profile, icon: User },
-    { id: 'admin', label: 'Admin', icon: ShieldCheck },
   ];
 
   const renderView = () => {
@@ -34,15 +31,10 @@ export default function AppShell() {
       case 'planner': return <TripPlanner />;
       case 'profile': return <ProfileView />;
       case 'favorites': return <UserFavorites />;
-      case 'admin': return <AdminPanel />;
-      case 'staff_dashboard': return <StaffDashboard />;
       default: return <MapView />;
     }
   };
 
-  if (currentView === 'staff_dashboard') {
-    return <StaffDashboard />;
-  }
 
   return (
     <div className="app-layout" style={{ touchAction: 'manipulation', overflowX: 'hidden' }}>
@@ -64,8 +56,8 @@ export default function AppShell() {
         padding: '0 10px',
       }}>
         {MENU.map(({ id, label, icon: Icon }) => (
-          <button 
-            key={id} 
+          <button
+            key={id}
             onClick={() => setView(id)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
