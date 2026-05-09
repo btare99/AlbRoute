@@ -232,8 +232,30 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const handleSocialLogin = async (provider: string) => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 1200)); 
+    
+    const socialUser = {
+      id: `social-${Date.now()}`,
+      name: `Përdorues via ${provider}`,
+      email: `${provider.toLowerCase()}@user.com`,
+      savedLocations: { home: '', work: '' },
+      travelHistory: []
+    };
+
+    login(socialUser, 'social-token-mock');
+    addNotification(
+      language === 'al' ? `Hytë me sukses përmes ${provider}! 🚀` : 
+      language === 'en' ? `Logged in via ${provider}! 🚀` : 
+      `Accesso effettuato tramite ${provider}! 🚀`, 
+      'success'
+    );
+    setLoading(false);
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'linear-gradient(135deg, #1c1c1c 0%, #000 100%)', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'var(--bg-dark)', position: 'relative' }}>
 
       {/* Brand Identity - Top Left */}
       <div style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -395,6 +417,7 @@ export default function LoginPage() {
                 { name: 'Facebook', icon: <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.13 8.44 9.88v-6.99H7.9v-2.89h2.54V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.97h2.77l-.44 2.89h-2.33v6.99C18.34 21.13 22 16.99 22 12z"/> }
               ].map(social => (
                 <button key={social.name} type="button" 
+                  onClick={() => handleSocialLogin(social.name)}
                   style={{ 
                     flex: 1, height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', 
                     border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', 
