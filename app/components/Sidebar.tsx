@@ -73,7 +73,7 @@ export default function Sidebar() {
         <button
           className="s-close-btn"
           onClick={() => useStore.getState().setSidebarOpen(false)}
-          aria-label="Mbyll"
+          aria-label={t.close}
         >
           <X size={16} />
         </button>
@@ -115,7 +115,7 @@ export default function Sidebar() {
               ))
             ) : (
               <div className="s-no-results">
-                {language === 'al' ? 'Asnjë stacion nuk u gjet' : 'No station found'}
+                {language === 'al' ? 'Asnjë stacion nuk u gjet' : language === 'en' ? 'No station found' : 'Nessuna stazione trovata'}
               </div>
             )}
           </div>
@@ -123,7 +123,7 @@ export default function Sidebar() {
       </div>
 
       {/* ── Nav ── */}
-      <div className="s-nav-label">{t.menu || 'Menu'}</div>
+      <div className="s-nav-label">{language === 'al' ? 'Menu' : language === 'en' ? 'Menu' : 'Menu'}</div>
       <nav className="s-nav">
         {MENU.map(({ id, label, icon: Icon }, idx) => (
           <Fragment key={id}>
@@ -185,7 +185,7 @@ export default function Sidebar() {
             <span className="s-username">{user?.name || 'Admin'}</span>
             <span className="s-useremail">{user?.email || 'admin@busal.al'}</span>
           </div>
-          <button className="s-logout-btn" onClick={logout} title="Dil">
+          <button className="s-logout-btn" onClick={logout} title={t.logout}>
             <LogOut size={15} />
           </button>
         </div>
@@ -207,10 +207,11 @@ export default function Sidebar() {
           border-radius: 10px;
           background: rgba(255,255,255,0.05);
           border: 1px solid rgba(255,255,255,0.08);
-          padding: 4px;
+          padding: 2px;
           display: flex; align-items: center; justify-content: center;
+          overflow: hidden;
         }
-        .s-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .s-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
         .s-brand-name { display: block; font-size: 15px; font-weight: 700; color: #fff; }
         .s-brand-sub { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
         .s-dot { width: 5px; height: 5px; background: #10b981; border-radius: 50%; }

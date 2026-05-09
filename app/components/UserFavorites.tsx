@@ -6,6 +6,7 @@ import {
   Bell, BellOff, Clock, Navigation, Zap, Plus,
   Shield, CheckCircle2, History, TrendingUp, Leaf
 } from 'lucide-react';
+import { translations } from '../store/translations';
 
 type Tab = 'routes' | 'stops' | 'activity';
 
@@ -52,6 +53,8 @@ export default function UserFavorites() {
   const setTripFrom = useStore((state: any) => state.setTripFrom);
   const addNotification = useStore((state: any) => state.addNotification);
   const buses = useStore((state: any) => state.buses) || [];
+  const language = useStore((state: any) => state.language);
+  const t = translations[language] || translations.al;
 
   const [tab, setTab] = useState<Tab>('routes');
   const [notified, setNotified] = useState<{ [id: string]: boolean }>({});
@@ -63,7 +66,9 @@ export default function UserFavorites() {
     setNotified(prev => {
       const next = { ...prev, [id]: !prev[id] };
       addNotification(
-        next[id] ? `Njoftimet u aktivizuan për ${id}.` : `Njoftimet u çaktivizuan për ${id}.`,
+        next[id] 
+          ? (language === 'al' ? `Njoftimet u aktivizuan për ${id}.` : language === 'en' ? `Notifications activated for ${id}.` : `Notifiche attivate per ${id}.`)
+          : (language === 'al' ? `Njoftimet u çaktivizuan për ${id}.` : language === 'en' ? `Notifications deactivated for ${id}.` : `Notifiche disattivate per ${id}.`),
         'info'
       );
       return next;
@@ -84,9 +89,9 @@ export default function UserFavorites() {
           <Star size={18} style={{ color: '#f59e0b' }} />
         </div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>Të preferuarat</h1>
+          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.saved}</h1>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            {totalFavorites} {totalFavorites === 1 ? 'e preferuar' : 'të preferuara'} të ruajtura
+            {totalFavorites} {language === 'al' ? (totalFavorites === 1 ? 'e preferuar' : 'të preferuara') : language === 'en' ? (totalFavorites === 1 ? 'favorite' : 'favorites') : (totalFavorites === 1 ? 'preferito' : 'preferiti')} {language === 'al' ? 'të ruajtura' : language === 'en' ? 'saved' : 'salvati'}
           </p>
         </div>
         <div style={{
@@ -102,9 +107,9 @@ export default function UserFavorites() {
       {/* ── Stats Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
         {[
-          { label: 'Udhëtime', val: '24', icon: <History size={13} />, color: '#3b82f6' },
-          { label: 'E kursyer', val: '12kg', icon: <Leaf size={13} />, color: '#10b981' },
-          { label: 'Përdorim', val: '92%', icon: <TrendingUp size={13} />, color: '#8b5cf6' },
+          { label: language === 'al' ? 'Udhëtime' : language === 'en' ? 'Trips' : 'Viaggi', val: '24', icon: <History size={13} />, color: '#3b82f6' },
+          { label: language === 'al' ? 'E kursyer' : language === 'en' ? 'Saved' : 'Risparmiato', val: '12kg', icon: <Leaf size={13} />, color: '#10b981' },
+          { label: language === 'al' ? 'Përdorim' : language === 'en' ? 'Usage' : 'Utilizzo', val: '92%', icon: <TrendingUp size={13} />, color: '#8b5cf6' },
         ].map(s => (
           <div key={s.label} style={{
             background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
@@ -125,9 +130,9 @@ export default function UserFavorites() {
         border: '0.5px solid rgba(255,255,255,0.08)'
       }}>
         {([
-          { key: 'routes' as Tab, label: 'Linjat', icon: Bus, count: savedRoutes?.length || 0 },
-          { key: 'stops' as Tab, label: 'Stacionet', icon: MapPin, count: savedStops?.length || 0 },
-          { key: 'activity' as Tab, label: 'Aktiviteti', icon: History, count: 0 },
+          { key: 'routes' as Tab, label: t.routes, icon: Bus, count: savedRoutes?.length || 0 },
+          { key: 'stops' as Tab, label: t.stations, icon: MapPin, count: savedStops?.length || 0 },
+          { key: 'activity' as Tab, label: language === 'al' ? 'Aktiviteti' : language === 'en' ? 'Activity' : 'Attività', icon: History, count: 0 },
         ]).map(({ key, label, icon: Icon, count }) => (
           <button
             key={key}
@@ -171,9 +176,9 @@ export default function UserFavorites() {
             {!savedRoutes || savedRoutes.length === 0 ? (
               <EmptyTab
                 icon={<Bus size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
-                text="Nuk keni asnjë linjë të ruajtur."
+                text={language === 'al' ? 'Nuk keni asnjë linjë të ruajtur.' : language === 'en' ? 'No routes saved yet.' : 'Nessuna linea salvata.'}
                 action={() => setView('tracker')}
-                actionLabel="Shiko linjat"
+                actionLabel={t.routes}
               />
             ) : (
               savedRoutes.map((route: any) => {
@@ -215,7 +220,9 @@ export default function UserFavorites() {
                           )}
                         </div>
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-                          {activeBusesCount > 0 ? `${activeBusesCount} autobuzë aktivë tani` : 'Asnjë aktiv aktualisht'}
+                          {activeBusesCount > 0 
+                            ? (language === 'al' ? `${activeBusesCount} autobuzë aktivë tani` : language === 'en' ? `${activeBusesCount} active buses now` : `${activeBusesCount} autobus attivi ora`) 
+                            : (language === 'al' ? 'Asnjë aktiv aktualisht' : language === 'en' ? 'None active currently' : 'Nessuno attivo')}
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -240,7 +247,7 @@ export default function UserFavorites() {
                             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
                           }}
                         >
-                          <ArrowRight size={12} /> Ndjek
+                          <ArrowRight size={12} /> {language === 'al' ? 'Ndjek' : language === 'en' ? 'Track' : 'Segui'}
                         </button>
                         <button
                           onClick={() => removeSavedRoute(r.id)}
@@ -270,16 +277,15 @@ export default function UserFavorites() {
             {!savedStops || savedStops.length === 0 ? (
               <EmptyTab
                 icon={<MapPin size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
-                text="Nuk keni asnjë stacion të ruajtur."
+                text={language === 'al' ? 'Nuk keni asnjë stacion të ruajtur.' : language === 'en' ? 'No stops saved yet.' : 'Nessuna fermata salvata.'}
                 action={() => setView('map')}
-                actionLabel="Shiko hartën"
+                actionLabel={t.map}
               />
             ) : (
               savedStops.map((stop: any) => {
                 const s = BUS_STOPS.find(x => x.id === stop.id || x.name === stop.name) || stop;
                 const stopRoutes = BUS_ROUTES.filter(r => r.stops?.includes(s.id) || r.stops?.includes(s.name));
                 const isHovered = hoveredId === (s.id || s.name);
-                const accentColor = '#3b82f6';
                 return (
                   <div
                     key={s.id || s.name}
@@ -305,7 +311,7 @@ export default function UserFavorites() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: 0 }}>{s.name}</h3>
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-                          {stopRoutes.length} linja kalojnë këtu
+                          {stopRoutes.length} {language === 'al' ? 'linja kalojnë këtu' : language === 'en' ? 'routes pass here' : 'linee passano qui'}
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -341,9 +347,9 @@ export default function UserFavorites() {
         {tab === 'activity' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {[
-              { type: 'trip', label: 'Qendër → Kombinat', time: 'Dje, 18:40', score: '+15' },
-              { type: 'save', label: 'Ruajtur Linja 14', time: '2 ditë më parë', score: '+5' },
-              { type: 'check', label: 'Kontrolluar Stacioni "Qendër"', time: 'Sot, 09:12', score: '+2' },
+              { type: 'trip', label: 'Qendër → Kombinat', time: language === 'al' ? 'Dje, 18:40' : 'Yesterday, 18:40', score: '+15' },
+              { type: 'save', label: language === 'al' ? 'Ruajtur Linja 14' : 'Saved Route 14', time: language === 'al' ? '2 ditë më parë' : '2 days ago', score: '+5' },
+              { type: 'check', label: language === 'al' ? 'Kontrolluar Stacioni "Qendër"' : 'Checked Station "Center"', time: language === 'al' ? 'Sot, 09:12' : 'Today, 09:12', score: '+2' },
             ].map((act, i) => (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px',
@@ -379,8 +385,8 @@ export default function UserFavorites() {
           <Shield size={16} style={{ color: '#10b981' }} />
         </div>
         <div>
-          <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>Mbrojtja e të dhënave</p>
-          <p style={{ fontSize: '11px', color: 'rgba(16,185,129,0.6)', margin: 0 }}>Preferencat tuaja ruhen në mënyrë të enkriptuar.</p>
+          <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>{language === 'al' ? 'Mbrojtja e të dhënave' : language === 'en' ? 'Data Protection' : 'Protezione Dati'}</p>
+          <p style={{ fontSize: '11px', color: 'rgba(16,185,129,0.6)', margin: 0 }}>{language === 'al' ? 'Preferencat tuaja ruhen në mënyrë të enkriptuar.' : language === 'en' ? 'Your preferences are stored encrypted.' : 'Le tue preferenze sono memorizzate in modo criptato.'}</p>
         </div>
       </div>
     </div>

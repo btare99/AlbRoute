@@ -413,6 +413,7 @@ const useStore = create<any>()(
       tripTo: '',
       setTripFrom: (v: any) => set({ tripFrom: v }),
       setTripTo: (v: any) => set({ tripTo: v }),
+      setTripResult: (v: any) => set({ tripResult: v }),
       planTrip: async (fromName: string, toName: string) => {
         const { tripOriginCoords } = get();
         const toStops = BUS_STOPS.filter(s => s.name.toLowerCase() === toName.toLowerCase());
@@ -476,10 +477,14 @@ const useStore = create<any>()(
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const busTime = totalStops * 3 + (legs.filter(l => l.route).length > 1 ? 10 : 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
+          const totalWalkDist = initialWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
           const totalTime = initialWalkTime + busTime + walkTimeTransfer;
 
-          if (totalTime < bestScore) {
-            bestScore = totalTime;
+          // Priority: 1. Minimize walking distance, 2. Minimize total time
+          const score = (totalWalkDist * 10) + totalTime;
+
+          if (score < bestScore) {
+            bestScore = score;
             bestTrip = {
               from: fromName,
               to: toName,

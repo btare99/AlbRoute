@@ -5,6 +5,7 @@ import {
   ArrowLeft, Save, User, MapPin, Home, Briefcase, 
   Shield, CheckCircle2, Lock, Mail
 } from 'lucide-react';
+import { translations } from '../store/translations';
 
 export default function EditProfileView() {
   const user = useStore((state: any) => state.user);
@@ -12,6 +13,8 @@ export default function EditProfileView() {
   const updateProfile = useStore((state: any) => state.updateProfile);
   const setView = useStore((state: any) => state.setView);
   const addNotification = useStore((state: any) => state.addNotification);
+  const language = useStore((state: any) => state.language);
+  const t = translations[language] || translations.al;
 
   const activeUser = staffUser || user;
   const isStaff = !!staffUser;
@@ -38,7 +41,7 @@ export default function EditProfileView() {
     }
     
     setIsSaving(false);
-    addNotification('Ndryshimet u ruajtën me sukses! ✓', 'success');
+    addNotification(language === 'al' ? 'Ndryshimet u ruajtën me sukses! ✓' : language === 'en' ? 'Changes saved successfully! ✓' : 'Modifiche salvate con successo! ✓', 'success');
     setView('profile');
   };
 
@@ -80,8 +83,8 @@ export default function EditProfileView() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>Ndrysho kredencialet</h1>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>Përditëso të dhënat e llogarisë tuaj</p>
+          <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{language === 'al' ? 'Ndrysho kredencialet' : language === 'en' ? 'Edit Credentials' : 'Modifica Credenziali'}</h1>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>{language === 'al' ? 'Përditëso të dhënat e llogarisë tuaj' : language === 'en' ? 'Update your account details' : 'Aggiorna i dettagli del tuo account'}</p>
         </div>
       </div>
 
@@ -98,11 +101,11 @@ export default function EditProfileView() {
           padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
         }}>
           <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={16} style={{ color: '#3b82f6' }} /> Informacioni Personal
+            <User size={16} style={{ color: '#3b82f6' }} /> {language === 'al' ? 'Informacioni Personal' : language === 'en' ? 'Personal Information' : 'Informazioni Personali'}
           </h3>
           
           <div>
-            <label style={labelStyle}>Emri i plotë</label>
+            <label style={labelStyle}>{language === 'al' ? 'Emri i plotë' : language === 'en' ? 'Full Name' : 'Nome Completo'}</label>
             <input 
               style={inputStyle} 
               value={form.name} 
@@ -111,7 +114,7 @@ export default function EditProfileView() {
           </div>
 
           <div>
-            <label style={labelStyle}>Email adresa</label>
+            <label style={labelStyle}>Email</label>
             <div style={{ position: 'relative' }}>
               <input 
                 style={{ ...inputStyle, paddingLeft: '40px' }} 
@@ -130,7 +133,7 @@ export default function EditProfileView() {
           }}>
             <Lock size={14} style={{ color: '#3b82f6' }} />
             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: 1.5 }}>
-              Të dhënat tuaja ruhen në mënyrë të enkriptuar.
+              {t.security_notice}
             </p>
           </div>
         </div>
@@ -143,30 +146,30 @@ export default function EditProfileView() {
               padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
             }}>
               <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} style={{ color: '#10b981' }} /> Vendndodhjet e Ruajtura
+                <MapPin size={16} style={{ color: '#10b981' }} /> {t.saved_places}
               </h3>
 
               <div>
-                <label style={labelStyle}>Shtëpia</label>
+                <label style={labelStyle}>{t.home}</label>
                 <div style={{ position: 'relative' }}>
                   <input 
                     style={{ ...inputStyle, paddingLeft: '40px' }} 
                     value={form.home} 
                     onChange={e => setForm({...form, home: e.target.value})}
-                    placeholder="Shto adresën..."
+                    placeholder={language === 'al' ? 'Shto adresën...' : language === 'en' ? 'Add address...' : 'Aggiungi indirizzo...'}
                   />
                   <Home size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>Puna</label>
+                <label style={labelStyle}>{t.work}</label>
                 <div style={{ position: 'relative' }}>
                   <input 
                     style={{ ...inputStyle, paddingLeft: '40px' }} 
                     value={form.work} 
                     onChange={e => setForm({...form, work: e.target.value})}
-                    placeholder="Shto adresën..."
+                    placeholder={language === 'al' ? 'Shto adresën...' : language === 'en' ? 'Add address...' : 'Aggiungi indirizzo...'}
                   />
                   <Briefcase size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
                 </div>
@@ -196,11 +199,11 @@ export default function EditProfileView() {
               {isSaving ? (
                 <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               ) : (
-                <><Save size={16} /> Ruaj Ndryshimet</>
+                <><Save size={16} /> {language === 'al' ? 'Ruaj Ndryshimet' : language === 'en' ? 'Save Changes' : 'Salva Modifiche'}</>
               )}
             </button>
             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
-              Ndryshimet do të aplikohen menjëherë në të gjithë sistemin AlbRoute.
+              {language === 'al' ? 'Ndryshimet do të aplikohen menjëherë në të gjithë sistemin Urbani Im.' : language === 'en' ? 'Changes will be applied immediately across Urbani Im.' : 'Le modifiche verranno applicate immediatamente in tutto il sistema Urbani Im.'}
             </p>
           </div>
         </div>

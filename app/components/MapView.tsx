@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { BUS_SHAPES } from '../store/busShapes';
 import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, Moon, Sun, Globe, Bus, Route, MapPin } from 'lucide-react';
+import { translations } from '../store/translations';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
@@ -18,6 +19,9 @@ export default function MapView() {
   const userMarkerRef = useRef<any>(null);
   const routeScrollerRef = useRef<HTMLDivElement>(null);
 
+  const language = useStore((s: any) => s.language);
+  const t = translations[language] || translations.al;
+
   const [mapReady, setMapReady] = useState(false);
   const [infoPanel, setInfoPanel] = useState<any>(null);
   const [activeRouteFilter, setActiveRouteFilter] = useState<string | null>(null);
@@ -29,11 +33,12 @@ export default function MapView() {
   const setSelectedBus = useStore((s: any) => s.setSelectedBus);
   const setView = useStore((s: any) => s.setView);
   const selectedStop = useStore((s: any) => s.selectedStop);
-  const language = useStore((s: any) => s.language);
+  // language already defined above
   const activeTrip = useStore((s: any) => s.activeTrip);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
   const startTracking = useStore((s: any) => s.startTracking);
   const stopTracking = useStore((s: any) => s.stopTracking);
+  const addNotification = useStore((s: any) => s.addNotification);
 
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
 
@@ -91,18 +96,33 @@ export default function MapView() {
     startTracking();
 
     const handleOrientation = (e: any) => {
-      const heading = e.webkitCompassHeading || e.alpha;
+      let heading = null;
+
+      if (e.webkitCompassHeading) {
+        // iOS device
+        heading = e.webkitCompassHeading;
+      } else if (e.absolute && e.alpha !== null) {
+        // Android / Modern standard
+        heading = 360 - e.alpha;
+      } else if (e.alpha !== null) {
+        heading = 360 - e.alpha;
+      }
+
       if (heading !== null) setDeviceHeading(heading);
     };
 
-    if (typeof window !== 'undefined') {
-      const win = window as any;
-      if ('ondeviceorientationabsolute' in win) {
-        win.addEventListener('deviceorientationabsolute', handleOrientation);
-      } else if ('ondeviceorientation' in win) {
-        win.addEventListener('deviceorientation', handleOrientation);
+    const initOrientation = () => {
+      if (typeof window !== 'undefined') {
+        const win = window as any;
+        if ('ondeviceorientationabsolute' in win) {
+          win.addEventListener('deviceorientationabsolute', handleOrientation);
+        } else {
+          win.addEventListener('deviceorientation', handleOrientation);
+        }
       }
-    }
+    };
+
+    initOrientation();
 
     return () => {
       stopTracking();
@@ -113,6 +133,19 @@ export default function MapView() {
     };
   }, []);
 
+  const requestCompassPermission = async () => {
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      try {
+        const permission = await (DeviceOrientationEvent as any).requestPermission();
+        if (permission === 'granted') {
+          addNotification(language === 'al' ? 'Busulla u aktivizua! 🧭' : language === 'en' ? 'Compass activated! 🧭' : 'Bussola attivata! 🧭', 'success');
+        }
+      } catch (err) {
+        console.error('Compass permission error:', err);
+      }
+    }
+  };
+
   const showStops = useStore((s: any) => s.showStops);
   const showRoutes = useStore((s: any) => s.showRoutes);
   const showBuses = useStore((s: any) => s.showBuses);
@@ -121,6 +154,29 @@ export default function MapView() {
   const setShowBuses = useStore((s: any) => s.setShowBuses);
   const setSelectedStop = useStore((s: any) => s.setSelectedStop);
   const highlightMarkerRef = useRef<any>(null);
+
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+    setTouchCurrentY(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY === null) return;
+    const diff = e.touches[0].clientY - touchStartY;
+    if (diff > 0) setTouchCurrentY(diff);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchCurrentY !== null && touchCurrentY > 80) {
+      setSelectedStop(null);
+      setInfoPanel(null);
+    }
+    setTouchStartY(null);
+    setTouchCurrentY(null);
+  };
 
   const TILES = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -182,6 +238,20 @@ export default function MapView() {
     (map as any)._tileLayer = newTile;
   }, [mapStyle]);
 
+  // ── MAP CLICK HANDLER ──
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady) return;
+
+    const onMapClick = () => {
+      setSelectedStop(null);
+      setInfoPanel(null);
+    };
+
+    map.on('click', onMapClick);
+    return () => { map.off('click', onMapClick); };
+  }, [mapReady, setSelectedStop]);
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
@@ -205,6 +275,10 @@ export default function MapView() {
           <div style="font-weight:800;margin-bottom:6px;font-size:13px;color:#000;border-bottom:1px solid #eee;padding-bottom:2px;">${stop.name}</div>
           <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:2px;width:100%;">${linesHtml}</div>
         </div>`, { direction: 'top', offset: [0, -8], className: 'square-tooltip' });
+
+      marker.on('click', () => {
+        setSelectedStop(stop);
+      });
 
       marker.addTo(map);
       stopMarkersRef.current.push(marker);
@@ -475,7 +549,7 @@ export default function MapView() {
     `;
 
       // Tooltip card
-      const loadLabel = load > 40 ? 'Plot' : load > 25 ? 'Mesatar' : 'Lirë';
+      const loadLabel = load > 40 ? t.full : load > 25 ? t.medium : t.empty;
       const loadBadgeBg = load > 40 ? '#fef2f2' : load > 25 ? '#fffbeb' : '#f0fdf4';
       const loadBadgeColor = load > 40 ? '#dc2626' : load > 25 ? '#d97706' : '#16a34a';
 
@@ -493,26 +567,26 @@ export default function MapView() {
               width:10px;height:10px;border-radius:50%;
               background:${bus.routeColor};flex-shrink:0
             "></div>
-            <span style="font-size:13px;font-weight:700;color:#0f172a">Linja ${bus.routeName}</span>
+            <span style="font-size:13px;font-weight:700;color:#0f172a">${language === 'it' ? 'Linea' : language === 'en' ? 'Route' : 'Linja'} ${bus.routeName}</span>
           </div>
           <span style="
             font-size:9px;font-weight:700;letter-spacing:0.08em;
             background:#ecfdf5;color:#059669;
             padding:3px 7px;border-radius:20px;
-          ">● LIVE</span>
+          ">● ${t.live.toUpperCase()}</span>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:6px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:11px;color:#64748b">Stacioni radhës</span>
+            <span style="font-size:11px;color:#64748b">${t.nextStop}</span>
             <span style="font-size:11px;font-weight:600;color:#0f172a">${bus.nextStop || '—'}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:11px;color:#64748b">Shpejtësia</span>
+            <span style="font-size:11px;color:#64748b">${t.speed}</span>
             <span style="font-size:11px;font-weight:600;color:#0f172a">${Math.round(bus.speed)} km/h</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:11px;color:#64748b">Ngarkesa</span>
+            <span style="font-size:11px;color:#64748b">${t.load}</span>
             <span style="
               font-size:10px;font-weight:700;
               background:${loadBadgeBg};color:${loadBadgeColor};
@@ -563,7 +637,7 @@ export default function MapView() {
     if (highlightMarkerRef.current) map.removeLayer(highlightMarkerRef.current);
 
     const pulseHtml = `
-    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
       <div style="
         position:absolute;inset:0;border-radius:50%;
         background:rgba(99,102,241,0.12);
@@ -574,13 +648,6 @@ export default function MapView() {
         background:rgba(99,102,241,0.18);
         animation:pulse-ring 1.8s ease-out 0.4s infinite
       "></div>
-      <div style="
-        width:16px;height:16px;border-radius:50%;
-        background:#6366f1;
-        border:3px solid #fff;
-        box-shadow:0 0 0 2px rgba(99,102,241,0.5),0 4px 12px rgba(99,102,241,0.4);
-        position:relative;z-index:2;
-      "></div>
     </div>
   `;
 
@@ -589,8 +656,7 @@ export default function MapView() {
       zIndexOffset: 1000,
     }).addTo(map);
 
-    const timer = setTimeout(() => setSelectedStop(null), 5000);
-    return () => clearTimeout(timer);
+    // Keep pulse and panel visible until manually dismissed
   }, [selectedStop]);
 
   const scrollRoutes = (direction: 'left' | 'right') => {
@@ -610,7 +676,7 @@ export default function MapView() {
           <div className="brand-dot animate-pulse" />
           <div className="brand-info">
             <h1>Urbani Im</h1>
-            <p>Tiranë Live Map</p>
+            <p>{t.tirana_live_map}</p>
           </div>
         </div>
       </div>
@@ -620,17 +686,17 @@ export default function MapView() {
         <div className="controls-column">
           {/* Layer Selector - Vertical */}
           <div className="glass-panel vertical-group desktop-only">
-            <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title="Dark Mode"><Moon size={20} /></button>
-            <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title="Light Mode"><Sun size={20} /></button>
-            <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title="Satellite"><Globe size={20} /></button>
+            <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title={t.dark_mode}><Moon size={20} /></button>
+            <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title={t.light_mode}><Sun size={20} /></button>
+            <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title={t.satellite}><Globe size={20} /></button>
           </div>
 
           <div className="v-spacer desktop-only" />
 
           {/* Zoom Controls */}
           <div className="glass-panel vertical-group desktop-only">
-            <button onClick={() => mapInstanceRef.current?.zoomIn()}><ZoomIn size={20} /></button>
-            <button onClick={() => mapInstanceRef.current?.zoomOut()}><ZoomOut size={20} /></button>
+            <button onClick={() => mapInstanceRef.current?.zoomIn()} title={t.zoom_in}><ZoomIn size={20} /></button>
+            <button onClick={() => mapInstanceRef.current?.zoomOut()} title={t.zoom_out}><ZoomOut size={20} /></button>
           </div>
 
           <div className="v-spacer" />
@@ -638,7 +704,12 @@ export default function MapView() {
           {/* Locate Button */}
           <button
             className="glass-panel action-btn locate-btn"
-            onClick={() => { fetchUserLocation(); mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17); }}
+            onClick={() => {
+              requestCompassPermission();
+              fetchUserLocation();
+              mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
+            }}
+            title={t.locate_me}
           >
             <Locate size={22} />
           </button>
@@ -647,9 +718,9 @@ export default function MapView() {
 
           {/* Visibility Toggles */}
           <div className="glass-panel vertical-group toggles desktop-only">
-            <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title="Stops"><MapPin size={20} /></button>
-            <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title="Buses"><Bus size={20} /></button>
-            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title="Routes"><Route size={20} /></button>
+            <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title={t.toggle_stops}><MapPin size={20} /></button>
+            <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title={t.toggle_buses}><Bus size={20} /></button>
+            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title={t.toggle_routes}><Route size={20} /></button>
           </div>
         </div>
       </div>
@@ -662,7 +733,7 @@ export default function MapView() {
               <Navigation size={20} style={{ color: 'var(--primary)' }} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Udhëtimi Aktiv
+                  {t.active_trip_label}
                 </span>
                 <span style={{ color: '#fff', fontWeight: 800, fontSize: '15px' }}>
                   {activeTrip.from} ➔ {activeTrip.to}
@@ -678,7 +749,7 @@ export default function MapView() {
               onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; }}
             >
-              <X size={16} /> Mbyll
+              <X size={16} /> {t.close}
             </button>
           </div>
         ) : (
@@ -691,7 +762,7 @@ export default function MapView() {
                   className={`route-item all ${!activeRouteFilter ? 'active' : ''}`}
                   onClick={() => setActiveRouteFilter(null)}
                 >
-                  Të gjitha
+                  {t.all}
                 </button>
                 {BUS_ROUTES.map(route => (
                   <button
@@ -713,13 +784,22 @@ export default function MapView() {
 
       {/* ── BUS INFO PANEL ── */}
       {infoPanel && (
-        <div className="bus-info-card animate-slide-up">
+        <div 
+          className="bus-info-card animate-slide-up"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none', transition: touchStartY !== null ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+        >
+          <div className="mobile-drag-handle">
+            <div className="drag-indicator" />
+          </div>
           <div className="card-header" style={{ background: infoPanel.routeColor }}>
             <div className="header-main">
               <span className="route-num">{infoPanel.routeName}</span>
               <div className="route-texts">
                 <h3>{infoPanel.routeLabel}</h3>
-                <p>Në lëvizje • Live</p>
+                <p>{t.on_move} • {t.live}</p>
               </div>
             </div>
             <button className="close-btn" onClick={() => setInfoPanel(null)}><X size={20} /></button>
@@ -727,23 +807,76 @@ export default function MapView() {
           <div className="card-body">
             <div className="data-grid">
               <div className="data-item">
-                <label>Stacioni Radhës</label>
-                <b>{infoPanel.nextStop || 'Duke llogaritur...'}</b>
+                <label>{t.nextStop}</label>
+                <b>{infoPanel.nextStop || t.calculating}</b>
               </div>
               <div className="data-item">
-                <label>Pasagjerë</label>
+                <label>{t.passengers}</label>
                 <div className="load-bar">
                   <div className="load-fill" style={{ width: `${(infoPanel.passengerLoad / 50) * 100}%`, background: infoPanel.passengerLoad > 40 ? 'var(--danger)' : 'var(--success)' }} />
                 </div>
                 <b>{infoPanel.passengerLoad} / 50</b>
               </div>
               <div className="data-item">
-                <label>Shpejtësia</label>
+                <label>{t.speed}</label>
                 <b>{Math.round(infoPanel.speed)} km/h</b>
               </div>
             </div>
             <button className="view-details-btn" onClick={() => setView('tracker')}>
-              Shiko Detajet <ChevronRight size={16} />
+              {t.view_details} <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STOP INFO PANEL ── */}
+      {selectedStop && (
+        <div 
+          className="stop-info-card animate-slide-up"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none', transition: touchStartY !== null ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+        >
+          <div className="mobile-drag-handle">
+            <div className="drag-indicator" />
+          </div>
+          <div className="card-header" style={{ background: '#3b82f6' }}>
+            <div className="header-main">
+              <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px' }}><MapPin size={20} /></span>
+              <div className="route-texts">
+                <h3 style={{ maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
+                <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • {selectedStop.id}</p>
+              </div>
+            </div>
+            <button className="close-btn" onClick={() => setSelectedStop(null)}><X size={20} /></button>
+          </div>
+          <div className="card-body">
+            <label style={{ display: 'block', fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
+              {language === 'al' ? 'Linjat që kalojnë këtu' : language === 'en' ? 'Passing routes' : 'Linee di passaggio'}
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).length > 0 ? (
+                BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
+                  <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color, boxShadow: `0 0 8px ${line.color}` }} />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
+                  </div>
+                ))
+              ) : (
+                <span style={{ fontSize: '12px', color: '#64748b' }}>{t.no_data}</span>
+              )}
+            </div>
+            
+            <button 
+              className="view-details-btn" 
+              style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', marginTop: '20px' }}
+              onClick={() => {
+                useStore.getState().setTripFrom(selectedStop.name);
+                setView('planner');
+              }}
+            >
+              {language === 'al' ? 'Nisu nga ky stacion' : language === 'en' ? 'Depart from here' : 'Parti da qui'} <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -833,6 +966,15 @@ export default function MapView() {
           border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.7);
           z-index: 1000; overflow: hidden;
         }
+
+        /* ── STOP INFO PANEL ── */
+        .stop-info-card {
+          position: absolute; top: 120px; left: 20px; width: 320px;
+          background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+          z-index: 1000; overflow: hidden;
+        }
+
         .card-header { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
         .header-main { display: flex; align-items: center; gap: 14px; }
         .route-num { 
@@ -867,12 +1009,46 @@ export default function MapView() {
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
         @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+        .mobile-drag-handle { display: none; }
+
         @media (max-width: 900px) {
           .overlay-top-left { top: 15px; left: 15px; }
           .overlay-right-center { right: 15px; bottom: 180px; top: auto; transform: none; }
           .overlay-bottom-center { bottom: 20px; width: 98%; }
           .nav-arrow { display: none; }
-          .bus-info-card { bottom: 110px; right: 15px; left: 15px; width: auto; }
+          .close-btn { display: none !important; }
+          
+          @keyframes sheet-slide-up {
+            from { transform: translateY(100%); opacity: 1; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+
+          .bus-info-card, .stop-info-card { 
+            top: auto !important; 
+            bottom: 0 !important; 
+            left: 0 !important; 
+            right: 0 !important; 
+            width: 100% !important; 
+            border-bottom-left-radius: 0; 
+            border-bottom-right-radius: 0;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            /* Shtojmë 80px hapësirë që AppShell mos ta mbulojë përmbajtjen poshtë */
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
+            animation: sheet-slide-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+          }
+
+          .mobile-drag-handle {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 24px; position: absolute; top: 0; left: 0;
+            z-index: 10; cursor: grab; background: transparent;
+          }
+          .mobile-drag-handle:active { cursor: grabbing; }
+          .drag-indicator {
+            width: 40px; height: 5px; background: rgba(255,255,255,0.3);
+            border-radius: 3px; margin-top: 4px;
+          }
+          .card-header { padding-top: 24px !important; }
         }
       `}</style>
     </div>

@@ -59,7 +59,7 @@ export default function SplashScreen() {
           opacity: 0,
           animation: 'splash-pulse 2s infinite 0.5s'
         }} />
-        
+
         {/* Logo */}
         <div style={{
           width: '100%',
@@ -74,10 +74,10 @@ export default function SplashScreen() {
           boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
           animation: 'splash-logo 1.5s ease-out'
         }}>
-          <img 
-            src="/logo-Urban.png" 
-            alt="AlbRoute Logo" 
-            style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+          <img
+            src="/logo-Urban.png"
+            alt="AlbRoute Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '29px' }}
           />
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function SplashScreen() {
         marginBottom: '8px',
         animation: 'fadeIn 0.8s ease-out 0.3s both'
       }}>
-        AlbRoute
+        Urbani Im
       </h1>
       <p style={{
         fontSize: '14px',

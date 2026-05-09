@@ -547,12 +547,10 @@ export const BUS_ROUTES = [
     stops: [
       'pesembedhjete_kateshet', 'materniteti', 'harry_fultz', 'don_bosko', 'vizion_plus',
       'rruga_muzaket', 'ptuu', 'administrativja', 'spitali_ushtarak', 'laprake',
-      'aleks_buda', 'gjergj_fishta', 'gjergj_legisi', 'vangjel_noti', 'shinat_e_trenit', 'skender_luarasi',
-      'mark_bajraktari', 'isuf_uka'
+      'aleks_buda', 'gjergj_fishta'
     ],
     returnStops: [
-      'gjergj_fishta', 'isuf_uka', 'mark_bajraktari', 'skender_luarasi', 'shinat_e_trenit',
-      'vangjel_noti', 'gjergj_legisi', 'aleks_buda', 'laprake', 'spitali_ushtarak',
+      'gjergj_fishta', 'aleks_buda', 'laprake', 'spitali_ushtarak',
       'administrativja', 'ptuu', 'rruga_muzaket', 'vizion_plus', 'don_bosko',
       'harry_fultz', 'stacioni_i_trenit', 'pesembedhjete_kateshet'
     ]

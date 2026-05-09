@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight, X } from 'lucide-react';
+import { translations } from '../store/translations';
 
 export default function BusTracker() {
   const buses = useStore((state: any) => state.buses);
@@ -11,6 +12,8 @@ export default function BusTracker() {
   const saveRoute = useStore((state: any) => state.saveRoute);
   const removeSavedRoute = useStore((state: any) => state.removeSavedRoute);
   const addNotification = useStore((state: any) => state.addNotification);
+  const language = useStore((state: any) => state.language);
+  const t = translations[language] || translations.al;
 
   const [selectedRouteId, setSelectedRouteId] = useState(selectedBus?.routeId || 'L1');
   const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
@@ -34,10 +37,10 @@ export default function BusTracker() {
   const toggleFavorite = () => {
     if (isSaved) {
       removeSavedRoute(selectedRouteId);
-      addNotification(`Linja ${route?.name} u hoq nga të preferuarat.`, 'info');
+      addNotification(language === 'al' ? `Linja ${route?.name} u hoq nga të preferuarat.` : language === 'en' ? `Route ${route?.name} removed from favorites.` : `Linea ${route?.name} rimossa dai preferiti.`, 'info');
     } else {
       saveRoute(route!);
-      addNotification(`Linja ${route?.name} u shtua tek të preferuarat!`, 'success');
+      addNotification(language === 'al' ? `Linja ${route?.name} u shtua tek të preferuarat!` : language === 'en' ? `Route ${route?.name} added to favorites!` : `Linea ${route?.name} aggiunta ai preferiti!`, 'success');
     }
   };
 
@@ -46,9 +49,9 @@ export default function BusTracker() {
     : (route?.stops || []).slice(0, 8);
 
   const getLoadInfo = (load: number) => {
-    if (load > 40) return { label: 'I mbushur', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' };
-    if (load > 25) return { label: 'Mesatar', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' };
-    return { label: 'I lirë', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' };
+    if (load > 40) return { label: t.full, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' };
+    if (load > 25) return { label: t.medium, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' };
+    return { label: t.empty, color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' };
   };
 
   return (
@@ -65,9 +68,9 @@ export default function BusTracker() {
           <Bus size={18} style={{ color: '#fff' }} />
         </div>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>Ndjek autobuzin</h1>
+          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.bus_tracker_title}</h1>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            Pozicioni dhe informacioni në kohë reale
+            {t.bus_tracker_subtitle}
           </p>
         </div>
         <div style={{
@@ -78,7 +81,7 @@ export default function BusTracker() {
         }}>
           <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
           <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>
-            Live · {buses.length} aktiv
+            {t.live} · {buses.length} {t.active_buses_count.toLowerCase()}
           </span>
         </div>
       </div>
@@ -104,7 +107,7 @@ export default function BusTracker() {
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Kërko linjën... (p.sh. '14', 'Kombinat')"
+            placeholder={t.search_route_placeholder}
             style={{
               background: 'none', border: 'none', outline: 'none',
               color: '#fff', fontSize: '13px', width: '100%',
@@ -125,7 +128,7 @@ export default function BusTracker() {
           textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)',
           marginBottom: '10px',
         }}>
-          {filteredRoutes.length} linja {searchQuery ? `· "${searchQuery}"` : ''}
+          {filteredRoutes.length} {t.routes.toLowerCase()} {searchQuery ? `· "${searchQuery}"` : ''}
         </div>
 
         {/* Route grid */}
@@ -196,7 +199,7 @@ export default function BusTracker() {
                   <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{route.label}</span>
                 </div>
                 <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-                  {route.stops.length} stacione · ~{route.stops.length * 3} min udhëtim
+                  {t.stations_count.replace('{count}', route.stops.length.toString())} · {t.trip_duration.replace('{count}', (route.stops.length * 3).toString())}
                 </p>
               </div>
             </div>
@@ -209,7 +212,7 @@ export default function BusTracker() {
                 border: '0.5px solid rgba(255,255,255,0.08)',
                 padding: '4px 10px', borderRadius: '8px',
               }}>
-                40L / biletë
+                {t.ticket_price}
               </span>
               <div style={{
                 padding: '4px 9px', borderRadius: '99px',
@@ -217,7 +220,7 @@ export default function BusTracker() {
                 border: '0.5px solid rgba(16,185,129,0.2)',
                 fontSize: '11px', color: '#10b981', fontWeight: '600',
               }}>
-                {routeBuses.length} aktiv
+                {routeBuses.length} {t.live.toLowerCase()}
               </div>
               <button
                 onClick={toggleFavorite}
@@ -298,8 +301,8 @@ export default function BusTracker() {
                 display: 'flex', alignItems: 'center', gap: '5px',
               }}>
               {showAllStops
-                ? <><ChevronUp size={13} /> Trego më pak</>
-                : <><ChevronDown size={13} /> Trego të gjitha {route.stops.length} stacionet</>
+                ? <><ChevronUp size={13} /> {t.show_less}</>
+                : <><ChevronDown size={13} /> {t.show_all_stations.replace('{count}', route.stops.length.toString())}</>
               }
             </button>
           )}
@@ -316,7 +319,7 @@ export default function BusTracker() {
           fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em',
           textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
         }}>
-          Autobuzët aktivë · Linja {route?.name}
+          {t.active_buses_count} · {language === 'al' ? 'Linja' : language === 'en' ? 'Route' : 'Linea'} {route?.name}
         </span>
       </div>
 
@@ -326,7 +329,7 @@ export default function BusTracker() {
           const isSelected = selectedBus?.id === bus.id;
           const busLabel = bus.id && typeof bus.id === 'string' && bus.id.includes('-')
             ? bus.id.split('-')[1]
-            : (bus.id ? String(bus.id).substring(Math.max(0, String(bus.id).length - 4)) : 'Pa ID');
+            : (bus.id ? String(bus.id).substring(Math.max(0, String(bus.id).length - 4)) : (language === 'al' ? 'Pa ID' : 'No ID'));
 
           return (
             <div
@@ -371,7 +374,7 @@ export default function BusTracker() {
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
                       <ArrowRight size={10} />
-                      <span>Stacioni tjetër: <span style={{ color: 'rgba(255,255,255,0.6)' }}>{bus.nextStop}</span></span>
+                      <span>{t.nextStop}: <span style={{ color: 'rgba(255,255,255,0.6)' }}>{bus.nextStop}</span></span>
                     </div>
                   </div>
                 </div>
@@ -389,11 +392,11 @@ export default function BusTracker() {
                     {loadInfo.label}
                   </span>
                   <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '5px' }}>
-                    ~{Math.round(2 + Math.random() * 5)} min mbërritje
+                    {t.arrival_time.replace('{count}', Math.round(2 + Math.random() * 5).toString())}
                   </p>
                   {bus.delay > 0 && (
                     <p style={{ fontSize: '10px', color: '#f59e0b', marginTop: '2px', fontWeight: '600' }}>
-                      {bus.delay} min vonesë
+                      {t.delay_label.replace('{count}', bus.delay.toString())}
                     </p>
                   )}
                 </div>
@@ -402,9 +405,9 @@ export default function BusTracker() {
               {/* Stats */}
               <div style={{ marginTop: '12px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                 {[
-                  { icon: <Users size={11} />, val: `${bus.passengerLoad} / 50 pasagjerë` },
+                  { icon: <Users size={11} />, val: `${bus.passengerLoad} / 50 ${t.passengers.toLowerCase()}` },
                   { icon: <Navigation size={11} />, val: `${Math.round(bus.speed)} km/h` },
-                  { icon: <Clock size={11} />, val: 'Live tracking' },
+                  { icon: <Clock size={11} />, val: t.live_tracking },
                 ].map((s, i) => (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
@@ -446,10 +449,10 @@ export default function BusTracker() {
               <Bus size={20} style={{ color: 'rgba(255,255,255,0.15)' }} />
             </div>
             <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', fontSize: '13px' }}>
-              Asnjë autobus aktiv për këtë linjë
+              {t.no_active_buses}
             </p>
             <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)' }}>
-              Provo të zgjedhësh linjë tjetër ose kontrollo më vonë.
+              {t.check_later}
             </p>
           </div>
         )}
