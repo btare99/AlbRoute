@@ -22,6 +22,7 @@ export default function MapView() {
   const [infoPanel, setInfoPanel] = useState<any>(null);
   const [activeRouteFilter, setActiveRouteFilter] = useState<string | null>(null);
   const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'satellite'>('dark');
+  const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
 
   const buses = useStore((s: any) => s.buses);
   const userLocation = useStore((s: any) => s.userLocation);
@@ -88,7 +89,28 @@ export default function MapView() {
 
   useEffect(() => {
     startTracking();
-    return () => stopTracking();
+
+    const handleOrientation = (e: any) => {
+      const heading = e.webkitCompassHeading || e.alpha;
+      if (heading !== null) setDeviceHeading(heading);
+    };
+
+    if (typeof window !== 'undefined') {
+      const win = window as any;
+      if ('ondeviceorientationabsolute' in win) {
+        win.addEventListener('deviceorientationabsolute', handleOrientation);
+      } else if ('ondeviceorientation' in win) {
+        win.addEventListener('deviceorientation', handleOrientation);
+      }
+    }
+
+    return () => {
+      stopTracking();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        window.removeEventListener('deviceorientationabsolute', handleOrientation);
+      }
+    };
   }, []);
 
   const showStops = useStore((s: any) => s.showStops);
@@ -332,31 +354,58 @@ export default function MapView() {
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
 
+    const currentHeading = userLocation.heading ?? deviceHeading ?? 0;
+    const showArrow = userLocation.heading !== null || deviceHeading !== null;
+
     const html = `
-    <div style="position:relative;width:24px;height:24px">
+    <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
+      <!-- Outer Halo/Pulse -->
       <div style="
-        position:absolute;inset:0;border-radius:50%;
-        background:rgba(59,130,246,0.15);
-        animation:pulse-ring 2.5s ease-out infinite
+        position:absolute;width:100%;height:100%;border-radius:50%;
+        background:rgba(59,130,246,0.1);
+        animation:pulse-ring 3s ease-out infinite
       "></div>
+      
+      <!-- Directional Compass Arrow -->
+      ${showArrow ? `
       <div style="
-        position:absolute;inset:5px;border-radius:50%;
+        position:absolute;inset:0;top:5px;
+        display:flex;justify-content:center;
+        transform: rotate(${currentHeading}deg);
+        transition: transform 0.2s cubic-bezier(0.1, 0, 0.3, 1);
+        z-index: 5;
+      ">
+        <div style="
+          width: 0; height: 0;
+          border-left: 7px solid transparent;
+          border-right: 7px solid transparent;
+          border-bottom: 12px solid #3b82f6;
+          filter: drop-shadow(0 0 2px rgba(59,130,246,0.5));
+        "></div>
+      </div>
+      ` : ''}
+
+      <!-- Core Location Dot -->
+      <div style="
+        position:relative;width:14px;height:14px;border-radius:50%;
         background:#3b82f6;
         border:2.5px solid #fff;
-        box-shadow:0 0 0 1px rgba(59,130,246,0.4)
+        box-shadow:0 2px 10px rgba(0,0,0,0.3);
+        z-index:10
       "></div>
     </div>
   `;
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }));
     } else {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: L.divIcon({ html, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }),
+        icon: L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }),
         zIndexOffset: 999,
       }).addTo(map);
     }
-  }, [userLocation, mapReady]);
+  }, [userLocation, deviceHeading, mapReady]);
 
 
   // ── BUS MARKERS ───────────────────────────────────────────────────────────────
@@ -556,7 +605,7 @@ export default function MapView() {
       <div ref={mapContainerRef} className="map-container" />
 
       {/* ── TOP OVERLAY: BRANDING ── */}
-      <div className="overlay-top-left">
+      <div className="overlay-top-left desktop-only">
         <div className="glass-panel main-brand-panel">
           <div className="brand-dot animate-pulse" />
           <div className="brand-info">
@@ -570,16 +619,16 @@ export default function MapView() {
       <div className="overlay-right-center">
         <div className="controls-column">
           {/* Layer Selector - Vertical */}
-          <div className="glass-panel vertical-group">
+          <div className="glass-panel vertical-group desktop-only">
             <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title="Dark Mode"><Moon size={20} /></button>
             <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title="Light Mode"><Sun size={20} /></button>
             <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title="Satellite"><Globe size={20} /></button>
           </div>
 
-          <div className="v-spacer" />
+          <div className="v-spacer desktop-only" />
 
           {/* Zoom Controls */}
-          <div className="glass-panel vertical-group">
+          <div className="glass-panel vertical-group desktop-only">
             <button onClick={() => mapInstanceRef.current?.zoomIn()}><ZoomIn size={20} /></button>
             <button onClick={() => mapInstanceRef.current?.zoomOut()}><ZoomOut size={20} /></button>
           </div>
@@ -589,15 +638,15 @@ export default function MapView() {
           {/* Locate Button */}
           <button
             className="glass-panel action-btn locate-btn"
-            onClick={() => { fetchUserLocation(); mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 16); }}
+            onClick={() => { fetchUserLocation(); mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17); }}
           >
             <Locate size={22} />
           </button>
 
-          <div className="v-spacer" />
+          <div className="v-spacer desktop-only" />
 
           {/* Visibility Toggles */}
-          <div className="glass-panel vertical-group toggles">
+          <div className="glass-panel vertical-group toggles desktop-only">
             <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title="Stops"><MapPin size={20} /></button>
             <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title="Buses"><Bus size={20} /></button>
             <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title="Routes"><Route size={20} /></button>
@@ -606,7 +655,7 @@ export default function MapView() {
       </div>
 
       {/* ── BOTTOM OVERLAY: ROUTE SELECTOR WITH ARROWS ── */}
-      <div className="overlay-bottom-center">
+      <div className="overlay-bottom-center desktop-only">
         {activeTrip ? (
           <div className="glass-panel" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -712,6 +761,11 @@ export default function MapView() {
         .overlay-top-left { position: absolute; top: 20px; left: 20px; z-index: 1000; }
         .overlay-right-center { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 1000; }
         .overlay-bottom-center { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
+
+        @media (max-width: 900px) {
+          .desktop-only { display: none !important; }
+          .overlay-right-center { top: auto; bottom: 20px; transform: none; right: 20px; }
+        }
 
         .glass-panel {
           background: rgba(15, 23, 42, 0.85);

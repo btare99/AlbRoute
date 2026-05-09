@@ -1,6 +1,6 @@
 'use client';
-import { Map, Navigation, Route, User, Star, LogOut, Bus, Bell, Search, Globe, X, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight } from 'lucide-react';
+import { useState, Fragment } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
 import { translations } from '../store/translations';
 
@@ -15,6 +15,7 @@ export default function Sidebar() {
   const setSelectedStop = useStore((state: any) => state.setSelectedStop);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
+  const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
 
   const t = translations[language] || translations.al;
 
@@ -24,7 +25,6 @@ export default function Sidebar() {
     { id: 'planner', label: t.planner, icon: Route },
     { id: 'favorites', label: t.saved, icon: Star },
     { id: 'profile', label: t.profile, icon: User },
-    { id: 'admin', label: 'Admin Panel', icon: ShieldCheck },
   ];
 
   const filteredStops = BUS_STOPS.filter(stop =>
@@ -32,14 +32,14 @@ export default function Sidebar() {
   ).slice(0, 10);
 
   const languages = [
-    { id: 'al', flag: '🇦🇱', name: 'Shqip' },
-    { id: 'en', flag: '🇺🇸', name: 'English' },
-    { id: 'it', flag: '🇮🇹', name: 'Italiano' },
+    { id: 'al', flag: 'al', name: 'Shqip' },
+    { id: 'en', flag: 'us', name: 'English' },
+    { id: 'it', flag: 'it', name: 'Italiano' },
   ];
 
   const handleViewChange = (id: string) => {
     setView(id);
-    if (window.innerWidth <= 900) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
       useStore.getState().setSidebarOpen(false);
     }
   };
@@ -48,222 +48,307 @@ export default function Sidebar() {
     setSelectedStop(stop);
     setSearchQuery('');
     setView('map');
-    if (window.innerWidth <= 900) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
       useStore.getState().setSidebarOpen(false);
     }
   };
 
-  const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
-
   return (
     <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-      {/* Brand */}
-      <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-        <button
-          onClick={() => useStore.getState().setSidebarOpen(false)}
-          className="mobile-close-btn"
-          style={{
-            position: 'absolute', top: '24px', right: '16px',
-            width: '32px', height: '32px', borderRadius: '8px',
-            display: 'none', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.05)', color: '#fff',
-            border: '1px solid var(--border)'
-          }}
-        >
-          <X size={18} />
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/logo-Urban.png" alt="Urban Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', lineHeight: '1', color: '#fff' }}>Urbani Im</h2>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Tirana Transit</p>
-          </div>
-        </div>
 
-        {/* Search Bar */}
-        <div style={{ marginTop: '20px', position: 'relative' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input
-              type="text"
-              placeholder={t.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 36px',
-                borderRadius: '10px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border)',
-                fontSize: '13px',
-                color: '#fff',
-                outline: 'none',
-                transition: 'var(--transition)',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-            />
+      {/* ── Header ── */}
+      <div className="s-header">
+        <div className="s-brand">
+          <div className="s-logo">
+            <img src="/logo-Urban.png" alt="Urban Logo" />
           </div>
-
-          {/* Search Results */}
-          {searchQuery && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
-              background: 'rgba(15,23,42,0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              maxHeight: '250px',
-              overflowY: 'auto',
-              zIndex: 100,
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-            }}>
-              {filteredStops.length > 0 ? (
-                filteredStops.map((stop: any) => (
-                  <button
-                    key={stop.id}
-                    onClick={() => handleStopSelect(stop)}
-                    style={{
-                      width: '100%', padding: '10px 14px',
-                      display: 'flex', flexDirection: 'column', gap: '2px',
-                      background: 'transparent', border: 'none',
-                      textAlign: 'left', cursor: 'pointer',
-                      transition: 'var(--transition)',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{stop.name}</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.stations}</span>
-                  </button>
-                ))
-              ) : (
-                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  {language === 'al' ? 'Asnjë stacion nuk u gjet' : 'No station found'}
-                </div>
-              )}
+          <div className="s-brand-text">
+            <span className="s-brand-name">Urbani Im</span>
+            <div className="s-brand-sub">
+              <span className="s-dot" />
+              <span>Tirana Live</span>
             </div>
-          )}
+          </div>
         </div>
+        <button
+          className="s-close-btn"
+          onClick={() => useStore.getState().setSidebarOpen(false)}
+          aria-label="Mbyll"
+        >
+          <X size={16} />
+        </button>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
-        {MENU.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => handleViewChange(id)}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '11px 14px', borderRadius: '10px', marginBottom: '2px',
-              fontSize: '14px', fontWeight: '500', cursor: 'pointer',
-              transition: 'var(--transition)',
-              background: currentView === id ? 'rgba(59,130,246,0.12)' : 'transparent',
-              color: currentView === id ? 'var(--primary)' : 'var(--text-muted)',
-              border: 'none',
-            }}>
-            <Icon size={18} />
-            <span style={{ flex: 1, textAlign: 'left' }}>{label}</span>
-          </button>
+      {/* ── Search ── */}
+      <div className="s-search">
+        <div className="s-search-box">
+          <Search size={14} className="s-search-icon" />
+          <input
+            type="text"
+            placeholder={t.searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="s-clear" onClick={() => setSearchQuery('')}>
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {searchQuery && (
+          <div className="s-results">
+            {filteredStops.length > 0 ? (
+              filteredStops.map((stop: any) => (
+                <button
+                  key={stop.id}
+                  className="s-result-item"
+                  onClick={() => handleStopSelect(stop)}
+                >
+                  <Navigation size={13} className="s-result-icon" />
+                  <div className="s-result-info">
+                    <span className="s-result-name">{stop.name}</span>
+                    <span className="s-result-sub">{t.stations}</span>
+                  </div>
+                  <ChevronRight size={13} className="s-result-arrow" />
+                </button>
+              ))
+            ) : (
+              <div className="s-no-results">
+                {language === 'al' ? 'Asnjë stacion nuk u gjet' : 'No station found'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Nav ── */}
+      <div className="s-nav-label">{t.menu || 'Menu'}</div>
+      <nav className="s-nav">
+        {MENU.map(({ id, label, icon: Icon }, idx) => (
+          <Fragment key={id}>
+            {id === 'profile' && <div className="s-divider" />}
+            <button
+              onClick={() => handleViewChange(id)}
+              className={`s-nav-item ${currentView === id ? 'active' : ''}`}
+            >
+              <div className="s-icon-wrap">
+                <Icon size={16} />
+              </div>
+              <span className="s-item-label">{label}</span>
+            </button>
+          </Fragment>
         ))}
       </nav>
 
-      {/* Language Selector Custom Dropdown */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-        <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.language}</p>
-        <div style={{ position: 'relative' }}>
-          <div
+      {/* ── Footer ── */}
+      <div className="s-footer">
+
+        {/* Language */}
+        <div className="s-lang-wrap">
+          <button
+            className="s-lang-trigger"
             onClick={() => setIsLangOpen(!isLangOpen)}
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid var(--border)',
-              color: '#fff',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              transition: 'var(--transition)'
-            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img
-                src={`https://flagcdn.com/w40/${language === 'al' ? 'al' : language === 'en' ? 'us' : 'it'}.png`}
-                alt={language}
-                style={{ width: '20px', height: '14px', borderRadius: '2px', objectFit: 'cover' }}
-              />
-              <span>{language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano'}</span>
-            </div>
-            <Globe size={14} style={{ color: 'var(--text-muted)' }} />
-          </div>
+            <img
+              src={`https://flagcdn.com/w40/${language === 'al' ? 'al' : language === 'en' ? 'us' : 'it'}.png`}
+              alt={language}
+            />
+            <span>{language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano'}</span>
+            <Globe size={13} className="s-globe" />
+          </button>
 
           {isLangOpen && (
-            <div style={{
-              position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0,
-              background: 'rgba(15,23,42,0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              zIndex: 200,
-              overflow: 'hidden',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-            }}>
+            <div className="s-lang-dropdown">
               {languages.map((lang) => (
                 <button
                   key={lang.id}
-                  onClick={() => {
-                    setLanguage(lang.id);
-                    setIsLangOpen(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    transition: 'var(--transition)',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  className={`s-lang-option ${language === lang.id ? 'selected' : ''}`}
+                  onClick={() => { setLanguage(lang.id); setIsLangOpen(false); }}
                 >
-                  <img
-                    src={`https://flagcdn.com/w40/${lang.id === 'al' ? 'al' : lang.id === 'en' ? 'us' : 'it'}.png`}
-                    alt={lang.name}
-                    style={{ width: '20px', height: '14px', borderRadius: '2px', objectFit: 'cover' }}
-                  />
-                  <span style={{ fontSize: '13px' }}>{lang.name}</span>
+                  <img src={`https://flagcdn.com/w40/${lang.flag}.png`} alt={lang.name} />
+                  <span>{lang.name}</span>
+                  {language === lang.id && <div className="s-lang-check" />}
                 </button>
               ))}
             </div>
           )}
         </div>
-      </div>
 
-      {/* User Footer */}
-      <div style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', borderRadius: '10px', background: 'rgba(255,255,255,0.04)' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
-            {user?.name?.charAt(0).toUpperCase()}
+        {/* User */}
+        <div className="s-user">
+          <div className="s-avatar">
+            {user?.name?.charAt(0).toUpperCase() || 'A'}
+            <div className="s-online" />
           </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <p style={{ fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</p>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
+          <div className="s-user-info">
+            <span className="s-username">{user?.name || 'Admin'}</span>
+            <span className="s-useremail">{user?.email || 'admin@busal.al'}</span>
           </div>
-          <button onClick={logout} title="Dil" style={{ color: 'var(--text-muted)', padding: '4px', borderRadius: '6px', transition: 'var(--transition)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
-            <LogOut size={16} />
+          <button className="s-logout-btn" onClick={logout} title="Dil">
+            <LogOut size={15} />
           </button>
         </div>
+
       </div>
+
+      <style jsx>{`
+        /* Header */
+        .s-header {
+          padding: 18px 16px 14px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .s-brand { display: flex; align-items: center; gap: 10px; }
+        .s-logo {
+          width: 34px; height: 34px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.08);
+          padding: 4px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .s-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .s-brand-name { display: block; font-size: 15px; font-weight: 700; color: #fff; }
+        .s-brand-sub { display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+        .s-dot { width: 5px; height: 5px; background: #10b981; border-radius: 50%; }
+        .s-brand-sub span { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .s-close-btn {
+          background: none; border: none; color: #475569; cursor: pointer;
+          padding: 5px; border-radius: 8px; display: none; align-items: center;
+        }
+        @media (max-width: 900px) { .s-close-btn { display: flex; } }
+
+        /* Search */
+        .s-search { padding: 12px 12px 8px; position: relative; }
+        .s-search-box {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 10px;
+          padding: 8px 10px;
+        }
+        .s-search-box:focus-within { border-color: var(--primary); background: rgba(255,255,255,0.06); }
+        .s-search-icon { color: #475569; flex-shrink: 0; }
+        .s-search-box input {
+          flex: 1; background: none; border: none; outline: none;
+          color: #fff; font-size: 13px;
+        }
+        .s-search-box input::placeholder { color: #475569; }
+        .s-clear { background: none; border: none; color: #475569; cursor: pointer; }
+
+        .s-results {
+          position: absolute; top: calc(100% - 4px); left: 12px; right: 12px;
+          background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+          z-index: 100; max-height: 260px; overflow-y: auto;
+        }
+        .s-result-item {
+          width: 100%; padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+          background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.03);
+          cursor: pointer; text-align: left; transition: 0.15s;
+        }
+        .s-result-item:hover { background: rgba(255,255,255,0.04); }
+        .s-result-icon { color: var(--primary); opacity: 0.7; }
+        .s-result-info { flex: 1; display: flex; flex-direction: column; }
+        .s-result-name { color: #fff; font-size: 12px; font-weight: 600; }
+        .s-result-sub { color: #475569; font-size: 11px; }
+        .s-result-arrow { color: #334155; }
+        .s-no-results { padding: 12px; color: #475569; font-size: 12px; text-align: center; }
+
+        /* Nav */
+        .s-nav-label {
+          padding: 6px 16px 4px;
+          font-size: 10px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 1px;
+          color: #334155;
+        }
+        .s-nav { flex: 1; padding: 4px 8px; overflow-y: auto; }
+        .s-nav-item {
+          width: 100%; display: flex; align-items: center; gap: 10px;
+          padding: 10px 10px; border-radius: 10px; margin-bottom: 2px;
+          background: none; border: none; color: #64748b;
+          cursor: pointer; transition: all 0.15s; text-align: left;
+        }
+        .s-nav-item:hover { color: #cbd5e1; background: rgba(255,255,255,0.04); }
+        .s-nav-item.active { color: #fff; background: rgba(59,130,246,0.12); }
+        .s-nav-item.active .s-icon-wrap { background: rgba(59,130,246,0.2); color: var(--primary); }
+        .s-icon-wrap {
+          width: 28px; height: 28px; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(255,255,255,0.04);
+          flex-shrink: 0;
+        }
+        .s-item-label { font-size: 13px; font-weight: 600; }
+        .s-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 6px 4px; }
+
+        /* Footer */
+        .s-footer {
+          padding: 14px 12px;
+          border-top: 1px solid rgba(255,255,255,0.06);
+          display: flex; flex-direction: column; gap: 10px;
+        }
+
+        /* Language */
+        .s-lang-wrap { position: relative; }
+        .s-lang-trigger {
+          width: 100%; display: flex; align-items: center; gap: 8px;
+          padding: 8px 10px; border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          color: #94a3b8; cursor: pointer; transition: 0.15s;
+        }
+        .s-lang-trigger:hover { background: rgba(255,255,255,0.05); }
+        .s-lang-trigger img { width: 17px; height: 12px; border-radius: 2px; object-fit: cover; }
+        .s-lang-trigger span { flex: 1; font-size: 12px; font-weight: 600; text-align: left; }
+        .s-globe { color: #475569; }
+
+        .s-lang-dropdown {
+          position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+          background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+          overflow: hidden;
+        }
+        .s-lang-option {
+          width: 100%; padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+          background: none; border: none; color: #94a3b8; cursor: pointer; transition: 0.15s;
+        }
+        .s-lang-option:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .s-lang-option.selected { color: #fff; }
+        .s-lang-option img { width: 17px; height: 12px; border-radius: 2px; object-fit: cover; }
+        .s-lang-option span { flex: 1; font-size: 12px; font-weight: 600; }
+        .s-lang-check { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
+
+        /* User */
+        .s-user {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px; border-radius: 12px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .s-avatar {
+          width: 32px; height: 32px; border-radius: 9px;
+          background: var(--primary);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-size: 13px; font-weight: 700;
+          position: relative; flex-shrink: 0;
+        }
+        .s-online {
+          position: absolute; bottom: -2px; right: -2px;
+          width: 8px; height: 8px;
+          background: #10b981; border: 2px solid #0f172a; border-radius: 50%;
+        }
+        .s-user-info { flex: 1; min-width: 0; }
+        .s-username { display: block; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .s-useremail { display: block; color: #475569; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .s-logout-btn {
+          background: none; border: none; color: #475569; cursor: pointer;
+          padding: 5px; border-radius: 7px; display: flex; align-items: center; transition: 0.15s;
+        }
+        .s-logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+      `}</style>
     </aside>
   );
 }

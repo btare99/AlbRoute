@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
   Bus, Clock, Activity, LogOut,
   Calendar, User, Navigation,
-  Users, Zap, Droplets
+  Users, Zap, Droplets, AlertTriangle
 } from 'lucide-react';
 import useStore from '../store/useStore';
 
@@ -12,6 +12,24 @@ export default function StaffDashboard() {
   const logout = useStore((state: any) => state.logout);
   const [liveProfile, setLiveProfile] = useState<any>(null);
   const [assignedBus, setAssignedBus] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'mjeti' | 'programi' | 'oraret'>('mjeti');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- Confirmation Modal State ---
+  const [confModal, setConfModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    confirmColor?: string;
+    icon?: any;
+  } | null>(null);
+
+  const closeConf = () => setConfModal(null);
+  const triggerConf = (data: { title: string, message: string, onConfirm: () => void, confirmText?: string, confirmColor?: string, icon?: any }) => {
+    setConfModal({ ...data, isOpen: true });
+  };
 
   useEffect(() => {
     if (!currentAccount?.id) return;
@@ -38,6 +56,8 @@ export default function StaffDashboard() {
         }
       } catch (err) {
         console.error('StaffDashboard live fetch failed', err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchLive();
@@ -63,9 +83,9 @@ export default function StaffDashboard() {
   };
   const busPlate = assignedBus?.plate || assignedBus?.id || null;
   const busRoute = assignedBus?.routeId || null;
-  const t1 = Array.isArray(assignedBus?.schedules?.terminal1) ? [...assignedBus.schedules.terminal1].sort() : [];
-  const t2 = Array.isArray(assignedBus?.schedules?.terminal2) ? [...assignedBus.schedules.terminal2].sort() : [];
-  const firstDeparture = t1[0] || t2[0] || null;
+  const t1 = Array.isArray(assignedBus?.schedules?.terminal1) ? [...assignedBus.schedules.terminal1] : [];
+  const t2 = Array.isArray(assignedBus?.schedules?.terminal2) ? [...assignedBus.schedules.terminal2] : [];
+  const firstDeparture = (t1[0]?.d || t2[0]?.d || null);
 
   return (
     <div className="sds-shell">
@@ -96,53 +116,215 @@ export default function StaffDashboard() {
               {new Date().toLocaleTimeString('al-AL', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-          <button onClick={logout} className="sds-logout-btn">
+          <button onClick={() => {
+            triggerConf({
+              title: 'Dalja nga Sistemi',
+              message: 'A je i sigurt që dëshiron të dalësh? Do të duhet të identifikohesh përsëri për të hyrë në profilin tënd.',
+              confirmText: 'Dil',
+              confirmColor: '#ef4444',
+              icon: LogOut,
+              onConfirm: logout
+            });
+          }} className="sds-logout-btn">
             <LogOut size={14} />
             <span>Dilni</span>
           </button>
         </div>
       </header>
 
+      {/* --- CONFIRMATION MODAL --- */}
+      {confModal?.isOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '380px', background: '#111118', border: '1px solid #1e1e35',
+            borderRadius: '24px', padding: '32px', textAlign: 'center',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+            animation: 'modalFadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{
+              width: '56px', height: '56px', borderRadius: '18px',
+              background: `${confModal.confirmColor || '#ef4444'}15`,
+              color: confModal.confirmColor || '#ef4444',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              {confModal.icon ? <confModal.icon size={24} /> : <AlertTriangle size={24} />}
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 10px 0', color: '#fff' }}>
+              {confModal.title}
+            </h3>
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 28px 0', lineHeight: '1.6' }}>
+              {confModal.message}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button
+                onClick={closeConf}
+                style={{
+                  padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)',
+                  color: '#fff', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: '700'
+                }}
+              >
+                Anulo
+              </button>
+              <button
+                onClick={confModal.onConfirm}
+                style={{
+                  padding: '12px', borderRadius: '12px', background: confModal.confirmColor || '#ef4444',
+                  color: '#fff', border: 'none', cursor: 'pointer',
+                  fontSize: '13px', fontWeight: '700', boxShadow: `0 8px 20px ${confModal.confirmColor || '#ef4444'}30`
+                }}
+              >
+                {confModal.confirmText || 'Konfirmo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+    @keyframes sds-shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .sds-sk {
+      background: linear-gradient(90deg, #1e1e2e 25%, #2a2a40 50%, #1e1e2e 75%);
+      background-size: 200% 100%;
+      animation: sds-shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes modalFadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 960px) {
+          .sds-body { grid-template-columns: 1fr !important; }
+          .sds-topbar-right .sds-logout-btn { display: none !important; }
+          .sds-dynamic-island { display: flex !important; }
+          
+          /* Mobile content visibility */
+          .sds-mobile-hidden { display: none !important; }
+          .sds-mobile-visible { display: flex !important; }
+        }
+      `}</style>
+
+      {/* ── DYNAMIC ISLAND (MOBILE NAV) ── */}
+      <div className="sds-dynamic-island" style={{
+        position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+        zIndex: 9999, display: 'none', alignItems: 'center', gap: '8px',
+        padding: '8px', borderRadius: '32px', background: 'rgba(13, 13, 26, 0.8)',
+        backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}>
+        {[
+          { id: 'mjeti', label: 'Mjeti', icon: Bus },
+          { id: 'programi', label: 'Programi', icon: Calendar },
+          { id: 'oraret', label: 'Oraret', icon: Clock }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: activeTab === tab.id ? '10px 20px' : '10px',
+              borderRadius: '24px', border: 'none', cursor: 'pointer',
+              background: activeTab === tab.id ? '#a78bfa' : 'transparent',
+              color: activeTab === tab.id ? '#fff' : '#94a3b8',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              fontWeight: '700', fontSize: '13px'
+            }}
+          >
+            <tab.icon size={18} />
+            {activeTab === tab.id && <span>{tab.label}</span>}
+          </button>
+        ))}
+        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+        <button
+          onClick={() => {
+            triggerConf({
+              title: 'Dalja nga Sistemi',
+              message: 'A je i sigurt që dëshiron të dalësh?',
+              confirmText: 'Dil',
+              confirmColor: '#ef4444',
+              icon: LogOut,
+              onConfirm: logout
+            });
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+            background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', cursor: 'pointer'
+          }}
+        >
+          <LogOut size={18} />
+        </button>
+      </div>
+
       {/* ── BODY ── */}
       <div className="sds-body">
 
         {/* ══ LEFT ══ */}
-        <div className="sds-left">
+        <div className={`sds-left ${activeTab === 'oraret' ? 'sds-mobile-hidden' : ''}`}>
 
-          {/* BUS CARD */}
-          <div className="sds-bus-card">
+          {/* BUS CARD (Active on 'mjeti' or Desktop) */}
+          <div className={`sds-bus-card ${activeTab !== 'mjeti' ? 'sds-mobile-hidden' : ''}`}>
             <div className="sds-bus-card-bg-circle" />
             <div className="sds-bus-card-bg-circle2" />
-
             <div className="sds-bus-card-inner">
-              <div className="sds-bus-label-row">
-                <div className="sds-live-dot" />
-                <span className="sds-live-text">LIVE</span>
-                <span className="sds-divider-dot">·</span>
-                <Navigation size={11} style={{ color: '#94a3b8' }} />
-                <span className="sds-bus-sublabel">Linja {busRoute || '—'}</span>
-              </div>
-
-              <div className="sds-bus-id" style={{ color: busPlate ? '#eab308' : '#475569', fontFamily: 'monospace', letterSpacing: '2px' }}>
-                {busPlate || 'Pa Caktuar'}
-              </div>
-
-              <div className="sds-bus-bottom">
-                <div className="sds-shift-pill">
-                  <Clock size={12} color="#c084fc" />
-                  <span>Turni: {weeklyProg[days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]] || '—'}</span>
+              {isLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div className="sds-sk" style={{ width: '80px', height: '12px' }} />
+                  <div className="sds-sk" style={{ width: '160px', height: '32px', borderRadius: 8 }} />
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div className="sds-sk" style={{ width: '120px', height: '28px', borderRadius: 20 }} />
+                    <div className="sds-sk" style={{ width: '100px', height: '28px', borderRadius: 20 }} />
+                  </div>
                 </div>
-                <div className="sds-shift-pill">
-                  <span style={{ color: '#94a3b8' }}>Fillimi</span>
-                  <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{firstDeparture || '—'}</span>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="sds-bus-label-row">
+                    <div className="sds-live-dot" />
+                    <span className="sds-live-text">LIVE</span>
+                    <span className="sds-divider-dot">·</span>
+                    <Navigation size={11} style={{ color: '#94a3b8' }} />
+                    <span className="sds-bus-sublabel">Linja {busRoute || '—'}</span>
+                  </div>
+                  <div className="sds-bus-id" style={{ color: busPlate ? '#eab308' : '#475569', fontFamily: 'monospace', letterSpacing: '2px' }}>
+                    {busPlate || 'Pa Caktuar'}
+                  </div>
+                  <div className="sds-bus-bottom">
+                    <div className="sds-shift-pill">
+                      <Clock size={12} color="#c084fc" />
+                      <span>Turni: {weeklyProg[days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]] || '—'}</span>
+                    </div>
+                    <div className="sds-shift-pill">
+                      <span style={{ color: '#94a3b8' }}>Fillimi</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{firstDeparture || '—'}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* METRICS ROW */}
-          <div className="sds-metrics-row">
-            {[
+          {/* METRICS ROW (Active on 'mjeti' or Desktop) */}
+          <div className={`sds-metrics-row ${activeTab !== 'mjeti' ? 'sds-mobile-hidden' : ''}`}>
+            {isLoading ? (
+              [0,1,2].map(i => (
+                <div key={i} className="sds-metric-card">
+                  <div className="sds-sk" style={{ width: '32px', height: '32px', borderRadius: '10px', margin: '0 auto 8px' }} />
+                  <div className="sds-sk" style={{ width: '60px', height: '18px', borderRadius: 5, margin: '0 auto 6px' }} />
+                  <div className="sds-sk" style={{ width: '80px', height: '10px', borderRadius: 4, margin: '0 auto 10px' }} />
+                  <div className="sds-sk" style={{ width: '100%', height: '4px', borderRadius: 4 }} />
+                </div>
+              ))
+            ) : [
               { label: 'Pasagjerë', value: '68%', bar: 68, icon: <Users size={14} />, color: '#a78bfa' },
               { label: 'Shpejtësi', value: '24 km/h', bar: 48, icon: <Zap size={14} />, color: '#38bdf8' },
               { label: 'Karburant', value: '22L/100km', bar: 72, icon: <Droplets size={14} />, color: '#fb923c' },
@@ -158,8 +340,8 @@ export default function StaffDashboard() {
             ))}
           </div>
 
-          {/* WEEKLY */}
-          <div className="sds-week-card">
+          {/* WEEKLY (Active on 'programi' or Desktop) */}
+          <div className={`sds-week-card ${activeTab !== 'programi' ? 'sds-mobile-hidden' : ''}`}>
             <div className="sds-week-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div className="sds-week-icon"><Calendar size={14} color="#fbbf24" /></div>
@@ -167,9 +349,15 @@ export default function StaffDashboard() {
               </div>
               <span className="sds-week-range">12 – 18 Maj 2025</span>
             </div>
-
             <div className="sds-week-grid">
-              {days.map((day, idx) => {
+              {isLoading ? (
+                days.map((d) => (
+                  <div key={d} className="sds-day-cell">
+                    <div className="sds-sk" style={{ width: '28px', height: '9px', borderRadius: 4, margin: '0 auto 8px' }} />
+                    <div className="sds-sk" style={{ width: '48px', height: '24px', borderRadius: 7 }} />
+                  </div>
+                ))
+              ) : days.map((day, idx) => {
                 const shift = weeklyProg[day] || 'Pushim';
                 const isToday = (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1) === idx;
                 const isOff = shift === 'Pushim';
@@ -186,7 +374,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* ══ RIGHT ══ */}
-        <div className="sds-right">
+        <div className={`sds-right ${activeTab !== 'oraret' ? 'sds-mobile-hidden' : ''}`}>
           <div className="sds-schedule-panel-card">
             <div className="sds-schedule-card-header">
               <div>
@@ -200,19 +388,33 @@ export default function StaffDashboard() {
                 <div className="sds-station-header">Terminali 1</div>
                 <div className="sds-station-header">Terminali 2</div>
               </div>
-              <div className="sds-station-subheader-row">
+              <div className="sds-station-subheader-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
                 <div className="sds-station-subheader">Nisja</div>
+                <div className="sds-station-subheader">Mbërritja</div>
                 <div className="sds-station-subheader">Nisja</div>
+                <div className="sds-station-subheader">Mbërritja</div>
               </div>
-              {t1.length === 0 && t2.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="sds-station-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+                    {[0,1,2,3].map(ci => (
+                      <div key={ci} className="sds-station-cell">
+                        <div className="sds-sk" style={{ width: '52px', height: '14px', borderRadius: 4, margin: '0 auto' }} />
+                      </div>
+                    ))}
+                  </div>
+                ))
+              ) : t1.length === 0 && t2.length === 0 ? (
                 <div style={{ padding: '24px', textAlign: 'center', color: 'var(--sd-muted)', fontSize: '13px' }}>
                   Nuk ka orar të caktuar për këtë mjet.
                 </div>
               ) : (
                 Array.from({ length: Math.max(t1.length, t2.length) }).map((_, i) => (
-                  <div key={i} className="sds-station-row">
-                    <div className="sds-station-cell">{t1[i] || '—'}</div>
-                    <div className="sds-station-cell">{t2[i] || '—'}</div>
+                  <div key={i} className="sds-station-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+                    <div className="sds-station-cell" style={{ color: '#a5f3fc' }}>{t1[i]?.d || '—'}</div>
+                    <div className="sds-station-cell" style={{ color: '#64748b' }}>{t1[i]?.a || '—'}</div>
+                    <div className="sds-station-cell" style={{ color: '#a5f3fc' }}>{t2[i]?.d || '—'}</div>
+                    <div className="sds-station-cell" style={{ color: '#64748b' }}>{t2[i]?.a || '—'}</div>
                   </div>
                 ))
               )}
@@ -522,9 +724,10 @@ export default function StaffDashboard() {
     @media (max-width: 520px) {
       .sds-week-grid { grid-template-columns: 1fr; }
       .sds-metrics-row { grid-template-columns: 1fr 1fr; }
-      .sds-topbar { flex-direction: column; align-items: stretch; }
-      .sds-topbar-right { justify-content: space-between; }
-      .sds-logout-btn { flex: 1; justify-content: center; }
+      .sds-date-block { display: flex !important; align-items: flex-end; }
+      .sds-date-day { font-size: 10px; }
+      .sds-date-time { font-size: 9px; }
+      .sds-topbar { flex-direction: row !important; align-items: center !important; }
     }
   `}</style>
     </div>

@@ -5,6 +5,7 @@ import BusTracker from './BusTracker';
 import TripPlanner from './TripPlanner';
 import ProfileView from './ProfileView';
 import UserFavorites from './UserFavorites';
+import EditProfileView from './EditProfileView';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User } from 'lucide-react';
 import { translations } from '../store/translations';
@@ -31,62 +32,158 @@ export default function AppShell() {
       case 'planner': return <TripPlanner />;
       case 'profile': return <ProfileView />;
       case 'favorites': return <UserFavorites />;
+      case 'edit_profile': return <EditProfileView />;
       default: return <MapView />;
     }
   };
 
-
   return (
-    <div className="app-layout" style={{ touchAction: 'manipulation', overflowX: 'hidden' }}>
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <Sidebar />
-      </div>
+    <div className="app-layout">
+      {/* Sidebar + overlay */}
+      <Sidebar />
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
+        onClick={() => useStore.getState().setSidebarOpen(false)}
+      />
 
-      <div className="main-area">
+      {/* Main content */}
+      <main className="main-area">
         {renderView()}
-      </div>
+      </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="mobile-nav" style={{
-        position: 'fixed', bottom: '24px', left: '16px', right: '16px', height: '68px',
-        background: 'rgba(10, 15, 26, 0.85)', backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        zIndex: 2000, display: 'none', alignItems: 'center', justifyContent: 'space-around',
-        padding: '0 10px',
-      }}>
-        {MENU.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setView(id)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              background: currentView === id ? 'rgba(59,130,246,0.1)' : 'transparent',
-              borderRadius: '16px',
-              border: 'none',
-              color: currentView === id ? 'var(--primary)' : '#fff',
-              cursor: 'pointer', transition: 'var(--transition)', flex: 1,
-              padding: '6px 0',
-              boxShadow: currentView === id ? '0 4px 12px rgba(59,130,246,0.2)' : 'none',
-            }}
-          >
-            <Icon size={22} strokeWidth={currentView === id ? 2.5 : 2} />
-            <span style={{ fontSize: '10px', fontWeight: '600' }}>{label}</span>
-          </button>
-        ))}
+      {/* Floating bottom nav — mobile only */}
+      <nav className="bottom-nav" aria-label="Main navigation">
+        {MENU.map(({ id, label, icon: Icon }) => {
+          const active = currentView === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              className={`nav-btn ${active ? 'active' : ''}`}
+              aria-current={active ? 'page' : undefined}
+            >
+              <span className="nav-icon">
+                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+                {active && <span className="nav-dot" />}
+              </span>
+              <span className="nav-label">{label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <style jsx>{`
+        /* ── Layout ───────────────────────────────── */
+        .app-layout {
+          display: flex;
+          height: 100dvh;
+          overflow: hidden;
+          touch-action: manipulation;
+        }
+
+        .main-area {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        /* ── Bottom nav — hidden on desktop ──────── */
+        .bottom-nav {
+          display: none;
+        }
+
+        /* ── Mobile breakpoint ───────────────────── */
         @media (max-width: 900px) {
-          .mobile-nav {
-            display: flex !important;
-          }
+          .sidebar { display: none !important; }
+
           .main-area {
-            height: 100% !important;
-            padding-bottom: 110px !important;
+            height: 100%;
+            padding-bottom: 96px;
           }
-          .sidebar {
-            display: none !important;
+
+          /* Floating pill nav */
+          .bottom-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+
+            position: fixed;
+            bottom: 20px;
+            left: 12px;
+            right: 12px;
+            height: 64px;
+            padding: 0 8px;
+
+            background: rgba(10, 14, 24, 0.82);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow:
+              0 4px 24px rgba(0, 0, 0, 0.45),
+              0 1px 0 rgba(255,255,255,0.05) inset;
+            z-index: 2000;
+          }
+
+          /* ── Individual tab button ─────────────── */
+          .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex: 1;
+            padding: 8px 0;
+
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 14px;
+            transition: transform 0.15s ease, color 0.2s ease;
+            color: rgba(255, 255, 255, 0.45);
+            -webkit-tap-highlight-color: transparent;
+          }
+
+          .nav-btn:active {
+            transform: scale(0.92);
+          }
+
+          .nav-btn.active {
+            color: #60a5fa; /* blue-400 — crisp, readable */
+          }
+
+          /* ── Icon wrapper with activity dot ────── */
+          .nav-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          /* Small dot below icon for active state */
+          .nav-dot {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #60a5fa;
+            animation: dotPop 0.2s ease forwards;
+          }
+
+          @keyframes dotPop {
+            from { opacity: 0; transform: translateX(-50%) scale(0); }
+            to   { opacity: 1; transform: translateX(-50%) scale(1); }
+          }
+
+          /* ── Label ─────────────────────────────── */
+          .nav-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            margin-top: 2px;
           }
         }
       `}</style>

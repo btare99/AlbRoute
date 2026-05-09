@@ -764,14 +764,20 @@ export const BUS_ROUTES = [
   // ── LINJA 16A: Linja e Gjelbër Orar ─────────────────────────────────────────
   {
     id: 'L16A', name: '16A', label: 'Linja e Gjelbër Orar', color: '#2ecc71',
-    stops: [],
-    returnStops: []
+    stops: [
+      'karl_topia_orar', 'farmacia_10_orar', 'cajupi_orar', 'odise_paskali_orar',
+      'bryli_orar', 'ish_ekspozita_orar', 'shallvaret', 'drejtoria_e_policise_a',
+      'gjykata', 'sabaudin_gabrani_orar', 'inxhinieria_orar', 'karl_topia_orar'
+    ]
   },
 
   // ── LINJA 16B: Linja e Gjelbër Antiorar ──────────────────────────────────────
   {
     id: 'L16B', name: '16B', label: 'Linja e Gjelbër Antiorar', color: '#2ecc71',
-    stops: [],
-    returnStops: []
+    stops: [
+      'karl_topia_antiorar', 'inxhinieria_antiorar', 'sabaudin_gabrani_antiorar',
+      'vasil_shanto_antiorar', 'kinema_agimi', 'vellazerit_frasheri', 'bryli_antiorar',
+      'odise_paskali_antiorar', 'cajupi_antiorar', 'farmacia_10_antiorar', 'karl_topia_antiorar'
+    ]
   },
 ];

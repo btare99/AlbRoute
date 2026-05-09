@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useStore from './store/useStore';
 import LoginPage from './components/LoginPage';
 import AppShell from './components/AppShell';
@@ -7,44 +7,47 @@ import NotificationBar from './components/NotificationBar';
 import SplashScreen from './components/SplashScreen';
 
 export default function Page() {
+  const [hasMounted, setHasMounted] = useState(false);
   const isAuthenticated = useStore((s: any) => s.isAuthenticated);
   const moveBuses = useStore((s: any) => s.moveBuses);
-  const syncBusesWithAdmin = useStore((s: any) => s.syncBusesWithAdmin);
-  const adminBuses = useStore((s: any) => s.adminBuses);
 
+  // Initial Data Load & Polling
   useEffect(() => {
-    syncBusesWithAdmin();
-  }, [adminBuses, syncBusesWithAdmin]);
+    setHasMounted(true);
 
-  // Cross-tab synchronization: Listen for storage changes from Backoffice
-  useEffect(() => {
-    // Fetch initial data
     const loadInitialData = async () => {
-      await useStore.getState().fetchAdminDrivers();
-      await useStore.getState().fetchAdminInspectors();
-      await useStore.getState().fetchAdminBuses();
-      await useStore.getState().syncBusesWithAdmin();
-      await useStore.getState().fetchBuses();
+      try {
+        await useStore.getState().fetchAdminDrivers();
+        await useStore.getState().fetchAdminInspectors();
+        await useStore.getState().fetchAdminBuses();
+        await useStore.getState().syncBusesWithAdmin();
+        await useStore.getState().fetchBuses();
+      } catch (err) {
+        console.error('Initial data load failed', err);
+      }
     };
-    
+
     loadInitialData();
 
-    // Polling për përditësimet e buseve çdo 5 sekonda
     const pollInterval = setInterval(async () => {
       await useStore.getState().fetchAdminBuses();
       await useStore.getState().syncBusesWithAdmin();
       await useStore.getState().fetchBuses();
-    }, 5000);
+    }, 10000); // Polling every 10s to be safer
 
     return () => clearInterval(pollInterval);
   }, []);
 
+  // Simulation Movement
   useEffect(() => {
+    if (!hasMounted) return;
     const interval = setInterval(() => {
       moveBuses();
     }, 100);
     return () => clearInterval(interval);
-  }, [moveBuses]);
+  }, [hasMounted, moveBuses]);
+
+  if (!hasMounted) return null;
 
   return (
     <>

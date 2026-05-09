@@ -76,7 +76,7 @@ export default function BackofficeApp() {
   if (currentAccount.role === 'dispatcher' || currentAccount.role === 'operator') {
     return (
       <div className="backoffice-shell">
-        <main className="page-frame page-content">
+        <main className="page-frame admin-panel-frame page-content">
           <AdminPanel />
         </main>
       </div>

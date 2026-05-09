@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
-import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
+import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight, X } from 'lucide-react';
 
 export default function BusTracker() {
   const buses = useStore((state: any) => state.buses);
@@ -13,10 +13,10 @@ export default function BusTracker() {
   const addNotification = useStore((state: any) => state.addNotification);
 
   const [selectedRouteId, setSelectedRouteId] = useState(selectedBus?.routeId || 'L1');
+  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllStops, setShowAllStops] = useState(false);
 
-  // Filtro linjat sipas kërkimit
   const filteredRoutes = useMemo(() => {
     if (!searchQuery) return BUS_ROUTES;
     const q = searchQuery.toLowerCase();
@@ -37,93 +37,124 @@ export default function BusTracker() {
       addNotification(`Linja ${route?.name} u hoq nga të preferuarat.`, 'info');
     } else {
       saveRoute(route!);
-      addNotification(`Linja ${route?.name} u shtua tek të preferuarat! ⭐`, 'success');
+      addNotification(`Linja ${route?.name} u shtua tek të preferuarat!`, 'success');
     }
   };
 
-  // Shfaq vetëm disa stacione fillimisht
   const stopsToShow = showAllStops
     ? route?.stops || []
     : (route?.stops || []).slice(0, 8);
 
   const getLoadInfo = (load: number) => {
-    if (load > 40) return { label: 'I mbushur', cls: 'badge-danger', color: 'var(--danger)' };
-    if (load > 25) return { label: 'Mesatar', cls: 'badge-warning', color: 'var(--warning)' };
-    return { label: 'I lirë', cls: 'badge-success', color: 'var(--success)' };
+    if (load > 40) return { label: 'I mbushur', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' };
+    if (load > 25) return { label: 'Mesatar', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' };
+    return { label: 'I lirë', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' };
   };
 
   return (
-    <div className="page-content" style={{ maxWidth: 960 }}>
+    <div className="page-content">
+
       {/* ── Header ── */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Ndjek Autobuzin</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            Pozicioni dhe informacioni i autobuzëve në kohë reale
+      <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{
+          width: '38px', height: '38px', borderRadius: '10px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '0.5px solid rgba(255,255,255,0.08)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Bus size={18} style={{ color: '#fff' }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>Ndjek autobuzin</h1>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
+            Pozicioni dhe informacioni në kohë reale
           </p>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, fontSize: 11,
-            color: 'var(--success)', background: 'rgba(16,185,129,0.1)',
-            padding: '4px 10px', borderRadius: 20, marginLeft: 'auto',
-          }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite' }} />
-            Live · {buses.length} autobuzë aktiv
-          </div>
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          padding: '5px 10px', borderRadius: '99px',
+          background: 'rgba(16,185,129,0.08)',
+          border: '0.5px solid rgba(16,185,129,0.2)',
+        }}>
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
+          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>
+            Live · {buses.length} aktiv
+          </span>
         </div>
       </div>
 
       {/* ── Kërkim + Zgjedhje Linje ── */}
-      <div className="card" style={{ marginBottom: 20, padding: 16 }}>
-        {/* Kërkim */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)',
+        border: '0.5px solid rgba(255,255,255,0.07)',
+        borderRadius: '14px',
+        padding: '16px',
+        marginBottom: '14px',
+      }}>
+        {/* Search */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
-          background: 'rgba(255,255,255,0.05)', borderRadius: 8,
-          padding: '8px 12px', border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '0.5px solid rgba(255,255,255,0.08)',
+          borderRadius: '10px',
+          padding: '9px 12px',
+          marginBottom: '14px',
         }}>
-          <Search size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <Search size={14} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Kërko linjën... (p.sh. '14', 'Kombinat', 'Kashar')"
+            placeholder="Kërko linjën... (p.sh. '14', 'Kombinat')"
             style={{
               background: 'none', border: 'none', outline: 'none',
-              color: 'var(--text)', fontSize: 13, width: '100%',
+              color: '#fff', fontSize: '13px', width: '100%',
             }}
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery('')} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', fontSize: 12,
-            }}>✕</button>
+              color: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center',
+            }}>
+              <X size={13} />
+            </button>
           )}
         </div>
 
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>
-          {filteredRoutes.length} LINJA {searchQuery ? `(filtër: "${searchQuery}")` : ''}
-        </p>
+        <div style={{
+          fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)',
+          marginBottom: '10px',
+        }}>
+          {filteredRoutes.length} linja {searchQuery ? `· "${searchQuery}"` : ''}
+        </div>
 
-        {/* Grid linjash */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-          {filteredRoutes.map(r => {
+        {/* Route grid */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+          {filteredRoutes.map((r, idx) => {
             const activeBuses = buses.filter((b: any) => b.routeId === r.id).length;
+            const isActive = selectedRouteId === r.id;
+            const isHovered = hoveredRouteId === r.id;
             return (
-              <button key={r.id} onClick={() => setSelectedRouteId(r.id)} style={{
-                padding: '7px 13px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                cursor: 'pointer', transition: 'var(--transition)',
-                border: '2px solid',
-                borderColor: selectedRouteId === r.id ? r.color : 'transparent',
-                background: selectedRouteId === r.id ? `${r.color}22` : 'rgba(255,255,255,0.04)',
-                color: selectedRouteId === r.id ? r.color : 'var(--text-muted)',
-                display: 'flex', alignItems: 'center', gap: 6,
-                position: 'relative',
-              }}>
+              <button
+                key={`${r.id}-${idx}`}
+                onClick={() => setSelectedRouteId(r.id)}
+                onMouseEnter={() => setHoveredRouteId(r.id)}
+                onMouseLeave={() => setHoveredRouteId(null)}
+                style={{
+                  padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  border: `0.5px solid ${isActive || isHovered ? r.color + '60' : 'rgba(255,255,255,0.07)'}`,
+                  background: isActive || isHovered ? `${r.color}15` : 'rgba(255,255,255,0.03)',
+                  color: isActive || isHovered ? r.color : 'rgba(255,255,255,0.35)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}>
                 <span>{r.name}</span>
                 {activeBuses > 0 && (
                   <span style={{
-                    background: r.color, color: '#fff',
-                    borderRadius: '50%', width: 16, height: 16,
-                    fontSize: 9, fontWeight: 800,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: isActive || isHovered ? r.color : 'rgba(255,255,255,0.1)',
+                    color: isActive || isHovered ? '#fff' : 'rgba(255,255,255,0.4)',
+                    borderRadius: '99px', padding: '1px 6px',
+                    fontSize: '10px', fontWeight: '700',
                   }}>{activeBuses}</span>
                 )}
               </button>
@@ -134,69 +165,104 @@ export default function BusTracker() {
 
       {/* ── Info linja e zgjedhur ── */}
       {route && (
-        <div className="card" style={{ marginBottom: 20, padding: 20, border: `1px solid ${route.color}33` }}>
-          {/* Header info */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: `0.5px solid ${route.color}30`,
+          borderLeft: `2px solid ${route.color}`,
+          borderRadius: '0 14px 14px 0',
+          padding: '16px 18px',
+          marginBottom: '14px',
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: `${route.color}22`, display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                border: `1px solid ${route.color}44`,
+                width: '38px', height: '38px', borderRadius: '10px',
+                background: `${route.color}15`,
+                border: `0.5px solid ${route.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Bus size={22} style={{ color: route.color }} />
+                <Bus size={18} style={{ color: route.color }} />
               </div>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                   <span style={{
-                    background: route.color, color: '#fff',
-                    padding: '2px 10px', borderRadius: 6,
-                    fontWeight: 800, fontSize: 14,
+                    background: `${route.color}20`,
+                    border: `0.5px solid ${route.color}50`,
+                    color: route.color,
+                    padding: '2px 9px', borderRadius: '99px',
+                    fontWeight: '700', fontSize: '12px',
                   }}>{route.name}</span>
-                  <h2 style={{ fontSize: 16, fontWeight: 700 }}>{route.label}</h2>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{route.label}</span>
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
                   {route.stops.length} stacione · ~{route.stops.length * 3} min udhëtim
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <span className="badge badge-success">{routeBuses.length} aktiv</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 8 }}>
-                40 Lekë / biletë
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{
+                fontSize: '11px', fontWeight: '600',
+                color: 'rgba(255,255,255,0.3)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '0.5px solid rgba(255,255,255,0.08)',
+                padding: '4px 10px', borderRadius: '8px',
+              }}>
+                40L / biletë
               </span>
-              <button className="btn btn-ghost" onClick={toggleFavorite} style={{ padding: 8 }}>
-                <Star size={17} style={{ color: isSaved ? 'var(--warning)' : undefined, fill: isSaved ? 'var(--warning)' : 'none' }} />
+              <div style={{
+                padding: '4px 9px', borderRadius: '99px',
+                background: 'rgba(16,185,129,0.08)',
+                border: '0.5px solid rgba(16,185,129,0.2)',
+                fontSize: '11px', color: '#10b981', fontWeight: '600',
+              }}>
+                {routeBuses.length} aktiv
+              </div>
+              <button
+                onClick={toggleFavorite}
+                style={{
+                  width: '30px', height: '30px', borderRadius: '8px',
+                  background: isSaved ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                  border: `0.5px solid ${isSaved ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+              >
+                <Star size={14} style={{
+                  color: isSaved ? '#f59e0b' : 'rgba(255,255,255,0.3)',
+                  fill: isSaved ? '#f59e0b' : 'none',
+                }} />
               </button>
             </div>
           </div>
 
-          {/* Timeline stacionesh */}
-          <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+          {/* Stop timeline */}
+          <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
             <div style={{ display: 'flex', minWidth: 'max-content', gap: 0 }}>
-              {stopsToShow.map((sid, i) => {
+              {stopsToShow.map((sid: string, i: number) => {
                 const stop = BUS_STOPS.find(s => s.id === sid);
                 const isFirst = i === 0;
                 const isLast = i === stopsToShow.length - 1 && !showAllStops && route.stops.length > 8;
+                const isTerminal = isFirst || isLast;
                 return (
-                  <div key={sid} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
+                  <div key={`${sid}-${i}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
                     <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                      {i > 0 && <div style={{ flex: 1, height: 2, background: route.color, opacity: 0.4 }} />}
+                      {i > 0 && <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.25 }} />}
                       <div style={{
-                        width: isFirst || isLast ? 14 : 10,
-                        height: isFirst || isLast ? 14 : 10,
+                        width: isTerminal ? '12px' : '7px',
+                        height: isTerminal ? '12px' : '7px',
                         borderRadius: '50%',
-                        background: isFirst || isLast ? route.color : `${route.color}99`,
-                        border: `2px solid var(--bg-card)`,
+                        background: isTerminal ? route.color : `${route.color}50`,
                         flexShrink: 0,
-                        boxShadow: isFirst || isLast ? `0 0 6px ${route.color}66` : 'none',
                       }} />
-                      {i < stopsToShow.length - 1 && <div style={{ flex: 1, height: 2, background: route.color, opacity: 0.4 }} />}
+                      {i < stopsToShow.length - 1 && <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.25 }} />}
                     </div>
                     <p style={{
-                      fontSize: 9, color: isFirst || isLast ? 'var(--text)' : 'var(--text-muted)',
-                      marginTop: 5, textAlign: 'center', maxWidth: 72,
-                      fontWeight: isFirst || isLast ? 700 : 400,
+                      fontSize: '10px',
+                      color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)',
+                      marginTop: '6px', textAlign: 'center', maxWidth: '72px',
+                      fontWeight: isTerminal ? '600' : '400',
                       lineHeight: 1.3,
                     }}>
                       {stop?.name}
@@ -204,73 +270,95 @@ export default function BusTracker() {
                   </div>
                 );
               })}
-              {/* Trego më shumë */}
               {!showAllStops && route.stops.length > 8 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '50px' }}>
                   <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                    <div style={{ flex: 1, height: 2, background: route.color, opacity: 0.2 }} />
-                    <div style={{ padding: '2px 6px', background: `${route.color}22`, borderRadius: 10, fontSize: 9, color: route.color, fontWeight: 700 }}>
+                    <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.15 }} />
+                    <span style={{
+                      fontSize: '10px', color: route.color, fontWeight: '600',
+                      background: `${route.color}15`,
+                      border: `0.5px solid ${route.color}40`,
+                      padding: '2px 6px', borderRadius: '99px',
+                    }}>
                       +{route.stops.length - 8}
-                    </div>
+                    </span>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Butoni show more */}
           {route.stops.length > 8 && (
             <button
               onClick={() => setShowAllStops(v => !v)}
               style={{
-                marginTop: 8, background: 'none', border: 'none',
+                marginTop: '10px', background: 'none', border: 'none',
                 cursor: 'pointer', color: route.color,
-                fontSize: 12, fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: '12px', fontWeight: '600',
+                display: 'flex', alignItems: 'center', gap: '5px',
               }}>
-              {showAllStops ? <><ChevronUp size={14} /> Trego më pak</> : <><ChevronDown size={14} /> Trego të gjitha {route.stops.length} stacionet</>}
+              {showAllStops
+                ? <><ChevronUp size={13} /> Trego më pak</>
+                : <><ChevronDown size={13} /> Trego të gjitha {route.stops.length} stacionet</>
+              }
             </button>
           )}
         </div>
       )}
 
       {/* ── Autobuzët aktivë ── */}
-      <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Radio size={15} style={{ color: 'var(--success)' }} />
-        Autobuzët Aktivë · Linja {route?.name}
-      </h2>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '7px',
+        marginBottom: '12px',
+      }}>
+        <Radio size={13} style={{ color: '#10b981' }} />
+        <span style={{
+          fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
+        }}>
+          Autobuzët aktivë · Linja {route?.name}
+        </span>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {routeBuses.map((bus: any) => {
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {routeBuses.map((bus: any, idx: number) => {
           const loadInfo = getLoadInfo(bus.passengerLoad);
           const isSelected = selectedBus?.id === bus.id;
+          const busLabel = bus.id && typeof bus.id === 'string' && bus.id.includes('-')
+            ? bus.id.split('-')[1]
+            : (bus.id ? String(bus.id).substring(Math.max(0, String(bus.id).length - 4)) : 'Pa ID');
+
           return (
-            <div key={bus.id}
-              className="card card-hover"
+            <div
+              key={bus.id || `bus-${idx}`}
               onClick={() => setSelectedBus(isSelected ? null : bus)}
               style={{
-                padding: 18, cursor: 'pointer',
-                border: `1px solid ${isSelected ? route?.color || 'var(--primary)' : 'var(--border)'}`,
-                background: isSelected ? `${route?.color}0a` : 'var(--bg-card)',
-                transition: 'var(--transition)',
-              }}>
+                background: isSelected ? `${route?.color}08` : 'rgba(255,255,255,0.02)',
+                border: `0.5px solid ${isSelected ? (route?.color + '40') : 'rgba(255,255,255,0.07)'}`,
+                borderLeft: isSelected ? `2px solid ${route?.color}` : '2px solid transparent',
+                borderRadius: '0 12px 12px 0',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 {/* Left */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
-                    width: 42, height: 42, borderRadius: 10,
-                    background: `${route?.color}22`, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    border: `1px solid ${route?.color}44`,
-                    position: 'relative',
+                    width: '36px', height: '36px', borderRadius: '10px',
+                    background: `${route?.color}15`,
+                    border: `0.5px solid ${route?.color}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative', flexShrink: 0,
                   }}>
-                    <Bus size={20} style={{ color: route?.color }} />
+                    <Bus size={17} style={{ color: route?.color }} />
                     {bus.delay > 0 && (
                       <div style={{
-                        position: 'absolute', top: -4, right: -4,
-                        background: 'var(--warning)', color: '#000',
-                        fontSize: 8, fontWeight: 800,
-                        width: 16, height: 16, borderRadius: '50%',
+                        position: 'absolute', top: '-4px', right: '-4px',
+                        background: '#f59e0b', color: '#000',
+                        fontSize: '8px', fontWeight: '800',
+                        width: '15px', height: '15px', borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
                         {bus.delay}
@@ -278,50 +366,63 @@ export default function BusTracker() {
                     )}
                   </div>
                   <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
-                      Autobuzi {bus.id.split('-')[1]}
+                    <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '3px' }}>
+                      Autobuzi {busLabel}
                     </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                      <ArrowRight size={11} />
-                      <span>Stacioni tjetër: <b style={{ color: 'var(--text)' }}>{bus.nextStop}</b></span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
+                      <ArrowRight size={10} />
+                      <span>Stacioni tjetër: <span style={{ color: 'rgba(255,255,255,0.6)' }}>{bus.nextStop}</span></span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right */}
-                <div style={{ textAlign: 'right' }}>
-                  <span className={`badge ${loadInfo.cls}`}>{loadInfo.label}</span>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <span style={{
+                    fontSize: '11px', fontWeight: '600',
+                    color: loadInfo.color,
+                    background: loadInfo.bg,
+                    border: `0.5px solid ${loadInfo.border}`,
+                    padding: '3px 9px', borderRadius: '99px',
+                    display: 'inline-block',
+                  }}>
+                    {loadInfo.label}
+                  </span>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '5px' }}>
                     ~{Math.round(2 + Math.random() * 5)} min mbërritje
                   </p>
                   {bus.delay > 0 && (
-                    <p style={{ fontSize: 10, color: 'var(--warning)', marginTop: 2 }}>
-                      ⚠ {bus.delay} min vonesë
+                    <p style={{ fontSize: '10px', color: '#f59e0b', marginTop: '2px', fontWeight: '600' }}>
+                      {bus.delay} min vonesë
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Stats */}
-              <div style={{ marginTop: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ marginTop: '12px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                 {[
-                  { icon: <Users size={12} />, val: `${bus.passengerLoad} / 50 pasagjerë` },
-                  { icon: <Navigation size={12} />, val: `${Math.round(bus.speed)} km/h` },
-                  { icon: <Clock size={12} />, val: 'Live tracking' },
+                  { icon: <Users size={11} />, val: `${bus.passengerLoad} / 50 pasagjerë` },
+                  { icon: <Navigation size={11} />, val: `${Math.round(bus.speed)} km/h` },
+                  { icon: <Clock size={11} />, val: 'Live tracking' },
                 ].map((s, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-muted)' }}>
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    fontSize: '11px', color: 'rgba(255,255,255,0.25)',
+                  }}>
                     {s.icon} {s.val}
                   </div>
                 ))}
               </div>
 
-              {/* Barra ngarkesës */}
-              <div style={{ marginTop: 10, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
+              {/* Load bar */}
+              <div style={{ marginTop: '10px', height: '2px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)' }}>
                 <div style={{
-                  height: '100%', borderRadius: 2,
+                  height: '100%', borderRadius: '2px',
                   width: `${(bus.passengerLoad / 50) * 100}%`,
                   background: loadInfo.color,
                   transition: 'width 1s ease',
+                  opacity: 0.7,
                 }} />
               </div>
             </div>
@@ -329,10 +430,27 @@ export default function BusTracker() {
         })}
 
         {routeBuses.length === 0 && (
-          <div className="card" style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
-            <Bus size={36} style={{ margin: '0 auto 14px', opacity: 0.2 }} />
-            <p style={{ fontWeight: 600, marginBottom: 6 }}>Asnjë autobus aktiv për këtë linjë</p>
-            <p style={{ fontSize: 12 }}>Provo të zgjedhësh linjë tjetër ose kontrollo më vonë.</p>
+          <div style={{
+            padding: '40px 24px', textAlign: 'center',
+            background: 'rgba(255,255,255,0.02)',
+            border: '0.5px solid rgba(255,255,255,0.06)',
+            borderRadius: '12px',
+          }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '12px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px',
+            }}>
+              <Bus size={20} style={{ color: 'rgba(255,255,255,0.15)' }} />
+            </div>
+            <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', fontSize: '13px' }}>
+              Asnjë autobus aktiv për këtë linjë
+            </p>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)' }}>
+              Provo të zgjedhësh linjë tjetër ose kontrollo më vonë.
+            </p>
           </div>
         )}
       </div>
