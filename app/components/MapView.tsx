@@ -269,9 +269,32 @@ export default function MapView() {
     if (!showStops) return;
 
     BUS_STOPS.forEach(stop => {
-      const stopHtml = `<div style="background:#1a73e8;width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1.5px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;"><svg viewBox="0 0 24 24" width="11" height="11" fill="white"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg></div>`;
+      const stopHtml = `
+        <div style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+          <div style="
+            background: #1e293b;
+            width: 28px; height: 28px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+          ">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+            </svg>
+          </div>
+          <div style="
+            width: 0; height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #fff;
+            margin-top: -1px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+          "></div>
+        </div>`;
       const marker = L.marker([stop.lat, stop.lng], {
-        icon: L.divIcon({ html: stopHtml, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }),
+        icon: L.divIcon({ html: stopHtml, className: '', iconSize: [28, 34], iconAnchor: [14, 34] }),
         zIndexOffset: 100
       });
 
@@ -440,18 +463,18 @@ export default function MapView() {
     const showArrow = userLocation.heading !== null || deviceHeading !== null;
 
     const html = `
-    <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
+    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
       <!-- Outer Halo/Pulse -->
       <div style="
         position:absolute;width:100%;height:100%;border-radius:50%;
-        background:rgba(59,130,246,0.1);
+        background:rgba(255,255,255,0.05);
         animation:pulse-ring 3s ease-out infinite
       "></div>
       
       <!-- Directional Compass Arrow -->
       ${showArrow ? `
       <div style="
-        position:absolute;inset:0;top:5px;
+        position:absolute;inset:0;
         display:flex;justify-content:center;
         transform: rotate(${currentHeading}deg);
         transition: transform 0.2s cubic-bezier(0.1, 0, 0.3, 1);
@@ -459,20 +482,21 @@ export default function MapView() {
       ">
         <div style="
           width: 0; height: 0;
-          border-left: 7px solid transparent;
-          border-right: 7px solid transparent;
-          border-bottom: 12px solid #475569;
-          filter: drop-shadow(0 0 2px rgba(59,130,246,0.5));
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-bottom: 9px solid #475569;
+          margin-top: 7px;
+          filter: drop-shadow(0 0 1px #fff);
         "></div>
       </div>
       ` : ''}
 
       <!-- Core Location Dot -->
       <div style="
-        position:relative;width:14px;height:14px;border-radius:50%;
+        position:relative;width:16px;height:16px;border-radius:50%;
         background:#475569;
-        border:2.5px solid #fff;
-        box-shadow:0 2px 10px rgba(0,0,0,0.3);
+        border:3px solid #fff;
+        box-shadow: 0 0 15px rgba(0,0,0,0.4);
         z-index:10
       "></div>
     </div>
@@ -480,10 +504,10 @@ export default function MapView() {
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }));
+      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }));
     } else {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }),
+        icon: L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }),
         zIndexOffset: 999,
       }).addTo(map);
     }
