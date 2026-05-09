@@ -630,7 +630,22 @@ const useStore = create<any>()(
       searchQuery: '',
       setSearchQuery: (q: string) => set({ searchQuery: q }),
     }),
-    { name: 'urbani-im-storage' }
+    {
+      name: 'urbani-im-storage-v2',
+      partialize: (state) => Object.fromEntries(
+        Object.entries(state).filter(([key]) => ![
+          'searchQuery',
+          'tripFrom',
+          'tripTo',
+          'tripResult',
+          'activeTrip',
+          'selectedStop',
+          'activeRouteFilter',
+          'currentView',
+          'isSidebarOpen'
+        ].includes(key))
+      ),
+    }
   )
 );
 

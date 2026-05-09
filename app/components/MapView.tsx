@@ -124,6 +124,14 @@ export default function MapView() {
 
     initOrientation();
 
+    // Default layers for mobile: Only stations
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      const store = useStore.getState();
+      store.setShowRoutes(false);
+      store.setShowBuses(false);
+      store.setShowStops(true);
+    }
+
     return () => {
       stopTracking();
       if (typeof window !== 'undefined') {
@@ -453,7 +461,7 @@ export default function MapView() {
           width: 0; height: 0;
           border-left: 7px solid transparent;
           border-right: 7px solid transparent;
-          border-bottom: 12px solid #3b82f6;
+          border-bottom: 12px solid #475569;
           filter: drop-shadow(0 0 2px rgba(59,130,246,0.5));
         "></div>
       </div>
@@ -462,7 +470,7 @@ export default function MapView() {
       <!-- Core Location Dot -->
       <div style="
         position:relative;width:14px;height:14px;border-radius:50%;
-        background:#3b82f6;
+        background:#475569;
         border:2.5px solid #fff;
         box-shadow:0 2px 10px rgba(0,0,0,0.3);
         z-index:10
@@ -681,6 +689,25 @@ export default function MapView() {
         </div>
       </div>
 
+      {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
+      <div className="overlay-top-mobile mobile-only" style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1000 }}>
+        <button 
+          onClick={() => useStore.getState().setView('planner')}
+          className="glass-panel" 
+          style={{ 
+            width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', 
+            borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.6)', textAlign: 'left', cursor: 'pointer'
+          }}
+        >
+          <Search size={18} style={{ color: '#94a3b8' }} />
+          <span style={{ fontSize: '15px', fontWeight: '500', flex: 1, letterSpacing: '0.01em' }}>
+            {language === 'al' ? 'Ku dëshiron të shkosh?' : language === 'en' ? 'Where are you going?' : 'Dove vuoi andare?'}
+          </span>
+        </button>
+      </div>
+
       {/* ── RIGHT OVERLAY: ALL CONTROLS IN ONE COLUMN ── */}
       <div className="overlay-right-center">
         <div className="controls-column">
@@ -841,7 +868,7 @@ export default function MapView() {
           <div className="mobile-drag-handle">
             <div className="drag-indicator" />
           </div>
-          <div className="card-header" style={{ background: '#3b82f6' }}>
+          <div className="card-header" style={{ background: '#1e293b' }}>
             <div className="header-main">
               <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px' }}><MapPin size={20} /></span>
               <div className="route-texts">
@@ -870,7 +897,7 @@ export default function MapView() {
             
             <button 
               className="view-details-btn" 
-              style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', marginTop: '20px' }}
+              style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#94a3b8', border: '1px solid rgba(255, 255, 255, 0.1)', marginTop: '20px' }}
               onClick={() => {
                 useStore.getState().setTripFrom(selectedStop.name);
                 setView('planner');
@@ -895,8 +922,11 @@ export default function MapView() {
         .overlay-right-center { position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 1000; }
         .overlay-bottom-center { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 95%; max-width: 900px; }
 
+        .mobile-only { display: none !important; }
+
         @media (max-width: 900px) {
           .desktop-only { display: none !important; }
+          .mobile-only { display: block !important; }
           .overlay-right-center { top: auto; bottom: 20px; transform: none; right: 20px; }
         }
 
@@ -952,12 +982,12 @@ export default function MapView() {
           background: rgba(255,255,255,0.04); transition: 0.3s;
         }
         .route-item.active {
-          background: var(--route-color, #3b82f6); color: #fff;
+          background: var(--route-color, #475569); color: #fff;
           border-color: rgba(255,255,255,0.3);
           box-shadow: 0 8px 20px rgba(0,0,0,0.4);
           transform: translateY(-2px);
         }
-        .route-item.all.active { background: #3b82f6; }
+        .route-item.all.active { background: #1e293b; }
 
         /* ── BUS INFO PANEL ── */
         .bus-info-card {
@@ -1002,7 +1032,7 @@ export default function MapView() {
           width: 40px; height: 40px; border-radius: 50%;
           background: rgba(59, 130, 246, 0.3);
           border: 3px solid #fff;
-          box-shadow: 0 0 20px #3b82f6;
+          box-shadow: 0 0 20px #475569;
           animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
 

@@ -154,7 +154,7 @@ export default function LoginPage() {
 
           {mode === 'staff' && (
             <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(59,130,246,0.05)', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.1)' }}>
-              <p style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '4px', fontWeight: '700' }}>{language === 'al' ? 'UDHËZIM PËR STAFIN:' : 'STAFF INSTRUCTIONS:'}</p>
+              <p style={{ fontSize: '12px', color: '#475569', marginBottom: '4px', fontWeight: '700' }}>{language === 'al' ? 'UDHËZIM PËR STAFIN:' : 'STAFF INSTRUCTIONS:'}</p>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5' }}>{language === 'al' ? 'Përdorni emrin e përdoruesit dhe PIN-in e dhënë nga administrata për të parë orarin tuaj.' : 'Use the username and PIN provided by administration to view your schedule.'}</p>
             </div>
           )}

@@ -54,52 +54,51 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
-      <label style={{
-        display: 'block', fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.25)',
-        marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase'
-      }}>
-        {label}
-      </label>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '12px',
-        background: isOpen ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-        border: isOpen ? `0.5px solid ${accentColor}80` : '0.5px solid rgba(255,255,255,0.08)',
-        borderRadius: '14px', padding: '0 16px',
-        height: '50px', transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: isOpen ? `0 0 20px ${accentColor}15` : 'inset 0 1px 3px rgba(0,0,0,0.1)'
+        display: 'flex', alignItems: 'center', gap: '16px',
+        background: 'transparent',
+        border: 'none',
+        height: '44px',
       }}>
-        <Icon size={18} style={{ color: value ? accentColor : 'rgba(255,255,255,0.15)', transition: 'color 0.2s' }} />
-        <input
-          value={value}
-          onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
-          onFocus={() => setIsOpen(true)}
-          placeholder={placeholder}
-          style={{
-            background: 'none', border: 'none', outline: 'none',
-            color: '#fff', fontSize: '14px', width: '100%',
-            fontWeight: value ? '600' : '400'
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', flexShrink: 0 }}>
+          <Icon size={20} style={{ color: value ? accentColor : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }} />
+        </div>
+        
+        <div style={{ flex: 1 }}>
+          <input
+            className="trip-planner-input"
+            value={value}
+            onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
+            onFocus={() => setIsOpen(true)}
+            placeholder={placeholder}
+            style={{
+              background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none',
+              color: '#fff', fontSize: '17px', width: '100%',
+              fontWeight: value ? '600' : '400', padding: 0,
+              letterSpacing: '-0.3px', WebkitAppearance: 'none'
+            }}
+          />
+        </div>
         {value && (
           <button
             type="button"
             onClick={() => { onChange(''); setIsOpen(false); }}
             style={{
               background: 'rgba(255,255,255,0.05)', border: 'none',
-              color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-              width: '24px', height: '24px', borderRadius: '50%',
+              color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+              width: '28px', height: '28px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s', flexShrink: 0
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
           >
-            <X size={14} />
+            <X size={16} />
           </button>
         )}
       </div>
 
-      {isOpen && (
+      {isOpen && value.length > 0 && (
         <div className="glass-panel animate-scale-in" style={{
           position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
           zIndex: 1000, borderRadius: '16px', padding: '8px',
@@ -240,9 +239,9 @@ export default function TripPlanner() {
       }}>
         <div style={{
           width: '38px', height: '38px', borderRadius: '12px',
-          background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+          background: 'linear-gradient(135deg, #475569, #1e293b)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
         }}>
           <Route size={18} style={{ color: '#fff' }} />
         </div>
@@ -262,60 +261,89 @@ export default function TripPlanner() {
         {/* Form */}
         <form onSubmit={handlePlan} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          <StopInput
-            label={t.departure}
-            value={tripFrom}
-            onChange={setTripFrom}
-            placeholder={t.select_departure}
-            icon={Navigation}
-            accentColor="#3b82f6"
-          />
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: '16px',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Connecting Timeline Line */}
+            <div style={{
+              position: 'absolute',
+              left: '27.5px', // Centers on the 20px icon exactly
+              top: '36px',
+              bottom: '36px',
+              width: '2px',
+              background: 'linear-gradient(to bottom, #94a3b8 0%, #475569 100%)',
+              opacity: 0.3,
+              zIndex: 0
+            }} />
 
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '-10px 0' }}>
+            <div style={{ position: 'relative', zIndex: 5, padding: '12px 16px' }}>
+              <StopInput
+                label={t.departure}
+                value={tripFrom}
+                onChange={setTripFrom}
+                placeholder={t.select_departure}
+                icon={Navigation}
+                accentColor="#94a3b8"
+              />
+            </div>
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', marginLeft: '48px' }} />
+
+            <div style={{ position: 'relative', zIndex: 1, padding: '12px 16px' }}>
+              <StopInput
+                label={t.destination}
+                value={tripTo}
+                onChange={setTripTo}
+                placeholder={t.select_destination}
+                icon={MapPin}
+                accentColor="#cbd5e1"
+              />
+            </div>
+
+            {/* Swap Button */}
             <button
               type="button"
-              onClick={() => { const t = tripFrom; setTripFrom(tripTo); setTripTo(t); }}
+              onClick={() => { const tmp = tripFrom; setTripFrom(tripTo); setTripTo(tmp); }}
               style={{
-                width: '32px', height: '32px', borderRadius: '50%',
-                background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.3)', cursor: 'pointer', zIndex: 2,
+                position: 'absolute',
+                right: '16px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '34px', height: '34px', borderRadius: '50%',
+                background: '#151a22', border: '1px solid rgba(255,255,255,0.08)',
+                color: '#fff', cursor: 'pointer', zIndex: 4,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#151a22'; }}
               title={t.swap_stations}
             >
-              <ArrowUpDown size={13} />
+              <ArrowUpDown size={14} />
             </button>
           </div>
 
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
             <button
               type="button"
               onClick={useMyLocation}
               style={{
-                background: 'none', border: '0.5px solid rgba(255,255,255,0.08)',
-                borderRadius: '8px', padding: '5px 10px', fontSize: '11px',
-                color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
+                background: 'none', border: 'none', padding: '4px 8px', fontSize: '12px',
+                color: '#94a3b8', cursor: 'pointer', fontWeight: '600',
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                transition: 'all 0.2s'
+                transition: 'opacity 0.2s'
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'; e.currentTarget.style.color = '#3b82f6'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
             >
-              <Locate size={12} /> {t.my_location}
+              <Locate size={13} /> {t.my_location}
             </button>
           </div>
-
-          <StopInput
-            label={t.destination}
-            value={tripTo}
-            onChange={setTripTo}
-            placeholder={t.select_destination}
-            icon={MapPin}
-            accentColor="#10b981"
-          />
 
           <button
             type="submit"
@@ -714,6 +742,13 @@ export default function TripPlanner() {
         .route-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(255,255,255,0.05);
           border-radius: 10px;
+        }
+        .trip-planner-input:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+          -webkit-tap-highlight-color: transparent !important;
+          --tw-ring-shadow: 0 0 transparent !important;
         }
       `}</style>
     </div>
