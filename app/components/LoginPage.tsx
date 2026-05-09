@@ -288,13 +288,14 @@ export default function LoginPage() {
               height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)', zIndex: 3
             }}>
               <div style={{ 
-                position: 'absolute', top: '50%', left: '50%',
+                position: 'absolute', top: '50%',
+                left: mode === 'login' ? '0px' : '1px',
                 width: 0, height: 0, 
                 borderTop: '5px solid transparent',
                 borderBottom: '5px solid transparent',
                 borderRight: mode === 'login' ? '6px solid #fff' : 'none',
                 borderLeft: mode === 'register' ? '6px solid #fff' : 'none',
-                transform: 'translate(-50%, -50%)',
+                transform: `translate(${mode === 'login' ? '-100%' : '0%'}, -50%)`,
                 transition: 'all 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
                 filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))'
               }}></div>
