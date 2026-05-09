@@ -63,7 +63,7 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', flexShrink: 0 }}>
           <Icon size={20} style={{ color: value ? accentColor : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }} />
         </div>
-        
+
         <div style={{ flex: 1 }}>
           <input
             className="trip-planner-input"

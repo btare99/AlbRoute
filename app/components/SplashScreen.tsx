@@ -68,10 +68,10 @@ export default function SplashScreen() {
             boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
           }}
         >
-          <img 
-            src="/logo-Urban.png" 
-            alt="Urbani Im Logo" 
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+          <img
+            src="/logo-Urban.png"
+            alt="Urbani Im Logo"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </div>
 

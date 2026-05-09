@@ -41,6 +41,27 @@ export default function MapView() {
   const addNotification = useStore((s: any) => s.addNotification);
 
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
+  const [isSearching, setIsSearching] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearching(false);
+      }
+    };
+    if (isSearching) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSearching]);
+
+  const tripFrom = useStore((s: any) => s.tripFrom);
+  const setTripFrom = useStore((s: any) => s.setTripFrom);
+  const tripTo = useStore((s: any) => s.tripTo);
+  const setTripTo = useStore((s: any) => s.setTripTo);
+  const planTrip = useStore((s: any) => s.planTrip);
 
   useEffect(() => {
     if (!activeTrip) {
@@ -162,6 +183,7 @@ export default function MapView() {
   const setShowBuses = useStore((s: any) => s.setShowBuses);
   const setSelectedStop = useStore((s: any) => s.setSelectedStop);
   const highlightMarkerRef = useRef<any>(null);
+  const clusterGroupRef = useRef<any>(null);
 
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
@@ -174,7 +196,10 @@ export default function MapView() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY === null) return;
     const diff = e.touches[0].clientY - touchStartY;
-    if (diff > 0) setTouchCurrentY(diff);
+    if (diff > 0) {
+      if (e.cancelable) e.preventDefault();
+      setTouchCurrentY(diff);
+    }
   };
 
   const handleTouchEnd = () => {
@@ -201,6 +226,10 @@ export default function MapView() {
       try {
         const L = (await import('leaflet')).default;
         await import('leaflet/dist/leaflet.css');
+        // @ts-ignore
+        await import('leaflet.markercluster');
+        await import('leaflet.markercluster/dist/MarkerCluster.css');
+        await import('leaflet.markercluster/dist/MarkerCluster.Default.css');
         if (!isMounted) return;
         LRef.current = L;
 
@@ -264,9 +293,24 @@ export default function MapView() {
     const map = mapInstanceRef.current;
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
+
+    // Pastrojmë markerat ekzistues dhe grupin e klasterave
+    if (clusterGroupRef.current) {
+      map.removeLayer(clusterGroupRef.current);
+    }
     stopMarkersRef.current.forEach(m => map.removeLayer(m));
     stopMarkersRef.current = [];
+
     if (!showStops) return;
+
+    // Krijojmë grupin e ri të klasterave
+    // @ts-ignore
+    const clusters = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 40, // Sa më i vogël, aq më pak grupohen
+    });
 
     BUS_STOPS.forEach(stop => {
       const stopHtml = `
@@ -293,6 +337,7 @@ export default function MapView() {
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
           "></div>
         </div>`;
+
       const marker = L.marker([stop.lat, stop.lng], {
         icon: L.divIcon({ html: stopHtml, className: '', iconSize: [28, 34], iconAnchor: [14, 34] }),
         zIndexOffset: 100
@@ -301,19 +346,25 @@ export default function MapView() {
       const stoppingLines = BUS_ROUTES.filter(r => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
       const linesHtml = stoppingLines.map(l => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
 
-      marker.bindTooltip(`
-        <div style="padding:4px; border-radius:0; min-width:120px;">
-          <div style="font-weight:800;margin-bottom:6px;font-size:13px;color:#000;border-bottom:1px solid #eee;padding-bottom:2px;">${stop.name}</div>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:2px;width:100%;">${linesHtml}</div>
-        </div>`, { direction: 'top', offset: [0, -8], className: 'square-tooltip' });
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
+      if (!isMobile) {
+        marker.bindTooltip(`
+          <div style="padding:4px; border-radius:0; min-width:120px;">
+            <div style="font-weight:800;margin-bottom:6px;font-size:13px;color:#000;border-bottom:1px solid #eee;padding-bottom:2px;">${stop.name}</div>
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:2px;width:100%;">${linesHtml}</div>
+          </div>`, { direction: 'top', offset: [0, -8], className: 'square-tooltip' });
+      }
 
       marker.on('click', () => {
         setSelectedStop(stop);
       });
 
-      marker.addTo(map);
+      clusters.addLayer(marker);
       stopMarkersRef.current.push(marker);
     });
+
+    clusters.addTo(map);
+    clusterGroupRef.current = clusters;
   }, [showStops, mapReady]);
 
   useEffect(() => {
@@ -714,23 +765,128 @@ export default function MapView() {
       </div>
 
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
-      <div className="overlay-top-mobile mobile-only" style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1000 }}>
-        <button 
-          onClick={() => useStore.getState().setView('planner')}
-          className="glass-panel" 
-          style={{ 
-            width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', 
-            borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.6)', textAlign: 'left', cursor: 'pointer'
-          }}
-        >
-          <Search size={18} style={{ color: '#94a3b8' }} />
-          <span style={{ fontSize: '15px', fontWeight: '500', flex: 1, letterSpacing: '0.01em' }}>
-            {language === 'al' ? 'Ku dëshiron të shkosh?' : language === 'en' ? 'Where are you going?' : 'Dove vuoi andare?'}
-          </span>
-        </button>
+      <div 
+        ref={searchContainerRef}
+        className="overlay-top-mobile mobile-only" 
+        style={{ 
+          position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1001,
+          display: 'flex', flexDirection: 'column'
+        }}
+      >
+        {/* Main Bar */}
+        <div className="glass-panel" style={{
+          display: 'flex', alignItems: 'center', padding: '6px',
+          borderRadius: isSearching ? '22px 22px 0 0' : '22px', 
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderBottom: isSearching ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(40px)',
+          boxShadow: isSearching ? '0 4px 20px rgba(0,0,0,0.4)' : '0 12px 40px rgba(0,0,0,0.6)', 
+          height: '62px',
+          zIndex: 10, transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}>
+          <button
+            onClick={() => setIsSearching(!isSearching)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px',
+              background: 'transparent', border: 'none', color: '#fff',
+              textAlign: 'left', cursor: 'pointer', height: '100%'
+            }}
+          >
+            <Navigation size={20} style={{ color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
+            <input
+              value={tripFrom}
+              onChange={(e) => setTripFrom(e.target.value)}
+              placeholder={t.select_departure}
+              onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
+              style={{ 
+                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', 
+                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none' 
+              }}
+              readOnly={!isSearching}
+            />
+          </button>
+
+          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px', opacity: 1, transition: 'opacity 0.3s' }} />
+
+          <button
+            onClick={() => {
+              requestCompassPermission();
+              fetchUserLocation();
+              mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
+              if (isSearching) {
+                setTripFrom(t.my_location || (language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location'));
+              }
+            }}
+            style={{
+              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
+              background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            }}
+          >
+            <Locate size={22} />
+          </button>
+        </div>
+
+        {/* Second Bar (Joined with Transition) */}
+        <div className="glass-panel" style={{
+          display: 'flex', alignItems: 'center', padding: '6px',
+          borderRadius: '0 0 22px 22px', 
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderTop: 'none',
+          background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(40px)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)', 
+          height: isSearching ? '62px' : '0px',
+          opacity: isSearching ? 1 : 0,
+          transform: isSearching ? 'translateY(0)' : 'translateY(-10px)',
+          overflow: 'hidden',
+          pointerEvents: isSearching ? 'auto' : 'none',
+          zIndex: 5,
+          transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px', height: '100%' }}>
+            <MapPin size={20} style={{ color: '#94a3b8' }} />
+            <input
+              value={tripTo}
+              onChange={(e) => setTripTo(e.target.value)}
+              placeholder={t.select_destination}
+              autoFocus={isSearching}
+              style={{ 
+                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', 
+                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none' 
+              }}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  await planTrip(tripFrom, tripTo);
+                  setIsSearching(false);
+                }
+              }}
+            />
+          </div>
+
+          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
+          <button
+            onClick={async () => {
+              await planTrip(tripFrom, tripTo);
+              setIsSearching(false);
+            }}
+            style={{
+              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: '#fff', border: 'none', borderRadius: '0 0 18px 0',
+              cursor: 'pointer'
+            }}
+          >
+            <ArrowRight size={22} />
+          </button>
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes searchSlideDown {
+          from { transform: translateY(-10px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
 
       {/* ── RIGHT OVERLAY: ALL CONTROLS IN ONE COLUMN ── */}
       <div className="overlay-right-center">
@@ -835,7 +991,7 @@ export default function MapView() {
 
       {/* ── BUS INFO PANEL ── */}
       {infoPanel && (
-        <div 
+        <div
           className="bus-info-card animate-slide-up"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -882,7 +1038,7 @@ export default function MapView() {
 
       {/* ── STOP INFO PANEL ── */}
       {selectedStop && (
-        <div 
+        <div
           className="stop-info-card animate-slide-up"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -918,9 +1074,9 @@ export default function MapView() {
                 <span style={{ fontSize: '12px', color: '#64748b' }}>{t.no_data}</span>
               )}
             </div>
-            
-            <button 
-              className="view-details-btn" 
+
+            <button
+              className="view-details-btn"
               style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#94a3b8', border: '1px solid rgba(255, 255, 255, 0.1)', marginTop: '20px' }}
               onClick={() => {
                 useStore.getState().setTripFrom(selectedStop.name);
@@ -1068,6 +1224,7 @@ export default function MapView() {
         @media (max-width: 900px) {
           .overlay-top-left { top: 15px; left: 15px; }
           .overlay-right-center { right: 15px; bottom: 180px; top: auto; transform: none; }
+          .locate-btn { display: none !important; }
           .overlay-bottom-center { bottom: 20px; width: 98%; }
           .nav-arrow { display: none; }
           .close-btn { display: none !important; }
@@ -1096,6 +1253,7 @@ export default function MapView() {
             display: flex; align-items: center; justify-content: center;
             width: 100%; height: 24px; position: absolute; top: 0; left: 0;
             z-index: 10; cursor: grab; background: transparent;
+            touch-action: none;
           }
           .mobile-drag-handle:active { cursor: grabbing; }
           .drag-indicator {
@@ -1103,6 +1261,17 @@ export default function MapView() {
             border-radius: 3px; margin-top: 4px;
           }
           .card-header { padding-top: 24px !important; }
+          .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+            background-color: rgba(30, 41, 59, 0.4) !important;
+          }
+          .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+            background-color: rgba(30, 41, 59, 0.95) !important;
+            color: #fff !important;
+            font-weight: 800 !important;
+            font-size: 13px !important;
+            border: 2px solid #fff;
+          }
+
         }
       `}</style>
     </div>
