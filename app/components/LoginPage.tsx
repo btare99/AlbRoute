@@ -211,25 +211,43 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    if (mode === 'login') {
-      await new Promise(r => setTimeout(r, 800));
-      const user = MOCK_USERS.find(u => u.email === email && u.password === password);
-      if (user) {
-        login({ id: user.id, name: user.name, email: user.email, savedLocations: user.savedLocations, travelHistory: user.travelHistory }, 'jwt-token-mock');
-        addNotification(language === 'al' ? `Mirë se erdhe, ${user.name}! 🚌` : language === 'en' ? `Welcome, ${user.name}! 🚌` : `Benvenuto, ${user.name}! 🚌`, 'success');
+    try {
+      if (mode === 'login') {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          login(data.user, 'jwt-token-mock');
+          addNotification(language === 'al' ? `Mirë se erdhe, ${data.user.name}! 🚌` : `Welcome, ${data.user.name}! 🚌`, 'success');
+        } else {
+          setError(data.error || 'Dështoi hyrja.');
+        }
       } else {
-        setError(language === 'al' ? 'Email ose fjalëkalimi gabim.' : language === 'en' ? 'Incorrect email or password.' : 'Email o password errata.');
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, phone }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          login(data.user, 'jwt-token-mock');
+          addNotification(language === 'al' ? 'Llogaria u krijua me sukses! 🎉' : 'Account created successfully! 🎉', 'success');
+        } else {
+          setError(data.error || 'Dështoi regjistrimi.');
+        }
       }
-    } else {
-      await new Promise(r => setTimeout(r, 800));
-      if (!name.trim() || !email.trim() || !password.trim()) {
-        setError(language === 'al' ? 'Plotëso të gjitha fushat.' : language === 'en' ? 'Fill all fields.' : 'Compila tutti i campi.');
-      } else {
-        login({ id: Date.now().toString(), name, email, savedLocations: { home: '', work: '' }, travelHistory: [] }, 'jwt-token-mock');
-        addNotification(language === 'al' ? `Llogaria u krijua me sukses, ${name}! 🎉` : language === 'en' ? `Account created successfully, ${name}! 🎉` : `Account creato con successo, ${name}! 🎉`, 'success');
-      }
+    } catch (err) {
+      setError(language === 'al' ? 'Ndodhi një gabim në server.' : 'Server error occurred.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSocialLogin = async (provider: string) => {

@@ -6,6 +6,7 @@ import TripPlanner from './TripPlanner';
 import ProfileView from './ProfileView';
 import UserFavorites from './UserFavorites';
 import EditProfileView from './EditProfileView';
+import SubscriptionView from './SubscriptionView';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User } from 'lucide-react';
 import { translations } from '../store/translations';
@@ -33,6 +34,7 @@ export default function AppShell() {
       case 'profile': return <ProfileView />;
       case 'favorites': return <UserFavorites />;
       case 'edit_profile': return <EditProfileView />;
+      case 'subscription': return <SubscriptionView />;
       default: return <MapView />;
     }
   };

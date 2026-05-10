@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import useStore from '../store/useStore';
-import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe } from 'lucide-react';
+import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap } from 'lucide-react';
 import { translations } from '../store/translations';
 
 export default function ProfileView() {
@@ -21,6 +21,7 @@ export default function ProfileView() {
 
   const menuItems = [
     { icon: <Bell size={18} />, label: language === 'al' ? 'Qendra e Njoftimeve' : 'Notification Center', action: () => setActiveModal('notifications') },
+    { icon: <Zap size={18} style={{ color: '#fb8c00' }} />, label: language === 'al' ? 'Abonimi Im' : language === 'en' ? 'My Subscription' : 'Il mio Abbonamento', value: language === 'al' ? 'Standard' : 'Standard', action: () => setView('subscription') },
     { icon: <Globe size={18} />, label: language === 'al' ? 'Gjuha / Language' : language === 'en' ? 'Language' : 'Lingua', value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
     { icon: <Info size={18} />, label: language === 'al' ? 'Qendra e Ndihmës' : 'Help Center', action: () => setActiveModal('help') },
     { icon: <Share2 size={18} />, label: 'Share Urbani Im', action: () => {
