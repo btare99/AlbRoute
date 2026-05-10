@@ -1,5 +1,5 @@
 'use client';
-import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight } from 'lucide-react';
+import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight, Ticket } from 'lucide-react';
 import { useState, Fragment } from 'react';
 import useStore, { BUS_STOPS } from '../store/useStore';
 import { translations } from '../store/translations';
@@ -24,6 +24,7 @@ export default function Sidebar() {
     { id: 'tracker', label: t.live_buses, icon: Bus },
     { id: 'planner', label: t.planner, icon: Route },
     { id: 'favorites', label: t.saved, icon: Star },
+    { id: 'packages', label: t.packages, icon: Ticket },
     { id: 'profile', label: t.profile, icon: User },
   ];
 

@@ -7,8 +7,9 @@ import ProfileView from './ProfileView';
 import UserFavorites from './UserFavorites';
 import EditProfileView from './EditProfileView';
 import SubscriptionView from './SubscriptionView';
+import SubscriptionPackagesView from './SubscriptionPackagesView';
 import useStore from '../store/useStore';
-import { Map, Bus, Navigation, Star, User } from 'lucide-react';
+import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../store/translations';
 
 export default function AppShell() {
@@ -23,6 +24,7 @@ export default function AppShell() {
     { id: 'tracker', label: t.live_buses, icon: Bus },
     { id: 'planner', label: t.planner, icon: Navigation },
     { id: 'favorites', label: t.saved, icon: Star },
+    { id: 'packages', label: t.packages, icon: Ticket },
     { id: 'profile', label: t.profile, icon: User },
   ];
 
@@ -35,6 +37,7 @@ export default function AppShell() {
       case 'favorites': return <UserFavorites />;
       case 'edit_profile': return <EditProfileView />;
       case 'subscription': return <SubscriptionView />;
+      case 'packages': return <SubscriptionPackagesView />;
       default: return <MapView />;
     }
   };
