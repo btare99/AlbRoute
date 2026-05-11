@@ -38,33 +38,33 @@ export default function AppShell() {
       case 'planner': return <TripPlanner />;
       case 'profile': return <ProfileView />;
       case 'favorites': return (
-        <SwipeBackView onBack={() => setView('profile')}>
+        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
           <UserFavorites />
         </SwipeBackView>
       );
       case 'edit_profile': return (
-        <SwipeBackView onBack={() => setView('profile')}>
+        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
           <EditProfileView />
         </SwipeBackView>
       );
       case 'subscription': return (
-        <SwipeBackView onBack={() => setView('profile')}>
+        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
           <SubscriptionView />
         </SwipeBackView>
       );
       case 'packages': return <SubscriptionPackagesView />;
       case 'checkout': return (
-        <SwipeBackView onBack={() => setView('packages')}>
+        <SwipeBackView onBack={() => setView('packages')} background={<SubscriptionPackagesView />}>
           <SubscriptionCheckoutView />
         </SwipeBackView>
       );
       case 'get_pass': return (
-        <SwipeBackView onBack={() => setView('packages')}>
+        <SwipeBackView onBack={() => setView('packages')} background={<SubscriptionPackagesView />}>
           <SubscriptionGetPassView />
         </SwipeBackView>
       );
       case 'passes': return (
-        <SwipeBackView onBack={() => setView('profile')}>
+        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
           <PassesView />
         </SwipeBackView>
       );

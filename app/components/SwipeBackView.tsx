@@ -3,12 +3,13 @@ import { useState, useRef, useEffect } from 'react';
 
 interface SwipeBackViewProps {
   children: React.ReactNode;
+  background?: React.ReactNode;
   onBack: () => void;
   threshold?: number;
   edgeWidth?: number;
 }
 
-export default function SwipeBackView({ children, onBack, threshold = 120, edgeWidth = 40 }: SwipeBackViewProps) {
+export default function SwipeBackView({ children, background, onBack, threshold = 120, edgeWidth = 40 }: SwipeBackViewProps) {
   const [startX, setStartX] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -33,10 +34,8 @@ export default function SwipeBackView({ children, onBack, threshold = 120, edgeW
     const touch = e.touches[0];
     const diff = touch.clientX - startX;
     
-    // Strictly horizontal: ignore if dragging left or if it seems like a vertical scroll
     if (diff > 0) {
       setCurrentX(diff);
-      // Prevent scrolling while swiping back
       if (diff > 10 && e.cancelable) {
         e.preventDefault();
       }
@@ -46,25 +45,23 @@ export default function SwipeBackView({ children, onBack, threshold = 120, edgeW
   const handleTouchEnd = () => {
     if (startX === null) return;
     
-    const velocity = currentX; // Simple proxy for velocity
-    if (currentX > threshold || velocity > 200) {
-      // Complete the slide out animation
+    if (currentX > threshold) {
       setCurrentX(screenWidth);
       setIsSwiping(false);
       setTimeout(() => {
         onBack();
       }, 200);
     } else {
-      // Snap back
       setIsSwiping(false);
       setCurrentX(0);
     }
     setStartX(null);
   };
 
-  // Calculate opacity for the darkened background based on progress
   const progress = Math.min(currentX / screenWidth, 1);
-  const backdropOpacity = 0.5 * (1 - progress);
+  const backdropOpacity = 0.4 * (1 - progress);
+  // Parallax: background moves from -30% to 0%
+  const bgTranslate = - (screenWidth * 0.2) * (1 - progress);
 
   return (
     <div style={{
@@ -73,17 +70,30 @@ export default function SwipeBackView({ children, onBack, threshold = 120, edgeW
       zIndex: 5000,
       background: '#000',
       overflow: 'hidden',
-      touchAction: 'pan-y' // Allow vertical scroll but we control horizontal
+      touchAction: 'pan-y'
     }}>
-      {/* Darkened Backdrop / Previous Page Simulation */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'var(--bg-dark)',
-        opacity: backdropOpacity,
-        pointerEvents: 'none',
-        zIndex: 1
-      }} />
+      {/* Real Previous Page Background */}
+      {background && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          transform: `translateX(${bgTranslate}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+          willChange: 'transform',
+          pointerEvents: 'none' // Don't interact with background during swipe
+        }}>
+          {background}
+          {/* Dimmer overlay on background */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: '#000',
+            opacity: backdropOpacity,
+            zIndex: 2
+          }} />
+        </div>
+      )}
 
       {/* Sliding Content */}
       <div
@@ -94,7 +104,7 @@ export default function SwipeBackView({ children, onBack, threshold = 120, edgeW
           height: '100%',
           width: '100%',
           position: 'relative',
-          zIndex: 2,
+          zIndex: 3,
           background: 'var(--bg-dark)',
           transform: `translateX(${currentX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
