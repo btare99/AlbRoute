@@ -8,6 +8,7 @@ import { translations } from '../store/translations';
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
 const DEFAULT_ZOOM = 14;
+const STOP_NAMES = Array.from(new Set(BUS_STOPS.map(s => s.name))).sort();
 
 export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -33,7 +34,6 @@ export default function MapView() {
   const setSelectedBus = useStore((s: any) => s.setSelectedBus);
   const setView = useStore((s: any) => s.setView);
   const selectedStop = useStore((s: any) => s.selectedStop);
-  // language already defined above
   const activeTrip = useStore((s: any) => s.activeTrip);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
   const startTracking = useStore((s: any) => s.startTracking);
@@ -48,6 +48,8 @@ export default function MapView() {
 
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
   const [isSearching, setIsSearching] = useState(false);
+  const [showFromDropdown, setShowFromDropdown] = useState(false);
+  const [showToDropdown, setShowToDropdown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const tripFromInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +65,8 @@ export default function MapView() {
         setIsSearching(false);
         setTripFrom('');
         setTripTo('');
+        setShowFromDropdown(false);
+        setShowToDropdown(false);
       }
     };
     if (isSearching) {
@@ -123,7 +127,25 @@ export default function MapView() {
     };
 
     fetchShapes();
+
+    // Zoom to route
+    if (activeTrip && mapInstanceRef.current) {
+      const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
+      const coords = allStops.map((name: string) => {
+        const s = BUS_STOPS.find(st => st.name === name);
+        return s ? [s.lat, s.lng] : null;
+      }).filter(Boolean) as [number, number][];
+
+      if (coords.length > 1) {
+        const L = LRef.current;
+        if (L) {
+          const bounds = L.latLngBounds(coords);
+          mapInstanceRef.current.fitBounds(bounds, { padding: [100, 100], duration: 1.5 });
+        }
+      }
+    }
   }, [activeTrip]);
+
 
   useEffect(() => {
     startTracking();
@@ -200,6 +222,7 @@ export default function MapView() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
+  const [showTripDetails, setShowTripDetails] = useState(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -322,16 +345,21 @@ export default function MapView() {
 
     if (!showStops) return;
 
+    const activeTripStopIds = activeTrip ? activeTrip.legs.flatMap((l: any) => l.stopIds || []) : [];
+    const displayedStops = activeTrip 
+      ? BUS_STOPS.filter(s => activeTripStopIds.includes(s.id))
+      : BUS_STOPS;
+
     // Krijojmë grupin e ri të klasterave
     // @ts-ignore
     const clusters = L.markerClusterGroup({
       showCoverageOnHover: false,
       zoomToBoundsOnClick: true,
       spiderfyOnMaxZoom: true,
-      maxClusterRadius: 40, // Sa më i vogël, aq më pak grupohen
+      maxClusterRadius: 40,
     });
 
-    BUS_STOPS.forEach(stop => {
+    displayedStops.forEach(stop => {
       const stopHtml = `
         <div style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
@@ -384,7 +412,8 @@ export default function MapView() {
 
     clusters.addTo(map);
     clusterGroupRef.current = clusters;
-  }, [showStops, mapReady]);
+  }, [showStops, mapReady, activeTrip]);
+
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -788,8 +817,8 @@ export default function MapView() {
         ref={searchContainerRef}
         className="overlay-top-mobile mobile-only"
         style={{
-          position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1001,
-          display: 'flex', flexDirection: 'column'
+          position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 2002,
+          display: 'flex', flexDirection: 'column', overflow: 'visible'
         }}
       >
         {/* Main Bar */}
@@ -815,9 +844,13 @@ export default function MapView() {
             <input
               ref={tripFromInputRef}
               value={tripFrom}
-              onChange={(e) => setTripFrom(e.target.value)}
+              onChange={(e) => {
+                setTripFrom(e.target.value);
+                setShowFromDropdown(true);
+              }}
               placeholder={t.select_departure}
               onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
+              onFocus={() => { setShowFromDropdown(true); setShowToDropdown(false); }}
               style={{
                 background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
                 fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
@@ -832,11 +865,17 @@ export default function MapView() {
             onClick={() => {
               requestCompassPermission();
               fetchUserLocation();
+              // Update trip origin coords whenever user location is requested for planning
+              if (userLocation) {
+                useStore.getState().setTripOriginCoords(userLocation);
+              }
               mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
               if (isSearching) {
-                setTripFrom(t.my_location || (language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location'));
+                const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
+                setTripFrom(myLocStr);
               }
             }}
+
             style={{
               width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
@@ -868,8 +907,12 @@ export default function MapView() {
             <MapPin size={20} style={{ color: '#94a3b8' }} />
             <input
               value={tripTo}
-              onChange={(e) => setTripTo(e.target.value)}
+              onChange={(e) => {
+                setTripTo(e.target.value);
+                setShowToDropdown(true);
+              }}
               placeholder={t.select_destination}
+              onFocus={() => { setShowToDropdown(true); setShowFromDropdown(false); }}
               style={{
                 background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
                 fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
@@ -887,9 +930,13 @@ export default function MapView() {
 
           <button
             onClick={async () => {
-              await planTrip(tripFrom, tripTo);
-              setIsSearching(false);
+              if (tripFrom && tripTo) {
+                await planTrip(tripFrom, tripTo);
+                setIsSearching(false);
+                setShowTripDetails(true);
+              }
             }}
+
             style={{
               width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: '0 0 18px 0', border: 'none',
@@ -904,10 +951,173 @@ export default function MapView() {
             />
           </button>
         </div>
+
+        {/* ── AUTOCOMPLETE DROPDOWNS ── */}
+        {showFromDropdown && tripFrom.length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
+
+
+          <div style={{
+            position: 'absolute',
+            top: 'calc(100% + 10px)',
+            left: '0',
+            right: '0',
+            zIndex: 3000,
+            background: 'rgba(10, 14, 24, 0.98)',
+            backdropFilter: 'blur(30px) saturate(180%)',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
+            maxHeight: '320px',
+            overflowY: 'auto',
+            animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            padding: '10px'
+          }} className="station-dropdown-map">
+            <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+              {tripFrom ? t.results : (language === 'al' ? 'Zgjidh Stacionin' : 'Select Station')}
+            </div>
+            {(tripFrom 
+              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())) 
+              : STOP_NAMES
+            ).slice(0, 15).map(name => (
+              <button
+                key={name}
+                onClick={() => {
+                  setTripFrom(name);
+                  setShowFromDropdown(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.85)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  fontSize: '15px',
+                  borderRadius: '16px',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  marginBottom: '2px'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.color = '#fff';
+                  e.currentTarget.style.transform = 'translateX(6px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#94a3b8', flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.06)'
+                }}>
+                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                </svg>
+
+
+                </div>
+                <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
+                <ChevronRight size={16} style={{ opacity: 0.2 }} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showToDropdown && tripTo.length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
+
+
+          <div style={{
+            position: 'absolute',
+            top: 'calc(100% + 10px)',
+            left: '0',
+            right: '0',
+            zIndex: 3000,
+            background: 'rgba(10, 14, 24, 0.98)',
+            backdropFilter: 'blur(30px) saturate(180%)',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
+            maxHeight: '320px',
+            overflowY: 'auto',
+            animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            padding: '10px'
+          }} className="station-dropdown-map">
+            <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+              {tripTo ? t.results : (language === 'al' ? 'Zgjidh Destinacionin' : 'Select Destination')}
+            </div>
+            {(tripTo 
+              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())) 
+              : STOP_NAMES
+            ).slice(0, 15).map(name => (
+              <button
+                key={name}
+                onClick={() => {
+                  setTripTo(name);
+                  setShowToDropdown(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.85)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  fontSize: '15px',
+                  borderRadius: '16px',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  marginBottom: '2px'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.color = '#fff';
+                  e.currentTarget.style.transform = 'translateX(6px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#cbd5e1', flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.06)'
+                }}>
+                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                </svg>
+
+
+                </div>
+                <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
+                <ChevronRight size={16} style={{ opacity: 0.2 }} />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <style jsx>{`
-        @keyframes searchSlideDown {
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideDown {
           from { transform: translateY(-10px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
@@ -972,17 +1182,41 @@ export default function MapView() {
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => {
-                useStore.getState().setActiveTrip(null);
-                setWalkingShapes({});
-              }}
-              style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; }}
-            >
-              <X size={16} /> {t.close}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowTripDetails(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                {t.continue_btn || 'Continue'} <ArrowRight size={14} />
+              </button>
+              <button
+                onClick={() => {
+                  useStore.getState().setActiveTrip(null);
+                  setWalkingShapes({});
+                  setShowTripDetails(false);
+                }}
+                style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; }}
+              >
+                <X size={16} /> {t.close}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="scroller-wrapper">
@@ -1014,7 +1248,171 @@ export default function MapView() {
         )}
       </div>
 
-      {/* ── BUS INFO PANEL ── */}
+      {/* ── TRIP DETAILS PANEL ── */}
+      {showTripDetails && activeTrip && (
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          background: 'rgba(15, 20, 30, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          padding: '20px',
+          maxHeight: '60vh',
+          overflowY: 'auto',
+          zIndex: 1001,
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '10px',
+                background: 'rgba(59,130,246,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Route size={16} style={{ color: '#3b82f6' }} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0 }}>
+                  {t.step_by_step || 'Step by Step'}
+                </h3>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                  {activeTrip.from} → {activeTrip.to}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTripDetails(false)}
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: 'none',
+                color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                width: '32px', height: '32px', borderRadius: '8px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Steps */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {activeTrip.legs?.map((leg: any, i: number) => {
+              if (leg.isWalking) {
+                return (
+                  <div key={i} style={{
+                    background: 'rgba(16,185,129,0.04)',
+                    border: '0.5px solid rgba(16,185,129,0.15)',
+                    borderLeft: '2px solid #10b981',
+                    borderRadius: '0 10px 10px 0',
+                    padding: '12px 14px',
+                    display: 'flex', gap: '12px', alignItems: 'center',
+                  }}>
+                    <div style={{
+                      width: '30px', height: '30px', borderRadius: '8px',
+                      background: 'rgba(16,185,129,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      🏃
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                        {t.walk_transfer || 'Walking'}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                        {leg.boardAt} → {leg.alightAt}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
+                        {leg.walkingDist}m • {leg.walkingTime}min
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
+              return (
+                <div key={i} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  borderLeft: `2px solid ${r?.color || '#888'}`,
+                  borderRadius: '0 10px 10px 0',
+                  padding: '14px',
+                }}>
+                  {/* Route header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{
+                      background: r?.color || '#888',
+                      color: '#fff',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}>
+                      {leg.route?.name || 'Bus'}
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
+                        {leg.duration}min
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stops */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {leg.stops?.map((stop: string, j: number) => (
+                      <div key={j} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '6px 0'
+                      }}>
+                        <div style={{
+                          width: '8px', height: '8px', borderRadius: '50%',
+                          background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
+                          flexShrink: 0
+                        }} />
+                        <span style={{
+                          fontSize: '13px', color: 'rgba(255,255,255,0.7)',
+                          fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
+                        }}>
+                          {stop}
+                        </span>
+                        {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
+                        {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary */}
+          <div style={{
+            marginTop: '16px', padding: '12px',
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: '8px',
+            display: 'flex', justifyContent: 'space-around', alignItems: 'center'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Time</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.travelTime}min</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Stations</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalStops}</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Cost</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalPrice}L</div>
+            </div>
+          </div>
+        </div>
+      )}
       {infoPanel && (
         <div
           className="bus-info-card animate-slide-up"

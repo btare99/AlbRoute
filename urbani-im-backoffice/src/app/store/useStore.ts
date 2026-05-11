@@ -442,61 +442,30 @@ const useStore = create(
         for (const adminBus of adminBuses) {
           if (adminBus.status !== 'Aktiv') continue;
           try {
-            // Check local simulation state first (avoids unnecessary DB reads)
+            // Check local simulation state first
             const existingSimBus = currentBuses.find((b: any) => b.id === adminBus.id);
             if (existingSimBus) {
-              // Update driver/inspector assignments in simulation state
-              const updated = {
+              newBuses.push({
                 ...existingSimBus,
                 routeId: adminBus.routeId,
                 driverId: adminBus.driverId,
                 inspectorId: adminBus.inspectorId,
-              };
-              newBuses.push(updated);
+              });
               continue;
             }
-            // Bus not in simulation yet — build and save to DB
-            const route = BUS_ROUTES.find(r => r.id === adminBus.routeId);
-            if (!route) continue;
-            const isReturn = Math.random() > 0.5;
-            const direction = isReturn ? 'return' : 'forward';
-            const shapeKey = isReturn ? `${route.id}_1` : `${route.id}_0`;
-            let coords = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-            if (coords.length === 0 && !isReturn) coords = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] || [];
-            if (coords.length === 0) {
-              const sIds = isReturn ? (route.returnStops || route.stops) : route.stops;
-              coords = sIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean).map(s => [s!.lat, s!.lng]) as [number, number][];
-            }
-            if (coords.length < 2) continue;
-            const pointIdx = Math.floor(Math.random() * (coords.length - 1));
-            const pos = coords[pointIdx];
-            const newBus = {
-              id: adminBus.id,
-              routeId: route.id,
-              routeName: route.name,
-              routeLabel: route.label,
-              routeColor: route.color,
-              driverId: adminBus.driverId,
-              inspectorId: adminBus.inspectorId,
-              lat: pos[0], lng: pos[1], currentPointIdx: pointIdx, direction,
-              speed: 18 + Math.random() * 22, passengerLoad: Math.floor(Math.random() * 50),
-              nextStop: route.stops[0] ? BUS_STOPS.find(s => s.id === route.stops[0])?.name : '',
-              delay: Math.floor(Math.random() * 5), lastUpdate: Date.now(), ticks: 0,
-            };
-            // Upsert to DB (try PUT first, fallback to POST)
-            const putRes = await fetch('/api/admin/buses', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newBus),
-            });
-            if (!putRes.ok) {
-              await fetch('/api/admin/buses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newBus),
+            
+            // Fetch from API
+            const res = await fetch(`/api/admin/buses?id=${adminBus.id}`);
+            const existing = await res.json();
+            if (existing && !existing.error) {
+              newBuses.push({
+                ...existing,
+                routeId: adminBus.routeId,
+                driverId: adminBus.driverId,
+                inspectorId: adminBus.inspectorId
               });
             }
-            newBuses.push(newBus);
+            // Automated generation removed
           } catch (error) {
             console.error('Error syncing bus', error);
           }

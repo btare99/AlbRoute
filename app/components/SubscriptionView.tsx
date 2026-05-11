@@ -43,8 +43,21 @@ export default function SubscriptionView() {
   const monthNamesAl = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
   const monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthYear = `${monthNamesAl[now.getMonth()]} ${now.getFullYear()}`;
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const validity = `01.${zoneNumber.padStart(2, '0')}.${now.getFullYear()} - ${lastDay}.${zoneNumber.padStart(2, '0')}.${now.getFullYear()}`;
+  // Dynamic Validity based on package
+  const isTourist = activePackage?.id === 'tourist';
+  const expirationDays = isTourist ? 7 : 30;
+  
+  const lastDayOfRange = isTourist 
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).getDate()
+    : new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    
+  const monthOfExpiry = isTourist
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).getMonth() + 1
+    : now.getMonth() + 1;
+
+  const validity = isTourist
+    ? `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear()} - ${lastDayOfRange.toString().padStart(2, '0')}.${monthOfExpiry.toString().padStart(2, '0')}.${now.getFullYear()}`
+    : `01.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear()} - ${lastDayOfRange.toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear()}`;
 
   const formattedDate = language === 'al'
     ? `${now.getDate()} ${monthNamesAl[now.getMonth()].toLowerCase()} ${now.getFullYear()}`
@@ -64,18 +77,25 @@ export default function SubscriptionView() {
         padding: '24px 20px', 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '12px', 
+        gap: '15px', 
         background: 'var(--bg-dark)',
         flexShrink: 0 
       }}>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '10px',
-          background: 'rgba(245,158,11,0.1)',
-          border: '0.5px solid rgba(245,158,11,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Zap size={18} style={{ color: '#f59e0b' }} />
-        </div>
+        <button
+          onClick={() => setView('profile')}
+          style={{
+            width: '38px', height: '38px', borderRadius: '12px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: '#fff', transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>
             {language === 'al' ? 'Abonimi Im' : 'My Subscription'}
@@ -189,7 +209,7 @@ export default function SubscriptionView() {
           <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
             {language === 'al' ? 'Skadon për: ' : 'Expires in: '}
           </span>
-          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>30 {language === 'al' ? 'ditë' : 'days'}</span>
+          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>{expirationDays} {language === 'al' ? 'ditë' : 'days'}</span>
         </div>
 
       </div>

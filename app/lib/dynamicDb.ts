@@ -3,29 +3,12 @@ import mongoose from 'mongoose';
 const RouteDataSchema = new mongoose.Schema({}, { timestamps: true, strict: false });
 
 /**
- * Returns a route-specific model for drivers (Shoferet) and inspectors (Faturinot).
- * Each route has its own database (e.g., DB "1A" for route "1A").
- */
-export function getRouteModel(routeId: string, type: 'Autobusat' | 'Shoferet' | 'Faturinot') {
-  const dbName = routeId.startsWith('L') ? routeId.substring(1) : routeId;
-  const db = mongoose.connection.useDb(dbName, { useCache: true });
-  return db.model(type, RouteDataSchema, type);
-}
-
-/**
- * Operators are stored in the Global database, not per-route.
- * This ensures operator accounts are independent of line assignments.
- */
-export function getOperatorModel() {
-  const db = mongoose.connection.useDb('Global', { useCache: true });
-  return db.model('Operatoret', RouteDataSchema, 'Operatoret');
-}
-
-/**
- * All buses are stored in the Global database for easy cross-route access.
+ * Returns the global Buses model (used by the main app for fleet tracking).
+ * Buses are stored in the 'Global' database, 'Autobusat' collection.
  */
 export function getBusModel() {
   const db = mongoose.connection.useDb('Global', { useCache: true });
+  // We use RouteDataSchema with strict: false to be flexible with the data coming from Backoffice
   return db.model('Autobusat', RouteDataSchema, 'Autobusat');
 }
 

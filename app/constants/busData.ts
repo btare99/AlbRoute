@@ -4,16 +4,23 @@
 export const BUS_STOPS = [
   // Porcelani
   { id: 'biblioteka', name: 'Biblioteka Kombetare', lat: 41.328380772224, lng: 19.82098880092712 },
-  { id: 'pazari_ri', name: 'Pazari i Ri', lat: 41.329073643100294, lng: 19.824475672613367 },
-  { id: 'optika', name: 'Optika', lat: 41.33160739312691, lng: 19.82914808077014 },
-  { id: 'hoxha_tahsim', name: 'Hoxha Tahsim', lat: 41.33336565645783, lng: 19.832744920860588 },
-  { id: 'xhamlliku', name: 'Xhamlliku', lat: 41.335826769693675, lng: 19.83820542770278 },
-  { id: 'varri_bamit', name: 'Varri i Bamit', lat: 41.33827623899169, lng: 19.841373521760392 },
+  { id: 'pazari_ri_stop1', name: 'Pazari i Ri', lat: 41.329073643100294, lng: 19.824475672613367 },
+  { id: 'pazari_ri_stop2', name: 'Pazari i Ri', lat: 41.32908730349642, lng: 19.823859816027298 },
+  { id: 'optika_stop1', name: 'Optika', lat: 41.33159285600485, lng: 19.829469656181637 },
+  { id: 'optika_stop2', name: 'Optika', lat: 41.33160739312691, lng: 19.82914808077014 },
+  { id: 'hoxha_tahsim_stop1', name: 'Hoxha Tahsim', lat: 41.33342730580358, lng: 19.83314492037184 },
+  { id: 'hoxha_tahsim_stop2', name: 'Hoxha Tahsim', lat: 41.33336565645783, lng: 19.832744920860588 },
+  { id: 'xhamlliku_stop1', name: 'Xhamlliku', lat: 41.335826769693675, lng: 19.83820542770278 },
+  { id: 'xhamlliku_stop2', name: 'Xhamlliku', lat: 41.33586249119033, lng: 19.837982502089083 },
+  { id: 'varri_bamit_stop1', name: 'Varri i Bamit', lat: 41.33807968354699, lng: 19.84137520319216 },
+  { id: 'varri_bamit_stop2', name: 'Varri i Bamit', lat: 41.33885241090061, lng: 19.842051739996204 },
   { id: 'oxhaku_l', name: 'Oxhaku L', lat: 41.33961129345346, lng: 19.84315125442063 },
-  { id: 'artistike_migjeni_r', name: 'Artistike Migjeni R', lat: 41.342181906274625, lng: 19.84600432152968 },
-  { id: 'artistike_migjeni_l', name: 'Artistike Migjeni L', lat: 41.34208726025871, lng: 19.845773651558957 },
-  { id: 'fresku', name: 'Fresku', lat: 41.3461846334508, lng: 19.85522038159125 },
-  { id: 'ikv', name: 'IKV', lat: 41.34517101892639, lng: 19.850844009155836 },
+  { id: 'artistike_migjeni_stop1', name: 'Artistike Migjeni R', lat: 41.342181906274625, lng: 19.84600432152968 },
+  { id: 'artistike_migjeni_stop2', name: 'Artistike Migjeni L', lat: 41.34208726025871, lng: 19.845773651558957 },
+  { id: 'fresku_stop1', name: 'Fresku', lat: 41.3461846334508, lng: 19.85522038159125 },
+  { id: 'fresku_stop2', name: 'Fresku', lat: 41.346239158078035, lng: 19.85520620250371 },
+  { id: 'ikv_stop1', name: 'IKV', lat: 41.34517101892639, lng: 19.850844009155836 },
+  { id: 'ikv_stop2', name: 'IKV', lat: 41.34518044373104, lng: 19.850575417889868 },
   { id: 'qendra_shendetesore', name: 'Qendra Shendetesore', lat: 41.34683813549617, lng: 19.858778414198305 },
   { id: 'kabina_elektrike', name: 'Kabina Elektrike', lat: 41.348514339469155, lng: 19.862095156770636 },
   { id: 'hysen_bastari', name: 'Hysen Bastari', lat: 41.34889017649624, lng: 19.863171884391157 },
@@ -203,7 +210,21 @@ export const BUS_STOPS = [
   { id: 'gjethja', name: 'Gjethja', lat: 41.36083255621101, lng: 19.771838051295003 },
 
   // ── LINJA 6: Qender - Laprake ──────────────────────────────────────────────
+  { id: 'zyhdi_herri_stop1', name: 'Zyhdi Herri', lat: 41.35263642394508, lng: 19.769927429989192 },
+  { id: 'zyhdi_herri_stop2', name: 'Zyhdi Herri', lat: 41.35293301073088, lng: 19.76961264254727 },
+  { id: 'princ_vidi', name: 'Princ Vidi', lat: 41.35538883606453, lng: 19.766325756454766 },
+  { id: 'nikolle_ivanaj_stop1', name: 'Nikolle Ivanaj', lat: 41.3574771794859, lng: 19.763360109305747 },
+  { id: 'nikolle_ivanaj_stop2', name: 'Nikolle Ivanaj', lat: 41.357309071181085, lng: 19.763301771260824 },
+  { id: 'kole_jakova_stop1', name: 'Kole Jakova', lat: 41.358067669345814, lng: 19.762513032771306 },
+  { id: 'kole_jakova_stop2', name: 'Kole Jakova', lat: 41.35799317897009, lng: 19.76243323705469 },
+  { id: 'gjoke_doci_stop1', name: 'Gjoke Doci', lat: 41.35897306796045, lng: 19.761520091572677 },
+  { id: 'gjoke_doci_stop2', name: 'Gjoke Doci', lat: 41.35899018036424, lng: 19.761423532050053 },
   { id: 'gjergj_legisi', name: 'Gjergj Legisi', lat: 41.34166069745681, lng: 19.788780427483033 },
+  { id: 'isuf_xhelili_stop1', name: 'Isuf Xhelili', lat: 41.36127809437976, lng: 19.76037418713289 },
+  { id: 'isuf_xhelili_stop2', name: 'Isuf Xhelili', lat: 41.36123984446273, lng: 19.760265557669932 },
+  { id: 'rruga_devolli_stop1', name: 'Rruga Devolli', lat: 41.362754906585614, lng: 19.75831370587487 },
+  { id: 'rruga_devolli_stop2', name: 'Rruga Devolli', lat: 41.362615498759126, lng: 19.758327787471917 },
+  { id: 'kamez', name: 'Kamez', lat: 41.36589439978208, lng: 19.757641453966503 },
   { id: 'ndoc_martini', name: 'Ndoc Martini', lat: 41.34697371019859, lng: 19.788794782307264 },
   { id: 'pas_nenkalimit', name: 'Pas Nenkalimit', lat: 41.34693599256988, lng: 19.788091397966657 },
   { id: 'shinat_e_trenit', name: 'Shinat e Trenit', lat: 41.34470803200807, lng: 19.787674726890753 },
@@ -384,7 +405,6 @@ export const BUS_STOPS = [
   { id: 'vellazerit_frasheri', name: 'Vellezerit Frasheri', lat: 41.32337545055907, lng: 19.818774030688935 },
   { id: 'drejtoria_e_policise_a', name: 'Drejtoria e Policise A', lat: 41.32296306821319, lng: 19.81274012981296 },
   { id: 'kinema_agimi', name: 'Kinema Agimi', lat: 41.322742551980156, lng: 19.814707449563617 },
-  { id: 'lulishte_cajupi', name: 'Lulishte Cajupi', lat: 41.322145120166354, lng: 19.810986087373745 },
   { id: 'gjykata', name: 'Gjykata', lat: 41.32205002728075, lng: 19.806850071287958 },
   { id: 'vasil_shanto_orar', name: 'Vasil Shanto A', lat: 41.32147203611153, lng: 19.806664689577822 },
   { id: 'sabaudin_gabrani_orar', name: 'Sabaudin Gabrani', lat: 41.32501218348803, lng: 19.803922714106687 },
@@ -692,14 +712,14 @@ export const BUS_ROUTES = [
   {
     id: 'L11', name: '11', label: 'Porcelan – Qëndër', color: '#2951dfff',
     stops: [
-      'biblioteka', 'pazari_ri', 'optika', 'hoxha_tahsim', 'xhamlliku', 'varri_bamit',
-      'oxhaku_l', 'artistike_migjeni_r', 'fresku', 'ikv', 'qendra_shendetesore',
+      'biblioteka', 'pazari_ri_stop1', 'optika_stop1', 'hoxha_tahsim_stop1', 'xhamlliku_stop1', 'varri_bamit_stop1',
+      'oxhaku_l', 'artistike_migjeni_stop1', 'ikv_stop1', 'fresku_stop1', 'qendra_shendetesore',
       'kabina_elektrike', 'hysen_bastari', 'stacioni_shkolles_re', 'thesari'
     ],
     returnStops: [
       'thesari', '17_shkurti', 'bunkart_1', 'aziz_deliiu', 'thoma_filipeu',
-      'fizika_berthamore', 'fresku', 'artistike_migjeni_l', 'oxhaku_l', 'varri_bamit',
-      'xhamlliku', 'hoxha_tahsim', 'optika', 'pazari_ri', 'biblioteka'
+      'fizika_berthamore', 'fresku_stop2', 'ikv_stop2', 'artistike_migjeni_stop2', 'varri_bamit_stop2',
+      'xhamlliku_stop2', 'hoxha_tahsim_stop2', 'optika_stop2', 'pazari_ri_stop2', 'biblioteka'
     ]
   },
 

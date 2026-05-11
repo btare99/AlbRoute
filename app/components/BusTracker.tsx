@@ -327,9 +327,7 @@ export default function BusTracker() {
         {routeBuses.map((bus: any, idx: number) => {
           const loadInfo = getLoadInfo(bus.passengerLoad);
           const isSelected = selectedBus?.id === bus.id;
-          const busLabel = bus.id && typeof bus.id === 'string' && bus.id.includes('-')
-            ? bus.id.split('-')[1]
-            : (bus.id ? String(bus.id).substring(Math.max(0, String(bus.id).length - 4)) : (language === 'al' ? 'Pa ID' : 'No ID'));
+          const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
 
           return (
             <div
@@ -337,7 +335,7 @@ export default function BusTracker() {
               onClick={() => setSelectedBus(isSelected ? null : bus)}
               style={{
                 background: isSelected ? `${route?.color}08` : 'rgba(255,255,255,0.02)',
-                border: `0.5px solid ${isSelected ? (route?.color + '40') : 'rgba(255,255,255,0.07)'}`,
+                border: `0.5px solid ${isSelected ? (route?.color + '40') : 'rgba(255,255,255,0.08)'}`,
                 borderLeft: isSelected ? `2px solid ${route?.color}` : '2px solid transparent',
                 borderRadius: '0 12px 12px 0',
                 padding: '14px 16px',
@@ -370,7 +368,7 @@ export default function BusTracker() {
                   </div>
                   <div>
                     <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '3px' }}>
-                      Autobuzi {busLabel}
+                      {busLabel}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
                       <ArrowRight size={10} />

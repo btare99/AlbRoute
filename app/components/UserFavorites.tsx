@@ -4,7 +4,8 @@ import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import {
   Star, Trash2, Bus, ArrowRight, MapPin, Route,
   Bell, BellOff, Clock, Navigation, Zap, Plus,
-  Shield, CheckCircle2, History, TrendingUp, Leaf, ArrowLeft
+  Shield, CheckCircle2, History, TrendingUp, Leaf, ArrowLeft,
+  ChevronLeft
 } from 'lucide-react';
 import { translations } from '../store/translations';
 
@@ -29,7 +30,7 @@ function EmptyTab({ icon, text, action, actionLabel }: {
         {icon}
       </div>
       <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>{text}</p>
-      <button 
+      <button
         onClick={action}
         style={{
           background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)',
@@ -66,7 +67,7 @@ export default function UserFavorites() {
     setNotified(prev => {
       const next = { ...prev, [id]: !prev[id] };
       addNotification(
-        next[id] 
+        next[id]
           ? (language === 'al' ? `Njoftimet u aktivizuan për ${id}.` : language === 'en' ? `Notifications activated for ${id}.` : `Notifiche attivate per ${id}.`)
           : (language === 'al' ? `Njoftimet u çaktivizuan për ${id}.` : language === 'en' ? `Notifications deactivated for ${id}.` : `Notifiche disattivate per ${id}.`),
         'info'
@@ -79,27 +80,21 @@ export default function UserFavorites() {
     <div className="page-content">
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '15px' }}>
         <button
           onClick={() => setView('profile')}
           style={{
-            width: '38px', height: '38px', borderRadius: '50%',
+            width: '38px', height: '38px', borderRadius: '12px',
             background: 'rgba(255,255,255,0.05)',
             border: '0.5px solid rgba(255,255,255,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', cursor: 'pointer', transition: 'all 0.2s'
+            color: '#fff', cursor: 'pointer', transition: 'all 0.2s ease'
           }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
-          <ArrowLeft size={18} />
+          <ChevronLeft size={20} />
         </button>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '10px',
-          background: 'rgba(245,158,11,0.1)',
-          border: '0.5px solid rgba(245,158,11,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Star size={18} style={{ color: '#f59e0b' }} />
-        </div>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.saved}</h1>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
@@ -180,10 +175,10 @@ export default function UserFavorites() {
       {/* ── Content ── */}
       <div style={{ minHeight: '300px' }}>
         {tab === 'routes' && (
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', 
-            gap: '12px' 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gap: '12px'
           }}>
             {!savedRoutes || savedRoutes.length === 0 ? (
               <EmptyTab
@@ -232,8 +227,8 @@ export default function UserFavorites() {
                           )}
                         </div>
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-                          {activeBusesCount > 0 
-                            ? (language === 'al' ? `${activeBusesCount} autobuzë aktivë tani` : language === 'en' ? `${activeBusesCount} active buses now` : `${activeBusesCount} autobus attivi ora`) 
+                          {activeBusesCount > 0
+                            ? (language === 'al' ? `${activeBusesCount} autobuzë aktivë tani` : language === 'en' ? `${activeBusesCount} active buses now` : `${activeBusesCount} autobus attivi ora`)
                             : (language === 'al' ? 'Asnjë aktiv aktualisht' : language === 'en' ? 'None active currently' : 'Nessuno attivo')}
                         </p>
                       </div>
@@ -281,10 +276,10 @@ export default function UserFavorites() {
         )}
 
         {tab === 'stops' && (
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', 
-            gap: '12px' 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gap: '12px'
           }}>
             {!savedStops || savedStops.length === 0 ? (
               <EmptyTab

@@ -17,7 +17,7 @@ export default function ProfileView() {
 
   const activeUser = staffUser || user;
 
-  const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | null>(null);
+  const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | null>(null);
 
   const menuItems = [
     { icon: <Star size={18} style={{ color: '#f59e0b' }} />, label: language === 'al' ? 'Stacionet e Ruajtura' : 'Saved Stops', action: () => setView('favorites') },
@@ -38,7 +38,7 @@ export default function ProfileView() {
         }
       }
     },
-    { icon: <LogOut size={18} />, label: t.logout, action: logout, isDestructive: true },
+    { icon: <LogOut size={18} />, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
   ];
 
   return (
@@ -135,14 +135,20 @@ export default function ProfileView() {
           padding: '20px', animation: 'fadeIn 0.2s ease'
         }}>
           <div style={{
-            background: '#1a1d24', borderRadius: '16px', width: '100%', maxWidth: '300px',
-            padding: '24px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+            background: activeModal === 'logout' ? 'rgba(26, 29, 36, 0.6)' : '#1a1d24',
+            backdropFilter: activeModal === 'logout' ? 'blur(20px)' : 'none',
+            borderRadius: '24px', width: '100%', maxWidth: '300px',
+            padding: activeModal === 'logout' ? '20px' : '24px', textAlign: 'center', 
+            boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+            border: activeModal === 'logout' ? '1px solid rgba(255,255,255,0.1)' : 'none'
           }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#fff' }}>
-              {activeModal === 'notifications' && (language === 'al' ? 'Njoftime' : 'Notifications')}
-              {activeModal === 'help' && (language === 'al' ? 'Ndihmë' : 'Help')}
-              {activeModal === 'language' && (language === 'al' ? 'Zgjidh Gjuhën' : language === 'en' ? 'Select Language' : 'Scegli la Lingua')}
-            </h3>
+            {activeModal !== 'logout' && (
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#fff' }}>
+                {activeModal === 'notifications' && (language === 'al' ? 'Njoftime' : 'Notifications')}
+                {activeModal === 'help' && (language === 'al' ? 'Ndihmë' : 'Help')}
+                {activeModal === 'language' && (language === 'al' ? 'Zgjidh Gjuhën' : language === 'en' ? 'Select Language' : 'Scegli la Lingua')}
+              </h3>
+            )}
 
             {activeModal === 'language' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
@@ -171,6 +177,26 @@ export default function ProfileView() {
                   </button>
                 ))}
               </div>
+            ) : activeModal === 'logout' ? (
+              <div>
+                <p style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#fff', fontWeight: '500', lineHeight: '1.5' }}>
+                  {t.logout_confirm}
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setActiveModal(null)}
+                    style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '14px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', cursor: 'pointer' }}
+                  >
+                    {t.no}
+                  </button>
+                  <button
+                    onClick={() => { logout(); setActiveModal(null); }}
+                    style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
+                  >
+                    {t.yes}
+                  </button>
+                </div>
+              </div>
             ) : (
               <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
                 {activeModal === 'notifications' && (language === 'al' ? 'Nuk keni asnjë njoftim të ri.' : 'You have no new notifications.')}
@@ -178,9 +204,11 @@ export default function ProfileView() {
               </p>
             )}
 
-            <button onClick={() => setActiveModal(null)} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-              {language === 'al' ? 'Mbyll' : 'Close'}
-            </button>
+            {activeModal !== 'logout' && (
+              <button onClick={() => setActiveModal(null)} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
+                {language === 'al' ? 'Mbyll' : 'Close'}
+              </button>
+            )}
           </div>
         </div>
       )}

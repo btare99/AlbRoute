@@ -17,10 +17,7 @@ export default function Page() {
 
     const loadInitialData = async () => {
       try {
-        await useStore.getState().fetchAdminDrivers();
-        await useStore.getState().fetchAdminInspectors();
-        await useStore.getState().fetchAdminBuses();
-        await useStore.getState().syncBusesWithAdmin();
+        // Fetch real-time buses from the new MongoDB source
         await useStore.getState().fetchBuses();
       } catch (err) {
         console.error('Initial data load failed', err);
@@ -29,16 +26,17 @@ export default function Page() {
 
     loadInitialData();
 
+    // The polling is now handled in AppShell for better view-specific control,
+    // but we can keep a slow background refresh here if needed.
     const pollInterval = setInterval(async () => {
-      await useStore.getState().fetchAdminBuses();
-      await useStore.getState().syncBusesWithAdmin();
       await useStore.getState().fetchBuses();
-    }, 10000); // Polling every 10s to be safer
+    }, 15000); 
 
     return () => clearInterval(pollInterval);
   }, []);
 
-  // Simulation Movement
+  // Simulation Movement (Disabled to use real DB data)
+  /*
   useEffect(() => {
     if (!hasMounted) return;
     const interval = setInterval(() => {
@@ -46,6 +44,7 @@ export default function Page() {
     }, 100);
     return () => clearInterval(interval);
   }, [hasMounted, moveBuses]);
+  */
 
   if (!hasMounted) return null;
 

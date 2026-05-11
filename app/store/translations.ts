@@ -171,6 +171,9 @@ export const translations: Record<string, any> = {
     tourist_pass: "Abone Turistike",
     seven_days: "7 Ditë",
     tourist_unlimited: "Udhëtime të pakufizuara për 1 javë",
+    logout_confirm: "A jeni të sigurt që dëshironi të dilni?",
+    yes: "Po",
+    no: "Jo",
   },
   en: {
     // ── General ──
@@ -344,6 +347,9 @@ export const translations: Record<string, any> = {
     tourist_pass: "Tourist Pass",
     seven_days: "7 Days",
     tourist_unlimited: "Unlimited rides for 1 week",
+    logout_confirm: "Are you sure you want to log out?",
+    yes: "Yes",
+    no: "No",
   },
   it: {
     // ── General ──
@@ -517,5 +523,8 @@ export const translations: Record<string, any> = {
     tourist_pass: "Abbonamento Turistico",
     seven_days: "7 Giorni",
     tourist_unlimited: "Viaggi illimitati per 1 settimana",
+    logout_confirm: "Sei sicuro di voler uscire?",
+    yes: "Sì",
+    no: "No",
   }
 };

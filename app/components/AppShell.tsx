@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import Sidebar from './Sidebar';
 import MapView from './MapView';
 import BusTracker from './BusTracker';
@@ -21,7 +22,23 @@ export default function AppShell() {
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
   const language = useStore((state: any) => state.language);
+  const fetchBuses = useStore((state: any) => state.fetchBuses);
   const t = translations[language] || translations.al;
+
+  // ─── Live Data Polling ───
+  useEffect(() => {
+    // Initial fetch
+    fetchBuses();
+
+    // Interval for live updates (every 3 seconds)
+    const interval = setInterval(() => {
+      if (currentView === 'map' || currentView === 'tracker') {
+        fetchBuses();
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [currentView, fetchBuses]);
 
   const MENU = [
     { id: 'map', label: t.map, icon: Map },
