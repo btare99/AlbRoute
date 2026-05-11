@@ -278,7 +278,7 @@ export default function LoginPage() {
       {/* Brand Identity - Top Left */}
       <div style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: '1.5px solid var(--border)', flexShrink: 0 }}>
-          <img src="/logo-Urban.png" alt="Urban Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src="/logo.png" alt="Urban Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
         <div style={{ textAlign: 'left' }}>
           <h1 style={{ fontSize: '20px', fontWeight: '900', lineHeight: '1.1', background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: "'Syne', sans-serif" }}>Urbani Im</h1>

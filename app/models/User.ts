@@ -24,9 +24,13 @@ const UserSchema = new Schema({
     home: { type: String, default: '' },
     work: { type: String, default: '' },
   },
-  travelHistory: {
+    travelHistory: {
     type: Array,
     default: [],
+  },
+  avatar: {
+    type: String,
+    default: null,
   },
   createdAt: {
     type: Date,

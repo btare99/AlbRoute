@@ -42,7 +42,7 @@ export default function SplashScreen() {
           position: 'fixed',
           inset: 0,
           zIndex: 9999,
-          background: '#ffffff',
+          background: '#0a0f1a',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -69,7 +69,7 @@ export default function SplashScreen() {
           }}
         >
           <img
-            src="/logo-Urban.png"
+            src="/logo.png"
             alt="Urbani Im Logo"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
@@ -81,7 +81,7 @@ export default function SplashScreen() {
           style={{
             fontSize: 22,
             fontWeight: 600,
-            color: '#0f172a',
+            color: '#ffffff',
             margin: '0 0 6px',
             letterSpacing: '-0.3px',
           }}
@@ -92,7 +92,7 @@ export default function SplashScreen() {
           className="sp-sub"
           style={{
             fontSize: 14,
-            color: '#94a3b8',
+            color: 'rgba(255,255,255,0.5)',
             margin: '0 0 40px',
           }}
         >
@@ -105,7 +105,7 @@ export default function SplashScreen() {
           style={{
             width: 160,
             height: 3,
-            background: '#f1f5f9',
+            background: 'rgba(255,255,255,0.05)',
             borderRadius: 99,
             overflow: 'hidden',
           }}
@@ -125,7 +125,7 @@ export default function SplashScreen() {
           style={{
             marginTop: 16,
             fontSize: 12,
-            color: '#cbd5e1',
+            color: 'rgba(255,255,255,0.3)',
           }}
         >
           Loading routes…

@@ -63,7 +63,11 @@ export default function ProfileView() {
             fontSize: '22px', fontWeight: '600', color: '#fff',
             boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.03)'
           }}>
-            {activeUser?.name?.charAt(0) || 'U'}
+            {activeUser?.avatar ? (
+              <img src={activeUser.avatar} style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover' }} alt="Profile" />
+            ) : (
+              activeUser?.name?.charAt(0) || 'U'
+            )}
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>{activeUser?.name || 'Përdorues'}</h2>
@@ -117,9 +121,9 @@ export default function ProfileView() {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
+      <div style={{ padding: '4px 20px', textAlign: 'center', marginTop: 'auto', marginBottom: '5px' }}>
         <p style={{ margin: 0, fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
-          POWERED BY ALBROUTE
+          POWERED BY URBANI IM
         </p>
         <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>
           Versioni 1.0.0

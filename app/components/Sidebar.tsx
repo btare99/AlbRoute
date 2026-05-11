@@ -61,7 +61,7 @@ export default function Sidebar() {
       <div className="s-header">
         <div className="s-brand">
           <div className="s-logo">
-            <img src="/logo-Urban.png" alt="Urban Logo" />
+            <img src="/logo.png" alt="Urban Logo" />
           </div>
           <div className="s-brand-text">
             <span className="s-brand-name">Urbani Im</span>
