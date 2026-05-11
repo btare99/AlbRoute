@@ -4,6 +4,8 @@ import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import { BUS_SHAPES } from '../store/busShapes';
 import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, Moon, Sun, Globe, Bus, Route, MapPin } from 'lucide-react';
 import { translations } from '../store/translations';
+import SwipeDismissView from './SwipeDismissView';
+
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
@@ -223,6 +225,7 @@ export default function MapView() {
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
   const [showTripDetails, setShowTripDetails] = useState(false);
+  const [isPlanning, setIsPlanning] = useState(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -861,29 +864,52 @@ export default function MapView() {
 
           <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px', opacity: 1, transition: 'opacity 0.3s' }} />
 
-          <button
-            onClick={() => {
-              requestCompassPermission();
-              fetchUserLocation();
-              // Update trip origin coords whenever user location is requested for planning
-              if (userLocation) {
-                useStore.getState().setTripOriginCoords(userLocation);
-              }
-              mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
-              if (isSearching) {
-                const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
-                setTripFrom(myLocStr);
-              }
-            }}
-
-            style={{
-              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
-              background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-            }}
-          >
-            <Locate size={22} />
-          </button>
+          {activeTrip ? (
+            <button
+              onClick={() => {
+                useStore.getState().setActiveTrip(null);
+                setWalkingShapes({});
+                setShowTripDetails(false);
+                setTripFrom('');
+                setTripTo('');
+                useStore.getState().setShowRoutes(false);
+                useStore.getState().setShowStops(true);
+                setActiveRouteFilter(null);
+                mapInstanceRef.current?.flyTo(TIRANA_CENTER, DEFAULT_ZOOM);
+              }}
+              style={{
+                width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
+                background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.4s'
+              }}
+              title={t.close}
+            >
+              <X size={22} />
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                requestCompassPermission();
+                fetchUserLocation();
+                // Update trip origin coords whenever user location is requested for planning
+                if (userLocation) {
+                  useStore.getState().setTripOriginCoords(userLocation);
+                }
+                mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
+                if (isSearching) {
+                  const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
+                  setTripFrom(myLocStr);
+                }
+              }}
+              style={{
+                width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
+                background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
+            >
+              <Locate size={22} />
+            </button>
+          )}
         </div>
 
         {/* Second Bar (Joined with Transition) */}
@@ -931,9 +957,11 @@ export default function MapView() {
           <button
             onClick={async () => {
               if (tripFrom && tripTo) {
-                await planTrip(tripFrom, tripTo);
-                setIsSearching(false);
+                setIsPlanning(true);
                 setShowTripDetails(true);
+                await planTrip(tripFrom, tripTo);
+                setIsPlanning(false);
+                setIsSearching(false);
               }
             }}
 
@@ -1114,13 +1142,14 @@ export default function MapView() {
 
       <style jsx>{`
         @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
         @keyframes slideDown {
-          from { transform: translateY(-10px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from { transform: translateX(-20px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
+
       `}</style>
 
       {/* ── RIGHT OVERLAY: ALL CONTROLS IN ONE COLUMN ── */}
@@ -1249,325 +1278,384 @@ export default function MapView() {
       </div>
 
       {/* ── TRIP DETAILS PANEL ── */}
-      {showTripDetails && activeTrip && (
-        <div style={{
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          right: '0',
-          background: 'rgba(15, 20, 30, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          padding: '20px',
-          maxHeight: '60vh',
-          overflowY: 'auto',
-          zIndex: 1001,
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          {/* Header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: '16px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '32px', height: '32px', borderRadius: '10px',
-                background: 'rgba(59,130,246,0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Route size={16} style={{ color: '#3b82f6' }} />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0 }}>
-                  {t.step_by_step || 'Step by Step'}
-                </h3>
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  {activeTrip.from} → {activeTrip.to}
-                </p>
-              </div>
+      {showTripDetails && (isPlanning || activeTrip) && (
+        <SwipeDismissView
+          direction="vertical"
+          isFixed={false}
+          onDismiss={() => setShowTripDetails(false)}
+          threshold={100}
+          dragHandleClass="mobile-drag-handle"
+        >
+          <div 
+            className="stop-info-card"
+            style={{
+              position: 'absolute',
+              bottom: '0',
+              left: '0',
+              right: '0',
+              background: 'rgba(15, 20, 30, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+              maxHeight: '60vh',
+              minHeight: '200px',
+              overflowY: 'auto',
+              zIndex: 1001,
+            }}
+          >
+            <div className="mobile-drag-handle">
+              <div className="drag-indicator" />
             </div>
-            <button
-              onClick={() => setShowTripDetails(false)}
-              style={{
-                background: 'rgba(255,255,255,0.05)', border: 'none',
-                color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
-                width: '32px', height: '32px', borderRadius: '8px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >
-              <X size={16} />
-            </button>
-          </div>
+            <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '15px 20px' }}>
+              <div className="header-main">
+                <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                  <Navigation size={20} color="#3b82f6" />
+                </span>
+                <div className="route-texts">
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
+                    {isPlanning ? (language === 'al' ? 'Duke përpunuar...' : 'Calculating...') : (t.step_by_step || 'Step by Step')}
+                  </h3>
+                  {!isPlanning && activeTrip ? (
+                    <p style={{ margin: 0 }}>{activeTrip.from} → {activeTrip.to}</p>
+                  ) : (
+                    <p style={{ margin: 0 }}>{language === 'al' ? 'Gjetja e rrugës optimale' : 'Finding optimal route'}</p>
+                  )}
+                </div>
+              </div>
+              <button className="close-btn" onClick={() => setShowTripDetails(false)} style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.5 }}>
+                <X size={20} />
+              </button>
+            </div>
 
-          {/* Steps */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {activeTrip.legs?.map((leg: any, i: number) => {
-              if (leg.isWalking) {
+            {isPlanning ? (
+              /* Skeleton Loader */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="skeleton" style={{ width: '60%', height: '14px' }} />
+                      <div className="skeleton" style={{ width: '40%', height: '10px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Steps */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {activeTrip.legs?.map((leg: any, i: number) => {
+                if (leg.isWalking) {
+                  return (
+                    <div key={i} style={{
+                      background: 'rgba(16,185,129,0.04)',
+                      border: '0.5px solid rgba(16,185,129,0.15)',
+                      borderLeft: '2px solid #10b981',
+                      borderRadius: '0 10px 10px 0',
+                      padding: '12px 14px',
+                      display: 'flex', gap: '12px', alignItems: 'center',
+                    }}>
+                      <div style={{
+                        width: '30px', height: '30px', borderRadius: '8px',
+                        background: 'rgba(16,185,129,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        🏃
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                          {t.walk_transfer || 'Walking'}
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                          {leg.boardAt} → {leg.alightAt}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
+                          {leg.walkingDist}m • {leg.walkingTime}min
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
                 return (
                   <div key={i} style={{
-                    background: 'rgba(16,185,129,0.04)',
-                    border: '0.5px solid rgba(16,185,129,0.15)',
-                    borderLeft: '2px solid #10b981',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '0.5px solid rgba(255,255,255,0.06)',
+                    borderLeft: `2px solid ${r?.color || '#888'}`,
                     borderRadius: '0 10px 10px 0',
-                    padding: '12px 14px',
-                    display: 'flex', gap: '12px', alignItems: 'center',
+                    padding: '14px',
                   }}>
-                    <div style={{
-                      width: '30px', height: '30px', borderRadius: '8px',
-                      background: 'rgba(16,185,129,0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      🏃
+                    {/* Route header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{
+                        background: r?.color || '#888',
+                        color: '#fff',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '800'
+                      }}>
+                        {leg.route?.name || 'Bus'}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
+                          {leg.duration}min
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
-                        {t.walk_transfer || 'Walking'}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                        {leg.boardAt} → {leg.alightAt}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                        {leg.walkingDist}m • {leg.walkingTime}min
-                      </div>
+
+                    {/* Stops */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {leg.stops?.map((stop: string, j: number) => (
+                        <div key={j} style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '6px 0'
+                        }}>
+                          <div style={{
+                            width: '8px', height: '8px', borderRadius: '50%',
+                            background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
+                            flexShrink: 0
+                          }} />
+                          <span style={{
+                            fontSize: '13px', color: 'rgba(255,255,255,0.7)',
+                            fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
+                          }}>
+                            {stop}
+                          </span>
+                          {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
+                          {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
-              }
+              })}
+            </div>
+          )}
 
-              const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
-              return (
-                <div key={i} style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
-                  borderLeft: `2px solid ${r?.color || '#888'}`,
-                  borderRadius: '0 10px 10px 0',
-                  padding: '14px',
-                }}>
-                  {/* Route header */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <div style={{
-                      background: r?.color || '#888',
-                      color: '#fff',
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: '800'
-                    }}>
-                      {leg.route?.name || 'Bus'}
-                    </div>
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
-                        {leg.duration}min
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stops */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {leg.stops?.map((stop: string, j: number) => (
-                      <div key={j} style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '6px 0'
-                      }}>
-                        <div style={{
-                          width: '8px', height: '8px', borderRadius: '50%',
-                          background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
-                          flexShrink: 0
-                        }} />
-                        <span style={{
-                          fontSize: '13px', color: 'rgba(255,255,255,0.7)',
-                          fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
-                        }}>
-                          {stop}
-                        </span>
-                        {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
-                        {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
-                      </div>
-                    ))}
-                  </div>
+            {/* Summary */}
+            {!isPlanning && activeTrip && (
+              <div style={{
+                marginTop: '16px', padding: '12px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '8px',
+                display: 'flex', justifyContent: 'space-around', alignItems: 'center'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Time</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.travelTime}min</div>
                 </div>
-              );
-            })}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Stations</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalStops}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Cost</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalPrice}L</div>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Summary */}
-          <div style={{
-            marginTop: '16px', padding: '12px',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '8px',
-            display: 'flex', justifyContent: 'space-around', alignItems: 'center'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Time</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.travelTime}min</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Stations</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalStops}</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Cost</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalPrice}L</div>
-            </div>
-          </div>
-        </div>
+        </SwipeDismissView>
       )}
+
       {infoPanel && (
-        <div
-          className="bus-info-card animate-slide-up"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          style={{ transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none', transition: touchStartY !== null ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+        <SwipeDismissView 
+          direction="vertical" 
+          isFixed={false} 
+          onDismiss={() => setInfoPanel(null)}
+          threshold={80}
+          dragHandleClass="mobile-drag-handle"
         >
-          <div className="mobile-drag-handle">
-            <div className="drag-indicator" />
-          </div>
-          <div className="card-header" style={{ background: infoPanel.routeColor }}>
-            <div className="header-main">
-              <span className="route-num">{infoPanel.routeName}</span>
-              <div className="route-texts">
-                <h3>{infoPanel.routeLabel}</h3>
-                <p>{t.on_move} • {t.live}</p>
-              </div>
+          <div
+            className="bus-info-card animate-slide-up"
+            style={{ position: 'relative' }}
+          >
+            {/* Filler background */}
+            <div style={{ 
+              position: 'absolute', 
+              top: '100%', 
+              left: 0, 
+              right: 0, 
+              height: '100vh', 
+              background: '#1e293b',
+              zIndex: -1 
+            }} />
+            <div className="mobile-drag-handle">
+              <div className="drag-indicator" />
             </div>
-            <button className="close-btn" onClick={() => setInfoPanel(null)}><X size={20} /></button>
-          </div>
-          <div className="card-body">
-            <div className="data-grid">
-              <div className="data-item">
-                <label>{t.nextStop}</label>
-                <b>{infoPanel.nextStop || t.calculating}</b>
-              </div>
-              <div className="data-item">
-                <label>{t.passengers}</label>
-                <div className="load-bar">
-                  <div className="load-fill" style={{ width: `${(infoPanel.passengerLoad / 50) * 100}%`, background: infoPanel.passengerLoad > 40 ? 'var(--danger)' : 'var(--success)' }} />
+            <div className="card-header" style={{ background: infoPanel.routeColor }}>
+              <div className="header-main">
+                <span className="route-num">{infoPanel.routeName}</span>
+                <div className="route-texts">
+                  <h3>{infoPanel.routeLabel}</h3>
+                  <p>{t.on_move} • {t.live}</p>
                 </div>
-                <b>{infoPanel.passengerLoad} / 50</b>
               </div>
-              <div className="data-item">
-                <label>{t.speed}</label>
-                <b>{Math.round(infoPanel.speed)} km/h</b>
-              </div>
+              <button className="close-btn" onClick={() => setInfoPanel(null)}><X size={20} /></button>
             </div>
-            <button className="view-details-btn" onClick={() => setView('tracker')}>
-              {t.view_details} <ChevronRight size={16} />
-            </button>
+            <div className="card-body">
+              <div className="data-grid">
+                <div className="data-item">
+                  <label>{t.nextStop}</label>
+                  <b>{infoPanel.nextStop || t.calculating}</b>
+                </div>
+                <div className="data-item">
+                  <label>{t.passengers}</label>
+                  <div className="load-bar">
+                    <div className="load-fill" style={{ width: `${(infoPanel.passengerLoad / 50) * 100}%`, background: infoPanel.passengerLoad > 40 ? 'var(--danger)' : 'var(--success)' }} />
+                  </div>
+                  <b>{infoPanel.passengerLoad} / 50</b>
+                </div>
+                <div className="data-item">
+                  <label>{t.speed}</label>
+                  <b>{Math.round(infoPanel.speed)} km/h</b>
+                </div>
+              </div>
+              <button className="view-details-btn" onClick={() => setView('tracker')}>
+                {t.view_details} <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
-        </div>
+        </SwipeDismissView>
       )}
+
 
       {/* ── STOP INFO PANEL (DRAGGABLE SHEET) ── */}
       {selectedStop && (
-        <div
-          className={`stop-info-card sheet-${sheetHeight}`}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          style={{
-            transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none',
-            transition: touchStartY !== null ? 'none' : 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            height: sheetHeight === 'peek' ? '280px' : sheetHeight === 'half' ? '50vh' : '90vh',
-            maxHeight: '90vh'
+        <SwipeDismissView 
+          direction="vertical" 
+          isFixed={false} 
+          onDismiss={() => { setSelectedStop(null); setSheetHeight('peek'); }}
+          onSwipeUp={() => {
+            if (sheetHeight === 'peek') setSheetHeight('half');
+            else if (sheetHeight === 'half') setSheetHeight('full');
           }}
+          onSwipeDown={sheetHeight !== 'peek' ? () => {
+            if (sheetHeight === 'full') setSheetHeight('half');
+            else if (sheetHeight === 'half') setSheetHeight('peek');
+          } : undefined}
+          threshold={120}
+          dragHandleClass="mobile-drag-handle"
         >
-          <div className="mobile-drag-handle">
-            <div className="drag-indicator" />
-          </div>
-          <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
-            <div className="header-main">
-              <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                <MapPin size={20} color="#38bdf8" />
-              </span>
-              <div className="route-texts">
-                <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
-                <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
-              </div>
-            </div>
-            <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
-          </div>
+          <div
+            className={`stop-info-card sheet-${sheetHeight}`}
+            style={{
+              height: sheetHeight === 'peek' ? '280px' : sheetHeight === 'half' ? '50vh' : 'calc(100vh - 90px)',
+              maxHeight: 'calc(100vh - 90px)',
+              borderRadius: sheetHeight === 'full' ? '0' : '28px 28px 0 0',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              position: 'relative'
+            }}
+          >
+            {/* Filler background to prevent map showing below during swipe-up */}
+            <div style={{ 
+              position: 'absolute', 
+              top: '100%', 
+              left: 0, 
+              right: 0, 
+              height: '100vh', 
+              background: '#1e293b',
+              zIndex: -1 
+            }} />
 
-          <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
-            {/* Peek Content: Lines */}
-            <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
-              {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
-            </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 24 }}>
-              {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
-                <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color }} />
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
-                </div>
-              ))}
+            <div className="mobile-drag-handle">
+              <div className="drag-indicator" />
             </div>
-
-            {/* Half Content: Closest Bus */}
-            {(sheetHeight === 'half' || sheetHeight === 'full') && (
-              <div style={{ animation: 'fadeIn 0.4s ease' }}>
-                <div style={{ background: 'rgba(56, 189, 248, 0.05)', borderRadius: 20, padding: 20, border: '1px solid rgba(56, 189, 248, 0.1)', marginBottom: 24 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>Autobusi më i afërt</span>
-                    <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                    <div style={{ width: 44, height: 44, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <Bus size={22} color="#fff" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Linja {BUS_ROUTES[0].name}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Mbërrin për ~3 minuta</div>
-                    </div>
-                  </div>
+            <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
+              <div className="header-main">
+                <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                  <MapPin size={20} color="#38bdf8" />
+                </span>
+                <div className="route-texts">
+                  <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
+                  <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
                 </div>
               </div>
-            )}
+              <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
+            </div>
 
-            {/* Full Content: Next 5 Buses */}
-            {sheetHeight === 'full' && (
-              <div style={{ animation: 'fadeIn 0.4s ease' }}>
-                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '16px', fontWeight: 800 }}>
-                  5 Autobusat e rradhës
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[1, 2, 3, 4, 5].map((i) => {
-                    const randomRoute = BUS_ROUTES[i % BUS_ROUTES.length];
-                    return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 10, background: randomRoute.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 14 }}>
-                            {randomRoute.name}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Drejt Qendrës</div>
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>ID: TR-{1000 + i}</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>{i * 4 + 2} min</div>
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{Math.round(400 * i)}m larg</div>
-                        </div>
+            <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
+              {/* Peek Content: Lines */}
+              <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
+                {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 24 }}>
+                {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
+                  <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color }} />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Half Content: Closest Bus */}
+              {(sheetHeight === 'half' || sheetHeight === 'full') && (
+                <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                  <div style={{ background: 'rgba(56, 189, 248, 0.05)', borderRadius: 20, padding: 20, border: '1px solid rgba(56, 189, 248, 0.1)', marginBottom: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>Autobusi më i afërt</span>
+                      <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                      <div style={{ width: 44, height: 44, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Bus size={22} color="#fff" />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Linja {BUS_ROUTES[0].name}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Mbërrin për ~3 minuta</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <button
-              className="view-details-btn"
-              style={{ background: 'rgba(255, 255, 255, 0.04)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '24px', borderRadius: 16 }}
-              onClick={() => {
-                useStore.getState().setTripFrom(selectedStop.name);
-                setView('planner');
-              }}
-            >
-              {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={16} />
-            </button>
+              {/* Full Content: Next 5 Buses */}
+              {sheetHeight === 'full' && (
+                <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '16px', fontWeight: 800 }}>
+                    5 Autobusat e rradhës
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[1, 2, 3, 4, 5].map((i) => {
+                      const randomRoute = BUS_ROUTES[i % BUS_ROUTES.length];
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: randomRoute.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 14 }}>
+                              {randomRoute.name}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Drejt Qendrës</div>
+                              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>ID: TR-{1000 + i}</div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>{i * 4 + 2} min</div>
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{Math.round(400 * i)}m larg</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button
+                className="view-details-btn"
+                style={{ background: 'rgba(255, 255, 255, 0.04)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '24px', borderRadius: 16 }}
+                onClick={() => {
+                  useStore.getState().setTripFrom(selectedStop.name);
+                  setView('planner');
+                }}
+              >
+                {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
-        </div>
+        </SwipeDismissView>
       )}
+
 
       <style jsx>{`
         .full-screen-map {
@@ -1697,7 +1785,7 @@ export default function MapView() {
         }
 
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slide-up { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .mobile-drag-handle { display: none; }
 
@@ -1712,6 +1800,17 @@ export default function MapView() {
           @keyframes sheet-slide-up {
             from { transform: translateY(100%); opacity: 1; }
             to { transform: translateY(0); opacity: 1; }
+          }
+
+          @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+
+          .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite linear;
           }
 
           .bus-info-card, .stop-info-card { 

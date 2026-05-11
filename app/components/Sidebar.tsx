@@ -22,9 +22,9 @@ export default function Sidebar() {
   const MENU = [
     { id: 'map', label: t.map, icon: Map },
     { id: 'tracker', label: t.live_buses, icon: Bus },
-    { id: 'planner', label: t.planner, icon: Route },
-    { id: 'favorites', label: t.saved, icon: Star },
     { id: 'packages', label: t.packages, icon: Ticket },
+    { id: 'favorites', label: t.saved, icon: Star },
+    { id: 'planner', label: t.planner, icon: Route },
     { id: 'profile', label: t.profile, icon: User },
   ];
 

@@ -15,7 +15,8 @@ import PassesView from './PassesView';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../store/translations';
-import SwipeBackView from './SwipeBackView';
+import SwipeDismissView from './SwipeDismissView';
+
 
 export default function AppShell() {
   const currentView = useStore((state: any) => state.currentView);
@@ -43,8 +44,8 @@ export default function AppShell() {
   const MENU = [
     { id: 'map', label: t.map, icon: Map },
     { id: 'tracker', label: t.live_buses, icon: Bus },
-    { id: 'planner', label: t.planner, icon: Navigation },
     { id: 'packages', label: t.packages, icon: Ticket },
+    { id: 'planner', label: t.planner, icon: Navigation },
     { id: 'profile', label: t.profile, icon: User },
   ];
 
@@ -55,35 +56,35 @@ export default function AppShell() {
       case 'planner': return <TripPlanner />;
       case 'profile': return <ProfileView />;
       case 'favorites': return (
-        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
+        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
           <UserFavorites />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       case 'edit_profile': return (
-        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
+        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
           <EditProfileView />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       case 'subscription': return (
-        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
+        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
           <SubscriptionView />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       case 'packages': return <SubscriptionPackagesView />;
       case 'checkout': return (
-        <SwipeBackView onBack={() => setView('packages')} background={<SubscriptionPackagesView />}>
+        <SwipeDismissView onDismiss={() => setView('packages')} background={<SubscriptionPackagesView />}>
           <SubscriptionCheckoutView />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       case 'get_pass': return (
-        <SwipeBackView onBack={() => setView('packages')} background={<SubscriptionPackagesView />}>
+        <SwipeDismissView onDismiss={() => setView('packages')} background={<SubscriptionPackagesView />}>
           <SubscriptionGetPassView />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       case 'passes': return (
-        <SwipeBackView onBack={() => setView('profile')} background={<ProfileView />}>
+        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
           <PassesView />
-        </SwipeBackView>
+        </SwipeDismissView>
       );
       default: return <MapView />;
     }

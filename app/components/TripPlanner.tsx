@@ -162,9 +162,10 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
       )}
       <style jsx>{`
         @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
+          from { opacity: 0; transform: scale(0.95) translateX(-10px); }
+          to { opacity: 1; transform: scale(1) translateX(0); }
         }
+
       `}</style>
     </div>
   );
