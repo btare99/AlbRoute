@@ -4,7 +4,7 @@ import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
 import {
   Star, Trash2, Bus, ArrowRight, MapPin, Route,
   Bell, BellOff, Clock, Navigation, Zap, Plus,
-  Shield, CheckCircle2, History, TrendingUp, Leaf
+  Shield, CheckCircle2, History, TrendingUp, Leaf, ArrowLeft
 } from 'lucide-react';
 import { translations } from '../store/translations';
 
@@ -80,6 +80,18 @@ export default function UserFavorites() {
 
       {/* ── Header ── */}
       <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={() => setView('profile')}
+          style={{
+            width: '38px', height: '38px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', cursor: 'pointer', transition: 'all 0.2s'
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
         <div style={{
           width: '38px', height: '38px', borderRadius: '10px',
           background: 'rgba(245,158,11,0.1)',

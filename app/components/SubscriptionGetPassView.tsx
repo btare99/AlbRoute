@@ -1,18 +1,51 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, User, Zap } from 'lucide-react';
+import { ChevronLeft, Camera, CheckCircle2 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { translations } from '../store/translations';
 
 const W = 1240;
 const H = 735;
 
-export default function SubscriptionView() {
+export default function SubscriptionGetPassView() {
   const setView = useStore((s: any) => s.setView);
   const language = useStore((s: any) => s.language);
   const user = useStore((s: any) => s.user);
+  const updateProfile = useStore((s: any) => s.updateProfile);
+  const activePackage = useStore((s: any) => s.checkoutPackage);
+  const t = translations[language as keyof typeof translations] || translations.al;
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // If no package is selected, go back to packages view (fail-safe)
+  if (!activePackage) {
+    setView('packages');
+    return null;
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPhoto(event.target?.result as string);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleGenerate = () => {
+    if (!photo) return;
+    setIsProcessing(true);
+    setTimeout(() => {
+      // Save photo to user profile
+      updateProfile({ subscriptionPhoto: photo });
+      setIsProcessing(false);
+      setView('subscription'); // Send to final digital pass
+    }, 1500);
+  };
 
   // Responsive scaling
   useEffect(() => {
@@ -32,7 +65,6 @@ export default function SubscriptionView() {
   }, []);
 
   // Dynamic Data Variables
-  const activePackage = useStore((s: any) => s.checkoutPackage);
   const firstName = user?.name?.split(' ')[0] ?? '';
   const lastName = user?.name?.split(' ').slice(1).join(' ') ?? '';
   const idNumber = user?.idNumber || '';
@@ -41,14 +73,9 @@ export default function SubscriptionView() {
   const now = new Date();
   const zoneNumber = (now.getMonth() + 1).toString(); // Current month number
   const monthNamesAl = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
-  const monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthYear = `${monthNamesAl[now.getMonth()]} ${now.getFullYear()}`;
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const validity = `01.${zoneNumber.padStart(2, '0')}.${now.getFullYear()} - ${lastDay}.${zoneNumber.padStart(2, '0')}.${now.getFullYear()}`;
-
-  const formattedDate = language === 'al'
-    ? `${now.getDate()} ${monthNamesAl[now.getMonth()].toLowerCase()} ${now.getFullYear()}`
-    : `${now.getDate()} ${monthNamesEn[now.getMonth()]} ${now.getFullYear()}`;
 
   const serialNo = '018494';
   const city = 'Bashkia Tiranë';
@@ -56,39 +83,41 @@ export default function SubscriptionView() {
   const passType = activePackage?.name || 'Abone e Përgjithshme';
   const price = activePackage?.price || '1600';
 
+  if (isProcessing) {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', color: '#fff', padding: 20, textAlign: 'center' }}>
+        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, animation: 'scaleIn 0.5s cubic-bezier(0.25, 1, 0.5, 1)' }}>
+          <CheckCircle2 size={40} color="#10b981" />
+        </div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Po Gjenerohet...</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, maxWidth: 300 }}>
+          Ju lutem prisni pak sekonda.
+        </p>
+        <style>{`
+          @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', color: '#fff' }}>
 
-      {/* Nav */}
-      <div style={{ 
-        padding: '24px 20px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '12px', 
-        background: 'var(--bg-dark)',
-        flexShrink: 0 
-      }}>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '10px',
-          background: 'rgba(245,158,11,0.1)',
-          border: '0.5px solid rgba(245,158,11,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Zap size={18} style={{ color: '#f59e0b' }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>
-            {language === 'al' ? 'Abonimi Im' : 'My Subscription'}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            {language === 'al' ? 'Detajet e kartës suaj dixhitale' : 'Your digital card details'}
-          </p>
-        </div>
+      {/* Header */}
+      <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 4, borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#10b981' }}>
+          {t.get_pass_title || 'Merr Abonenë Tënde'}
+        </h1>
+        <p style={{ margin: 0, fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>
+          {t.get_pass_subtitle || 'Ju lutem ngarkoni një foto për të gjeneruar abonenë.'}
+        </p>
       </div>
 
       {/* Body */}
       <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
         <div ref={wrapRef} style={{ width: '100%', maxWidth: W, position: 'relative' }}>
 
           {/* Scaled Card */}
@@ -149,13 +178,13 @@ export default function SubscriptionView() {
 
             {/* Right Panel Texts -> Photo Upload Box */}
             <div style={{ position: 'absolute', right: 77, top: 217, width: 280, height: 300, padding: 0, overflow: 'hidden', borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
-              {user?.subscriptionPhoto ? (
+              {photo ? (
                 <div style={{ width: '100%', height: '100%' }}>
-                  <img src={user.subscriptionPhoto} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={photo} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0' }}>
-                  <User size={64} color="#94a3b8" />
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.1)' }}>
+                  <Camera size={64} color="rgba(255,255,255,0.5)" />
                 </div>
               )}
             </div>
@@ -181,15 +210,74 @@ export default function SubscriptionView() {
           </div>
         </div>
 
-        <p style={{ marginTop: 28, fontSize: 13, color: 'rgba(255,255,255,0.3)', textAlign: 'center', maxWidth: 480, lineHeight: 1.6 }}>
-          {language === 'al' ? 'Kopja digjitale zyrtare e abonesë suaj.' : 'Official digital copy of your transit pass.'}
-        </p>
+        {/* Generate Controls! */}
+        <div style={{ marginTop: 30, width: '100%', maxWidth: 400 }}>
+          
+          <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
+            
+            {/* Photo Picker */}
+            <label style={{ 
+              width: 80, 
+              height: 80, 
+              flexShrink: 0,
+              background: photo ? 'transparent' : 'rgba(255,255,255,0.05)', 
+              border: `2px dashed ${photo ? '#10b981' : '#f59e0b'}`, 
+              borderRadius: 16, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.2s ease'
+            }}>
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+              {photo ? (
+                <>
+                  <img src={photo} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s ease' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0'}>
+                    <Camera size={24} color="#fff" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Camera size={28} color="#f59e0b" style={{ marginBottom: 4 }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>Foto</span>
+                </>
+              )}
+            </label>
 
-        <div style={{ marginTop: 12, marginBottom: 20, padding: '10px 20px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 100, border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-            {language === 'al' ? 'Skadon për: ' : 'Expires in: '}
-          </span>
-          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>30 {language === 'al' ? 'ditë' : 'days'}</span>
+            {/* Generate Button */}
+            <button
+              onClick={handleGenerate}
+              disabled={!photo}
+              style={{ 
+                flex: 1,
+                background: photo ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.05)', 
+                color: photo ? '#fff' : 'rgba(255,255,255,0.3)', 
+                border: 'none', 
+                borderRadius: 16, 
+                fontSize: 16, 
+                fontWeight: 700, 
+                cursor: photo ? 'pointer' : 'not-allowed', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 8, 
+                boxShadow: photo ? '0 8px 24px rgba(16, 185, 129, 0.25)' : 'none',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {t.generate_pass_btn || 'Gjenero Abonenë'}
+            </button>
+          </div>
+
+          {!photo && (
+            <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 16, fontWeight: 500 }}>
+              {t.upload_photo_req || 'Fotoja është e detyrueshme për të vazhduar.'}
+            </p>
+          )}
         </div>
 
       </div>

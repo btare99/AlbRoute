@@ -35,7 +35,9 @@ const useStore = create<any>()(
       // ── Navigation ──
       currentView: 'map',
       isSidebarOpen: false,
+      checkoutPackage: null,
       setView: (v: any) => set({ currentView: v, isSidebarOpen: false }),
+      setCheckoutPackage: (pkg: any) => set({ checkoutPackage: pkg, currentView: 'checkout' }),
       toggleSidebar: () => set((state: any) => ({ isSidebarOpen: !state.isSidebarOpen })),
       // ── Map Settings ──
       showStops: true,

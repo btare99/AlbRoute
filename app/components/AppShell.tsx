@@ -8,6 +8,9 @@ import UserFavorites from './UserFavorites';
 import EditProfileView from './EditProfileView';
 import SubscriptionView from './SubscriptionView';
 import SubscriptionPackagesView from './SubscriptionPackagesView';
+import SubscriptionCheckoutView from './SubscriptionCheckoutView';
+import SubscriptionGetPassView from './SubscriptionGetPassView';
+import PassesView from './PassesView';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../store/translations';
@@ -23,7 +26,6 @@ export default function AppShell() {
     { id: 'map', label: t.map, icon: Map },
     { id: 'tracker', label: t.live_buses, icon: Bus },
     { id: 'planner', label: t.planner, icon: Navigation },
-    { id: 'favorites', label: t.saved, icon: Star },
     { id: 'packages', label: t.packages, icon: Ticket },
     { id: 'profile', label: t.profile, icon: User },
   ];
@@ -38,6 +40,9 @@ export default function AppShell() {
       case 'edit_profile': return <EditProfileView />;
       case 'subscription': return <SubscriptionView />;
       case 'packages': return <SubscriptionPackagesView />;
+      case 'checkout': return <SubscriptionCheckoutView />;
+      case 'get_pass': return <SubscriptionGetPassView />;
+      case 'passes': return <PassesView />;
       default: return <MapView />;
     }
   };
@@ -59,7 +64,9 @@ export default function AppShell() {
       {/* Floating bottom nav — mobile only */}
       <nav className="bottom-nav" aria-label="Main navigation">
         {MENU.map(({ id, label, icon: Icon }) => {
-          const active = currentView === id;
+          const active = currentView === id ||
+            (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes')) ||
+            (id === 'packages' && (currentView === 'subscription' || currentView === 'checkout' || currentView === 'get_pass'));
           return (
             <button
               key={id}
@@ -69,7 +76,6 @@ export default function AppShell() {
             >
               <span className="nav-icon">
                 <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-                {active && <span className="nav-dot" />}
               </span>
               <span className="nav-label">{label}</span>
             </button>
@@ -153,33 +159,7 @@ export default function AppShell() {
           }
 
           .nav-btn.active {
-            color: #60a5fa; /* blue-400 — crisp, readable */
-          }
-
-          /* ── Icon wrapper with activity dot ────── */
-          .nav-icon {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          /* Small dot below icon for active state */
-          .nav-dot {
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #60a5fa;
-            animation: dotPop 0.2s ease forwards;
-          }
-
-          @keyframes dotPop {
-            from { opacity: 0; transform: translateX(-50%) scale(0); }
-            to   { opacity: 1; transform: translateX(-50%) scale(1); }
+            color: #f59e0b;
           }
 
           /* ── Label ─────────────────────────────── */

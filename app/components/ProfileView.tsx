@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import useStore from '../store/useStore';
-import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap } from 'lucide-react';
+import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star } from 'lucide-react';
 import { translations } from '../store/translations';
 
 export default function ProfileView() {
@@ -20,30 +20,33 @@ export default function ProfileView() {
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | null>(null);
 
   const menuItems = [
+    { icon: <Star size={18} style={{ color: '#f59e0b' }} />, label: language === 'al' ? 'Stacionet e Ruajtura' : 'Saved Stops', action: () => setView('favorites') },
     { icon: <Bell size={18} />, label: language === 'al' ? 'Qendra e Njoftimeve' : 'Notification Center', action: () => setActiveModal('notifications') },
     { icon: <Zap size={18} style={{ color: '#fb8c00' }} />, label: language === 'al' ? 'Abonimi Im' : language === 'en' ? 'My Subscription' : 'Il mio Abbonamento', value: language === 'al' ? 'Standard' : 'Standard', action: () => setView('subscription') },
     { icon: <Globe size={18} />, label: language === 'al' ? 'Gjuha / Language' : language === 'en' ? 'Language' : 'Lingua', value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
     { icon: <Info size={18} />, label: language === 'al' ? 'Qendra e Ndihmës' : 'Help Center', action: () => setActiveModal('help') },
-    { icon: <Share2 size={18} />, label: 'Share Urbani Im', action: () => {
-      if (navigator.share) {
-        navigator.share({
-          title: 'Urbani Im',
-          text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
-          url: window.location.origin
-        }).catch(console.error);
-      } else {
-        addNotification(language === 'al' ? 'Lidhja u kopjua!' : 'Link copied!', 'success');
+    {
+      icon: <Share2 size={18} />, label: 'Share Urbani Im', action: () => {
+        if (navigator.share) {
+          navigator.share({
+            title: 'Urbani Im',
+            text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
+            url: window.location.origin
+          }).catch(console.error);
+        } else {
+          addNotification(language === 'al' ? 'Lidhja u kopjua!' : 'Link copied!', 'success');
+        }
       }
-    } },
+    },
     { icon: <LogOut size={18} />, label: t.logout, action: logout, isDestructive: true },
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0a0a0a', position: 'relative' }}>
-      
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}>
+
       {/* Header Profile Card */}
       <div style={{ padding: '30px 20px 20px 20px' }}>
-        <button 
+        <button
           onClick={() => setView('edit_profile')}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '15px',
@@ -68,10 +71,10 @@ export default function ProfileView() {
               {language === 'al' ? 'Ndrysho gjeneralitetet' : 'Edit personal info'}
             </p>
           </div>
-          <div style={{ 
-            width: '32px', height: '32px', borderRadius: '50%', 
-            background: 'rgba(255,255,255,0.05)', display: 'flex', 
-            alignItems: 'center', justifyContent: 'center', color: '#fff' 
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
             <ChevronRight size={16} />
           </div>
@@ -81,7 +84,7 @@ export default function ProfileView() {
       {/* Menu List */}
       <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
         {menuItems.map((item, idx) => (
-          <button 
+          <button
             key={idx}
             onClick={item.action}
             style={{
@@ -92,7 +95,7 @@ export default function ProfileView() {
               transition: 'all 0.2s ease'
             }}
           >
-            <div style={{ 
+            <div style={{
               width: '36px', height: '36px', borderRadius: '10px',
               background: item.isDestructive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -140,7 +143,7 @@ export default function ProfileView() {
               {activeModal === 'help' && (language === 'al' ? 'Ndihmë' : 'Help')}
               {activeModal === 'language' && (language === 'al' ? 'Zgjidh Gjuhën' : language === 'en' ? 'Select Language' : 'Scegli la Lingua')}
             </h3>
-            
+
             {activeModal === 'language' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
                 {[

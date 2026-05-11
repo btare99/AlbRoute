@@ -40,13 +40,29 @@ export default function MapView() {
   const stopTracking = useStore((s: any) => s.stopTracking);
   const addNotification = useStore((s: any) => s.addNotification);
 
+  const tripFrom = useStore((s: any) => s.tripFrom);
+  const setTripFrom = useStore((s: any) => s.setTripFrom);
+  const tripTo = useStore((s: any) => s.tripTo);
+  const setTripTo = useStore((s: any) => s.setTripTo);
+  const planTrip = useStore((s: any) => s.planTrip);
+
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
   const [isSearching, setIsSearching] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const tripFromInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearching && tripFromInputRef.current) {
+      tripFromInputRef.current.focus();
+    }
+  }, [isSearching]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setIsSearching(false);
+        setTripFrom('');
+        setTripTo('');
       }
     };
     if (isSearching) {
@@ -55,13 +71,9 @@ export default function MapView() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isSearching]);
+  }, [isSearching, setTripFrom, setTripTo]);
 
-  const tripFrom = useStore((s: any) => s.tripFrom);
-  const setTripFrom = useStore((s: any) => s.setTripFrom);
-  const tripTo = useStore((s: any) => s.tripTo);
-  const setTripTo = useStore((s: any) => s.setTripTo);
-  const planTrip = useStore((s: any) => s.planTrip);
+
 
   useEffect(() => {
     if (!activeTrip) {
@@ -187,6 +199,7 @@ export default function MapView() {
 
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
+  const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -196,16 +209,22 @@ export default function MapView() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY === null) return;
     const diff = e.touches[0].clientY - touchStartY;
-    if (diff > 0) {
-      if (e.cancelable) e.preventDefault();
-      setTouchCurrentY(diff);
-    }
+    setTouchCurrentY(diff);
   };
 
   const handleTouchEnd = () => {
-    if (touchCurrentY !== null && touchCurrentY > 80) {
-      setSelectedStop(null);
-      setInfoPanel(null);
+    if (touchCurrentY !== null) {
+      if (touchCurrentY < -100) {
+        if (sheetHeight === 'peek') setSheetHeight('half');
+        else if (sheetHeight === 'half') setSheetHeight('full');
+      } else if (touchCurrentY > 100) {
+        if (sheetHeight === 'full') setSheetHeight('half');
+        else if (sheetHeight === 'half') setSheetHeight('peek');
+        else if (sheetHeight === 'peek') {
+          setSelectedStop(null);
+          setInfoPanel(null);
+        }
+      }
     }
     setTouchStartY(null);
     setTouchCurrentY(null);
@@ -765,10 +784,10 @@ export default function MapView() {
       </div>
 
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
-      <div 
+      <div
         ref={searchContainerRef}
-        className="overlay-top-mobile mobile-only" 
-        style={{ 
+        className="overlay-top-mobile mobile-only"
+        style={{
           position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1001,
           display: 'flex', flexDirection: 'column'
         }}
@@ -776,11 +795,11 @@ export default function MapView() {
         {/* Main Bar */}
         <div className="glass-panel" style={{
           display: 'flex', alignItems: 'center', padding: '6px',
-          borderRadius: isSearching ? '22px 22px 0 0' : '22px', 
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderBottom: isSearching ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.12)',
-          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(40px)',
-          boxShadow: isSearching ? '0 4px 20px rgba(0,0,0,0.4)' : '0 12px 40px rgba(0,0,0,0.6)', 
+          borderRadius: isSearching ? '22px 22px 0 0' : '22px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(10, 14, 24, 0.82)',
+          backdropFilter: 'blur(20px) saturate(160%)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
           height: '62px',
           zIndex: 10, transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}>
@@ -794,13 +813,14 @@ export default function MapView() {
           >
             <Navigation size={20} style={{ color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
             <input
+              ref={tripFromInputRef}
               value={tripFrom}
               onChange={(e) => setTripFrom(e.target.value)}
               placeholder={t.select_departure}
               onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
-              style={{ 
-                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', 
-                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none' 
+              style={{
+                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
+                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
               }}
               readOnly={!isSearching}
             />
@@ -830,11 +850,12 @@ export default function MapView() {
         {/* Second Bar (Joined with Transition) */}
         <div className="glass-panel" style={{
           display: 'flex', alignItems: 'center', padding: '6px',
-          borderRadius: '0 0 22px 22px', 
-          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '0 0 22px 22px',
+          border: '1px solid rgba(255,255,255,0.08)',
           borderTop: 'none',
-          background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(40px)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)', 
+          background: 'rgba(10, 14, 24, 0.82)',
+          backdropFilter: 'blur(20px) saturate(160%)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
           height: isSearching ? '62px' : '0px',
           opacity: isSearching ? 1 : 0,
           transform: isSearching ? 'translateY(0)' : 'translateY(-10px)',
@@ -849,10 +870,9 @@ export default function MapView() {
               value={tripTo}
               onChange={(e) => setTripTo(e.target.value)}
               placeholder={t.select_destination}
-              autoFocus={isSearching}
-              style={{ 
-                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', 
-                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none' 
+              style={{
+                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
+                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
               }}
               onKeyDown={async (e) => {
                 if (e.key === 'Enter') {
@@ -865,19 +885,25 @@ export default function MapView() {
 
           <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
-          <button
-            onClick={async () => {
-              await planTrip(tripFrom, tripTo);
-              setIsSearching(false);
-            }}
-            style={{
-              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', color: '#fff', border: 'none', borderRadius: '0 0 18px 0',
-              cursor: 'pointer'
-            }}
-          >
-            <ArrowRight size={22} />
-          </button>
+          <div style={{ padding: '6px' }}>
+            <button
+              onClick={async () => {
+                await planTrip(tripFrom, tripTo);
+                setIsSearching(false);
+              }}
+              style={{
+                width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
+                color: '#fff', border: 'none', borderRadius: '12px',
+                cursor: 'pointer', transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              <ArrowRight size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1036,54 +1062,111 @@ export default function MapView() {
         </div>
       )}
 
-      {/* ── STOP INFO PANEL ── */}
+      {/* ── STOP INFO PANEL (DRAGGABLE SHEET) ── */}
       {selectedStop && (
         <div
-          className="stop-info-card animate-slide-up"
+          className={`stop-info-card sheet-${sheetHeight}`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          style={{ transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none', transition: touchStartY !== null ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          style={{
+            transform: touchCurrentY ? `translateY(${touchCurrentY}px)` : 'none',
+            transition: touchStartY !== null ? 'none' : 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            height: sheetHeight === 'peek' ? '280px' : sheetHeight === 'half' ? '50vh' : '90vh',
+            maxHeight: '90vh'
+          }}
         >
           <div className="mobile-drag-handle">
             <div className="drag-indicator" />
           </div>
-          <div className="card-header" style={{ background: '#1e293b' }}>
+          <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
             <div className="header-main">
-              <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px' }}><MapPin size={20} /></span>
+              <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                <MapPin size={20} color="#38bdf8" />
+              </span>
               <div className="route-texts">
-                <h3 style={{ maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
-                <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • {selectedStop.id}</p>
+                <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
+                <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
               </div>
             </div>
-            <button className="close-btn" onClick={() => setSelectedStop(null)}><X size={20} /></button>
+            <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
           </div>
-          <div className="card-body">
-            <label style={{ display: 'block', fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
-              {language === 'al' ? 'Linjat që kalojnë këtu' : language === 'en' ? 'Passing routes' : 'Linee di passaggio'}
+
+          <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
+            {/* Peek Content: Lines */}
+            <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
+              {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).length > 0 ? (
-                BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
-                  <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color, boxShadow: `0 0 8px ${line.color}` }} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
-                  </div>
-                ))
-              ) : (
-                <span style={{ fontSize: '12px', color: '#64748b' }}>{t.no_data}</span>
-              )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 24 }}>
+              {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
+                <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
+                </div>
+              ))}
             </div>
+
+            {/* Half Content: Closest Bus */}
+            {(sheetHeight === 'half' || sheetHeight === 'full') && (
+              <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                <div style={{ background: 'rgba(56, 189, 248, 0.05)', borderRadius: 20, padding: 20, border: '1px solid rgba(56, 189, 248, 0.1)', marginBottom: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>Autobusi më i afërt</span>
+                    <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                    <div style={{ width: 44, height: 44, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Bus size={22} color="#fff" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Linja {BUS_ROUTES[0].name}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Mbërrin për ~3 minuta</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Full Content: Next 5 Buses */}
+            {sheetHeight === 'full' && (
+              <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '16px', fontWeight: 800 }}>
+                  5 Autobusat e rradhës
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[1, 2, 3, 4, 5].map((i) => {
+                    const randomRoute = BUS_ROUTES[i % BUS_ROUTES.length];
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: randomRoute.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 14 }}>
+                            {randomRoute.name}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Drejt Qendrës</div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>ID: TR-{1000 + i}</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>{i * 4 + 2} min</div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{Math.round(400 * i)}m larg</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <button
               className="view-details-btn"
-              style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#94a3b8', border: '1px solid rgba(255, 255, 255, 0.1)', marginTop: '20px' }}
+              style={{ background: 'rgba(255, 255, 255, 0.04)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '24px', borderRadius: 16 }}
               onClick={() => {
                 useStore.getState().setTripFrom(selectedStop.name);
                 setView('planner');
               }}
             >
-              {language === 'al' ? 'Nisu nga ky stacion' : language === 'en' ? 'Depart from here' : 'Parti da qui'} <ChevronRight size={16} />
+              {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={16} />
             </button>
           </div>
         </div>
