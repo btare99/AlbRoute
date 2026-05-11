@@ -8,15 +8,20 @@ interface SwipeBackViewProps {
   edgeWidth?: number;
 }
 
-export default function SwipeBackView({ children, onBack, threshold = 100, edgeWidth = 40 }: SwipeBackViewProps) {
+export default function SwipeBackView({ children, onBack, threshold = 120, edgeWidth = 40 }: SwipeBackViewProps) {
   const [startX, setStartX] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
-  const viewRef = useRef<HTMLDivElement>(null);
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 400);
+
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    // Only start swipe if it originates from the left edge
     if (touch.clientX < edgeWidth) {
       setStartX(touch.clientX);
       setIsSwiping(true);
@@ -28,56 +33,77 @@ export default function SwipeBackView({ children, onBack, threshold = 100, edgeW
     const touch = e.touches[0];
     const diff = touch.clientX - startX;
     
-    // Only allow positive translation (dragging to the right)
+    // Strictly horizontal: ignore if dragging left or if it seems like a vertical scroll
     if (diff > 0) {
       setCurrentX(diff);
+      // Prevent scrolling while swiping back
+      if (diff > 10 && e.cancelable) {
+        e.preventDefault();
+      }
     }
   };
 
   const handleTouchEnd = () => {
     if (startX === null) return;
     
-    if (currentX > threshold) {
-      // Trigger back action
-      onBack();
+    const velocity = currentX; // Simple proxy for velocity
+    if (currentX > threshold || velocity > 200) {
+      // Complete the slide out animation
+      setCurrentX(screenWidth);
+      setIsSwiping(false);
+      setTimeout(() => {
+        onBack();
+      }, 200);
+    } else {
+      // Snap back
+      setIsSwiping(false);
+      setCurrentX(0);
     }
-    
-    // Reset state
     setStartX(null);
-    setCurrentX(0);
-    setIsSwiping(false);
   };
 
+  // Calculate opacity for the darkened background based on progress
+  const progress = Math.min(currentX / screenWidth, 1);
+  const backdropOpacity = 0.5 * (1 - progress);
+
   return (
-    <div
-      ref={viewRef}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      style={{
-        height: '100%',
-        width: '100%',
-        position: 'relative',
-        transform: `translateX(${currentX}px)`,
-        transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        willChange: 'transform',
-        overflow: 'hidden'
-      }}
-    >
-      {children}
-      
-      {/* Visual indicator / Overlay shadow for swipe feel */}
-      {currentX > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: -20,
-          bottom: 0,
-          width: 20,
-          background: 'linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.2))',
-          pointerEvents: 'none'
-        }} />
-      )}
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 5000,
+      background: '#000',
+      overflow: 'hidden',
+      touchAction: 'pan-y' // Allow vertical scroll but we control horizontal
+    }}>
+      {/* Darkened Backdrop / Previous Page Simulation */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg-dark)',
+        opacity: backdropOpacity,
+        pointerEvents: 'none',
+        zIndex: 1
+      }} />
+
+      {/* Sliding Content */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          height: '100%',
+          width: '100%',
+          position: 'relative',
+          zIndex: 2,
+          background: 'var(--bg-dark)',
+          transform: `translateX(${currentX}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+          boxShadow: currentX > 0 ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
+          willChange: 'transform'
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
