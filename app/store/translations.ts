@@ -168,6 +168,9 @@ export const translations: Record<string, any> = {
     get_pass_subtitle: "Ju lutem ngarkoni një foto për të gjeneruar abonenë.",
     generate_pass_btn: "Gjenero Abonenë",
     upload_photo_req: "Fotoja është e detyrueshme",
+    tourist_pass: "Abone Turistike",
+    seven_days: "7 Ditë",
+    tourist_unlimited: "Udhëtime të pakufizuara për 1 javë",
   },
   en: {
     // ── General ──
@@ -338,6 +341,9 @@ export const translations: Record<string, any> = {
     get_pass_subtitle: "Please upload a photo to generate your pass.",
     generate_pass_btn: "Generate Pass",
     upload_photo_req: "Photo is required",
+    tourist_pass: "Tourist Pass",
+    seven_days: "7 Days",
+    tourist_unlimited: "Unlimited rides for 1 week",
   },
   it: {
     // ── General ──
@@ -508,5 +514,8 @@ export const translations: Record<string, any> = {
     get_pass_subtitle: "Carica una foto per generare il tuo abbonamento.",
     generate_pass_btn: "Genera Abbonamento",
     upload_photo_req: "La foto è obbligatoria",
+    tourist_pass: "Abbonamento Turistico",
+    seven_days: "7 Giorni",
+    tourist_unlimited: "Viaggi illimitati per 1 settimana",
   }
 };

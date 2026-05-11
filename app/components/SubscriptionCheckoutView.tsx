@@ -1,8 +1,38 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User } from 'lucide-react';
 import useStore from '../store/useStore';
 import { translations } from '../store/translations';
+
+const UNIVERSITIES = [
+  "Academy of Albanological Studies",
+  "Academy of Security",
+  "Agricultural University of Tirana",
+  "Albanian University",
+  "Aldent University",
+  "Bedër University College",
+  "Canadian Institute of Technology",
+  "Epoka University",
+  "Epitech Albania",
+  "European University of Tirana",
+  "Ivodent Academy",
+  "Luarasi University",
+  "Marin Barleti University",
+  "Marubi Academy of Film and Multimedia",
+  "Mediterranean University of Albania",
+  "Metropolitan University of Tirana",
+  "Our Lady of Good Counsel University",
+  "Polis University",
+  "Polytechnic University of Tirana",
+  "Qiriazi University College",
+  "Tirana Business University College",
+  "University of Arts, Tirana",
+  "University of Medicine, Tirana",
+  "University of New York Tirana",
+  "University of Sports, Tirana",
+  "University of Tirana",
+  "Wisdom University"
+].sort();
 
 export default function SubscriptionCheckoutView() {
   const setView = useStore((s: any) => s.setView);
@@ -23,6 +53,21 @@ export default function SubscriptionCheckoutView() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [idNumber, setIdNumber] = useState('');
+  
+  const [isUniPickerOpen, setIsUniPickerOpen] = useState(false);
+  const [uniSearch, setUniSearch] = useState('');
+
+  // Handle click outside uni picker
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const container = document.getElementById('uni-picker-container');
+      if (container && !container.contains(e.target as Node)) {
+        setIsUniPickerOpen(false);
+      }
+    };
+    if (isUniPickerOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isUniPickerOpen]);
 
   const TermsCheckbox = () => (
     <div 
@@ -364,8 +409,8 @@ export default function SubscriptionCheckoutView() {
                         <input 
                           type="text" 
                           value={idNumber}
-                          onChange={(e) => setIdNumber(e.target.value)}
-                          placeholder="J12345678X"
+                          onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
+                          placeholder="L30502040A"
                           style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16, outline: 'none' }}
                         />
                       </div>
@@ -433,8 +478,8 @@ export default function SubscriptionCheckoutView() {
                     type="text" 
                     required
                     value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    placeholder="ID e Kartës"
+                    onChange={(e) => setStudentId(e.target.value.toUpperCase())}
+                    placeholder="L30502040A"
                     style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12, padding: '14px 16px', color: '#fff', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }}
                   />
                 </div>
@@ -449,16 +494,66 @@ export default function SubscriptionCheckoutView() {
                     style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12, padding: '14px 16px', color: '#fff', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }}
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }} id="uni-picker-container">
                   <label style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{t.university_label || 'Universiteti'}</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={university}
-                    onChange={(e) => setUniversity(e.target.value)}
-                    placeholder="P.sh. Universiteti i Tiranës"
-                    style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12, padding: '14px 16px', color: '#fff', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type="text"
+                      placeholder="Kërko universitetin..."
+                      value={university || uniSearch}
+                      onChange={(e) => {
+                        setUniSearch(e.target.value);
+                        setUniversity(e.target.value);
+                        setIsUniPickerOpen(true);
+                      }}
+                      onFocus={() => setIsUniPickerOpen(true)}
+                      style={{ 
+                        width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16,185,129,0.3)', 
+                        borderRadius: 12, padding: '14px 16px', color: '#fff', fontSize: 15, outline: 'none'
+                      }}
+                    />
+                    <ChevronLeft size={18} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%) rotate(-90deg)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+                  </div>
+
+                  {isUniPickerOpen && (uniSearch || university) && (
+                    <div style={{ 
+                      position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, 
+                      background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(30px)', 
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, 
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.6)', zIndex: 100, 
+                      maxHeight: 250, overflowY: 'auto', padding: 6,
+                      animation: 'fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {UNIVERSITIES.filter(u => u.toLowerCase().includes((uniSearch || university).toLowerCase())).map((uni, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUniversity(uni);
+                              setUniSearch('');
+                              setIsUniPickerOpen(false);
+                            }}
+                            style={{ 
+                              width: '100%', padding: '12px 14px', textAlign: 'left', 
+                              background: university === uni ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                              border: 'none', borderRadius: 10, color: '#fff', 
+                              fontSize: 14, fontWeight: university === uni ? 700 : 500, cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => { if (university !== uni) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                            onMouseLeave={(e) => { if (university !== uni) e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            {uni}
+                          </button>
+                        ))}
+                        {UNIVERSITIES.filter(u => u.toLowerCase().includes((uniSearch || university).toLowerCase())).length === 0 && (
+                          <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                            Nuk u gjet asnjë rezultat
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

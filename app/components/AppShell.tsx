@@ -14,6 +14,7 @@ import PassesView from './PassesView';
 import useStore from '../store/useStore';
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../store/translations';
+import SwipeBackView from './SwipeBackView';
 
 export default function AppShell() {
   const currentView = useStore((state: any) => state.currentView);
@@ -36,13 +37,37 @@ export default function AppShell() {
       case 'tracker': return <BusTracker />;
       case 'planner': return <TripPlanner />;
       case 'profile': return <ProfileView />;
-      case 'favorites': return <UserFavorites />;
-      case 'edit_profile': return <EditProfileView />;
-      case 'subscription': return <SubscriptionView />;
+      case 'favorites': return (
+        <SwipeBackView onBack={() => setView('profile')}>
+          <UserFavorites />
+        </SwipeBackView>
+      );
+      case 'edit_profile': return (
+        <SwipeBackView onBack={() => setView('profile')}>
+          <EditProfileView />
+        </SwipeBackView>
+      );
+      case 'subscription': return (
+        <SwipeBackView onBack={() => setView('profile')}>
+          <SubscriptionView />
+        </SwipeBackView>
+      );
       case 'packages': return <SubscriptionPackagesView />;
-      case 'checkout': return <SubscriptionCheckoutView />;
-      case 'get_pass': return <SubscriptionGetPassView />;
-      case 'passes': return <PassesView />;
+      case 'checkout': return (
+        <SwipeBackView onBack={() => setView('packages')}>
+          <SubscriptionCheckoutView />
+        </SwipeBackView>
+      );
+      case 'get_pass': return (
+        <SwipeBackView onBack={() => setView('packages')}>
+          <SubscriptionGetPassView />
+        </SwipeBackView>
+      );
+      case 'passes': return (
+        <SwipeBackView onBack={() => setView('profile')}>
+          <PassesView />
+        </SwipeBackView>
+      );
       default: return <MapView />;
     }
   };

@@ -885,25 +885,24 @@ export default function MapView() {
 
           <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
-          <div style={{ padding: '6px' }}>
-            <button
-              onClick={async () => {
-                await planTrip(tripFrom, tripTo);
-                setIsSearching(false);
-              }}
-              style={{
-                width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
-                color: '#fff', border: 'none', borderRadius: '12px',
-                cursor: 'pointer', transition: 'all 0.2s ease',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              <ArrowRight size={20} />
-            </button>
-          </div>
+          <button
+            onClick={async () => {
+              await planTrip(tripFrom, tripTo);
+              setIsSearching(false);
+            }}
+            style={{
+              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '0 0 18px 0', border: 'none',
+              background: 'transparent', color: '#f59e0b', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ArrowRight 
+              size={22} 
+              style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }} 
+            />
+          </button>
         </div>
       </div>
 

@@ -40,6 +40,20 @@ export default function SubscriptionPackagesView() {
       ]
     },
     {
+      id: 'tourist',
+      name: t.tourist_pass,
+      price: '800',
+      duration: t.seven_days,
+      color: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+      popular: false,
+      features: [
+        t.tourist_unlimited,
+        t.valid_all_lines,
+        t.digital_format,
+        language === 'al' ? 'Ideale për vizitorë' : 'Ideal for visitors'
+      ]
+    },
+    {
       id: 'single_line',
       name: t.single_line_pass,
       price: '900',
