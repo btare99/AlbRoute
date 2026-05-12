@@ -1,6 +1,7 @@
 'use client';
 import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight, Ticket } from 'lucide-react';
 import { useState, Fragment } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import useStore, { BUS_STOPS } from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -55,7 +56,12 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+    <motion.aside 
+      className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    >
 
       {/* ── Header ── */}
       <div className="s-header">
@@ -356,6 +362,6 @@ export default function Sidebar() {
         }
         .s-logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
       `}</style>
-    </aside>
+    </motion.aside>
   );
 }

@@ -1,5 +1,5 @@
-'use client';
 import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -100,13 +100,24 @@ export default function AppShell() {
       />
 
       {/* Main content */}
-      <main className="main-area">
+      <motion.main 
+        className="main-area"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+      >
         {renderView()}
-      </main>
+      </motion.main>
 
       {/* Floating bottom nav — mobile only */}
-      <nav className="bottom-nav" aria-label="Main navigation">
-        {MENU.map(({ id, label, icon: Icon }) => {
+      <motion.nav 
+        className="bottom-nav" 
+        aria-label="Main navigation"
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+      >
+        {MENU.map(({ id, label, icon: Icon }, index) => {
           const active = currentView === id ||
             (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'get_pass')) ||
             (id === 'packages' && (currentView === 'checkout'));
@@ -117,14 +128,18 @@ export default function AppShell() {
               className={`nav-btn ${active ? 'active' : ''}`}
               aria-current={active ? 'page' : undefined}
             >
-              <span className="nav-icon">
+              <motion.span 
+                className="nav-icon"
+                animate={active ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ duration: 0.3 }}
+              >
                 <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-              </span>
+              </motion.span>
               <span className="nav-label">{label}</span>
             </button>
           );
         })}
-      </nav>
+      </motion.nav>
 
       <style jsx>{`
         /* ── Layout ───────────────────────────────── */

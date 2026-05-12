@@ -8,6 +8,7 @@ import SplashScreen from './components/layout/SplashScreen';
 
 export default function Page() {
   const [hasMounted, setHasMounted] = useState(false);
+  const [ready, setReady] = useState(false);
   const isAuthenticated = useStore((s: any) => s.isAuthenticated);
   const moveBuses = useStore((s: any) => s.moveBuses);
 
@@ -25,6 +26,9 @@ export default function Page() {
     };
 
     loadInitialData();
+    
+    // Set ready after splash starts fading (2.5s is splash duration)
+    const readyTimeout = setTimeout(() => setReady(true), 2600);
 
     // The polling is now handled in AppShell for better view-specific control,
     // but we can keep a slow background refresh here if needed.
@@ -32,7 +36,10 @@ export default function Page() {
       await useStore.getState().fetchBuses();
     }, 15000); 
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(readyTimeout);
+    };
   }, []);
 
   // Simulation Movement (Disabled to use real DB data)
@@ -52,7 +59,7 @@ export default function Page() {
     <>
       <SplashScreen />
       <NotificationBar />
-      {isAuthenticated ? <AppShell /> : <LoginPage />}
+      {ready && (isAuthenticated ? <AppShell /> : <LoginPage />)}
     </>
   );
 }
