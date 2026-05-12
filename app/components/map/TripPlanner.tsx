@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import {
   MapPin, Clock, Banknote, Route, ChevronRight, Navigation, AlertCircle, ChevronDown, Zap, Bus,
   ArrowUpDown, Search, X, CheckCircle2, Info, Locate, RefreshCcw, ArrowRight
 } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 
 const STOP_NAMES = Array.from(new Set(BUS_STOPS.map(s => s.name))).sort();
 

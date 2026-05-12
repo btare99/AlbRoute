@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
-import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import {
   Star, Trash2, Bus, ArrowRight, MapPin, Route,
   Bell, BellOff, Clock, Navigation, Zap, Plus,
   Shield, CheckCircle2, History, TrendingUp, Leaf, ArrowLeft,
   ChevronLeft
 } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 
 type Tab = 'routes' | 'stops' | 'activity';
 

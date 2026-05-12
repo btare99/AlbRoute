@@ -1,20 +1,48 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/mongodb';
-import User from '@/app/models/User';
+import { getUserModel, getOperatorModel } from '@/app/lib/dynamicDb';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
     await connectDB();
     const { email, password } = await request.json();
 
-    const user = await User.findOne({ email });
-
-    if (!user || user.password !== password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email ose fjalëkalimi është i gabuar.' },
+        { error: 'Ju lutem jepni email-in dhe fjalëkalimin.' },
+        { status: 400 }
+      );
+    }
+
+    const User = getUserModel();
+    const Operator = getOperatorModel();
+
+    // Gjej përdoruesin në Udhetaret ose Operatoret
+    let user = await User.findOne({ email: email.toLowerCase() });
+    let role = 'user';
+
+    if (!user) {
+      user = await Operator.findOne({ email: email.toLowerCase() });
+      role = (user as any)?.role || 'operator';
+    }
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Email ose fjalëkalim i pasaktë.' },
         { status: 401 }
       );
     }
+
+    // Krahaso fjalëkalimin e hash-uar
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return NextResponse.json(
+        { error: 'Email ose fjalëkalim i pasaktë.' },
+        { status: 401 }
+      );
+    }
+
 
     return NextResponse.json({
       message: 'Hyrje e suksesshme',
@@ -23,9 +51,16 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        savedLocations: user.savedLocations,
-        travelHistory: user.travelHistory
+        savedLocations: user.savedLocations || { home: '', work: '' },
+        travelHistory: user.travelHistory || [],
+        subscriptionPhoto: user.subscriptionPhoto,
+        idNumber: user.idNumber,
+        university: user.university,
+        serialNumber: user.serialNumber,
+        selectedLine: user.selectedLine,
+        role: role
       }
+
     });
   } catch (error: any) {
     console.error('Login Error:', error);

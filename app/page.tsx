@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import useStore from './store/useStore';
-import LoginPage from './components/LoginPage';
-import AppShell from './components/AppShell';
-import NotificationBar from './components/NotificationBar';
-import SplashScreen from './components/SplashScreen';
+import LoginPage from './components/auth/LoginPage';
+import AppShell from './components/layout/AppShell';
+import NotificationBar from './components/layout/NotificationBar';
+import SplashScreen from './components/layout/SplashScreen';
 
 export default function Page() {
   const [hasMounted, setHasMounted] = useState(false);

@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import useStore from '../store/useStore';
+import useStore from '../../store/useStore';
 import { 
   ArrowLeft, Save, User, MapPin, Home, Briefcase, 
   Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera
 } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 
 export default function EditProfileView() {
   const user = useStore((state: any) => state.user);

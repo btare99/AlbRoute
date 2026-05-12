@@ -1,13 +1,8 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
-import useStore from '../store/useStore';
-import { translations } from '../store/translations';
-
-const MOCK_USERS = [
-  { id: '1', name: 'Andi Krasniqi', email: 'andi@test.al', password: 'password', savedLocations: { home: 'Blloku', work: 'Sheshi Skënderbej' }, travelHistory: [] },
-  { id: '2', name: 'Era Hoxha', email: 'era@test.al', password: 'password', savedLocations: { home: 'Kombinat', work: 'Piramida' }, travelHistory: [] },
-];
+import useStore from '../../store/useStore';
+import { translations } from '../../store/translations';
 
 const COUNTRY_CODES = [
   { code: '+93', flag: '🇦🇫', name: 'Afghanistan' },
@@ -117,10 +112,9 @@ const COUNTRY_CODES = [
   { code: '+967', flag: '🇾🇪', name: 'Yemen' },
 ];
 
-function PhoneInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function PhoneInput({ country, setCountry, phone, setPhone }: { country: any; setCountry: (c: any) => void; phone: string; setPhone: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [country, setCountry] = useState(COUNTRY_CODES[1]); // Default to Albania
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -184,27 +178,105 @@ function PhoneInput({ value, onChange }: { value: string; onChange: (v: string) 
         )}
       </div>
 
-      <input className="input-field" type="tel" placeholder="6X XXX XXXX" value={value} onChange={e => onChange(e.target.value)} style={{ flex: 1 }} required />
+      <input className="input-field" type="tel" placeholder="6X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} style={{ flex: 1 }} required />
     </div>
   );
 }
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify' | 'new_password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[1]); // Default Albania
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const login = useStore((state: any) => state.login);
-  const loginAsStaff = useStore((state: any) => state.loginAsStaff);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
-  const t = translations[language] || translations.al;
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(language === 'al' ? 'Kodi u dërgua në email!' : 'Code sent to email!');
+        setMode('verify');
+      } else {
+        setError(data.error || 'Dështoi dërgimi i kodit.');
+      }
+    } catch (err) {
+      setError('Gabim në server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(language === 'al' ? 'Kodi u verifikua! Vendosni fjalëkalimin e ri.' : 'Code verified! Enter new password.');
+        setMode('new_password');
+      } else {
+        setError(data.error || 'Kodi i pasaktë.');
+      }
+    } catch (err) {
+      setError('Gabim në server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        addNotification(language === 'al' ? 'Fjalëkalimi u ndryshua! Tani mund të hyni.' : 'Password reset successfully!', 'success');
+        setMode('login');
+        setSuccess('');
+        setEmail('');
+        setCode('');
+        setNewPassword('');
+      } else {
+        setError(data.error || 'Dështoi ndryshimi.');
+      }
+    } catch (err) {
+      setError('Gabim në server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,9 +290,7 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
         });
-
         const data = await res.json();
-
         if (res.ok) {
           login(data.user, 'jwt-token-mock');
           addNotification(language === 'al' ? `Mirë se erdhe, ${data.user.name}! 🚌` : `Welcome, ${data.user.name}! 🚌`, 'success');
@@ -228,14 +298,13 @@ export default function LoginPage() {
           setError(data.error || 'Dështoi hyrja.');
         }
       } else {
+        const fullPhone = `${selectedCountry.code} ${phone}`;
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password, phone }),
+          body: JSON.stringify({ name, email, password, phone: fullPhone }),
         });
-
         const data = await res.json();
-
         if (res.ok) {
           login(data.user, 'jwt-token-mock');
           addNotification(language === 'al' ? 'Llogaria u krijua me sukses! 🎉' : 'Account created successfully! 🎉', 'success');
@@ -252,8 +321,8 @@ export default function LoginPage() {
 
   const handleSocialLogin = async (provider: string) => {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200)); 
-    
+    await new Promise(r => setTimeout(r, 1200));
+
     const socialUser = {
       id: `social-${Date.now()}`,
       name: `Përdorues via ${provider}`,
@@ -264,9 +333,9 @@ export default function LoginPage() {
 
     login(socialUser, 'social-token-mock');
     addNotification(
-      language === 'al' ? `Hytë me sukses përmes ${provider}! 🚀` : 
-      language === 'en' ? `Logged in via ${provider}! 🚀` : 
-      `Accesso effettuato tramite ${provider}! 🚀`, 
+      language === 'al' ? `Hytë me sukses përmes ${provider}! 🚀` :
+        language === 'en' ? `Logged in via ${provider}! 🚀` :
+          `Accesso effettuato tramite ${provider}! 🚀`,
       'success'
     );
     setLoading(false);
@@ -308,162 +377,161 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 10, padding: '0 24px' }}>
         <div style={{ padding: '32px 0' }}>
           {/* Tabs - Triangle Indicator Design */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '32px', position: 'relative' }}>
-            {(['login', 'register'] as const).map((m, idx) => (
-              <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
-                style={{ 
-                  flex: 1, padding: '16px 0', fontSize: '13px', fontWeight: '700', 
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', background: 'none', border: 'none', cursor: 'pointer',
-                  color: mode === m ? '#fff' : 'rgba(255,255,255,0.2)',
-                  textShadow: mode === m ? '0 0 15px rgba(255,255,255,0.3)' : 'none',
-                  position: 'relative', letterSpacing: '0.06em', textTransform: 'uppercase', zIndex: 2
-                }}>
-                {m === 'login' ? (language === 'al' ? 'Hyr' : language === 'en' ? 'Login' : 'Accedi') : (language === 'al' ? 'Regjistrohu' : language === 'en' ? 'Register' : 'Registrati')}
-              </button>
-            ))}
-            
-            {/* Central Divider with Rotating Triangle */}
-            <div style={{ 
-              position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', 
-              height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)', zIndex: 3
-            }}>
-              <div style={{ 
-                position: 'absolute', top: '50%',
-                left: mode === 'login' ? '0px' : '1px',
-                width: 0, height: 0, 
-                borderTop: '5px solid transparent',
-                borderBottom: '5px solid transparent',
-                borderRight: mode === 'login' ? '6px solid #fff' : 'none',
-                borderLeft: mode === 'register' ? '6px solid #fff' : 'none',
-                transform: `translate(${mode === 'login' ? '-100%' : '0%'}, -50%)`,
-                transition: 'all 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
-                filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))'
-              }}></div>
-            </div>
-          </div>
-
-          {/* Synchronized Smooth Animation */}
-          <form 
-            key={mode}
-            onSubmit={handleSubmit} 
-            style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '16px',
-              animation: 'formEnter 0.5s cubic-bezier(0.65, 0, 0.35, 1) forwards'
-            }}
-          >
-            <style>{`
-              @keyframes formEnter {
-                from { 
-                  opacity: 0; 
-                  transform: translateX(${mode === 'register' ? '20px' : '-20px'}) scale(0.99); 
-                  filter: blur(4px);
-                }
-                to { 
-                  opacity: 1; 
-                  transform: translateX(0) scale(1); 
-                  filter: blur(0);
-                }
-              }
-            `}</style>
-
-            {mode === 'register' && (
-              <div>
-                <label className="label">{language === 'al' ? 'Emri i plotë' : language === 'en' ? 'Full Name' : 'Nome Completo'}</label>
-                <input className="input-field" type="text" placeholder={language === 'al' ? 'p.sh. Andi Krasniqi' : 'e.g. John Doe'} value={name} onChange={e => setName(e.target.value)} required />
-              </div>
-            )}
-
-            <div>
-              <label className="label">Email</label>
-              <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-
-            {mode === 'register' && (
-              <div>
-                <label className="label">{language === 'al' ? 'Numri i telefonit' : 'Phone Number'}</label>
-                <PhoneInput value={phone} onChange={setPhone} />
-              </div>
-            )}
-            <div>
-              <label className="label">{language === 'al' ? 'Fjalëkalimi' : language === 'en' ? 'Password' : 'Password'}</label>
-              <div style={{ position: 'relative' }}>
-                <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
-                <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              
-              {mode === 'login' && (
-                <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                  <button type="button" style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-                  >
-                    {language === 'al' ? 'Keni harruar fjalëkalimin?' : language === 'en' ? 'Forgot password?' : 'Password dimenticata?'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-
-            {error && (
-              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>
-                {error}
-              </div>
-            )}
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px', marginTop: '4px' }} disabled={loading}>
-              {loading ? <span className="animate-spin" style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }}></span>
-                : <>{mode === 'login' ? (language === 'al' ? 'Hyr në llogari' : language === 'en' ? 'Login to account' : 'Accedi all\'account') : (language === 'al' ? 'Krijo llogarinë' : language === 'en' ? 'Create account' : 'Crea account')} <ArrowRight size={16} /></>}
-            </button>
-
-            {/* Social Login Section */}
-            <div style={{ margin: '20px 0 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {language === 'al' ? 'Ose vazhdo me' : language === 'en' ? 'Or continue with' : 'O continua con'}
-              </span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {[
-                { name: 'Apple', icon: <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/> },
-                { name: 'Google', icon: <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/> },
-                { name: 'Facebook', icon: <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.13 8.44 9.88v-6.99H7.9v-2.89h2.54V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.97h2.77l-.44 2.89h-2.33v6.99C18.34 21.13 22 16.99 22 12z"/> }
-              ].map(social => (
-                <button key={social.name} type="button" 
-                  onClick={() => handleSocialLogin(social.name)}
-                  style={{ 
-                    flex: 1, height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', 
-                    border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', 
-                    alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#fff' }}>
-                    {social.icon}
-                  </svg>
+          {(mode === 'login' || mode === 'register') && (
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '32px', position: 'relative' }}>
+              {(['login', 'register'] as const).map((m, idx) => (
+                <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
+                  style={{
+                    flex: 1, padding: '16px 0', fontSize: '13px', fontWeight: '700',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', background: 'none', border: 'none', cursor: 'pointer',
+                    color: mode === m ? '#fff' : 'rgba(255,255,255,0.2)',
+                    textShadow: mode === m ? '0 0 15px rgba(255,255,255,0.3)' : 'none',
+                    position: 'relative', letterSpacing: '0.06em', textTransform: 'uppercase', zIndex: 2
+                  }}>
+                  {m === 'login' ? (language === 'al' ? 'Hyr' : language === 'en' ? 'Login' : 'Accedi') : (language === 'al' ? 'Regjistrohu' : language === 'en' ? 'Register' : 'Registrati')}
                 </button>
               ))}
-            </div>
-          </form>
 
-          {mode === 'login' && (
-            <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '600' }}>{language === 'al' ? 'LLOGARITË E TESTIMIT (Përdorues):' : 'TEST ACCOUNTS (User):'}</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📧 andi@test.al &nbsp;|&nbsp; 🔑 password</p>
+              {/* Central Divider with Rotating Triangle */}
+              <div style={{
+                position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+                height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)', zIndex: 3
+              }}>
+                <div style={{
+                  position: 'absolute', top: '50%',
+                  left: mode === 'login' ? '0px' : '1px',
+                  width: 0, height: 0,
+                  borderTop: '5px solid transparent',
+                  borderBottom: '5px solid transparent',
+                  borderRight: mode === 'login' ? '6px solid #fff' : 'none',
+                  borderLeft: mode === 'register' ? '6px solid #fff' : 'none',
+                  transform: `translate(${mode === 'login' ? '-100%' : '0%'}, -50%)`,
+                  transition: 'all 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
+                  filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))'
+                }}></div>
+              </div>
             </div>
+          )}
+
+          {/* Forms Section */}
+          <style>{`
+            @keyframes formEnter {
+              from { opacity: 0; transform: translateY(10px); filter: blur(10px); }
+              to { opacity: 1; transform: translateY(0); filter: blur(0); }
+            }
+          `}</style>
+
+          {(mode === 'login' || mode === 'register') && (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
+              {mode === 'register' && (
+                <div>
+                  <label className="label">{language === 'al' ? 'Emri i plotë' : 'Full Name'}</label>
+                  <input className="input-field" type="text" placeholder="Andi Krasniqi" value={name} onChange={e => setName(e.target.value)} required />
+                </div>
+              )}
+              <div>
+                <label className="label">Email</label>
+                <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              {mode === 'register' && (
+                <div>
+                  <label className="label">{language === 'al' ? 'Numri i telefonit' : 'Phone Number'}</label>
+                  <PhoneInput country={selectedCountry} setCountry={setSelectedCountry} phone={phone} setPhone={setPhone} />
+                </div>
+              )}
+              <div>
+                <label className="label">{language === 'al' ? 'Fjalëkalimi' : 'Password'}</label>
+                <div style={{ position: 'relative' }}>
+                  <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {mode === 'login' && (
+                  <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                    <button type="button" onClick={() => setMode('forgot')} style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
+                      {language === 'al' ? 'Keni harruar fjalëkalimin?' : 'Forgot password?'}
+                    </button>
+                  </div>
+                )}
+              </div>
+              {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>{error}</div>}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
+                {loading ? '...' : (mode === 'login' ? 'Hyr' : 'Regjistrohu')} <ArrowRight size={16} />
+              </button>
+            </form>
+          )}
+
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 1: Email</h3>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Shkruani email-in tuaj për të marrë kodin.</p>
+              <div>
+                <label className="label">Email</label>
+                <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
+                {loading ? 'Duke dërguar...' : 'Vazhdo'}
+              </button>
+              <button type="button" onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>Anulo</button>
+            </form>
+          )}
+
+          {mode === 'verify' && (
+            <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 2: Kodi</h3>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Shkruani kodin 6-shifror nga email-i.</p>
+              {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center' }}>{success}</div>}
+              <div>
+                <label className="label">Kodi</label>
+                <input className="input-field" type="text" maxLength={6} placeholder="123456" value={code} onChange={e => setCode(e.target.value)} required style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '20px' }} />
+              </div>
+              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
+                {loading ? 'Duke verifikuar...' : 'Verifiko'}
+              </button>
+            </form>
+          )}
+
+          {mode === 'new_password' && (
+            <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 3: Fjalëkalimi</h3>
+              <div>
+                <label className="label">Fjalëkalimi i Ri</label>
+                <input className="input-field" type="password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+              </div>
+              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
+                {loading ? 'Duke ruajtur...' : 'Ndrysho Fjalëkalimin'}
+              </button>
+            </form>
           )}
 
 
 
+          {/* Social Logins */}
+          {(mode === 'login' || mode === 'register') && (
+            <>
+              <div style={{ margin: '20px 0 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase' }}>Ose vazhdo me</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {['Apple', 'Google', 'Facebook'].map(s => (
+                  <button key={s} type="button" onClick={() => handleSocialLogin(s)} style={{ flex: 1, height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', fontSize: '12px' }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-dim)', opacity: 0.6 }}>
           <MapPin size={12} style={{ display: 'inline', marginRight: '4px' }} />
-          Tirana, Shqipëri &nbsp;·&nbsp; Powered by Urbani Im &nbsp;·&nbsp; v1.0.4
+          Tirana, Shqipëri &nbsp;·&nbsp; v1.0.6
         </p>
       </div>
     </div>

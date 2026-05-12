@@ -1,20 +1,20 @@
 'use client';
 import { useEffect } from 'react';
 import Sidebar from './Sidebar';
-import MapView from './MapView';
-import BusTracker from './BusTracker';
-import TripPlanner from './TripPlanner';
-import ProfileView from './ProfileView';
-import UserFavorites from './UserFavorites';
-import EditProfileView from './EditProfileView';
-import SubscriptionView from './SubscriptionView';
-import SubscriptionPackagesView from './SubscriptionPackagesView';
-import SubscriptionCheckoutView from './SubscriptionCheckoutView';
-import SubscriptionGetPassView from './SubscriptionGetPassView';
-import PassesView from './PassesView';
-import useStore from '../store/useStore';
+import MapView from '../map/MapView';
+import BusTracker from '../map/BusTracker';
+import TripPlanner from '../map/TripPlanner';
+import ProfileView from '../profile/ProfileView';
+import UserFavorites from '../profile/UserFavorites';
+import EditProfileView from '../profile/EditProfileView';
+import SubscriptionView from '../subscription/SubscriptionView';
+import SubscriptionPackagesView from '../subscription/SubscriptionPackagesView';
+import SubscriptionCheckoutView from '../subscription/SubscriptionCheckoutView';
+import SubscriptionGetPassView from '../subscription/SubscriptionGetPassView';
+import PassesView from '../subscription/PassesView';
+import useStore from '../../store/useStore';
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
 
 
@@ -108,8 +108,8 @@ export default function AppShell() {
       <nav className="bottom-nav" aria-label="Main navigation">
         {MENU.map(({ id, label, icon: Icon }) => {
           const active = currentView === id ||
-            (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes')) ||
-            (id === 'packages' && (currentView === 'subscription' || currentView === 'checkout' || currentView === 'get_pass'));
+            (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'get_pass')) ||
+            (id === 'packages' && (currentView === 'checkout'));
           return (
             <button
               key={id}

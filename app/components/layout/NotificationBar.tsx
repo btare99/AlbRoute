@@ -1,6 +1,6 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
-import useStore from '../store/useStore';
+import useStore from '../../store/useStore';
 import { CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 const ICONS: any = { success: CheckCircle, info: Info, warning: AlertTriangle, error: X };

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import useStore from '../store/useStore';
+import useStore from '../../store/useStore';
 import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 
 export default function ProfileView() {
   const user = useStore((state: any) => state.user);

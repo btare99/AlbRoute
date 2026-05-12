@@ -26,7 +26,26 @@ const useStore = create<any>()(
       login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token }),
       loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard' }),
       logout: () => set({ user: null, staffUser: null, isAuthenticated: false, token: null, currentView: 'login' }),
-      updateProfile: (data: any) => set((state: any) => ({ user: { ...state.user, ...data } })),
+      updateProfile: async (data: any) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        // Update local state first for responsiveness
+        set((state: any) => ({ user: { ...state.user, ...data } }));
+
+        // Sync with MongoDB if user has an ID
+        if (currentUser.id || currentUser._id) {
+          try {
+            await fetch('/api/user/profile', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: currentUser.id || currentUser._id, ...data }),
+            });
+          } catch (error) {
+            console.error('Failed to sync profile with MongoDB', error);
+          }
+        }
+      },
 
       // ── Language ──
       language: 'al',
@@ -392,7 +411,7 @@ const useStore = create<any>()(
         const { tripOriginCoords } = get();
         const searchTo = toName.trim().toLowerCase();
         const searchFrom = fromName.trim().toLowerCase();
-        
+
         const toStops = BUS_STOPS.filter(s => s.name.toLowerCase().trim() === searchTo);
         if (!toStops.length) {
           set({ tripResult: { error: 'Stacioni i destinacionit nuk u gjet.' }, activeTrip: null });
@@ -407,9 +426,9 @@ const useStore = create<any>()(
             const R = 6371e3;
             const dLat = (s.lat - tripOriginCoords.lat) * Math.PI / 180;
             const dLng = (s.lng - tripOriginCoords.lng) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
-                      Math.cos(tripOriginCoords.lat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) * 
-                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(tripOriginCoords.lat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
             const dist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
             return { stop: s, dist };
           });
@@ -455,7 +474,7 @@ const useStore = create<any>()(
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
           const totalWalkDist = initialWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
-          
+
           // Weighted score: Transfers are expensive (15 min penalty), each stop is 2 mins, each min of walking is 1.5 units
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + (totalStops * 2) + walkTimeTransfer + transferPenalty;
@@ -520,7 +539,7 @@ const useStore = create<any>()(
                             { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: tStop.name, numStops: ti - j }
                           ].filter(l => !l.isWalking || (l.walkingDist && l.walkingDist > 30));
 
-                          
+
                           evaluateTrip(legs, walkDist, walkTime, fStop.name);
                         }
                       }

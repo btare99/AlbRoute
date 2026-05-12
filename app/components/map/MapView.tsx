@@ -1,16 +1,16 @@
 'use client';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
-import { BUS_SHAPES } from '../store/busShapes';
+import { useEffect, useRef, useState, useCallback, useMemo, JSXElementConstructor, optimisticKey, ReactElement, ReactNode, ReactPortal } from 'react';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
+import { BUS_SHAPES } from '../../store/busShapes';
 import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, Moon, Sun, Globe, Bus, Route, MapPin } from 'lucide-react';
-import { translations } from '../store/translations';
-import SwipeDismissView from './SwipeDismissView';
+import { translations } from '../../store/translations';
+import SwipeDismissView from '../layout/SwipeDismissView';
 
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
 const DEFAULT_ZOOM = 14;
-const STOP_NAMES = Array.from(new Set(BUS_STOPS.map(s => s.name))).sort();
+const STOP_NAMES = Array.from(new Set(BUS_STOPS.map((s: any) => s.name))).sort() as string[];
 
 export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -93,7 +93,7 @@ export default function MapView() {
       // 1. OSRM për ecjen nga pika e nisjes (nëse ka)
       const origin = useStore.getState().tripOriginCoords;
       if (activeTrip.walkingDist > 0 && origin) {
-        const firstStop = BUS_STOPS.find(s => s.name === activeTrip.actualFrom);
+        const firstStop = BUS_STOPS.find((s: any) => s.name === activeTrip.actualFrom);
         if (firstStop) {
           try {
             const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${origin.lng},${origin.lat};${firstStop.lng},${firstStop.lat}?overview=full&geometries=geojson`);
@@ -110,8 +110,8 @@ export default function MapView() {
         for (let i = 0; i < activeTrip.legs.length; i++) {
           const leg = activeTrip.legs[i];
           if (leg.isWalking) {
-            const bStop = leg.boardNodeId ? BUS_STOPS.find(s => s.id === leg.boardNodeId) : BUS_STOPS.find(s => s.name === leg.boardAt);
-            const aStop = leg.alightNodeId ? BUS_STOPS.find(s => s.id === leg.alightNodeId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+            const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+            const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
             if (bStop && aStop) {
               try {
                 const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${bStop.lng},${bStop.lat};${aStop.lng},${aStop.lat}?overview=full&geometries=geojson`);
@@ -134,7 +134,7 @@ export default function MapView() {
     if (activeTrip && mapInstanceRef.current) {
       const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
       const coords = allStops.map((name: string) => {
-        const s = BUS_STOPS.find(st => st.name === name);
+        const s = BUS_STOPS.find((st: any) => st.name === name);
         return s ? [s.lat, s.lng] : null;
       }).filter(Boolean) as [number, number][];
 
@@ -256,6 +256,29 @@ export default function MapView() {
     setTouchCurrentY(null);
   };
 
+  const getClosestBusForStop = (stop: any) => {
+    if (!stop || !buses.length) return null;
+    const stopLines = BUS_ROUTES.filter((r: any) => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id))).map((r: any) => r.id);
+
+    let closestBus = null;
+    let minDist = Infinity;
+
+    buses.forEach((bus: any) => {
+      if (stopLines.includes(bus.routeId)) {
+        const dist = Math.sqrt(Math.pow(bus.lat - stop.lat, 2) + Math.pow(bus.lng - stop.lng, 2));
+        if (dist < minDist) {
+          minDist = dist;
+          closestBus = bus;
+        }
+      }
+    });
+
+    return closestBus;
+  };
+
+  const closestBus = useMemo<any>(() => getClosestBusForStop(selectedStop), [selectedStop, buses]);
+
+
   const TILES = {
     dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
@@ -343,14 +366,14 @@ export default function MapView() {
     if (clusterGroupRef.current) {
       map.removeLayer(clusterGroupRef.current);
     }
-    stopMarkersRef.current.forEach(m => map.removeLayer(m));
+    stopMarkersRef.current.forEach((m: any) => map.removeLayer(m));
     stopMarkersRef.current = [];
 
     if (!showStops) return;
 
     const activeTripStopIds = activeTrip ? activeTrip.legs.flatMap((l: any) => l.stopIds || []) : [];
-    const displayedStops = activeTrip 
-      ? BUS_STOPS.filter(s => activeTripStopIds.includes(s.id))
+    const displayedStops = activeTrip
+      ? BUS_STOPS.filter((s: any) => activeTripStopIds.includes(s.id))
       : BUS_STOPS;
 
     // Krijojmë grupin e ri të klasterave
@@ -362,7 +385,7 @@ export default function MapView() {
       maxClusterRadius: 40,
     });
 
-    displayedStops.forEach(stop => {
+    displayedStops.forEach((stop: any) => {
       const stopHtml = `
         <div style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
@@ -393,8 +416,8 @@ export default function MapView() {
         zIndexOffset: 100
       });
 
-      const stoppingLines = BUS_ROUTES.filter(r => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
-      const linesHtml = stoppingLines.map(l => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
+      const stoppingLines = BUS_ROUTES.filter((r: any) => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
+      const linesHtml = stoppingLines.map((l: any) => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
 
       const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
       if (!isMobile) {
@@ -430,7 +453,7 @@ export default function MapView() {
       // 1. Draw Walking Path
       const tripOriginCoords = useStore.getState().tripOriginCoords;
       if (activeTrip.walkingDist > 0 && tripOriginCoords) {
-        const firstStop = BUS_STOPS.find(s => s.name === activeTrip.actualFrom);
+        const firstStop = BUS_STOPS.find((s: any) => s.name === activeTrip.actualFrom);
         if (firstStop) {
           const walkCoords: [number, number][] = walkingShapes['origin'] || [
             [tripOriginCoords.lat, tripOriginCoords.lng],
@@ -449,8 +472,8 @@ export default function MapView() {
       // 2. Draw Legs
       activeTrip.legs.forEach((leg: any, idx: number) => {
         if (leg.isWalking) {
-          const bStop = leg.boardNodeId ? BUS_STOPS.find(s => s.id === leg.boardNodeId) : BUS_STOPS.find(s => s.name === leg.boardAt);
-          const aStop = leg.alightNodeId ? BUS_STOPS.find(s => s.id === leg.alightNodeId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+          const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+          const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
           if (bStop && aStop) {
             const walkCoords = walkingShapes[`walk_${idx}`] || [
               [bStop.lat, bStop.lng],
@@ -473,8 +496,8 @@ export default function MapView() {
         let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
         let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
 
-        const boardStop = boardStopId ? BUS_STOPS.find(s => s.id === boardStopId) : BUS_STOPS.find(s => s.name === leg.boardAt);
-        const alightStop = alightStopId ? BUS_STOPS.find(s => s.id === alightStopId) : BUS_STOPS.find(s => s.name === leg.alightAt);
+        const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+        const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
 
         let legCoords: [number, number][] = [];
         let sliced = false;
@@ -517,12 +540,12 @@ export default function MapView() {
         if (!sliced || legCoords.length < 2) {
           if (leg.stopIds) {
             legCoords = leg.stopIds.map((id: string) => {
-              const st = BUS_STOPS.find(s => s.id === id);
+              const st = BUS_STOPS.find((s: any) => s.id === id);
               return st ? [st.lat, st.lng] : null;
             }).filter(Boolean) as [number, number][];
           } else {
             legCoords = leg.stops.map((name: string) => {
-              const st = BUS_STOPS.find(s => s.name === name);
+              const st = BUS_STOPS.find((s: any) => s.name === name);
               return st ? [st.lat, st.lng] : null;
             }).filter(Boolean) as [number, number][];
           }
@@ -540,9 +563,9 @@ export default function MapView() {
 
     } else {
       // Draw All Routes (Default)
-      BUS_ROUTES.forEach((route) => {
+      BUS_ROUTES.forEach((route: any) => {
         const dirs = ['0', '1'];
-        dirs.forEach(dir => {
+        dirs.forEach((dir: any) => {
           const shapeKey = `${route.id}_${dir}`;
           let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
           if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
@@ -973,9 +996,9 @@ export default function MapView() {
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <ArrowRight 
-              size={22} 
-              style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }} 
+            <ArrowRight
+              size={22}
+              style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }}
             />
           </button>
         </div>
@@ -1003,8 +1026,8 @@ export default function MapView() {
             <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
               {tripFrom ? t.results : (language === 'al' ? 'Zgjidh Stacionin' : 'Select Station')}
             </div>
-            {(tripFrom 
-              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())) 
+            {(tripFrom
+              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase()))
               : STOP_NAMES
             ).slice(0, 15).map(name => (
               <button
@@ -1047,9 +1070,9 @@ export default function MapView() {
                   color: '#94a3b8', flexShrink: 0,
                   border: '1px solid rgba(255,255,255,0.06)'
                 }}>
-                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-                </svg>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                  </svg>
 
 
                 </div>
@@ -1060,7 +1083,7 @@ export default function MapView() {
           </div>
         )}
 
-        {showToDropdown && tripTo.length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
+        {showToDropdown && tripTo.length > 0 && STOP_NAMES.filter((name: string) => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
 
 
           <div style={{
@@ -1082,10 +1105,10 @@ export default function MapView() {
             <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
               {tripTo ? t.results : (language === 'al' ? 'Zgjidh Destinacionin' : 'Select Destination')}
             </div>
-            {(tripTo 
-              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())) 
+            {(tripTo
+              ? STOP_NAMES.filter((name: string) => name.toLowerCase().includes(tripTo.toLowerCase()))
               : STOP_NAMES
-            ).slice(0, 15).map(name => (
+            ).slice(0, 15).map((name: string) => (
               <button
                 key={name}
                 onClick={() => {
@@ -1126,9 +1149,9 @@ export default function MapView() {
                   color: '#cbd5e1', flexShrink: 0,
                   border: '1px solid rgba(255,255,255,0.06)'
                 }}>
-                                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-                </svg>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                  </svg>
 
 
                 </div>
@@ -1259,7 +1282,7 @@ export default function MapView() {
                 >
                   {t.all}
                 </button>
-                {BUS_ROUTES.map(route => (
+                {BUS_ROUTES.map((route: any) => (
                   <button
                     key={route.id}
                     className={`route-item ${activeRouteFilter === route.id ? 'active' : ''}`}
@@ -1286,7 +1309,7 @@ export default function MapView() {
           threshold={100}
           dragHandleClass="mobile-drag-handle"
         >
-          <div 
+          <div
             className="stop-info-card"
             style={{
               position: 'absolute',
@@ -1343,95 +1366,95 @@ export default function MapView() {
               /* Steps */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {activeTrip.legs?.map((leg: any, i: number) => {
-                if (leg.isWalking) {
+                  if (leg.isWalking) {
+                    return (
+                      <div key={i} style={{
+                        background: 'rgba(16,185,129,0.04)',
+                        border: '0.5px solid rgba(16,185,129,0.15)',
+                        borderLeft: '2px solid #10b981',
+                        borderRadius: '0 10px 10px 0',
+                        padding: '12px 14px',
+                        display: 'flex', gap: '12px', alignItems: 'center',
+                      }}>
+                        <div style={{
+                          width: '30px', height: '30px', borderRadius: '8px',
+                          background: 'rgba(16,185,129,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          🏃
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                            {t.walk_transfer || 'Walking'}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                            {leg.boardAt} → {leg.alightAt}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
+                            {leg.walkingDist}m • {leg.walkingTime}min
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const r = BUS_ROUTES.find((x: any) => x.id === leg.route?.id);
                   return (
                     <div key={i} style={{
-                      background: 'rgba(16,185,129,0.04)',
-                      border: '0.5px solid rgba(16,185,129,0.15)',
-                      borderLeft: '2px solid #10b981',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '0.5px solid rgba(255,255,255,0.06)',
+                      borderLeft: `2px solid ${r?.color || '#888'}`,
                       borderRadius: '0 10px 10px 0',
-                      padding: '12px 14px',
-                      display: 'flex', gap: '12px', alignItems: 'center',
+                      padding: '14px',
                     }}>
-                      <div style={{
-                        width: '30px', height: '30px', borderRadius: '8px',
-                        background: 'rgba(16,185,129,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>
-                        🏃
+                      {/* Route header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{
+                          background: r?.color || '#888',
+                          color: '#fff',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800'
+                        }}>
+                          {leg.route?.name || 'Bus'}
+                        </div>
+                        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
+                            {leg.duration}min
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
-                          {t.walk_transfer || 'Walking'}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                          {leg.boardAt} → {leg.alightAt}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                          {leg.walkingDist}m • {leg.walkingTime}min
-                        </div>
+
+                      {/* Stops */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {leg.stops?.map((stop: string, j: number) => (
+                          <div key={j} style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '6px 0'
+                          }}>
+                            <div style={{
+                              width: '8px', height: '8px', borderRadius: '50%',
+                              background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
+                              flexShrink: 0
+                            }} />
+                            <span style={{
+                              fontSize: '13px', color: 'rgba(255,255,255,0.7)',
+                              fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
+                            }}>
+                              {stop}
+                            </span>
+                            {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
+                            {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
-                }
-
-                const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
-                return (
-                  <div key={i} style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '0.5px solid rgba(255,255,255,0.06)',
-                    borderLeft: `2px solid ${r?.color || '#888'}`,
-                    borderRadius: '0 10px 10px 0',
-                    padding: '14px',
-                  }}>
-                    {/* Route header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                      <div style={{
-                        background: r?.color || '#888',
-                        color: '#fff',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        fontWeight: '800'
-                      }}>
-                        {leg.route?.name || 'Bus'}
-                      </div>
-                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
-                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
-                          {leg.duration}min
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stops */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {leg.stops?.map((stop: string, j: number) => (
-                        <div key={j} style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          padding: '6px 0'
-                        }}>
-                          <div style={{
-                            width: '8px', height: '8px', borderRadius: '50%',
-                            background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
-                            flexShrink: 0
-                          }} />
-                          <span style={{
-                            fontSize: '13px', color: 'rgba(255,255,255,0.7)',
-                            fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
-                          }}>
-                            {stop}
-                          </span>
-                          {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
-                          {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                })}
+              </div>
+            )}
 
             {/* Summary */}
             {!isPlanning && activeTrip && (
@@ -1460,9 +1483,9 @@ export default function MapView() {
       )}
 
       {infoPanel && (
-        <SwipeDismissView 
-          direction="vertical" 
-          isFixed={false} 
+        <SwipeDismissView
+          direction="vertical"
+          isFixed={false}
           onDismiss={() => setInfoPanel(null)}
           threshold={80}
           dragHandleClass="mobile-drag-handle"
@@ -1472,14 +1495,14 @@ export default function MapView() {
             style={{ position: 'relative' }}
           >
             {/* Filler background */}
-            <div style={{ 
-              position: 'absolute', 
-              top: '100%', 
-              left: 0, 
-              right: 0, 
-              height: '100vh', 
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              height: '100vh',
               background: '#1e293b',
-              zIndex: -1 
+              zIndex: -1
             }} />
             <div className="mobile-drag-handle">
               <div className="drag-indicator" />
@@ -1523,9 +1546,9 @@ export default function MapView() {
 
       {/* ── STOP INFO PANEL (DRAGGABLE SHEET) ── */}
       {selectedStop && (
-        <SwipeDismissView 
-          direction="vertical" 
-          isFixed={false} 
+        <SwipeDismissView
+          direction="vertical"
+          isFixed={false}
           onDismiss={() => { setSelectedStop(null); setSheetHeight('peek'); }}
           onSwipeUp={() => {
             if (sheetHeight === 'peek') setSheetHeight('half');
@@ -1549,14 +1572,14 @@ export default function MapView() {
             }}
           >
             {/* Filler background to prevent map showing below during swipe-up */}
-            <div style={{ 
-              position: 'absolute', 
-              top: '100%', 
-              left: 0, 
-              right: 0, 
-              height: '100vh', 
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              height: '100vh',
               background: '#1e293b',
-              zIndex: -1 
+              zIndex: -1
             }} />
 
             <div className="mobile-drag-handle">
@@ -1581,7 +1604,7 @@ export default function MapView() {
                 {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 24 }}>
-                {BUS_ROUTES.filter(r => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map(line => (
+                {BUS_ROUTES.filter((r: any) => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map((line: any) => (
                   <div key={line.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: line.color }} />
                     <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{line.name}</span>
@@ -1594,18 +1617,26 @@ export default function MapView() {
                 <div style={{ animation: 'fadeIn 0.4s ease' }}>
                   <div style={{ background: 'rgba(56, 189, 248, 0.05)', borderRadius: 20, padding: 20, border: '1px solid rgba(56, 189, 248, 0.1)', marginBottom: 24 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>Autobusi më i afërt</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>{language === 'al' ? 'Autobusi më i afërt' : 'Closest Bus'}</span>
                       <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                      <div style={{ width: 44, height: 44, background: '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <Bus size={22} color="#fff" />
+                    {closestBus ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                        <div style={{ width: 44, height: 44, background: (closestBus as any).routeColor || '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <Bus size={22} color="#fff" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{(closestBus as any).routeName || (closestBus as any).routeId}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                            {language === 'al' ? `Mbërrin për ~${Math.max(2, Math.round(Math.random() * 5 + 2))} minuta` : `Arrives in ~${Math.max(2, Math.round(Math.random() * 5 + 2))} mins`}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Linja {BUS_ROUTES[0].name}</div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Mbërrin për ~3 minuta</div>
+                    ) : (
+                      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '10px 0' }}>
+                        {language === 'al' ? 'Nuk ka autobusë aktivë për këtë stacion.' : 'No active buses for this station.'}
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1785,6 +1816,10 @@ export default function MapView() {
         }
 
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+        @keyframes pulse-ring {
+          0% { transform: scale(0.33); opacity: 1; }
+          80%, 100% { opacity: 0; }
+        }
         @keyframes slide-up { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .mobile-drag-handle { display: none; }

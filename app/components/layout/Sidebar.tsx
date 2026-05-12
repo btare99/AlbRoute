@@ -1,8 +1,8 @@
 'use client';
 import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight, Ticket } from 'lucide-react';
 import { useState, Fragment } from 'react';
-import useStore, { BUS_STOPS } from '../store/useStore';
-import { translations } from '../store/translations';
+import useStore, { BUS_STOPS } from '../../store/useStore';
+import { translations } from '../../store/translations';
 
 export default function Sidebar() {
   const [searchQuery, setSearchQuery] = useState('');

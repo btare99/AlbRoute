@@ -1,8 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
-import useStore, { BUS_STOPS, BUS_ROUTES } from '../store/useStore';
+import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight, X } from 'lucide-react';
-import { translations } from '../store/translations';
+import { translations } from '../../store/translations';
 
 export default function BusTracker() {
   const buses = useStore((state: any) => state.buses);

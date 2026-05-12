@@ -2,6 +2,25 @@ import mongoose from 'mongoose';
 
 const RouteDataSchema = new mongoose.Schema({}, { timestamps: true, strict: false });
 
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  phone: { type: String, default: '' },
+  savedLocations: {
+    home: { type: String, default: '' },
+    work: { type: String, default: '' },
+  },
+  travelHistory: { type: Array, default: [] },
+  subscriptionPhoto: { type: String, default: null },
+  idNumber: { type: String, default: null },
+  university: { type: String, default: null },
+  serialNumber: { type: String, default: null },
+  selectedLine: { type: String, default: null },
+  resetCode: { type: String, default: null },
+  resetCodeExpires: { type: Date, default: null },
+}, { timestamps: true });
+
 /**
  * Returns the global Buses model (used by the main app for fleet tracking).
  * Buses are stored in the 'Global' database, 'Autobusat' collection.
@@ -30,6 +49,15 @@ export function getRouteModel(routeId: string, type: 'Autobusat' | 'Shoferet' | 
 export function getOperatorModel() {
   const db = mongoose.connection.useDb('Global', { useCache: true });
   return db.model('Operatoret', RouteDataSchema, 'Operatoret');
+}
+
+/**
+ * Returns the User model for passengers.
+ * These are stored in the 'Global' database.
+ */
+export function getUserModel() {
+  const db = mongoose.connection.useDb('Global', { useCache: true });
+  return db.model('Udhetaret', UserSchema, 'Udhetaret');
 }
 
 export const ALL_ROUTES = [

@@ -10,52 +10,44 @@ export async function POST(request: Request) {
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: 'Ju lutem plotësoni të gjitha fushat.' },
+        { message: 'Ju lutem plotësoni të gjitha fushat e detyrueshme.' },
         { status: 400 }
       );
     }
 
     const User = getUserModel();
 
-    // Kontrollo nëse përdoruesi ekziston
+    // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Ky email është i regjistruar më parë.' },
+        { message: 'Ky email është i regjistruar më parë.' },
         { status: 400 }
       );
     }
 
-    // Hash fjalëkalimin
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Krijo përdoruesin e ri
+    // Create user
     const newUser = await User.create({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      phone: phone || '',
+      phone,
       savedLocations: { home: '', work: '' },
       travelHistory: [],
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
-    return NextResponse.json({
-      message: 'Llogaria u krijua me sukses!',
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        savedLocations: newUser.savedLocations,
-        travelHistory: newUser.travelHistory
-      }
-    }, { status: 201 });
-
+    return NextResponse.json(
+      { message: 'Përdoruesi u regjistrua me sukses!', userId: newUser._id },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error('Registration Error:', error);
     return NextResponse.json(
-      { error: 'Ndodhi një gabim gjatë regjistrimit.' },
+      { message: 'Ndodhi një gabim gjatë regjistrimit.', error: error.message },
       { status: 500 }
     );
   }

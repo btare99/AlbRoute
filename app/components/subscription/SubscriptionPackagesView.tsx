@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { ChevronLeft, Check, Ticket, Sparkles, CreditCard, ShieldCheck, ArrowRight } from 'lucide-react';
-import useStore from '../store/useStore';
-import { translations } from '../store/translations';
+import useStore from '../../store/useStore';
+import { translations } from '../../store/translations';
 
 export default function SubscriptionPackagesView() {
   const setView = useStore((s: any) => s.setView);
