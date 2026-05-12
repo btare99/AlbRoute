@@ -20,9 +20,9 @@ export default function ProfileView() {
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | null>(null);
 
   const menuItems = [
-    { icon: <Star size={18} style={{ color: '#f59e0b' }} />, label: language === 'al' ? 'Stacionet e Ruajtura' : 'Saved Stops', action: () => setView('favorites') },
+    { icon: <Star size={18} />, label: language === 'al' ? 'Stacionet e Ruajtura' : 'Saved Stops', action: () => setView('favorites') },
     { icon: <Bell size={18} />, label: language === 'al' ? 'Qendra e Njoftimeve' : 'Notification Center', action: () => setActiveModal('notifications') },
-    { icon: <Zap size={18} style={{ color: '#fb8c00' }} />, label: language === 'al' ? 'Abonimi Im' : language === 'en' ? 'My Subscription' : 'Il mio Abbonamento', value: language === 'al' ? 'Standard' : 'Standard', action: () => setView('subscription') },
+    { icon: <Zap size={18} />, label: language === 'al' ? 'Abonimi Im' : language === 'en' ? 'My Subscription' : 'Il mio Abbonamento', value: language === 'al' ? 'Standard' : 'Standard', action: () => setView('subscription') },
     { icon: <Globe size={18} />, label: language === 'al' ? 'Gjuha / Language' : language === 'en' ? 'Language' : 'Lingua', value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
     { icon: <Info size={18} />, label: language === 'al' ? 'Qendra e Ndihmës' : 'Help Center', action: () => setActiveModal('help') },
     {
@@ -103,7 +103,7 @@ export default function ProfileView() {
               width: '36px', height: '36px', borderRadius: '10px',
               background: item.isDestructive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: item.isDestructive ? '#ef4444' : 'rgba(255,255,255,0.7)'
+              color: item.isDestructive ? '#ef4444' : '#94a3b8'
             }}>
               {item.icon}
             </div>

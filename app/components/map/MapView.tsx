@@ -385,18 +385,9 @@ export default function MapView() {
       maxClusterRadius: 40,
     });
 
-    displayedStops.forEach((stop: any, idx: number) => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
-      const delay = isMobile ? (idx * 0.03) : 0; // Staggered delay for mobile
-      
+    displayedStops.forEach((stop: any) => {
       const stopHtml = `
-        <div style="
-          display: flex; 
-          flex-direction: column; 
-          align-items: center; 
-          transition: transform 0.2s;
-          ${isMobile ? `animation: stopPopIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) ${delay}s both;` : ''}
-        " onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
             background: #1e293b;
             width: 28px; height: 28px;
@@ -428,6 +419,7 @@ export default function MapView() {
       const stoppingLines = BUS_ROUTES.filter((r: any) => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
       const linesHtml = stoppingLines.map((l: any) => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
 
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
       if (!isMobile) {
         marker.bindTooltip(`
           <div style="padding:4px; border-radius:0; min-width:120px;">
@@ -1894,10 +1886,6 @@ export default function MapView() {
             border: 2px solid #fff;
           }
 
-        }
-        @keyframes stopPopIn {
-          from { opacity: 0; transform: scale(0.5) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </div>

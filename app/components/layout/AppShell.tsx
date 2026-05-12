@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -100,8 +101,23 @@ export default function AppShell() {
       />
 
       {/* Main content */}
-      <main className="main-area">
-        {renderView()}
+      <main className="main-area" style={{ position: 'relative' }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -20, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            style={{ 
+              height: '100%',
+              width: '100%',
+              position: 'relative'
+            }}
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Floating bottom nav — mobile only */}
