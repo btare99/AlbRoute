@@ -1,6 +1,5 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
@@ -343,12 +342,7 @@ export default function LoginPage() {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'var(--bg-dark)', position: 'relative' }}
-    >
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'var(--bg-dark)', position: 'relative' }}>
 
       {/* Brand Identity - Top Left */}
       <div style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -540,6 +534,6 @@ export default function LoginPage() {
           Tirana, Shqipëri &nbsp;·&nbsp; v1.0.6
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }

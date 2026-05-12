@@ -48,7 +48,7 @@ export default function SplashScreen() {
           alignItems: 'center',
           justifyContent: 'center',
           opacity: isVisible ? 1 : 0,
-          transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'opacity 0.5s ease',
           pointerEvents: isVisible ? 'auto' : 'none',
         }}
       >
