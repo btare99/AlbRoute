@@ -5,7 +5,7 @@ const RouteDataSchema = new mongoose.Schema({}, { timestamps: true, strict: fals
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false }, // Made optional for Google users
   phone: { type: String, default: '' },
   savedLocations: {
     home: { type: String, default: '' },
@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
   selectedLine: { type: String, default: null },
   resetCode: { type: String, default: null },
   resetCodeExpires: { type: Date, default: null },
+  lastLogin: { type: Date, default: null },
 }, { timestamps: true });
 
 /**

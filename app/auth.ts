@@ -25,60 +25,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        await connectDB();
-        const email = (credentials.email as string).toLowerCase();
-        
-        // Check in Udhetaret (Users)
-        const UserModel = getUserModel();
-        let user = await UserModel.findOne({ email });
-        let role = "user";
+        try {
+          // Make API call to Render backend for authentication
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
 
-        // Check in Operatoret (Staff) if not found in Users
-        let operator = null;
-        if (!user) {
-          const OperatorModel = getOperatorModel();
-          operator = await OperatorModel.findOne({ email });
-          if (operator) {
-            role = (operator as any).role || "operator";
+          if (!response.ok) {
+            return null;
           }
+
+          const userData = await response.json();
+          return {
+            id: userData.user.id,
+            name: userData.user.name,
+            email: userData.user.email,
+            role: userData.user.role,
+            phone: userData.user.phone,
+            savedLocations: userData.user.savedLocations,
+            travelHistory: userData.user.travelHistory,
+            subscriptionPhoto: userData.user.subscriptionPhoto,
+            idNumber: userData.user.idNumber,
+            university: userData.user.university,
+            serialNumber: userData.user.serialNumber,
+            selectedLine: userData.user.selectedLine,
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
         }
-
-        if (!user && !operator) return null;
-
-        const passwordHash = user ? user.password : (operator as any).password;
-        const isMatch = await bcrypt.compare(credentials.password as string, passwordHash);
-        if (!isMatch) return null;
-
-        const userData = user || operator;
-        // Update lastLogin for credentials login
-        if (user) {
-          await UserModel.findByIdAndUpdate(
-            user._id,
-            { lastLogin: new Date() },
-            { new: true }
-          );
-        } else if (operator) {
-          const OperatorModel = getOperatorModel();
-          await OperatorModel.findByIdAndUpdate(
-            operator._id,
-            { lastLogin: new Date() },
-            { new: true }
-          );
-        }
-        return {
-          id: (userData as any)._id.toString(),
-          name: (userData as any).name,
-          email: (userData as any).email,
-          role: role,
-          phone: (userData as any).phone,
-          savedLocations: (userData as any).savedLocations,
-          travelHistory: (userData as any).travelHistory,
-          subscriptionPhoto: (userData as any).subscriptionPhoto,
-          idNumber: (userData as any).idNumber,
-          university: (userData as any).university,
-          serialNumber: (userData as any).serialNumber,
-          selectedLine: (userData as any).selectedLine,
-        };
       }
     })
   ],
@@ -92,20 +74,49 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }: any) {
       if (token?.user) {
         session.user = token.user;
-        // Update lastLogin in MongoDB
-        try {
-          await connectDB();
-          const UserModel = getUserModel();
-          await UserModel.findByIdAndUpdate(
-            (token.user as any).id,
-            { lastLogin: new Date() },
-            { new: true }
-          );
-        } catch (err) {
-          console.error('Error updating lastLogin:', err);
-        }
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      // Handle Google OAuth sign-in
+      if (account?.provider === "google") {
+        try {
+          // Create or update user via backend API
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/auth/google-signin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error('Failed to create/update Google user');
+            return false;
+          }
+
+          const userData = await response.json();
+          // Update the user object with backend data
+          user.id = userData.user.id;
+          user.role = userData.user.role;
+          user.phone = userData.user.phone;
+          user.savedLocations = userData.user.savedLocations;
+          user.travelHistory = userData.user.travelHistory;
+          user.subscriptionPhoto = userData.user.subscriptionPhoto;
+          user.idNumber = userData.user.idNumber;
+          user.university = userData.user.university;
+          user.serialNumber = userData.user.serialNumber;
+          user.selectedLine = userData.user.selectedLine;
+        } catch (error) {
+          console.error('Google sign-in error:', error);
+          return false;
+        }
+      }
+      return true;
     }
   },
   pages: {

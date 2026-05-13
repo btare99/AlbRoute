@@ -43,6 +43,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Update lastLogin
+    user.lastLogin = new Date();
+    await user.save();
 
     return NextResponse.json({
       message: 'Hyrje e suksesshme',
