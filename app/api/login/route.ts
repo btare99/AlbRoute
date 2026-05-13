@@ -27,6 +27,12 @@ export async function POST(request: Request) {
     }
 
     // Check password
+    if (!user.password) {
+      return NextResponse.json(
+        { message: 'Ky llogari është krijuar me Google dhe nuk ka fjalëkalim.' },
+        { status: 401 }
+      );
+    }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(

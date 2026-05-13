@@ -35,6 +35,12 @@ export async function POST(request: Request) {
     }
 
     // Krahaso fjalëkalimin e hash-uar
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'Ky llogari është krijuar me Google dhe nuk ka fjalëkalim.' },
+        { status: 401 }
+      );
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(

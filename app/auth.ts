@@ -67,7 +67,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.user = user;
+        // Handle Google OAuth user data
+        if ((user as any).backendData) {
+          token.user = {
+            id: (user as any).backendData.id,
+            name: user.name,
+            email: user.email,
+            role: (user as any).backendData.role,
+            phone: (user as any).backendData.phone,
+            savedLocations: (user as any).backendData.savedLocations,
+            travelHistory: (user as any).backendData.travelHistory,
+            subscriptionPhoto: (user as any).backendData.subscriptionPhoto,
+            idNumber: (user as any).backendData.idNumber,
+            university: (user as any).backendData.university,
+            serialNumber: (user as any).backendData.serialNumber,
+            selectedLine: (user as any).backendData.selectedLine,
+          };
+        } else {
+          // Handle credentials login
+          token.user = user;
+        }
       }
       return token;
     },
@@ -100,17 +119,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           const userData = await response.json();
-          // Update the user object with backend data
-          user.id = userData.user.id;
-          user.role = userData.user.role;
-          user.phone = userData.user.phone;
-          user.savedLocations = userData.user.savedLocations;
-          user.travelHistory = userData.user.travelHistory;
-          user.subscriptionPhoto = userData.user.subscriptionPhoto;
-          user.idNumber = userData.user.idNumber;
-          user.university = userData.user.university;
-          user.serialNumber = userData.user.serialNumber;
-          user.selectedLine = userData.user.selectedLine;
+          // Store backend user data in the user object for JWT callback
+          (user as any).backendData = userData.user;
         } catch (error) {
           console.error('Google sign-in error:', error);
           return false;
