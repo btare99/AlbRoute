@@ -4,13 +4,20 @@ import useStore from './store/useStore';
 import LoginPage from './components/LoginPage';
 import AdminPanel from './components/AdminPanel';
 import StaffDashboard from './components/StaffDashboard';
+import SplashScreen from './components/SplashScreen';
 
 export default function BackofficeApp() {
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Wait for Zustand persist to rehydrate before rendering
   useEffect(() => {
     setHasHydrated(true);
+    // Hide splash screen after 3.2 seconds to allow animation to complete
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3200);
+    return () => clearTimeout(timer);
   }, []);
 
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
@@ -39,14 +46,17 @@ export default function BackofficeApp() {
     return () => clearInterval(busInterval);
   }, []);
 
-  // Prevent hydration mismatch — show neutral loading until Zustand has rehydrated
-  if (!hasHydrated) {
+  // Prevent hydration mismatch — show splash or neutral loading until Zustand has rehydrated
+  if (!hasHydrated || showSplash) {
     return (
-      <div className="backoffice-shell">
-        <main className="page-frame">
-          <div className="page-loading">Duke ngarkuar...</div>
-        </main>
-      </div>
+      <>
+        <SplashScreen isVisible={showSplash} />
+        <div className="backoffice-shell">
+          <main className="page-frame">
+            <div className="page-loading">Duke ngarkuar...</div>
+          </main>
+        </div>
+      </>
     );
   }
 

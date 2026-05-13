@@ -429,7 +429,7 @@ export default function TripPlanner() {
               </div>
             </div>
           ) : (
-            <div ref={resultsRef} className="animate-fade-in" style={{ paddingBottom: '20px' }}>
+            <div ref={resultsRef} className="animate-fade-in" style={{ paddingBottom: '120px' }}>
 
               {/* Summary card */}
               <div style={{

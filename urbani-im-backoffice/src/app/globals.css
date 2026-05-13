@@ -36,6 +36,13 @@
   --header-height: 64px;
 }
 
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --header-height: 56px;
+  }
+}
+
 /* ═══════════════════════════════════════════════════
    RESET
 ═══════════════════════════════════════════════════ */
@@ -45,7 +52,16 @@
   box-sizing: border-box;
 }
 
-html { scroll-behavior: smooth; }
+html { 
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
 
 body {
   background: var(--bg-dark);
@@ -55,10 +71,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .backoffice-root {
   min-height: 100vh;
+  min-height: 100svh;
   background: radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%),
               radial-gradient(circle at bottom right, rgba(16,185,129,0.08), transparent 24%),
               var(--bg-dark);
@@ -66,6 +96,7 @@ body {
 
 .backoffice-shell {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   color: var(--text);
@@ -75,6 +106,26 @@ body {
   width: min(1320px, 100%);
   margin: 0 auto;
   padding: 32px 28px 48px;
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .page-frame {
+    padding: 24px 20px 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-frame {
+    padding: 16px 14px 32px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-frame {
+    padding: 12px 12px 24px;
+  }
 }
 
 /* Full-width override for Admin Panel */
@@ -89,6 +140,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    gap: 16px;
+  }
 }
 
 .staff-dashboard-page {

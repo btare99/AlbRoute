@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
 import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star } from 'lucide-react';
 import { translations } from '../../store/translations';
@@ -8,7 +9,6 @@ import { translations } from '../../store/translations';
 export default function ProfileView() {
   const user = useStore((state: any) => state.user);
   const staffUser = useStore((state: any) => state.staffUser);
-  const logout = useStore((state: any) => state.logout);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
   const t = translations[language] || translations.al;
@@ -100,83 +100,70 @@ export default function ProfileView() {
             }}
           >
             <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: item.isDestructive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)',
+              width: '40px', height: '40px', borderRadius: '12px',
+              background: item.isDestructive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: item.isDestructive ? '#ef4444' : '#94a3b8'
+              color: item.isDestructive ? '#ef4444' : 'rgba(255,255,255,0.5)',
+              transition: 'all 0.2s ease'
             }}>
               {item.icon}
             </div>
-            <div style={{ flex: 1, fontSize: '15px', fontWeight: '500' }}>
-              {item.label}
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '15px', fontWeight: '500' }}>{item.label}</span>
+              {item.value && (
+                <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                  {item.value}
+                </span>
+              )}
             </div>
-            {item.value && (
-              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginRight: '4px' }}>
-                {item.value}
-              </div>
+            {!item.isDestructive && (
+              <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.15)' }} />
             )}
-            <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.1)' }} />
           </button>
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{ padding: '4px 20px', textAlign: 'center', marginTop: 'auto', marginBottom: '5px' }}>
-        <p style={{ margin: 0, fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
-          POWERED BY URBANI IM
-        </p>
-        <p style={{ margin: '4px 0 0 0', fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>
-          Versioni 1.0.0
-        </p>
-      </div>
-
-      {/* MODALS */}
+      {/* Modals */}
       {activeModal && (
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
           background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
-          zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '20px', animation: 'fadeIn 0.2s ease'
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
         }}>
           <div style={{
-            background: activeModal === 'logout' ? 'rgba(26, 29, 36, 0.6)' : '#1a1d24',
-            backdropFilter: activeModal === 'logout' ? 'blur(20px)' : 'none',
-            borderRadius: '24px', width: '100%', maxWidth: '300px',
-            padding: activeModal === 'logout' ? '20px' : '24px', textAlign: 'center', 
-            boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
-            border: activeModal === 'logout' ? '1px solid rgba(255,255,255,0.1)' : 'none'
+            width: '100%', maxWidth: '400px', background: '#111318', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            animation: 'fadeIn 0.3s ease-out'
           }}>
-            {activeModal !== 'logout' && (
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#fff' }}>
-                {activeModal === 'notifications' && (language === 'al' ? 'Njoftime' : 'Notifications')}
-                {activeModal === 'help' && (language === 'al' ? 'Ndihmë' : 'Help')}
-                {activeModal === 'language' && (language === 'al' ? 'Zgjidh Gjuhën' : language === 'en' ? 'Select Language' : 'Scegli la Lingua')}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                {activeModal === 'logout' ? t.logout :
+                  activeModal === 'language' ? 'Ndrysho Gjuhën' :
+                    activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
               </h3>
-            )}
+              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
 
             {activeModal === 'language' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { id: 'al', name: 'Shqip', flag: 'al' },
-                  { id: 'en', name: 'English', flag: 'us' },
-                  { id: 'it', name: 'Italiano', flag: 'it' }
+                  { id: 'al', name: 'Shqip' },
+                  { id: 'en', name: 'English' },
+                  { id: 'it', name: 'Italiano' }
                 ].map(lang => (
                   <button
                     key={lang.id}
-                    onClick={() => {
-                      setLanguage(lang.id);
-                      setActiveModal(null);
-                    }}
+                    onClick={() => { setLanguage(lang.id); setActiveModal(null); }}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                      background: language === lang.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)',
-                      border: language === lang.id ? '1px solid #94a3b8' : '1px solid transparent',
-                      padding: '12px 16px', borderRadius: '12px',
-                      color: '#fff', fontSize: '15px', cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      width: '100%', padding: '14px', borderRadius: '12px',
+                      background: language === lang.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      color: language === lang.id ? '#fff' : 'rgba(255,255,255,0.6)',
+                      textAlign: 'left', fontWeight: '600', cursor: 'pointer'
                     }}
                   >
-                    <img src={`https://flagcdn.com/w40/${lang.flag}.png`} alt={lang.id} style={{ width: '20px', borderRadius: '2px' }} />
                     {lang.name}
                   </button>
                 ))}
@@ -194,7 +181,7 @@ export default function ProfileView() {
                     {t.no}
                   </button>
                   <button
-                    onClick={() => { logout(); setActiveModal(null); }}
+                    onClick={() => { signOut(); setActiveModal(null); }}
                     style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
                   >
                     {t.yes}

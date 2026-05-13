@@ -1,6 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -14,18 +13,32 @@ import SubscriptionCheckoutView from '../subscription/SubscriptionCheckoutView';
 import SubscriptionGetPassView from '../subscription/SubscriptionGetPassView';
 import PassesView from '../subscription/PassesView';
 import useStore from '../../store/useStore';
+import { useSession } from "next-auth/react";
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
 
 
 export default function AppShell() {
+  const { data: session } = useSession();
   const currentView = useStore((state: any) => state.currentView);
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
   const language = useStore((state: any) => state.language);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const t = translations[language] || translations.al;
+
+  // ─── Sync Session with Store ───
+  useEffect(() => {
+    if (session?.user) {
+      const u = session.user as any;
+      if (u.role === 'user') {
+        useStore.getState().login(u, 'next-auth-session');
+      } else {
+        useStore.getState().loginAsStaff(u);
+      }
+    }
+  }, [session]);
 
   // ─── Live Data Polling ───
   useEffect(() => {
@@ -91,39 +104,6 @@ export default function AppShell() {
     }
   };
 
-  // ─── View Order for Directional Animations ───
-  const VIEW_ORDER = ['map', 'tracker', 'planner', 'favorites', 'packages', 'subscription', 'get_pass', 'checkout', 'profile', 'edit_profile'];
-  const [direction, setDirection] = useState(1);
-  const [lastView, setLastView] = useState(currentView);
-
-  if (currentView !== lastView) {
-    const currentIndex = VIEW_ORDER.indexOf(currentView);
-    const lastIndex = VIEW_ORDER.indexOf(lastView);
-    const newDir = currentIndex > lastIndex ? 1 : -1;
-    if (newDir !== direction) setDirection(newDir);
-    setLastView(currentView);
-  }
-
-  const variants: any = {
-    initial: (dir: number) => ({
-      x: dir > 0 ? '50%' : '-50%',
-      opacity: 0,
-      position: 'absolute' as const
-    }),
-    animate: {
-      x: 0,
-      opacity: 1,
-      position: 'relative' as const,
-      transition: { duration: 0.25, ease: [0.23, 1, 0.32, 1] }
-    },
-    exit: (dir: number) => ({
-      x: dir > 0 ? '-50%' : '50%',
-      opacity: 0,
-      position: 'absolute' as const,
-      transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] }
-    })
-  };
-
   return (
     <div className="app-layout">
       {/* Sidebar + overlay */}
@@ -134,23 +114,8 @@ export default function AppShell() {
       />
 
       {/* Main content */}
-      <main className="main-area" style={{ position: 'relative', overflow: 'hidden' }}>
-        <AnimatePresence mode="popLayout" custom={direction}>
-          <motion.div
-            key={currentView}
-            custom={direction}
-            variants={variants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            style={{ 
-              height: '100%',
-              width: '100%'
-            }}
-          >
-            {renderView()}
-          </motion.div>
-        </AnimatePresence>
+      <main className="main-area">
+        {renderView()}
       </main>
 
       {/* Floating bottom nav — mobile only */}

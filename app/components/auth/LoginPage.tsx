@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { signIn } from "next-auth/react";
 import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
@@ -278,24 +279,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
       if (mode === 'login') {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+        const result = await signIn('credentials', {
+          email: email.toLowerCase(),
+          password,
+          redirect: false,
         });
-        const data = await res.json();
-        if (res.ok) {
-          login(data.user, 'jwt-token-mock');
-          addNotification(language === 'al' ? `Mirë se erdhe, ${data.user.name}! 🚌` : `Welcome, ${data.user.name}! 🚌`, 'success');
+
+        if (result?.error) {
+          setError(language === 'al' ? 'Email ose fjalëkalim i pasaktë.' : 'Invalid email or password.');
         } else {
-          setError(data.error || 'Dështoi hyrja.');
+          addNotification(language === 'al' ? `Mirë se erdhe! 🚌` : `Welcome! 🚌`, 'success');
         }
       } else {
         const fullPhone = `${selectedCountry.code} ${phone}`;
@@ -305,8 +305,14 @@ export default function LoginPage() {
           body: JSON.stringify({ name, email, password, phone: fullPhone }),
         });
         const data = await res.json();
+
         if (res.ok) {
-          login(data.user, 'jwt-token-mock');
+          // Auto login after registration
+          await signIn('credentials', {
+            email: email.toLowerCase(),
+            password,
+            redirect: false,
+          });
           addNotification(language === 'al' ? 'Llogaria u krijua me sukses! 🎉' : 'Account created successfully! 🎉', 'success');
         } else {
           setError(data.error || 'Dështoi regjistrimi.');
@@ -317,28 +323,16 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleSocialLogin = async (provider: string) => {
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-
-    const socialUser = {
-      id: `social-${Date.now()}`,
-      name: `Përdorues via ${provider}`,
-      email: `${provider.toLowerCase()}@user.com`,
-      savedLocations: { home: '', work: '' },
-      travelHistory: []
-    };
-
-    login(socialUser, 'social-token-mock');
-    addNotification(
-      language === 'al' ? `Hytë me sukses përmes ${provider}! 🚀` :
-        language === 'en' ? `Logged in via ${provider}! 🚀` :
-          `Accesso effettuato tramite ${provider}! 🚀`,
-      'success'
-    );
-    setLoading(false);
+    try {
+      setLoading(true);
+      await signIn(provider.toLowerCase());
+    } catch (err) {
+      addNotification('Social login failed.', 'danger');
+      setLoading(false);
+    }
   };
 
   return (

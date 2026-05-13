@@ -1,0 +1,60 @@
+{
+  "name": "Urbani Im - Backoffice",
+  "short_name": "Urbani Im",
+  "description": "Qendra e Kontrollit dhe Portali i Stafit",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3b82f6",
+  "background_color": "#0a0f1a",
+  "icons": [
+    {
+      "src": "/logo-staff.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-staff.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-staff.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo-staff.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/logo-staff.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Login",
+      "short_name": "Login",
+      "description": "Login to Urbani Im Backoffice",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/logo-staff.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

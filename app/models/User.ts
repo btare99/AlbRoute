@@ -13,7 +13,7 @@ const UserSchema = new Schema({
   },
   password: {
     type: String,
-    required: [true, 'Ju lutem jepni një fjalëkalim'],
+    required: false,
     minlength: 6,
   },
   phone: {
@@ -35,6 +35,10 @@ const UserSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  lastLogin: {
+    type: Date,
+    default: null,
   },
 });
 

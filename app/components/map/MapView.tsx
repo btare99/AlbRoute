@@ -1364,7 +1364,7 @@ export default function MapView() {
               </div>
             ) : (
               /* Steps */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '120px' }}>
                 {activeTrip.legs?.map((leg: any, i: number) => {
                   if (leg.isWalking) {
                     return (
@@ -1598,7 +1598,7 @@ export default function MapView() {
               <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
             </div>
 
-            <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
+            <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 140 }}>
               {/* Peek Content: Lines */}
               <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
                 {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
@@ -1858,8 +1858,8 @@ export default function MapView() {
             border-bottom-right-radius: 0;
             border-top-left-radius: 28px;
             border-top-right-radius: 28px;
-            /* Shtojmë 80px hapësirë që AppShell mos ta mbulojë përmbajtjen poshtë */
-            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px) !important;
+            /* Hapësirë që AppShell mos ta mbulojë përmbajtjen poshtë */
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 110px) !important;
             animation: sheet-slide-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
           }
 

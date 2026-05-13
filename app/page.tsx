@@ -6,10 +6,14 @@ import AppShell from './components/layout/AppShell';
 import NotificationBar from './components/layout/NotificationBar';
 import SplashScreen from './components/layout/SplashScreen';
 
+import { useSession } from "next-auth/react";
+
 export default function Page() {
+  const { data: session, status } = useSession();
   const [hasMounted, setHasMounted] = useState(false);
-  const isAuthenticated = useStore((s: any) => s.isAuthenticated);
   const moveBuses = useStore((s: any) => s.moveBuses);
+  
+  const isAuthenticated = status === "authenticated";
 
   // Initial Data Load & Polling
   useEffect(() => {

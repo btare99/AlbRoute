@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -14,7 +15,7 @@ if (!MONGODB_URI) {
 let cached = (global as any).mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = (global as any).mongoose = { conn: null, promise: null, client: null };
 }
 
 async function connectDB() {
@@ -35,6 +36,10 @@ async function connectDB() {
 
   try {
     cached.conn = await cached.promise;
+    // Get the MongoDB client from mongoose connection
+    if (!cached.client) {
+      cached.client = cached.conn.getClient();
+    }
   } catch (e) {
     console.error('❌ Gabim gjatë lidhjes me MongoDB:', e);
     cached.promise = null;
@@ -42,6 +47,11 @@ async function connectDB() {
   }
 
   return cached.conn;
+}
+
+export async function getMongoClient() {
+  await connectDB();
+  return cached.client;
 }
 
 export default connectDB;
