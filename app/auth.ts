@@ -32,36 +32,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          // Make API call to Render backend for authentication
-          const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          });
+          await connectDB();
+          const User = getUserModel();
+          const Operator = getOperatorModel();
 
-          if (!response.ok) {
-            return null;
+          const emailStr = (credentials.email as string).toLowerCase();
+          
+          let user = await User.findOne({ email: emailStr });
+          let role = 'user';
+
+          if (!user) {
+            user = await Operator.findOne({ email: emailStr });
+            role = (user as any)?.role || 'operator';
           }
+          
+          if (!user || !user.password) return null;
 
-          const userData = await response.json();
+          const isMatch = await bcrypt.compare(credentials.password as string, user.password);
+          if (!isMatch) return null;
+
+          // Update lastLogin
+          user.lastLogin = new Date();
+          await user.save();
+
           return {
-            id: userData.user.id,
-            name: userData.user.name,
-            email: userData.user.email,
-            role: userData.user.role,
-            phone: userData.user.phone,
-            savedLocations: userData.user.savedLocations,
-            travelHistory: userData.user.travelHistory,
-            subscriptionPhoto: userData.user.subscriptionPhoto,
-            idNumber: userData.user.idNumber,
-            university: userData.user.university,
-            serialNumber: userData.user.serialNumber,
-            selectedLine: userData.user.selectedLine,
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: role,
+            phone: user.phone,
+            savedLocations: user.savedLocations || { home: '', work: '' },
+            travelHistory: user.travelHistory || [],
+            subscriptionPhoto: user.subscriptionPhoto,
+            idNumber: user.idNumber,
+            university: user.university,
+            serialNumber: user.serialNumber,
+            selectedLine: user.selectedLine,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -106,29 +112,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Handle Google OAuth sign-in
       if (account?.provider === "google") {
         try {
-          // Create or update user via backend API
-          const response = await fetch(`${getBaseUrl()}/api/auth/google-signin`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              image: user.image,
-            }),
-          });
+          await connectDB();
+          const User = getUserModel();
+          
+          const emailStr = user.email?.toLowerCase();
+          if (!emailStr) return false;
 
-          if (!response.ok) {
-            console.error('Failed to create/update Google user');
-            return false;
+          let existingUser = await User.findOne({ email: emailStr });
+          
+          if (!existingUser) {
+            existingUser = await User.create({
+              name: user.name,
+              email: emailStr,
+              image: user.image,
+              savedLocations: { home: '', work: '' },
+              travelHistory: [],
+              createdAt: new Date()
+            });
           }
 
-          const userData = await response.json();
           // Store backend user data in the user object for JWT callback
-          (user as any).backendData = userData.user;
+          (user as any).backendData = {
+            id: existingUser._id.toString(),
+            role: 'user',
+            phone: existingUser.phone,
+            savedLocations: existingUser.savedLocations || { home: '', work: '' },
+            travelHistory: existingUser.travelHistory || [],
+            subscriptionPhoto: existingUser.subscriptionPhoto,
+            idNumber: existingUser.idNumber,
+            university: existingUser.university,
+            serialNumber: existingUser.serialNumber,
+            selectedLine: existingUser.selectedLine,
+          };
         } catch (error) {
-          console.error('Google sign-in error:', error);
+          console.error('Google sign-in DB error:', error);
           return false;
         }
       }
