@@ -24,7 +24,6 @@ export default function Sidebar() {
     { id: 'tracker', label: t.live_buses, icon: Bus },
     { id: 'packages', label: t.packages, icon: Ticket },
     { id: 'favorites', label: t.saved, icon: Star },
-    { id: 'planner', label: t.planner, icon: Route },
     { id: 'profile', label: t.profile, icon: User },
   ];
 

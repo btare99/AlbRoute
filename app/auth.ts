@@ -9,6 +9,12 @@ import bcrypt from "bcryptjs";
 
 const mongoClient = new MongoClient(process.env.MONGODB_URI!);
 
+const getBaseUrl = () => {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:3000';
+};
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter(mongoClient as any),
   providers: [
@@ -27,7 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         try {
           // Make API call to Render backend for authentication
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/auth/login`, {
+          const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -101,7 +107,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (account?.provider === "google") {
         try {
           // Create or update user via backend API
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/auth/google-signin`, {
+          const response = await fetch(`${getBaseUrl()}/api/auth/google-signin`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -128,6 +134,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     }
+  },
+  session: {
+    strategy: "jwt",
   },
   pages: {
     signIn: "/", // Since login is a modal/view in the main page

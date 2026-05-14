@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo, JSXElementConstructor, optimisticKey, ReactElement, ReactNode, ReactPortal } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import { BUS_SHAPES } from '../../store/busShapes';
-import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, Moon, Sun, Globe, Bus, Route, MapPin } from 'lucide-react';
+import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, ChevronUp, Moon, Sun, Globe, Bus, Route, MapPin, Clock, Banknote, ChevronDown, RefreshCcw } from 'lucide-react';
 import { translations } from '../../store/translations';
 import SwipeDismissView from '../layout/SwipeDismissView';
 
@@ -225,7 +225,9 @@ export default function MapView() {
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
   const [showTripDetails, setShowTripDetails] = useState(false);
+  const [tripSheetHeight, setTripSheetHeight] = useState<'peek' | 'full'>('peek');
   const [isPlanning, setIsPlanning] = useState(false);
+  const [showAllStops, setShowAllStops] = useState<{ [key: number]: boolean }>({});
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
@@ -955,6 +957,7 @@ export default function MapView() {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px', height: '100%' }}>
             <MapPin size={20} style={{ color: '#94a3b8' }} />
             <input
+              id="trip-to-input"
               value={tripTo}
               onChange={(e) => {
                 setTripTo(e.target.value);
@@ -982,6 +985,7 @@ export default function MapView() {
               if (tripFrom && tripTo) {
                 setIsPlanning(true);
                 setShowTripDetails(true);
+                setTripSheetHeight('peek');
                 await planTrip(tripFrom, tripTo);
                 setIsPlanning(false);
                 setIsSearching(false);
@@ -1236,7 +1240,7 @@ export default function MapView() {
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                onClick={() => setShowTripDetails(true)}
+                onClick={() => { setShowTripDetails(true); setTripSheetHeight('peek'); }}
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                   color: '#fff',
@@ -1305,12 +1309,14 @@ export default function MapView() {
         <SwipeDismissView
           direction="vertical"
           isFixed={false}
-          onDismiss={() => setShowTripDetails(false)}
+          onDismiss={() => { setShowTripDetails(false); setTripSheetHeight('peek'); }}
+          onSwipeUp={() => setTripSheetHeight('full')}
+          onSwipeDown={tripSheetHeight === 'full' ? () => setTripSheetHeight('peek') : undefined}
           threshold={100}
           dragHandleClass="mobile-drag-handle"
         >
           <div
-            className="stop-info-card"
+            className={`stop-info-card sheet-${tripSheetHeight}`}
             style={{
               position: 'absolute',
               bottom: '0',
@@ -1319,53 +1325,111 @@ export default function MapView() {
               background: 'rgba(15, 20, 30, 0.95)',
               backdropFilter: 'blur(20px)',
               borderTop: '1px solid rgba(255,255,255,0.1)',
-              maxHeight: '60vh',
+              maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px)' : '40vh',
               minHeight: '200px',
-              overflowY: 'auto',
+              overflowY: tripSheetHeight === 'full' ? 'auto' : 'hidden',
               zIndex: 1001,
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
-            <div className="mobile-drag-handle">
-              <div className="drag-indicator" />
-            </div>
-            <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '15px 20px' }}>
-              <div className="header-main">
-                <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                  <Navigation size={20} color="#3b82f6" />
-                </span>
-                <div className="route-texts">
-                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
-                    {isPlanning ? (language === 'al' ? 'Duke përpunuar...' : 'Calculating...') : (t.step_by_step || 'Step by Step')}
-                  </h3>
-                  {!isPlanning && activeTrip ? (
-                    <p style={{ margin: 0 }}>{activeTrip.from} → {activeTrip.to}</p>
-                  ) : (
-                    <p style={{ margin: 0 }}>{language === 'al' ? 'Gjetja e rrugës optimale' : 'Finding optimal route'}</p>
-                  )}
-                </div>
+            <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(30, 41, 59, 0.85)', backdropFilter: 'blur(16px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="mobile-drag-handle" style={{ position: 'relative' }}>
+                <div className="drag-indicator" />
+                {tripSheetHeight === 'peek' && (
+                  <div style={{
+                    position: 'absolute', top: '2px', left: '50%',
+                    transform: 'translateX(-50%)',
+                    animation: 'bounce 2s infinite',
+                    color: 'rgba(255,255,255,0.5)',
+                    pointerEvents: 'none'
+                  }}>
+                    <ChevronUp size={16} />
+                  </div>
+                )}
               </div>
-              <button className="close-btn" onClick={() => setShowTripDetails(false)} style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.5 }}>
-                <X size={20} />
-              </button>
+              <div className="card-header" style={{ background: 'transparent', padding: '10px 20px 15px 20px' }}>
+                <div className="header-main">
+                  <span className="route-num" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none' }}>
+                    <Navigation size={26} color="#f59e0b" style={{ filter: 'drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5))' }} />
+                  </span>
+                  <div className="route-texts">
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
+                      {isPlanning ? (language === 'al' ? 'Duke përpunuar...' : 'Calculating...') : (t.step_by_step || 'Step by Step')}
+                    </h3>
+                    {!isPlanning && activeTrip ? (
+                      <p style={{ margin: 0 }}>{activeTrip.from} → {activeTrip.to}</p>
+                    ) : (
+                      <p style={{ margin: 0 }}>{language === 'al' ? 'Gjetja e rrugës optimale' : 'Finding optimal route'}</p>
+                    )}
+                  </div>
+                </div>
+                <button className="close-btn" onClick={() => setShowTripDetails(false)} style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.5 }}>
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {isPlanning ? (
               /* Skeleton Loader */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {[1, 2, 3].map(i => (
-                  <div key={i} style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div className="skeleton" style={{ width: '60%', height: '14px' }} />
-                      <div className="skeleton" style={{ width: '40%', height: '10px' }} />
+              <div style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                      <div className="skeleton" style={{ width: '44px', height: '44px', borderRadius: '12px' }} />
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="skeleton" style={{ width: '60%', height: '14px', borderRadius: '4px' }} />
+                        <div className="skeleton" style={{ width: '40%', height: '10px', borderRadius: '4px' }} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ) : (
-              /* Steps */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '120px' }}>
+              /* Content */
+              <div className="route-scrollbar" style={{ padding: '0 20px 100px 20px' }}>
+
+                {/* Summary card (Identical to Trip Planner) */}
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '0.5px solid rgba(255,255,255,0.07)',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  margin: '16px 0',
+                }}>
+                  <div style={{ padding: '14px 18px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#10b981', letterSpacing: '0.04em' }}>{t.best_route}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>Urbani Im AI</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)' }}>
+                    {[
+                      { icon: <Clock size={14} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
+                      { icon: <MapPin size={14} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
+                      { icon: <Banknote size={14} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
+                    ].map(({ icon, value, label, color }, idx) => (
+                      <div key={label} style={{
+                        padding: '12px 8px',
+                        borderRight: idx < 2 ? '0.5px solid rgba(255,255,255,0.05)' : 'none',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                      }}>
+                        <span style={{ color }}>{icon}</span>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{value}</span>
+                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: '12px' }}>
+                  {t.step_by_step}
+                </div>
+
                 {activeTrip.legs?.map((leg: any, i: number) => {
+                  const prevLeg = i > 0 ? activeTrip.legs[i - 1] : null;
+                  const isDirectTransfer = prevLeg && !prevLeg.isWalking && !leg.isWalking;
+
                   if (leg.isWalking) {
                     return (
                       <div key={i} style={{
@@ -1374,110 +1438,112 @@ export default function MapView() {
                         borderLeft: '2px solid #10b981',
                         borderRadius: '0 10px 10px 0',
                         padding: '12px 14px',
+                        marginBottom: '8px',
                         display: 'flex', gap: '12px', alignItems: 'center',
                       }}>
-                        <div style={{
-                          width: '30px', height: '30px', borderRadius: '8px',
-                          background: 'rgba(16,185,129,0.1)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          🏃
+                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Locate size={15} style={{ color: '#10b981' }} />
                         </div>
                         <div>
-                          <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
-                            {t.walk_transfer || 'Walking'}
-                          </div>
-                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                            {leg.boardAt} → {leg.alightAt}
-                          </div>
+                          <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>{t.walk_transfer}</div>
+                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{leg.boardAt} → {leg.alightAt}</div>
                           <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                            {leg.walkingDist}m • {leg.walkingTime}min
+                            {t.walking_notice.replace('{dist}', leg.walkingDist?.toString()).replace('{time}', leg.walkingTime?.toString())}
                           </div>
                         </div>
                       </div>
                     );
                   }
 
-                  const r = BUS_ROUTES.find((x: any) => x.id === leg.route?.id);
+                  const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
+                  const color = r?.color || '#888';
+                  const allShown = showAllStops[i];
+                  const stops = leg.stops || [];
+                  const stopsToShow = allShown
+                    ? stops
+                    : [stops[0], ...(stops.length > 3 ? [] : stops.slice(1, -1)), stops[stops.length - 1]].filter(Boolean);
+                  const hiddenCount = Math.max(0, stops.length - 2);
+
                   return (
-                    <div key={i} style={{
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                      {isDirectTransfer && (
+                        <div style={{
+                          padding: '10px 14px',
+                          background: 'rgba(245, 158, 11, 0.08)',
+                          border: '1px solid rgba(245, 158, 11, 0.2)',
+                          color: '#f59e0b',
+                          borderRadius: '10px',
+                          marginBottom: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <RefreshCcw size={16} /> {t.transfer_at} <span style={{ color: '#fff' }}>{leg.boardAt}</span>
+                        </div>
+                      )}
+                      <div style={{
                       background: 'rgba(255,255,255,0.02)',
                       border: '0.5px solid rgba(255,255,255,0.06)',
-                      borderLeft: `2px solid ${r?.color || '#888'}`,
+                      borderLeft: `2px solid ${color}`,
                       borderRadius: '0 10px 10px 0',
                       padding: '14px',
+                      marginBottom: '8px',
                     }}>
-                      {/* Route header */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                        <div style={{
-                          background: r?.color || '#888',
-                          color: '#fff',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: '800'
-                        }}>
-                          {leg.route?.name || 'Bus'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                        <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Bus size={10} /> {leg.route?.name}
                         </div>
                         <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>
-                            {leg.duration}min
-                          </div>
+                          <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>{t.ticket_40}</span>
                         </div>
                       </div>
 
-                      {/* Stops */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {leg.stops?.map((stop: string, j: number) => (
-                          <div key={j} style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '6px 0'
-                          }}>
-                            <div style={{
-                              width: '8px', height: '8px', borderRadius: '50%',
-                              background: j === 0 ? '#10b981' : j === leg.stops.length - 1 ? '#ef4444' : '#6b7280',
-                              flexShrink: 0
-                            }} />
-                            <span style={{
-                              fontSize: '13px', color: 'rgba(255,255,255,0.7)',
-                              fontWeight: j === 0 || j === leg.stops.length - 1 ? '600' : '400'
-                            }}>
-                              {stop}
-                            </span>
-                            {j === 0 && <span style={{ fontSize: '11px', color: '#10b981', marginLeft: 'auto' }}>Board</span>}
-                            {j === leg.stops.length - 1 && <span style={{ fontSize: '11px', color: '#ef4444', marginLeft: 'auto' }}>Alight</span>}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {stopsToShow.map((stop: string, j: number) => {
+                          const isFirst = j === 0;
+                          const isLast = j === stopsToShow.length - 1;
+                          const isTerminal = isFirst || isLast;
+                          return (
+                            <div key={j} style={{ display: 'flex', gap: '12px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
+                                {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                                <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
+                                {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', minHeight: '30px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)' }}>{stop}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {stops.length > 3 && (
+                          <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
+                              <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
+                            </div>
+                            <button
+                              onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
+                              style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
+                            >
+                              <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                              {allShown ? (language === 'al' ? 'Fshih stacionet' : 'Hide stations') : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${language === 'al' ? 'të tjera' : 'others'}`}
+                            </button>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
+                  </div>
                   );
                 })}
               </div>
             )}
 
-            {/* Summary */}
-            {!isPlanning && activeTrip && (
-              <div style={{
-                marginTop: '16px', padding: '12px',
-                background: 'rgba(255,255,255,0.02)',
-                borderRadius: '8px',
-                display: 'flex', justifyContent: 'space-around', alignItems: 'center'
-              }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Time</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.travelTime}min</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Stations</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalStops}</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Cost</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{activeTrip.totalPrice}L</div>
-                </div>
-              </div>
-            )}
+
           </div>
         </SwipeDismissView>
       )}
@@ -1564,7 +1630,7 @@ export default function MapView() {
           <div
             className={`stop-info-card sheet-${sheetHeight}`}
             style={{
-              height: sheetHeight === 'peek' ? '280px' : sheetHeight === 'half' ? '50vh' : 'calc(100vh - 90px)',
+              height: sheetHeight === 'peek' ? '350px' : sheetHeight === 'half' ? '50vh' : 'calc(100vh - 90px)',
               maxHeight: 'calc(100vh - 90px)',
               borderRadius: sheetHeight === 'full' ? '0' : '28px 28px 0 0',
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1587,8 +1653,8 @@ export default function MapView() {
             </div>
             <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
               <div className="header-main">
-                <span className="route-num" style={{ width: '40px', height: '40px', fontSize: '18px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                  <MapPin size={20} color="#38bdf8" />
+                <span className="route-num" style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none' }}>
+                  <MapPin size={28} color="#38bdf8" style={{ filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.4))' }} />
                 </span>
                 <div className="route-texts">
                   <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
@@ -1598,7 +1664,7 @@ export default function MapView() {
               <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
             </div>
 
-            <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 140 }}>
+            <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
               {/* Peek Content: Lines */}
               <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
                 {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
@@ -1677,7 +1743,12 @@ export default function MapView() {
                 style={{ background: 'rgba(255, 255, 255, 0.04)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '24px', borderRadius: 16 }}
                 onClick={() => {
                   useStore.getState().setTripFrom(selectedStop.name);
-                  setView('planner');
+                  setIsSearching(true);
+                  setInfoPanel(null);
+                  setSelectedStop(null);
+                  setTimeout(() => {
+                    document.getElementById('trip-to-input')?.focus();
+                  }, 100);
                 }}
               >
                 {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={16} />
@@ -1787,9 +1858,8 @@ export default function MapView() {
         .card-header { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
         .header-main { display: flex; align-items: center; gap: 14px; }
         .route-num { 
-          width: 44px; height: 44px; background: rgba(255,255,255,0.2); 
-          border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-          font-weight: 900; font-size: 18px; border: 1px solid rgba(255,255,255,0.3);
+          width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
+          font-weight: 900; font-size: 22px; background: none; border: none;
         }
         .route-texts h3 { font-size: 15px; margin: 0; font-weight: 800; }
         .route-texts p { font-size: 11px; opacity: 0.8; margin: 3px 0 0; }
@@ -1858,8 +1928,8 @@ export default function MapView() {
             border-bottom-right-radius: 0;
             border-top-left-radius: 28px;
             border-top-right-radius: 28px;
-            /* Hapësirë që AppShell mos ta mbulojë përmbajtjen poshtë */
-            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 110px) !important;
+            /* Hapësirë shtesë që AppShell mos ta mbulojë përmbajtjen poshtë (butoni Nisu/Detajet) */
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 150px) !important;
             animation: sheet-slide-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
           }
 

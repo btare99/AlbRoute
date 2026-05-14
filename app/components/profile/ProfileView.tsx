@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
-import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star } from 'lucide-react';
+import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star, CheckCircle2 } from 'lucide-react';
 import { translations } from '../../store/translations';
 
 export default function ProfileView() {
@@ -20,11 +20,11 @@ export default function ProfileView() {
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | null>(null);
 
   const menuItems = [
-    { icon: <Star size={18} />, label: language === 'al' ? 'Stacionet e Ruajtura' : 'Saved Stops', action: () => setView('favorites') },
-    { icon: <Bell size={18} />, label: language === 'al' ? 'Qendra e Njoftimeve' : 'Notification Center', action: () => setActiveModal('notifications') },
-    { icon: <Zap size={18} />, label: language === 'al' ? 'Abonimi Im' : language === 'en' ? 'My Subscription' : 'Il mio Abbonamento', value: language === 'al' ? 'Standard' : 'Standard', action: () => setView('subscription') },
-    { icon: <Globe size={18} />, label: language === 'al' ? 'Gjuha / Language' : language === 'en' ? 'Language' : 'Lingua', value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
-    { icon: <Info size={18} />, label: language === 'al' ? 'Qendra e Ndihmës' : 'Help Center', action: () => setActiveModal('help') },
+    { icon: <Star size={18} />, label: t.prof_saved_stops, action: () => setView('favorites') },
+    { icon: <Bell size={18} />, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
+    { icon: <Zap size={18} />, label: t.sub_my_subscription, value: 'Standard', action: () => setView('subscription') },
+    { icon: <Globe size={18} />, label: t.prof_language, value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
+    { icon: <Info size={18} />, label: t.prof_help_center, action: () => setActiveModal('help') },
     {
       icon: <Share2 size={18} />, label: 'Share Urbani Im', action: () => {
         if (navigator.share) {
@@ -34,7 +34,7 @@ export default function ProfileView() {
             url: window.location.origin
           }).catch(console.error);
         } else {
-          addNotification(language === 'al' ? 'Lidhja u kopjua!' : 'Link copied!', 'success');
+          addNotification(t.prof_link_copied, 'success');
         }
       }
     },
@@ -72,7 +72,7 @@ export default function ProfileView() {
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>{activeUser?.name || 'Përdorues'}</h2>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '2px 0 0 0' }}>
-              {language === 'al' ? 'Ndrysho gjeneralitetet' : 'Edit personal info'}
+              {t.prof_edit_personal_info}
             </p>
           </div>
           <div style={{
@@ -138,7 +138,7 @@ export default function ProfileView() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
                 {activeModal === 'logout' ? t.logout :
-                  activeModal === 'language' ? 'Ndrysho Gjuhën' :
+                  activeModal === 'language' ? t.prof_language :
                     activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
               </h3>
               <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
@@ -147,24 +147,35 @@ export default function ProfileView() {
             </div>
 
             {activeModal === 'language' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
-                  { id: 'al', name: 'Shqip' },
-                  { id: 'en', name: 'English' },
-                  { id: 'it', name: 'Italiano' }
+                  { id: 'al', name: 'Shqip', flag: '🇦🇱' },
+                  { id: 'en', name: 'English', flag: '🇬🇧' },
+                  { id: 'it', name: 'Italiano', flag: '🇮🇹' }
                 ].map(lang => (
                   <button
                     key={lang.id}
                     onClick={() => { setLanguage(lang.id); setActiveModal(null); }}
                     style={{
-                      width: '100%', padding: '14px', borderRadius: '12px',
-                      background: language === lang.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      color: language === lang.id ? '#fff' : 'rgba(255,255,255,0.6)',
-                      textAlign: 'left', fontWeight: '600', cursor: 'pointer'
+                      width: '100%', padding: '14px 16px', borderRadius: '12px',
+                      background: language === lang.id ? 'rgba(234, 88, 12, 0.1)' : 'transparent',
+                      border: 'none',
+                      color: language === lang.id ? '#ea580c' : 'rgba(255,255,255,0.5)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease',
+                      position: 'relative'
                     }}
                   >
-                    {lang.name}
+                    {language === lang.id && (
+                      <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '4px', background: '#ea580c', borderRadius: '0 4px 4px 0' }} />
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '22px', filter: language === lang.id ? 'none' : 'grayscale(0.4) opacity(0.7)' }}>{lang.flag}</span>
+                      <span style={{ fontSize: '15px', color: language === lang.id ? '#fff' : 'inherit', fontWeight: language === lang.id ? '600' : '500' }}>{lang.name}</span>
+                    </div>
+                    {language === lang.id && (
+                      <CheckCircle2 size={18} color="#ea580c" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -190,16 +201,12 @@ export default function ProfileView() {
               </div>
             ) : (
               <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
-                {activeModal === 'notifications' && (language === 'al' ? 'Nuk keni asnjë njoftim të ri.' : 'You have no new notifications.')}
-                {activeModal === 'help' && (language === 'al' ? 'Për çdo problem, na kontaktoni në support@albroute.al' : 'For any issues, contact us at support@albroute.al')}
+                {activeModal === 'notifications' && t.prof_no_new_notifications}
+                {activeModal === 'help' && t.prof_help_contact}
               </p>
             )}
 
-            {activeModal !== 'logout' && (
-              <button onClick={() => setActiveModal(null)} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-                {language === 'al' ? 'Mbyll' : 'Close'}
-              </button>
-            )}
+
           </div>
         </div>
       )}

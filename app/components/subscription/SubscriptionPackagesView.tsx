@@ -21,7 +21,7 @@ export default function SubscriptionPackagesView() {
       gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       popular: true,
       icon: Zap,
-      description: language === 'al' ? 'Zgjedhja më popullore për udhëtarët e përditshëm.' : 'The most popular choice for daily commuters.',
+      description: t.sub_desc_general,
       features: [
         t.unlimited_rides,
         t.valid_all_lines,
@@ -38,7 +38,7 @@ export default function SubscriptionPackagesView() {
       gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       popular: false,
       icon: Star,
-      description: language === 'al' ? 'Ekskluzive për studentët me kartë vlefshme.' : 'Exclusive for students with a valid ID card.',
+      description: t.sub_desc_student,
       features: [
         t.student_discount,
         t.student_card_required,
@@ -55,12 +55,12 @@ export default function SubscriptionPackagesView() {
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       popular: false,
       icon: Shirt,
-      description: language === 'al' ? 'Ideale për vizitorët që qëndrojnë një javë.' : 'Ideal for visitors staying for a week.',
+      description: t.sub_desc_tourist,
       features: [
         t.tourist_unlimited,
         t.valid_all_lines,
         t.digital_format,
-        language === 'al' ? 'Vlefshmëri 7 ditore' : '7-day validity'
+        t.sub_7day_validity
       ]
     },
     {
@@ -72,7 +72,7 @@ export default function SubscriptionPackagesView() {
       gradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
       popular: false,
       icon: Route,
-      description: language === 'al' ? 'Për ata që përdorin vetëm një linjë fikse.' : 'For those using only one fixed line.',
+      description: t.sub_desc_single_line,
       features: [
         t.single_line_choice,
         t.unlimited_single_line,
@@ -96,39 +96,27 @@ export default function SubscriptionPackagesView() {
       }}
       onClick={() => setSelectedPkg(null)}
     >
-      {/* Background Decorative Elements */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '400px', background: 'radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
 
       {/* Header */}
       <div style={{
         padding: '24px 20px',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
+        gap: '14px',
         position: 'sticky',
         top: 0,
-        background: 'rgba(10, 15, 26, 0.8)',
-        backdropFilter: 'blur(20px)',
+        background: 'radial-gradient(ellipse at 50% -20%, rgba(245, 158, 11, 0.12), transparent 70%), linear-gradient(180deg, rgba(10,15,26,0.9) 60%, transparent 100%)',
+        backdropFilter: 'blur(12px)',
         zIndex: 20,
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setView('map')}
-          style={{
-            width: '40px', height: '40px', borderRadius: '12px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: '#fff'
-          }}
-        >
-          <ChevronLeft size={20} />
-        </motion.button>
+
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '18px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em' }}>{t.packages}</h1>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0, fontWeight: '500' }}>
-            {language === 'al' ? 'Zgjidhni planin tuaj të udhëtimit' : 'Choose your travel plan'}
+          <h1 style={{ fontSize: '26px', fontWeight: '800', margin: 0, letterSpacing: '-0.8px', lineHeight: 1.1, background: 'linear-gradient(to right, #ffffff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            {t.packages}
+          </h1>
+          <p style={{ color: 'rgba(245, 158, 11, 0.8)', fontSize: '13px', margin: '4px 0 0 0', fontWeight: '600', letterSpacing: '0.2px' }}>
+            {t.sub_choose_travel_plan}
           </p>
         </div>
       </div>

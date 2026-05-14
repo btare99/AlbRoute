@@ -68,8 +68,8 @@ export default function UserFavorites() {
       const next = { ...prev, [id]: !prev[id] };
       addNotification(
         next[id]
-          ? (language === 'al' ? `Njoftimet u aktivizuan për ${id}.` : language === 'en' ? `Notifications activated for ${id}.` : `Notifiche attivate per ${id}.`)
-          : (language === 'al' ? `Njoftimet u çaktivizuan për ${id}.` : language === 'en' ? `Notifications deactivated for ${id}.` : `Notifiche disattivate per ${id}.`),
+          ? t.fav_notify_on.replace('{id}', id)
+          : t.fav_notify_off.replace('{id}', id),
         'info'
       );
       return next;
@@ -98,7 +98,7 @@ export default function UserFavorites() {
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.saved}</h1>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            {totalFavorites} {language === 'al' ? (totalFavorites === 1 ? 'e preferuar' : 'të preferuara') : language === 'en' ? (totalFavorites === 1 ? 'favorite' : 'favorites') : (totalFavorites === 1 ? 'preferito' : 'preferiti')} {language === 'al' ? 'të ruajtura' : language === 'en' ? 'saved' : 'salvati'}
+            {totalFavorites} {totalFavorites === 1 ? t.fav_favorite : t.fav_favorites} {t.fav_saved_adj}
           </p>
         </div>
         <div style={{
@@ -114,9 +114,9 @@ export default function UserFavorites() {
       {/* ── Stats Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
         {[
-          { label: language === 'al' ? 'Udhëtime' : language === 'en' ? 'Trips' : 'Viaggi', val: '24', icon: <History size={13} />, color: '#3b82f6' },
-          { label: language === 'al' ? 'E kursyer' : language === 'en' ? 'Saved' : 'Risparmiato', val: '12kg', icon: <Leaf size={13} />, color: '#10b981' },
-          { label: language === 'al' ? 'Përdorim' : language === 'en' ? 'Usage' : 'Utilizzo', val: '92%', icon: <TrendingUp size={13} />, color: '#8b5cf6' },
+          { label: t.fav_trips, val: '24', icon: <History size={13} />, color: '#3b82f6' },
+          { label: t.fav_saved, val: '12kg', icon: <Leaf size={13} />, color: '#10b981' },
+          { label: t.fav_usage, val: '92%', icon: <TrendingUp size={13} />, color: '#8b5cf6' },
         ].map(s => (
           <div key={s.label} style={{
             background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
@@ -139,7 +139,7 @@ export default function UserFavorites() {
         {([
           { key: 'routes' as Tab, label: t.routes, icon: Bus, count: savedRoutes?.length || 0 },
           { key: 'stops' as Tab, label: t.stations, icon: MapPin, count: savedStops?.length || 0 },
-          { key: 'activity' as Tab, label: language === 'al' ? 'Aktiviteti' : language === 'en' ? 'Activity' : 'Attività', icon: History, count: 0 },
+          { key: 'activity' as Tab, label: t.fav_activity, icon: History, count: 0 },
         ]).map(({ key, label, icon: Icon, count }) => (
           <button
             key={key}
@@ -183,7 +183,7 @@ export default function UserFavorites() {
             {!savedRoutes || savedRoutes.length === 0 ? (
               <EmptyTab
                 icon={<Bus size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
-                text={language === 'al' ? 'Nuk keni asnjë linjë të ruajtur.' : language === 'en' ? 'No routes saved yet.' : 'Nessuna linea salvata.'}
+                text={t.fav_no_routes}
                 action={() => setView('tracker')}
                 actionLabel={t.routes}
               />
@@ -228,8 +228,8 @@ export default function UserFavorites() {
                         </div>
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
                           {activeBusesCount > 0
-                            ? (language === 'al' ? `${activeBusesCount} autobuzë aktivë tani` : language === 'en' ? `${activeBusesCount} active buses now` : `${activeBusesCount} autobus attivi ora`)
-                            : (language === 'al' ? 'Asnjë aktiv aktualisht' : language === 'en' ? 'None active currently' : 'Nessuno attivo')}
+                            ? `${activeBusesCount} ${t.fav_active_buses}`
+                            : t.fav_no_active}
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -254,7 +254,7 @@ export default function UserFavorites() {
                             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
                           }}
                         >
-                          <ArrowRight size={12} /> {language === 'al' ? 'Ndjek' : language === 'en' ? 'Track' : 'Segui'}
+                          <ArrowRight size={12} /> {t.fav_track}
                         </button>
                         <button
                           onClick={() => removeSavedRoute(r.id)}
@@ -284,7 +284,7 @@ export default function UserFavorites() {
             {!savedStops || savedStops.length === 0 ? (
               <EmptyTab
                 icon={<MapPin size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
-                text={language === 'al' ? 'Nuk keni asnjë stacion të ruajtur.' : language === 'en' ? 'No stops saved yet.' : 'Nessuna fermata salvata.'}
+                text={t.fav_no_stops}
                 action={() => setView('map')}
                 actionLabel={t.map}
               />
@@ -318,7 +318,7 @@ export default function UserFavorites() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: 0 }}>{s.name}</h3>
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-                          {stopRoutes.length} {language === 'al' ? 'linja kalojnë këtu' : language === 'en' ? 'routes pass here' : 'linee passano qui'}
+                          {stopRoutes.length} {t.fav_routes_pass_here}
                         </p>
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -392,8 +392,8 @@ export default function UserFavorites() {
           <Shield size={16} style={{ color: '#10b981' }} />
         </div>
         <div>
-          <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>{language === 'al' ? 'Mbrojtja e të dhënave' : language === 'en' ? 'Data Protection' : 'Protezione Dati'}</p>
-          <p style={{ fontSize: '11px', color: 'rgba(16,185,129,0.6)', margin: 0 }}>{language === 'al' ? 'Preferencat tuaja ruhen në mënyrë të enkriptuar.' : language === 'en' ? 'Your preferences are stored encrypted.' : 'Le tue preferenze sono memorizzate in modo criptato.'}</p>
+          <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>{t.fav_data_protection}</p>
+          <p style={{ fontSize: '11px', color: 'rgba(16,185,129,0.6)', margin: 0 }}>{t.fav_encryption}</p>
         </div>
       </div>
     </div>

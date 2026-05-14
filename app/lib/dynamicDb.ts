@@ -28,7 +28,7 @@ const UserSchema = new mongoose.Schema({
  */
 export function getBusModel() {
   const db = mongoose.connection.useDb('Global', { useCache: true });
-  return db.model('Autobusat', RouteDataSchema, 'Autobusat');
+  return db.models.Autobusat || db.model('Autobusat', RouteDataSchema, 'Autobusat');
 }
 
 /**
@@ -39,7 +39,7 @@ export function getBusModel() {
 export function getRouteModel(routeId: string, type: 'Autobusat' | 'Shoferet' | 'Faturinot' | string) {
   const dbName = routeId.startsWith('L') ? routeId.substring(1) : routeId;
   const db = mongoose.connection.useDb(dbName, { useCache: true });
-  return db.model(type, RouteDataSchema, type);
+  return db.models[type] || db.model(type, RouteDataSchema, type);
 }
 
 
@@ -49,7 +49,7 @@ export function getRouteModel(routeId: string, type: 'Autobusat' | 'Shoferet' | 
  */
 export function getOperatorModel() {
   const db = mongoose.connection.useDb('Global', { useCache: true });
-  return db.model('Operatoret', RouteDataSchema, 'Operatoret');
+  return db.models.Operatoret || db.model('Operatoret', RouteDataSchema, 'Operatoret');
 }
 
 /**
@@ -58,7 +58,7 @@ export function getOperatorModel() {
  */
 export function getUserModel() {
   const db = mongoose.connection.useDb('Global', { useCache: true });
-  return db.model('Udhetaret', UserSchema, 'Udhetaret');
+  return db.models.Udhetaret || db.model('Udhetaret', UserSchema, 'Udhetaret');
 }
 
 export const ALL_ROUTES = [

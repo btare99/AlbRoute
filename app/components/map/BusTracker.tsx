@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
-import { Bus, Clock, Users, Navigation, Star, Radio, Search, ChevronDown, ChevronUp, ArrowRight, X } from 'lucide-react';
+import { Bus, Star, Search, ChevronDown, ChevronUp, X, MapPin, Zap, Users, Clock } from 'lucide-react';
 import { translations } from '../../store/translations';
 
 export default function BusTracker() {
@@ -16,7 +16,6 @@ export default function BusTracker() {
   const t = translations[language] || translations.al;
 
   const [selectedRouteId, setSelectedRouteId] = useState(selectedBus?.routeId || 'L1');
-  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllStops, setShowAllStops] = useState(false);
 
@@ -37,423 +36,441 @@ export default function BusTracker() {
   const toggleFavorite = () => {
     if (isSaved) {
       removeSavedRoute(selectedRouteId);
-      addNotification(language === 'al' ? `Linja ${route?.name} u hoq nga të preferuarat.` : language === 'en' ? `Route ${route?.name} removed from favorites.` : `Linea ${route?.name} rimossa dai preferiti.`, 'info');
+      addNotification(language === 'al' ? `Linja ${route?.name} u hoq nga të preferuarat.` : `Route ${route?.name} removed from favorites.`, 'info');
     } else {
       saveRoute(route!);
-      addNotification(language === 'al' ? `Linja ${route?.name} u shtua tek të preferuarat!` : language === 'en' ? `Route ${route?.name} added to favorites!` : `Linea ${route?.name} aggiunta ai preferiti!`, 'success');
+      addNotification(language === 'al' ? `Linja ${route?.name} u shtua tek të preferuarat!` : `Route ${route?.name} added to favorites!`, 'success');
     }
   };
 
   const stopsToShow = showAllStops
     ? route?.stops || []
-    : (route?.stops || []).slice(0, 8);
+    : (route?.stops || []).slice(0, 7);
 
-  const getLoadInfo = (load: number) => {
-    if (load > 40) return { label: t.full, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' };
-    if (load > 25) return { label: t.medium, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' };
-    return { label: t.empty, color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' };
+  const getLoad = (load: number) => {
+    if (load > 40) return { label: t.full, color: '#FF3B30', pct: Math.min((load / 50) * 100, 100) };
+    if (load > 25) return { label: t.medium, color: '#FF9F0A', pct: Math.min((load / 50) * 100, 100) };
+    return { label: t.empty, color: '#30D158', pct: Math.min((load / 50) * 100, 100) };
   };
 
   return (
-    <div className="page-content">
+    <div style={{
+      minHeight: '100%',
+      background: '#08080D',
+      color: '#fff',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+      overflowY: 'auto',
+      paddingBottom: 110,
+      position: 'relative'
+    }}>
 
-      {/* ── Header ── */}
-      <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '10px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '0.5px solid rgba(255,255,255,0.08)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Bus size={18} style={{ color: '#fff' }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.bus_tracker_title}</h1>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            {t.bus_tracker_subtitle}
-          </p>
-        </div>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '6px',
-          padding: '5px 10px', borderRadius: '99px',
-          background: 'rgba(16,185,129,0.08)',
-          border: '0.5px solid rgba(16,185,129,0.2)',
-        }}>
-          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
-          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>
-            {t.live} · {buses.length} {t.active_buses_count.toLowerCase()}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Kërkim + Zgjedhje Linje ── */}
+      {/* ━━━━ HEADER ━━━━ */}
       <div style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '0.5px solid rgba(255,255,255,0.07)',
-        borderRadius: '14px',
-        padding: '16px',
-        marginBottom: '14px',
+        padding: '24px 20px 16px',
+        background: 'radial-gradient(ellipse at 50% -20%, rgba(48, 209, 88, 0.12), transparent 70%), linear-gradient(180deg, rgba(8,8,13,0.9) 60%, transparent 100%)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky', top: 0, zIndex: 20,
       }}>
-        {/* Search */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+
+            <div>
+              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: '-0.8px', lineHeight: 1.1, background: 'linear-gradient(to right, #ffffff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                {t.bus_tracker_title}
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  fontSize: 12, fontWeight: 600, letterSpacing: '0.2px',
+                  color: '#30D158',
+                  background: 'rgba(48,209,88,0.12)',
+                  padding: '4px 10px', borderRadius: 99,
+                  border: '1px solid rgba(48,209,88,0.2)'
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#30D158', display: 'inline-block', boxShadow: '0 0 8px #30D158' }} />
+                  {buses.length} {t.active_buses_count.toLowerCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search bar */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '0.5px solid rgba(255,255,255,0.08)',
-          borderRadius: '10px',
-          padding: '9px 12px',
-          marginBottom: '14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(255,255,255,0.07)',
+          borderRadius: 16, padding: '12px 16px',
         }}>
-          <Search size={14} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+          <Search size={15} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t.search_route_placeholder}
             style={{
               background: 'none', border: 'none', outline: 'none',
-              color: '#fff', fontSize: '13px', width: '100%',
+              color: '#fff', fontSize: 15, width: '100%',
+              caretColor: '#fff',
             }}
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery('')} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center',
+              background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', padding: 0,
             }}>
-              <X size={13} />
+              <X size={12} />
             </button>
           )}
-        </div>
-
-        <div style={{
-          fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em',
-          textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)',
-          marginBottom: '10px',
-        }}>
-          {filteredRoutes.length} {t.routes.toLowerCase()} {searchQuery ? `· "${searchQuery}"` : ''}
-        </div>
-
-        {/* Route grid */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
-          {filteredRoutes.map((r, idx) => {
-            const activeBuses = buses.filter((b: any) => b.routeId === r.id).length;
-            const isActive = selectedRouteId === r.id;
-            const isHovered = hoveredRouteId === r.id;
-            return (
-              <button
-                key={`${r.id}-${idx}`}
-                onClick={() => setSelectedRouteId(r.id)}
-                onMouseEnter={() => setHoveredRouteId(r.id)}
-                onMouseLeave={() => setHoveredRouteId(null)}
-                style={{
-                  padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600',
-                  cursor: 'pointer', transition: 'all 0.15s',
-                  border: `0.5px solid ${isActive || isHovered ? r.color + '60' : 'rgba(255,255,255,0.07)'}`,
-                  background: isActive || isHovered ? `${r.color}15` : 'rgba(255,255,255,0.03)',
-                  color: isActive || isHovered ? r.color : 'rgba(255,255,255,0.35)',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                }}>
-                <span>{r.name}</span>
-                {activeBuses > 0 && (
-                  <span style={{
-                    background: isActive || isHovered ? r.color : 'rgba(255,255,255,0.1)',
-                    color: isActive || isHovered ? '#fff' : 'rgba(255,255,255,0.4)',
-                    borderRadius: '99px', padding: '1px 6px',
-                    fontSize: '10px', fontWeight: '700',
-                  }}>{activeBuses}</span>
-                )}
-              </button>
-            );
-          })}
         </div>
       </div>
 
-      {/* ── Info linja e zgjedhur ── */}
-      {route && (
-        <div style={{
-          background: 'rgba(255,255,255,0.02)',
-          border: `0.5px solid ${route.color}30`,
-          borderLeft: `2px solid ${route.color}`,
-          borderRadius: '0 14px 14px 0',
-          padding: '16px 18px',
-          marginBottom: '14px',
-        }}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '38px', height: '38px', borderRadius: '10px',
-                background: `${route.color}15`,
-                border: `0.5px solid ${route.color}40`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Bus size={18} style={{ color: route.color }} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                  <span style={{
-                    background: `${route.color}20`,
-                    border: `0.5px solid ${route.color}50`,
-                    color: route.color,
-                    padding: '2px 9px', borderRadius: '99px',
-                    fontWeight: '700', fontSize: '12px',
-                  }}>{route.name}</span>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{route.label}</span>
-                </div>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-                  {t.stations_count.replace('{count}', route.stops.length.toString())} · {t.trip_duration.replace('{count}', (route.stops.length * 3).toString())}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{
-                fontSize: '11px', fontWeight: '600',
-                color: 'rgba(255,255,255,0.3)',
-                background: 'rgba(255,255,255,0.04)',
-                border: '0.5px solid rgba(255,255,255,0.08)',
-                padding: '4px 10px', borderRadius: '8px',
-              }}>
-                {t.ticket_price}
-              </span>
-              <div style={{
-                padding: '4px 9px', borderRadius: '99px',
-                background: 'rgba(16,185,129,0.08)',
-                border: '0.5px solid rgba(16,185,129,0.2)',
-                fontSize: '11px', color: '#10b981', fontWeight: '600',
-              }}>
-                {routeBuses.length} {t.live.toLowerCase()}
-              </div>
-              <button
-                onClick={toggleFavorite}
-                style={{
-                  width: '30px', height: '30px', borderRadius: '8px',
-                  background: isSaved ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
-                  border: `0.5px solid ${isSaved ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.15s',
-                }}
-              >
-                <Star size={14} style={{
-                  color: isSaved ? '#f59e0b' : 'rgba(255,255,255,0.3)',
-                  fill: isSaved ? '#f59e0b' : 'none',
-                }} />
-              </button>
-            </div>
-          </div>
-
-          {/* Stop timeline */}
-          <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-            <div style={{ display: 'flex', minWidth: 'max-content', gap: 0 }}>
-              {stopsToShow.map((sid: string, i: number) => {
-                const stop = BUS_STOPS.find(s => s.id === sid);
-                const isFirst = i === 0;
-                const isLast = i === stopsToShow.length - 1 && !showAllStops && route.stops.length > 8;
-                const isTerminal = isFirst || isLast;
-                return (
-                  <div key={`${sid}-${i}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                      {i > 0 && <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.25 }} />}
-                      <div style={{
-                        width: isTerminal ? '12px' : '7px',
-                        height: isTerminal ? '12px' : '7px',
-                        borderRadius: '50%',
-                        background: isTerminal ? route.color : `${route.color}50`,
-                        flexShrink: 0,
-                      }} />
-                      {i < stopsToShow.length - 1 && <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.25 }} />}
-                    </div>
-                    <p style={{
-                      fontSize: '10px',
-                      color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)',
-                      marginTop: '6px', textAlign: 'center', maxWidth: '72px',
-                      fontWeight: isTerminal ? '600' : '400',
-                      lineHeight: 1.3,
-                    }}>
-                      {stop?.name}
-                    </p>
-                  </div>
-                );
-              })}
-              {!showAllStops && route.stops.length > 8 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '50px' }}>
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                    <div style={{ flex: 1, height: '1.5px', background: route.color, opacity: 0.15 }} />
-                    <span style={{
-                      fontSize: '10px', color: route.color, fontWeight: '600',
-                      background: `${route.color}15`,
-                      border: `0.5px solid ${route.color}40`,
-                      padding: '2px 6px', borderRadius: '99px',
-                    }}>
-                      +{route.stops.length - 8}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {route.stops.length > 8 && (
+      {/* ━━━━ ROUTE CHIPS ━━━━ */}
+      <div style={{
+        display: 'flex', gap: 8,
+        overflowX: 'auto', padding: '0 20px 4px',
+        scrollbarWidth: 'none',
+      } as any}>
+        {filteredRoutes.map((r, idx) => {
+          const isActive = selectedRouteId === r.id;
+          const live = buses.filter((b: any) => b.routeId === r.id).length;
+          return (
             <button
-              onClick={() => setShowAllStops(v => !v)}
+              key={`${r.id}-${idx}`}
+              onClick={() => { setSelectedRouteId(r.id); setShowAllStops(false); }}
               style={{
-                marginTop: '10px', background: 'none', border: 'none',
-                cursor: 'pointer', color: route.color,
-                fontSize: '12px', fontWeight: '600',
-                display: 'flex', alignItems: 'center', gap: '5px',
-              }}>
-              {showAllStops
-                ? <><ChevronUp size={13} /> {t.show_less}</>
-                : <><ChevronDown size={13} /> {t.show_all_stations.replace('{count}', route.stops.length.toString())}</>
-              }
+                flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '9px 15px',
+                borderRadius: 14, border: 'none', cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: 13, fontWeight: 700,
+                background: isActive ? r.color : 'rgba(255,255,255,0.07)',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                transition: 'all 0.2s cubic-bezier(.34,1.56,.64,1)',
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                boxShadow: isActive ? `0 4px 20px ${r.color}50` : 'none',
+              }}
+            >
+              {r.name}
+              {live > 0 && (
+                <span style={{
+                  background: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
+                  borderRadius: 99, padding: '1px 6px',
+                  fontSize: 11, fontWeight: 700, color: '#fff',
+                }}>{live}</span>
+              )}
             </button>
-          )}
+          );
+        })}
+      </div>
+
+      {/* ━━━━ ROUTE HERO CARD ━━━━ */}
+      {route && (
+        <div style={{ padding: '16px 20px 0' }}>
+          <div style={{
+            borderRadius: 24, overflow: 'hidden',
+            background: `linear-gradient(145deg, ${route.color}22 0%, rgba(255,255,255,0.03) 100%)`,
+            border: `1px solid ${route.color}28`,
+          }}>
+            {/* Route header */}
+            <div style={{ padding: '18px 18px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 16,
+                  background: route.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: `0 6px 20px ${route.color}50`,
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+                    {route.name}
+                  </span>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 700, letterSpacing: '-0.3px' }}>
+                    {route.label}
+                  </p>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                    {route.stops.length} stacione · ~{route.stops.length * 3} min
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                {/* Live pill */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '7px 11px', borderRadius: 12,
+                  background: routeBuses.length > 0 ? 'rgba(48,209,88,0.12)' : 'rgba(255,255,255,0.06)',
+                }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: routeBuses.length > 0 ? '#30D158' : 'rgba(255,255,255,0.2)',
+                    boxShadow: routeBuses.length > 0 ? '0 0 6px #30D158' : 'none',
+                  }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: routeBuses.length > 0 ? '#30D158' : 'rgba(255,255,255,0.3)' }}>
+                    {routeBuses.length}
+                  </span>
+                </div>
+                {/* Star */}
+                <button
+                  onClick={toggleFavorite}
+                  style={{
+                    width: 36, height: 36, borderRadius: 12,
+                    background: isSaved ? 'rgba(255,159,10,0.15)' : 'rgba(255,255,255,0.07)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Star size={15} style={{ color: isSaved ? '#FF9F0A' : 'rgba(255,255,255,0.4)', fill: isSaved ? '#FF9F0A' : 'none' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Stops scroll */}
+            <div style={{ padding: '16px 18px 8px', overflowX: 'auto', scrollbarWidth: 'none' } as any}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 'max-content' }}>
+                {stopsToShow.map((sid: string, i: number) => {
+                  const stop = BUS_STOPS.find(s => s.id === sid);
+                  const isFirst = i === 0;
+                  const isLast = i === stopsToShow.length - 1 && (showAllStops || route.stops.length <= 7);
+                  const isTerminal = isFirst || isLast;
+                  return (
+                    <div key={`${sid}-${i}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 66 }}>
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                        {i > 0 && (
+                          <div style={{ flex: 1, height: 2, background: `${route.color}35`, borderRadius: 1 }} />
+                        )}
+                        <div style={{
+                          width: isTerminal ? 12 : 7,
+                          height: isTerminal ? 12 : 7,
+                          borderRadius: '50%', flexShrink: 0,
+                          background: isTerminal ? route.color : `${route.color}45`,
+                          boxShadow: isTerminal ? `0 0 10px ${route.color}70` : 'none',
+                          border: isTerminal ? `2px solid rgba(255,255,255,0.3)` : 'none',
+                        }} />
+                        {i < stopsToShow.length - 1 && (
+                          <div style={{ flex: 1, height: 2, background: `${route.color}35`, borderRadius: 1 }} />
+                        )}
+                      </div>
+                      <p style={{
+                        fontSize: 10, lineHeight: 1.3,
+                        color: isTerminal ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)',
+                        fontWeight: isTerminal ? 600 : 400,
+                        textAlign: 'center', maxWidth: 60,
+                        margin: '6px 0 0',
+                      }}>
+                        {stop?.name}
+                      </p>
+                    </div>
+                  );
+                })}
+                {!showAllStops && route.stops.length > 7 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44, paddingTop: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{ flex: 1, height: 2, background: `${route.color}15`, borderRadius: 1 }} />
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: route.color,
+                        background: `${route.color}18`, padding: '2px 7px', borderRadius: 99,
+                      }}>+{route.stops.length - 7}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {route.stops.length > 7 && (
+              <button
+                onClick={() => setShowAllStops(v => !v)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: route.color, fontSize: 12, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 18px 16px', fontFamily: 'inherit',
+                }}>
+                {showAllStops
+                  ? <><ChevronUp size={13} /> {t.show_less}</>
+                  : <><ChevronDown size={13} /> {t.show_all_stations.replace('{count}', route.stops.length.toString())}</>}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ── Autobuzët aktivë ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '7px',
-        marginBottom: '12px',
-      }}>
-        <Radio size={13} style={{ color: '#10b981' }} />
-        <span style={{
-          fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em',
-          textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
+      {/* ━━━━ BUS CARDS ━━━━ */}
+      <div style={{ padding: '20px 20px 0' }}>
+        <p style={{
+          fontSize: 11, fontWeight: 600, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)',
+          margin: '0 0 12px',
         }}>
-          {t.active_buses_count} · {language === 'al' ? 'Linja' : language === 'en' ? 'Route' : 'Linea'} {route?.name}
-        </span>
-      </div>
+          {t.active_buses_count} — {route?.name}
+        </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {routeBuses.map((bus: any, idx: number) => {
-          const loadInfo = getLoadInfo(bus.passengerLoad);
-          const isSelected = selectedBus?.id === bus.id;
-          const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {routeBuses.map((bus: any, idx: number) => {
+            const load = getLoad(bus.passengerLoad);
+            const isSelected = selectedBus?.id === bus.id;
+            const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
+            const arrMin = Math.round(2 + Math.random() * 6);
 
-          return (
-            <div
-              key={bus.id || `bus-${idx}`}
-              onClick={() => setSelectedBus(isSelected ? null : bus)}
-              style={{
-                background: isSelected ? `${route?.color}08` : 'rgba(255,255,255,0.02)',
-                border: `0.5px solid ${isSelected ? (route?.color + '40') : 'rgba(255,255,255,0.08)'}`,
-                borderLeft: isSelected ? `2px solid ${route?.color}` : '2px solid transparent',
-                borderRadius: '0 12px 12px 0',
-                padding: '14px 16px',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                {/* Left */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            return (
+              <div
+                key={bus.id || `bus-${idx}`}
+                onClick={() => setSelectedBus(isSelected ? null : bus)}
+                style={{
+                  borderRadius: 20,
+                  background: isSelected
+                    ? `linear-gradient(145deg, ${route?.color}18, ${route?.color}08)`
+                    : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isSelected ? route?.color + '45' : 'rgba(255,255,255,0.07)'}`,
+                  padding: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s cubic-bezier(.34,1.56,.64,1)',
+                  transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                }}
+              >
+                {/* Row 1: icon + name + arrival */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* Bus dot icon */}
                   <div style={{
-                    width: '36px', height: '36px', borderRadius: '10px',
-                    background: `${route?.color}15`,
-                    border: `0.5px solid ${route?.color}40`,
+                    width: 48, height: 48, borderRadius: 16,
+                    background: `${route?.color}20`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative', flexShrink: 0,
+                    flexShrink: 0, position: 'relative',
                   }}>
-                    <Bus size={17} style={{ color: route?.color }} />
+                    <Bus size={22} style={{ color: route?.color }} />
                     {bus.delay > 0 && (
                       <div style={{
-                        position: 'absolute', top: '-4px', right: '-4px',
-                        background: '#f59e0b', color: '#000',
-                        fontSize: '8px', fontWeight: '800',
-                        width: '15px', height: '15px', borderRadius: '50%',
+                        position: 'absolute', top: -5, right: -5,
+                        background: '#FF9F0A', color: '#000',
+                        fontSize: 9, fontWeight: 900,
+                        width: 18, height: 18, borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {bus.delay}
-                      </div>
+                      }}>{bus.delay}</div>
                     )}
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '3px' }}>
-                      {busLabel}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>
-                      <ArrowRight size={10} />
-                      <span>{t.nextStop}: <span style={{ color: 'rgba(255,255,255,0.6)' }}>{bus.nextStop}</span></span>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <p style={{ margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px' }}>
+                        {busLabel}
+                      </p>
+                      {bus.status === 'stopped' ? (
+                        <span style={{ fontSize: 10, fontWeight: 800, background: 'rgba(255, 59, 48, 0.15)', color: '#FF3B30', padding: '4px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 0.5, border: '1px solid rgba(255, 59, 48, 0.3)' }}>Ndalur</span>
+                      ) : (
+                        <span style={{ fontSize: 10, fontWeight: 800, background: 'rgba(48, 209, 88, 0.15)', color: '#30D158', padding: '4px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 0.5, border: '1px solid rgba(48, 209, 88, 0.3)' }}>Në lëvizje</span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: bus.status === 'stopped' ? '#FF3B30' : 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', marginRight: 4 }}>
+                            {bus.status === 'stopped' ? 'Në stacion:' : 'Nga:'}
+                          </span>
+                          <span style={{ color: bus.status === 'stopped' ? '#fff' : 'rgba(255,255,255,0.8)', fontWeight: bus.status === 'stopped' ? 700 : 500 }}>
+                            {bus.currentStop || 'Pikënisja'}
+                          </span>
+                        </span>
+                      </div>
+                      <div style={{ borderLeft: '2px dashed rgba(255,255,255,0.1)', height: 12, marginLeft: 3 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', border: '2px solid #30D158', background: 'transparent', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', marginRight: 4 }}>
+                            Drejt:
+                          </span>
+                          <span style={{ color: '#30D158', fontWeight: 700 }}>
+                            {bus.nextStop || 'Destinacioni'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Arrival time — big */}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1, color: '#fff' }}>
+                      {arrMin}
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.35)', letterSpacing: 0 }}> min</span>
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: load.color, boxShadow: `0 0 6px ${load.color}` }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: load.color }}>{load.label}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right */}
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <span style={{
-                    fontSize: '11px', fontWeight: '600',
-                    color: loadInfo.color,
-                    background: loadInfo.bg,
-                    border: `0.5px solid ${loadInfo.border}`,
-                    padding: '3px 9px', borderRadius: '99px',
-                    display: 'inline-block',
+                {/* Passenger load bar */}
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Users size={11} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                        {bus.passengerLoad} / 50
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Zap size={11} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                        {Math.round(bus.speed)} km/h
+                      </span>
+                    </div>
+                    {bus.delay > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#FF9F0A' }}>
+                        +{bus.delay}m vonesë
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Segmented bar */}
+                  <div style={{
+                    height: 4, borderRadius: 99,
+                    background: 'rgba(255,255,255,0.07)',
+                    overflow: 'hidden',
+                    position: 'relative',
                   }}>
-                    {loadInfo.label}
-                  </span>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '5px' }}>
-                    {t.arrival_time.replace('{count}', Math.round(2 + Math.random() * 5).toString())}
-                  </p>
-                  {bus.delay > 0 && (
-                    <p style={{ fontSize: '10px', color: '#f59e0b', marginTop: '2px', fontWeight: '600' }}>
-                      {t.delay_label.replace('{count}', bus.delay.toString())}
-                    </p>
-                  )}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      width: `${load.pct}%`,
+                      background: `linear-gradient(90deg, ${load.color}90, ${load.color})`,
+                      borderRadius: 99,
+                      transition: 'width 1.2s cubic-bezier(.34,1.56,.64,1)',
+                    }} />
+                  </div>
                 </div>
               </div>
+            );
+          })}
 
-              {/* Stats */}
-              <div style={{ marginTop: '12px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                {[
-                  { icon: <Users size={11} />, val: `${bus.passengerLoad} / 50 ${t.passengers.toLowerCase()}` },
-                  { icon: <Navigation size={11} />, val: `${Math.round(bus.speed)} km/h` },
-                  { icon: <Clock size={11} />, val: t.live_tracking },
-                ].map((s, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: '5px',
-                    fontSize: '11px', color: 'rgba(255,255,255,0.25)',
-                  }}>
-                    {s.icon} {s.val}
-                  </div>
-                ))}
-              </div>
-
-              {/* Load bar */}
-              <div style={{ marginTop: '10px', height: '2px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)' }}>
-                <div style={{
-                  height: '100%', borderRadius: '2px',
-                  width: `${(bus.passengerLoad / 50) * 100}%`,
-                  background: loadInfo.color,
-                  transition: 'width 1s ease',
-                  opacity: 0.7,
-                }} />
-              </div>
-            </div>
-          );
-        })}
-
-        {routeBuses.length === 0 && (
-          <div style={{
-            padding: '40px 24px', textAlign: 'center',
-            background: 'rgba(255,255,255,0.02)',
-            border: '0.5px solid rgba(255,255,255,0.06)',
-            borderRadius: '12px',
-          }}>
+          {/* Empty state */}
+          {routeBuses.length === 0 && (
             <div style={{
-              width: '44px', height: '44px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '0.5px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 14px',
+              padding: '52px 24px', textAlign: 'center',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 24,
+              border: '1px solid rgba(255,255,255,0.05)',
             }}>
-              <Bus size={20} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <div style={{
+                width: 56, height: 56, borderRadius: 18,
+                background: 'rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}>
+                <Bus size={24} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              </div>
+              <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 5, fontSize: 15 }}>
+                {t.no_active_buses}
+              </p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+                {t.check_later}
+              </p>
             </div>
-            <p style={{ fontWeight: '600', color: 'rgba(255,255,255,0.4)', marginBottom: '5px', fontSize: '13px' }}>
-              {t.no_active_buses}
-            </p>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)' }}>
-              {t.check_later}
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

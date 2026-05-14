@@ -59,7 +59,6 @@ export default function AppShell() {
     { id: 'map', label: t.map, icon: Map },
     { id: 'tracker', label: t.live_buses, icon: Bus },
     { id: 'packages', label: t.packages, icon: Ticket },
-    { id: 'planner', label: t.planner, icon: Navigation },
     { id: 'profile', label: t.profile, icon: User },
   ];
 

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import useStore from '../../store/useStore';
+import { translations } from '../../store/translations';
 
 const W = 1240;
 const H = 735;
@@ -15,6 +16,7 @@ const PASS_TYPES = [
 export default function PassesView() {
   const setView = useStore((s: any) => s.setView);
   const language = useStore((s: any) => s.language);
+  const t = translations[language] || translations.al;
   const user = useStore((s: any) => s.user);
 
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -63,7 +65,7 @@ export default function PassesView() {
           <ChevronLeft size={20} />
         </button>
         <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>
-          {language === 'al' ? 'Katalogu i Aboneve' : 'Passes Catalog'}
+          {t.sub_passes_catalog}
         </h1>
       </div>
 

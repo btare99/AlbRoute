@@ -244,6 +244,10 @@ const useStore = create<any>()(
         const isPeakHour = (hour >= 8 && hour <= 9) || (hour >= 16 && hour <= 18);
 
         const updated = buses.map((bus: any) => {
+          if (bus.waitingTicks && bus.waitingTicks > 0) {
+            return { ...bus, waitingTicks: bus.waitingTicks - 1, status: 'stopped' };
+          }
+
           // Increase ticks
           const ticks = (bus.ticks || 0) + 1;
 
@@ -366,6 +370,8 @@ const useStore = create<any>()(
               passengerLoad: newLoad,
               waitingTicks: waitingTicks,
               nextStop: nearestStop?.name || bus.nextStop,
+              currentStop: currentStop?.name || bus.currentStop,
+              status: waitingTicks > 0 ? 'stopped' : 'moving',
               delay: speedMultiplier < 0.5 ? (bus.delay + 0.05) : Math.max(0, bus.delay - 0.05),
               lastUpdate: Date.now(),
               ticks: ticks,
@@ -390,6 +396,7 @@ const useStore = create<any>()(
             lat: bus.lat + (dlat / dist) * actualStep,
             lng: bus.lng + (dlng / dist) * actualStep,
             speed: currentSpeed,
+            status: 'moving',
             ticks: ticks
           };
         });
@@ -418,6 +425,24 @@ const useStore = create<any>()(
           return;
         }
 
+        let possibleToStops: { stop: any, walkDist: number, walkTime: number }[] = [];
+        toStops.forEach(ts => {
+          BUS_STOPS.forEach(s => {
+            const dist = s.id === ts.id ? 0 : Math.sqrt(Math.pow(s.lat - ts.lat, 2) + Math.pow(s.lng - ts.lng, 2)) * 111320;
+            if (dist <= 400) {
+              const existing = possibleToStops.find(p => p.stop.id === s.id);
+              if (existing) {
+                if (dist < existing.walkDist) {
+                  existing.walkDist = Math.round(dist);
+                  existing.walkTime = Math.ceil(dist / 80);
+                }
+              } else {
+                possibleToStops.push({ stop: s, walkDist: Math.round(dist), walkTime: Math.ceil(dist / 80) });
+              }
+            }
+          });
+        });
+
         let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
         const isMyLocation = searchFrom.includes('vendndodhja') || searchFrom.includes('my location') || searchFrom.includes('📍');
 
@@ -433,8 +458,8 @@ const useStore = create<any>()(
             return { stop: s, dist };
           });
 
-          // Increase to 10 nearest stops to find more route possibilities
-          const nearby = distances.filter(d => d.dist < 2000).sort((a, b) => a.dist - b.dist).slice(0, 10);
+          // Increase to 10 nearest stops to find more route possibilities, up to 700m
+          const nearby = distances.filter(d => d.dist <= 700).sort((a, b) => a.dist - b.dist).slice(0, 10);
           if (!nearby.length) {
             set({ tripResult: { error: 'Nuk ka stacione afër vendndodhjes tuaj.' }, activeTrip: null });
             return;
@@ -469,24 +494,35 @@ const useStore = create<any>()(
         let bestTrip: any = null;
         let bestScore = Infinity;
 
-        const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string) => {
+        const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '') => {
           const busLegs = legs.filter(l => l.route);
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
-          const totalWalkDist = initialWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
+          const totalWalkDist = initialWalkDist + finalWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
+
+          if (totalWalkDist > 1200) return; // Max total walking allowed is 1.2km
 
           // Weighted score: Transfers are expensive (15 min penalty), each stop is 2 mins, each min of walking is 1.5 units
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
-          const totalTime = initialWalkTime + (totalStops * 2) + walkTimeTransfer + transferPenalty;
+          const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2) + walkTimeTransfer + transferPenalty;
           const score = (totalWalkDist / 100) + totalTime;
 
           if (score < bestScore) {
             bestScore = score;
+            const finalLegs = initialWalkDist > 30 ? [
+              { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
+              ...legs
+            ] : [...legs];
+
+            if (finalWalkDist > 30) {
+              finalLegs.push({ isWalking: true, boardAt: actualToStopName, alightAt: toName, walkingDist: finalWalkDist, walkingTime: finalWalkTime, numStops: 0 });
+            }
+
             bestTrip = {
-              from: fromName, to: toName, actualFrom: actualFromStopName,
-              walkingDist: initialWalkDist, walkingTime: initialWalkTime,
+              from: fromName, to: toName, actualFrom: actualFromStopName, actualTo: actualToStopName,
+              walkingDist: initialWalkDist + finalWalkDist, walkingTime: initialWalkTime + finalWalkTime,
               totalStops, transfers: Math.max(0, busLegs.length - 1),
-              legs, travelTime: Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0)), // Estimated real time
+              legs: finalLegs, travelTime: Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0)), // Estimated real time
               totalPrice: busLegs.length * 40
             };
           }
@@ -502,12 +538,13 @@ const useStore = create<any>()(
               if (fi === -1) continue;
 
               // 1. Direct route
-              for (const tStop of toStops) {
+              for (const pts of possibleToStops) {
+                const tStop = pts.stop;
                 const ti = r1Arr.indexOf(tStop.id);
                 if (ti !== -1 && fi < ti) {
                   const stopIds = r1Arr.slice(fi, ti + 1);
                   const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
-                  evaluateTrip([{ route: route1, stops, stopIds, boardAt: fStop.name, alightAt: tStop.name, numStops: ti - fi }], walkDist, walkTime, fStop.name);
+                  evaluateTrip([{ route: route1, stops, stopIds, boardAt: fStop.name, alightAt: tStop.name, numStops: ti - fi }], walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
                 }
               }
 
@@ -516,7 +553,8 @@ const useStore = create<any>()(
                 if (route1.id === route2.id) continue;
                 const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
                 for (const r2Arr of r2Paths) {
-                  for (const tStop of toStops) {
+                  for (const pts of possibleToStops) {
+                    const tStop = pts.stop;
                     const ti = r2Arr.indexOf(tStop.id);
                     if (ti === -1) continue;
 
@@ -530,17 +568,17 @@ const useStore = create<any>()(
                         if (!s2) continue;
 
                         const dist = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                        if (dist < 400) { // Max 400m transfer walk
+                        if (dist <= 400) { // Max 400m transfer walk
                           const stopIds1 = r1Arr.slice(fi, i + 1);
                           const stopIds2 = r2Arr.slice(j, ti + 1);
                           const legs = [
                             { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: fStop.name, alightAt: s1.name, numStops: i - fi },
-                            { isWalking: dist > 30, boardAt: s1.name, alightAt: s2.name, walkingDist: Math.round(dist), walkingTime: Math.ceil(dist / 80), numStops: 0 },
+                            dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: Math.round(dist), walkingTime: Math.ceil(dist / 80), numStops: 0 } : null,
                             { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: tStop.name, numStops: ti - j }
-                          ].filter(l => !l.isWalking || (l.walkingDist && l.walkingDist > 30));
+                          ].filter(Boolean);
 
 
-                          evaluateTrip(legs, walkDist, walkTime, fStop.name);
+                          evaluateTrip(legs, walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
                         }
                       }
                     }

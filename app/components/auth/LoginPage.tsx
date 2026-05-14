@@ -113,7 +113,7 @@ const COUNTRY_CODES = [
   { code: '+967', flag: '🇾🇪', name: 'Yemen' },
 ];
 
-function PhoneInput({ country, setCountry, phone, setPhone }: { country: any; setCountry: (c: any) => void; phone: string; setPhone: (v: string) => void }) {
+function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any; setCountry: (c: any) => void; phone: string; setPhone: (v: string) => void; t: any }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -153,7 +153,7 @@ function PhoneInput({ country, setCountry, phone, setPhone }: { country: any; se
           }}>
             <div style={{ position: 'relative', marginBottom: '8px' }}>
               <input
-                autoFocus placeholder="Kërko shtetin..."
+                autoFocus placeholder={t.auth_search_country}
                 value={search} onChange={e => setSearch(e.target.value)}
                 style={{
                   width: '100%', background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px',
@@ -202,6 +202,7 @@ export default function LoginPage() {
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
+  const t = translations[language] || translations.al;
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,13 +216,13 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(language === 'al' ? 'Kodi u dërgua në email!' : 'Code sent to email!');
+        setSuccess(t.auth_code_sent);
         setMode('verify');
       } else {
-        setError(data.error || 'Dështoi dërgimi i kodit.');
+        setError(data.error || t.auth_code_failed);
       }
     } catch (err) {
-      setError('Gabim në server.');
+      setError(t.auth_server_error);
     } finally {
       setLoading(false);
     }
@@ -239,13 +240,13 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(language === 'al' ? 'Kodi u verifikua! Vendosni fjalëkalimin e ri.' : 'Code verified! Enter new password.');
+        setSuccess(t.auth_code_verified);
         setMode('new_password');
       } else {
-        setError(data.error || 'Kodi i pasaktë.');
+        setError(data.error || t.auth_invalid_code);
       }
     } catch (err) {
-      setError('Gabim në server.');
+      setError(t.auth_server_error);
     } finally {
       setLoading(false);
     }
@@ -263,17 +264,17 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        addNotification(language === 'al' ? 'Fjalëkalimi u ndryshua! Tani mund të hyni.' : 'Password reset successfully!', 'success');
+        addNotification(t.auth_password_changed, 'success');
         setMode('login');
         setSuccess('');
         setEmail('');
         setCode('');
         setNewPassword('');
       } else {
-        setError(data.error || 'Dështoi ndryshimi.');
+        setError(data.error || t.auth_change_failed);
       }
     } catch (err) {
-      setError('Gabim në server.');
+      setError(t.auth_server_error);
     } finally {
       setLoading(false);
     }
@@ -293,9 +294,10 @@ export default function LoginPage() {
         });
 
         if (result?.error) {
-          setError(language === 'al' ? 'Email ose fjalëkalim i pasaktë.' : 'Invalid email or password.');
+          setError(t.auth_invalid_credentials);
         } else {
-          addNotification(language === 'al' ? `Mirë se erdhe! 🚌` : `Welcome! 🚌`, 'success');
+          addNotification(t.auth_welcome, 'success');
+          window.location.reload();
         }
       } else {
         const fullPhone = `${selectedCountry.code} ${phone}`;
@@ -308,18 +310,24 @@ export default function LoginPage() {
 
         if (res.ok) {
           // Auto login after registration
-          await signIn('credentials', {
+          const result = await signIn('credentials', {
             email: email.toLowerCase(),
             password,
             redirect: false,
           });
-          addNotification(language === 'al' ? 'Llogaria u krijua me sukses! 🎉' : 'Account created successfully! 🎉', 'success');
+          
+          if (!result?.error) {
+            addNotification(t.auth_account_created, 'success');
+            window.location.reload();
+          } else {
+            setError(t.auth_auto_login_error);
+          }
         } else {
-          setError(data.error || 'Dështoi regjistrimi.');
+          setError(data.error || t.auth_register_failed);
         }
       }
     } catch (err) {
-      setError(language === 'al' ? 'Ndodhi një gabim në server.' : 'Server error occurred.');
+      setError(t.auth_server_error);
     } finally {
       setLoading(false);
     }
@@ -345,7 +353,7 @@ export default function LoginPage() {
         </div>
         <div style={{ textAlign: 'left' }}>
           <h1 style={{ fontSize: '20px', fontWeight: '900', lineHeight: '1.1', background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: "'Syne', sans-serif" }}>Urbani Im</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.01em', marginTop: '1px' }}>{language === 'al' ? 'Transporti Urban i Tiranës' : 'Tirana Urban Transport'}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.01em', marginTop: '1px' }}>{t.auth_subtitle}</p>
         </div>
       </div>
 
@@ -382,7 +390,7 @@ export default function LoginPage() {
                     textShadow: mode === m ? '0 0 15px rgba(255,255,255,0.3)' : 'none',
                     position: 'relative', letterSpacing: '0.06em', textTransform: 'uppercase', zIndex: 2
                   }}>
-                  {m === 'login' ? (language === 'al' ? 'Hyr' : language === 'en' ? 'Login' : 'Accedi') : (language === 'al' ? 'Regjistrohu' : language === 'en' ? 'Register' : 'Registrati')}
+                  {m === 'login' ? t.auth_login : t.auth_register}
                 </button>
               ))}
 
@@ -419,22 +427,22 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
               {mode === 'register' && (
                 <div>
-                  <label className="label">{language === 'al' ? 'Emri i plotë' : 'Full Name'}</label>
+                  <label className="label">{t.auth_fullname}</label>
                   <input className="input-field" type="text" placeholder="Andi Krasniqi" value={name} onChange={e => setName(e.target.value)} required />
                 </div>
               )}
               <div>
-                <label className="label">Email</label>
+                <label className="label">{t.auth_email}</label>
                 <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               {mode === 'register' && (
                 <div>
-                  <label className="label">{language === 'al' ? 'Numri i telefonit' : 'Phone Number'}</label>
-                  <PhoneInput country={selectedCountry} setCountry={setSelectedCountry} phone={phone} setPhone={setPhone} />
+                  <label className="label">{t.auth_phone}</label>
+                  <PhoneInput country={selectedCountry} setCountry={setSelectedCountry} phone={phone} setPhone={setPhone} t={t} />
                 </div>
               )}
               <div>
-                <label className="label">{language === 'al' ? 'Fjalëkalimi' : 'Password'}</label>
+                <label className="label">{t.auth_password}</label>
                 <div style={{ position: 'relative' }}>
                   <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
                   <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -444,60 +452,60 @@ export default function LoginPage() {
                 {mode === 'login' && (
                   <div style={{ textAlign: 'right', marginTop: '8px' }}>
                     <button type="button" onClick={() => setMode('forgot')} style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
-                      {language === 'al' ? 'Keni harruar fjalëkalimin?' : 'Forgot password?'}
+                      {t.auth_forgot}
                     </button>
                   </div>
                 )}
               </div>
               {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>{error}</div>}
               <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? '...' : (mode === 'login' ? 'Hyr' : 'Regjistrohu')} <ArrowRight size={16} />
+                {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={16} />
               </button>
             </form>
           )}
 
           {mode === 'forgot' && (
             <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 1: Email</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Shkruani email-in tuaj për të marrë kodin.</p>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step1_title}</h3>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>{t.auth_step1_desc}</p>
               <div>
-                <label className="label">Email</label>
+                <label className="label">{t.auth_email}</label>
                 <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
               <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? 'Duke dërguar...' : 'Vazhdo'}
+                {loading ? t.auth_sending : t.auth_continue}
               </button>
-              <button type="button" onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>Anulo</button>
+              <button type="button" onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>{t.auth_cancel}</button>
             </form>
           )}
 
           {mode === 'verify' && (
             <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 2: Kodi</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Shkruani kodin 6-shifror nga email-i.</p>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step2_title}</h3>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>{t.auth_step2_desc}</p>
               {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center' }}>{success}</div>}
               <div>
-                <label className="label">Kodi</label>
+                <label className="label">{t.auth_code}</label>
                 <input className="input-field" type="text" maxLength={6} placeholder="123456" value={code} onChange={e => setCode(e.target.value)} required style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '20px' }} />
               </div>
               {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
               <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? 'Duke verifikuar...' : 'Verifiko'}
+                {loading ? t.auth_verifying : t.auth_verify}
               </button>
             </form>
           )}
 
           {mode === 'new_password' && (
             <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Hapi 3: Fjalëkalimi</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step3_title}</h3>
               <div>
-                <label className="label">Fjalëkalimi i Ri</label>
+                <label className="label">{t.auth_new_password}</label>
                 <input className="input-field" type="password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
               </div>
               {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
               <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? 'Duke ruajtur...' : 'Ndrysho Fjalëkalimin'}
+                {loading ? t.auth_saving : t.auth_change_password}
               </button>
             </form>
           )}
@@ -509,7 +517,7 @@ export default function LoginPage() {
             <>
               <div style={{ margin: '20px 0 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase' }}>Ose vazhdo me</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase' }}>{t.auth_or_continue}</span>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>

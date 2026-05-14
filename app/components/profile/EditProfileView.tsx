@@ -25,7 +25,7 @@ export default function EditProfileView() {
   const handleDeleteAccount = () => {
     setActiveModal(null);
     logout();
-    addNotification(language === 'al' ? 'Llogaria juaj u fshi me sukses.' : 'Account deleted successfully.', 'success');
+    addNotification(t.edit_account_deleted, 'success');
   };
 
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +51,7 @@ export default function EditProfileView() {
 
   const handleSave = async () => {
     if (!activeUser?.id && !activeUser?._id) {
-      addNotification(language === 'al' ? 'Gabim: ID e përdoruesit nuk u gjet.' : 'Error: User ID not found.', 'error');
+      addNotification(t.edit_error_user_id, 'error');
       return;
     }
 
@@ -80,19 +80,19 @@ export default function EditProfileView() {
             savedLocations: { home: form.home, work: form.work },
             avatar: form.avatar
           });
-          addNotification(language === 'al' ? 'Ndryshimet u ruajtën me sukses! ✓' : 'Changes saved successfully! ✓', 'success');
+          addNotification(t.edit_changes_saved, 'success');
           setView('profile');
         } else {
           addNotification(result.error || 'Gabim gjatë ruajtjes.', 'error');
         }
       } else {
         // Staff persistence can be added here if needed
-        addNotification(language === 'al' ? 'Ndryshimet u ruajtën lokalisht.' : 'Changes saved locally.', 'info');
+        addNotification(t.edit_changes_saved_local, 'info');
         setView('profile');
       }
     } catch (error) {
       console.error('Save error:', error);
-      addNotification(language === 'al' ? 'Ndodhi një gabim gjatë lidhjes.' : 'Connection error.', 'error');
+      addNotification(t.edit_conn_error, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -137,8 +137,8 @@ export default function EditProfileView() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{language === 'al' ? 'Ndrysho kredencialet' : language === 'en' ? 'Edit Credentials' : 'Modifica Credenziali'}</h1>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>{language === 'al' ? 'Përditëso të dhënat e llogarisë tuaj' : language === 'en' ? 'Update your account details' : 'Aggiorna i dettagli del tuo account'}</p>
+            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{t.edit_credentials}</h1>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>{t.edit_update_details}</p>
           </div>
         </div>
 
@@ -208,11 +208,11 @@ export default function EditProfileView() {
             padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={16} style={{ color: '#475569' }} /> {language === 'al' ? 'Informacioni Personal' : language === 'en' ? 'Personal Information' : 'Informazioni Personali'}
+              <User size={16} style={{ color: '#475569' }} /> {t.edit_personal_info}
             </h3>
             
             <div>
-              <label style={labelStyle}>{language === 'al' ? 'Emri i plotë' : language === 'en' ? 'Full Name' : 'Nome Completo'}</label>
+              <label style={labelStyle}>{t.edit_full_name}</label>
               <input 
                 style={inputStyle} 
                 value={form.name} 
@@ -263,7 +263,7 @@ export default function EditProfileView() {
                       style={{ ...inputStyle, paddingLeft: '40px' }} 
                       value={form.home} 
                       onChange={e => setForm({...form, home: e.target.value})}
-                      placeholder={language === 'al' ? 'Shto adresën...' : language === 'en' ? 'Add address...' : 'Aggiungi indirizzo...'}
+                      placeholder={t.edit_add_address}
                     />
                     <Home size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
                   </div>
@@ -276,7 +276,7 @@ export default function EditProfileView() {
                       style={{ ...inputStyle, paddingLeft: '40px' }} 
                       value={form.work} 
                       onChange={e => setForm({...form, work: e.target.value})}
-                      placeholder={language === 'al' ? 'Shto adresën...' : language === 'en' ? 'Add address...' : 'Aggiungi indirizzo...'}
+                      placeholder={t.edit_add_address}
                     />
                     <Briefcase size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
                   </div>
@@ -306,11 +306,11 @@ export default function EditProfileView() {
                 {isSaving ? (
                   <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                 ) : (
-                  <><Save size={16} /> {language === 'al' ? 'Ruaj Ndryshimet' : language === 'en' ? 'Save Changes' : 'Salva Modifiche'}</>
+                  <><Save size={16} /> {t.edit_save_changes}</>
                 )}
               </button>
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
-                {language === 'al' ? 'Ndryshimet do të aplikohen menjëherë në të gjithë sistemin Urbani Im.' : language === 'en' ? 'Changes will be applied immediately across Urbani Im.' : 'Le modifiche verranno applicate immediatamente in tutto il sistema Urbani Im.'}
+                {t.edit_changes_applied_immediate}
               </p>
             </div>
 
@@ -325,7 +325,7 @@ export default function EditProfileView() {
                 transition: 'all 0.2s'
               }}
             >
-              <Trash2 size={16} /> {language === 'al' ? 'Fshi Llogarinë' : language === 'en' ? 'Delete Account' : 'Elimina Account'}
+              <Trash2 size={16} /> {t.edit_delete_account}
             </button>
           </div>
         </div>
@@ -343,17 +343,17 @@ export default function EditProfileView() {
               padding: '24px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
             }}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#fff' }}>
-                {language === 'al' ? 'Fshi Llogarinë' : language === 'en' ? 'Delete Account' : 'Elimina Account'}
+                {t.edit_delete_account}
               </h3>
               <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
-                {language === 'al' ? 'A jeni të sigurt që dëshironi të fshini llogarinë tuaj? Ky veprim nuk mund të kthehet.' : 'Are you sure you want to delete your account? This action cannot be undone.'}
+                {t.edit_delete_confirm}
               </p>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setActiveModal(null)} style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-                  {language === 'al' ? 'Anulo' : 'Cancel'}
+                  {t.edit_cancel}
                 </button>
                 <button onClick={handleDeleteAccount} style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-                  {language === 'al' ? 'Fshi' : 'Delete'}
+                  {t.edit_delete}
                 </button>
               </div>
             </div>

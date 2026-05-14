@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, User, Zap } from 'lucide-react';
 import useStore from '../../store/useStore';
+import { translations } from '../../store/translations';
 
 const W = 1240;
 const H = 735;
@@ -10,6 +11,7 @@ export default function SubscriptionView() {
   const setView = useStore((s: any) => s.setView);
   const language = useStore((s: any) => s.language);
   const user = useStore((s: any) => s.user);
+  const t = translations[language] || translations.al;
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -99,10 +101,10 @@ export default function SubscriptionView() {
 
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>
-            {language === 'al' ? 'Abonimi Im' : 'My Subscription'}
+            {t.sub_my_subscription}
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0, marginTop: '2px' }}>
-            {language === 'al' ? 'Detajet e kartës suaj dixhitale' : 'Your digital card details'}
+            {t.sub_digital_details}
           </p>
         </div>
       </div>
@@ -224,14 +226,14 @@ export default function SubscriptionView() {
         </div>
 
         <p style={{ marginTop: 28, fontSize: 13, color: 'rgba(255,255,255,0.3)', textAlign: 'center', maxWidth: 480, lineHeight: 1.6 }}>
-          {language === 'al' ? 'Kopja digjitale zyrtare e abonesë suaj.' : 'Official digital copy of your transit pass.'}
+          {t.sub_official_copy}
         </p>
 
         <div style={{ marginTop: 12, marginBottom: 20, padding: '10px 20px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 100, border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-            {language === 'al' ? 'Skadon për: ' : 'Expires in: '}
+            {t.sub_expires_in}
           </span>
-          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>{expirationDays} {language === 'al' ? 'ditë' : 'days'}</span>
+          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>{expirationDays} {t.sub_days}</span>
         </div>
 
       </div>
