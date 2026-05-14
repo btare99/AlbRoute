@@ -12,8 +12,8 @@ export default function Page() {
   const { data: session, status } = useSession();
   const [hasMounted, setHasMounted] = useState(false);
   const moveBuses = useStore((s: any) => s.moveBuses);
-  
-  const isAuthenticated = status === "authenticated";
+  const guestMode = useStore((s: any) => s.guestMode);
+  const isAuthenticated = status === "authenticated" || guestMode;
 
   // Initial Data Load & Polling
   useEffect(() => {

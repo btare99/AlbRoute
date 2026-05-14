@@ -199,6 +199,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const login = useStore((state: any) => state.login);
+  const setGuestMode = useStore((state: any) => state.setGuestMode);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
@@ -533,7 +534,13 @@ export default function LoginPage() {
 
         <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-dim)', opacity: 0.6 }}>
           <MapPin size={12} style={{ display: 'inline', marginRight: '4px' }} />
-          Tirana, Shqipëri &nbsp;·&nbsp; v1.0.6
+          Tirana, Shqipëri &nbsp;·&nbsp; 
+          <span 
+            onClick={() => setGuestMode(true)} 
+            style={{ cursor: 'default' }}
+          >
+            v1.0.6
+          </span>
         </p>
       </div>
     </div>

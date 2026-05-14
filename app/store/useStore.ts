@@ -22,6 +22,8 @@ const useStore = create<any>()(
       user: { name: 'Admin', email: 'admin@busal.al', avatar: null },
       staffUser: null,
       isAuthenticated: true,
+      guestMode: false,
+      setGuestMode: (val: boolean) => set({ guestMode: val }),
       token: 'dev-token',
       login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token }),
       loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard' }),
