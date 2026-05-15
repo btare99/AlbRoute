@@ -1,35 +1,30 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import { clientPromise } from "./lib/mongodb";
 import connectDB from "./lib/mongodb";
 import { getUserModel, getOperatorModel } from "./lib/dynamicDb";
 import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
-
+  // NO adapter — we manage our own DB with Mongoose.
+  // JWT strategy is self-contained and does not need MongoDBAdapter.
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId:     process.env.GOOGLE_CLIENT_ID     ?? process.env.NEXTAUTH_GOOGLE_ID     ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.NEXTAUTH_GOOGLE_SECRET ?? "",
     }),
 
     Credentials({
       name: "Credentials",
       credentials: {
-        email:    { label: "Email",    type: "email" },
+        email:    { label: "Email",    type: "email"    },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          console.log("authorize: missing credentials");
-          return null;
-        }
+        const email    = (credentials?.email    as string | undefined)?.toLowerCase().trim();
+        const password = (credentials?.password as string | undefined);
 
-        const email = (credentials.email as string).toLowerCase().trim();
-        const password = credentials.password as string;
+        if (!email || !password) return null;
 
         try {
           await connectDB();
@@ -37,40 +32,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const UserModel     = getUserModel();
           const OperatorModel = getOperatorModel();
 
-          // 1. Look in passengers collection first
-          let dbUser: any = await UserModel.findOne({ email });
+          // Search in passengers first, then staff
+          let dbUser: any = await UserModel.findOne({ email }).lean();
           let role = "user";
 
-          // 2. Fall back to staff/operators collection
           if (!dbUser) {
-            dbUser = await OperatorModel.findOne({ email });
+            dbUser = await OperatorModel.findOne({ email }).lean();
             if (dbUser) role = dbUser.role ?? "operator";
           }
 
-          if (!dbUser) {
-            console.log("authorize: user not found →", email);
+          if (!dbUser || !dbUser.password) {
+            console.log("[Auth] User not found or no password:", email);
             return null;
           }
 
-          if (!dbUser.password) {
-            console.log("authorize: account has no password (OAuth account?)");
+          const ok = await bcrypt.compare(password, dbUser.password);
+          if (!ok) {
+            console.log("[Auth] Wrong password for:", email);
             return null;
           }
 
-          const passwordOk = await bcrypt.compare(password, dbUser.password);
-          if (!passwordOk) {
-            console.log("authorize: wrong password for →", email);
-            return null;
-          }
+          console.log("[Auth] Login success:", email, "role:", role);
 
-          // Update last login (non-blocking)
-          UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() }).catch(() => {});
-
-          console.log("authorize: success →", email, "role:", role);
+          // Update lastLogin in background
+          UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() }).exec().catch(() => {});
 
           return {
-            id:                dbUser._id.toString(),
-            name:              dbUser.name,
+            id:                String(dbUser._id),
+            name:              dbUser.name              ?? "",
             email:             dbUser.email,
             role,
             phone:             dbUser.phone             ?? "",
@@ -83,7 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             selectedLine:      dbUser.selectedLine      ?? null,
           };
         } catch (err) {
-          console.error("authorize error:", err);
+          console.error("[Auth] authorize error:", err);
           return null;
         }
       },
@@ -93,8 +82,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
 
   callbacks: {
-    // Persist extra fields into the JWT token
-    async jwt({ token, user, account, trigger, session }) {
+    async jwt({ token, user, account }) {
+      // On first sign-in, attach all user fields to the token
       if (user) {
         token.id               = (user as any).id;
         token.role             = (user as any).role             ?? "user";
@@ -106,37 +95,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.university       = (user as any).university       ?? null;
         token.serialNumber     = (user as any).serialNumber     ?? null;
         token.selectedLine     = (user as any).selectedLine     ?? null;
-
-        // For Google sign-in, look up or create the user in our own DB
-        if (account?.provider === "google") {
-          try {
-            await connectDB();
-            const UserModel = getUserModel();
-            const emailStr  = user.email!.toLowerCase();
-
-            let dbUser = await UserModel.findOne({ email: emailStr });
-            if (!dbUser) {
-              dbUser = await UserModel.create({
-                name:           user.name,
-                email:          emailStr,
-                savedLocations: { home: "", work: "" },
-                travelHistory:  [],
-              });
-            }
-
-            token.id            = dbUser._id.toString();
-            token.role          = "user";
-            token.phone         = dbUser.phone          ?? "";
-            token.savedLocations= dbUser.savedLocations ?? { home: "", work: "" };
-          } catch (err) {
-            console.error("jwt google upsert error:", err);
-          }
-        }
       }
 
-      // Allow client-side session updates
-      if (trigger === "update" && session) {
-        return { ...token, ...session };
+      // Google sign-in: create or find user in our own DB
+      if (account?.provider === "google" && user?.email) {
+        try {
+          await connectDB();
+          const UserModel = getUserModel();
+          const emailStr  = user.email.toLowerCase();
+
+          let dbUser: any = await UserModel.findOne({ email: emailStr }).lean();
+
+          if (!dbUser) {
+            const created = await UserModel.create({
+              name:           user.name ?? "",
+              email:          emailStr,
+              savedLocations: { home: "", work: "" },
+              travelHistory:  [],
+            });
+            dbUser = created.toObject();
+          }
+
+          token.id            = String(dbUser._id);
+          token.role          = "user";
+          token.phone         = dbUser.phone          ?? "";
+          token.savedLocations= dbUser.savedLocations ?? { home: "", work: "" };
+        } catch (err) {
+          console.error("[Auth] Google JWT upsert error:", err);
+        }
       }
 
       return token;
@@ -147,7 +133,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         id:                token.id,
         name:              token.name,
         email:             token.email,
-        image:             token.picture,
+        image:             token.picture ?? null,
         role:              token.role,
         phone:             token.phone,
         savedLocations:    token.savedLocations,
