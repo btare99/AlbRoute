@@ -104,38 +104,43 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.selectedLine     = (user as any).selectedLine     ?? null;
       }
 
-      // Google sign-in: create or find user in our own DB
-      if (account?.provider === "google" && user?.email) {
-        try {
-          await connectDB();
-          const UserModel = getUserModel();
-          const emailStr  = user.email.toLowerCase();
+      // Handle data synchronization and email notification on first sign-in
+      if (user) {
+        const emailStr = user.email?.toLowerCase() || "";
+        
+        // 1. Google-specific synchronization
+        if (account?.provider === "google") {
+          try {
+            await connectDB();
+            const UserModel = getUserModel();
+            let dbUser: any = await UserModel.findOne({ email: emailStr }).lean();
 
-          let dbUser: any = await UserModel.findOne({ email: emailStr }).lean();
+            if (!dbUser) {
+              const created = await UserModel.create({
+                name:           user.name ?? "",
+                email:          emailStr,
+                savedLocations: { home: "", work: "" },
+                travelHistory:  [],
+                lastLogin:      new Date()
+              });
+              dbUser = created.toObject();
+            } else {
+              await UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() });
+            }
 
-          if (!dbUser) {
-            const created = await UserModel.create({
-              name:           user.name ?? "",
-              email:          emailStr,
-              savedLocations: { home: "", work: "" },
-              travelHistory:  [],
-            });
-            dbUser = created.toObject();
+            token.id = String(dbUser._id);
+            token.phone = dbUser.phone || "";
+          } catch (err) {
+            console.error("[Auth] Google sync error:", err);
           }
+        }
 
-          // Update lastLogin
-          await UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() });
-
-          // Dërgo email çdo herë që logohet me Google
+        // 2. Send email for ANY login (Google or Credentials)
+        try {
           const { sendWelcomeEmail } = await import("./lib/mail");
           await sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
-
-          token.id            = String(dbUser._id);
-          token.role          = "user";
-          token.phone         = dbUser.phone          ?? "";
-          token.savedLocations= dbUser.savedLocations ?? { home: "", work: "" };
-        } catch (err) {
-          console.error("[Auth] Google JWT upsert error:", err);
+        } catch (mailErr) {
+          console.error("[Auth] Login email error:", mailErr);
         }
       }
 

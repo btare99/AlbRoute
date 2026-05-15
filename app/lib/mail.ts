@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 export async function sendWelcomeEmail(to: string, name: string) {
   const mailOptions = {
-    from: `"Urbani Im" <btare99@gmail.com>`,
+    from: `"Urbani Im" <${process.env.EMAIL_USER}>`,
     to,
     subject: 'Mirë se erdhe në Urbani Im! 🚌',
     html: `
@@ -58,7 +58,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
 
 export async function sendResetCodeEmail(to: string, name: string, code: string) {
   const mailOptions = {
-    from: `"Urbani Im" <btare99@gmail.com>`,
+    from: `"Urbani Im" <${process.env.EMAIL_USER}>`,
     to,
     subject: 'Kodi i Rivendosjes së Fjalëkalimit - Urbani Im',
     html: `
