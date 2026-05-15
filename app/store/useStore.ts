@@ -642,9 +642,8 @@ const useStore = create<any>()(
       // ── Notifications ──
       notifications: [],
       addNotification: (msg: string, type = 'info') => {
-        const id = Date.now();
+        const id = Date.now() + Math.random(); // Sigurohemi që ID është unike
         set((state: any) => ({ notifications: [...state.notifications, { id, msg, type }] }));
-        setTimeout(() => get().removeNotification(id), 2000);
       },
       removeNotification: (id: number) => {
         set((state: any) => ({
