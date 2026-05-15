@@ -110,133 +110,181 @@ export default function SubscriptionView() {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: activePackage ? 'flex-start' : 'center' }}>
 
-        <div ref={wrapRef} style={{ width: '100%', maxWidth: W, position: 'relative' }}>
-
-          {/* Scaled Card */}
-          <div
-            ref={cardRef}
-            style={{
-              width: W, height: H,
-              position: 'relative',
-              borderRadius: 34,
-              overflow: 'hidden',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-              fontFamily: 'Georgia, serif',
-              backgroundImage: `url(${activePackage?.id === 'student' ? '/abone-studenti.png' :
-                activePackage?.id === 'tourist' ? '/abone-turistike.JPEG' :
-                  activePackage?.id === 'single_line' ? '/abone-linje.JPEG' :
-                    '/abone-gjenerale.PNG'
-                })`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: '#f8f5f1' // fallback
-            }}
-          >
-            {/* Header Text */}
-            <div style={{ position: 'absolute', top: 5, width: '100%', textAlign: 'center', color: '#162544', lineHeight: 1.2 }}>
-              <div style={{ fontSize: 28, letterSpacing: 4, fontWeight: 700 }}>REPUBLIKA E SHQIPËRISË</div>
-              <div style={{ marginTop: 8, fontSize: 24, letterSpacing: 2 }}>MINISTRIA E FINANCAVE</div>
-              <div style={{ fontSize: 21, letterSpacing: 1 }}>DREJTORIA E PËRGJITHSHME E TATIMEVE</div>
+        {!activePackage ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px', 
+            background: 'rgba(255,255,255,0.02)', 
+            border: '1px solid rgba(255,255,255,0.05)', 
+            borderRadius: '30px',
+            maxWidth: '400px',
+            width: '100%',
+            animation: 'fadeIn 0.5s ease-out'
+          }}>
+            <div style={{ 
+              width: '80px', height: '80px', borderRadius: '24px', 
+              background: 'rgba(245, 158, 11, 0.1)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              margin: '0 auto 24px auto',
+              color: '#f59e0b'
+            }}>
+              <Zap size={40} />
             </div>
-
-            {/* Left Vertical Number */}
-            <div style={{ position: 'absolute', left: -70, top: 370, transform: 'rotate(-90deg)', color: '#f38a1a', fontSize: 40, letterSpacing: 4, fontWeight: 600 }}>
-              Nr. {serialNo}
-            </div>
-
-            {/* Zone Number Box */}
-            <div style={{ position: 'absolute', left: 100, top: 175, width: 215, height: 205, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: 170, lineHeight: 1, fontWeight: 700, color: '#1a2747' }}>
-                {zoneNumber}
-              </div>
-            </div>
-
-            {/* Main Info (Name, Surname) */}
-            <div style={{ position: 'absolute', left: 330, top: 190, color: isStudent ? '#0c356a' : '#172544' }}>
-              <div style={{ fontSize: 45, fontWeight: 700, lineHeight: 1.1, marginBottom: 8 }}>
-                {isStudent ? 'ABONE STUDENTI' : (activePackage?.id === 'single_line' ? 'ABONE LINJE' : city)}
-              </div>
-              <div style={{ fontSize: 25, marginTop: 2, fontWeight: 600, color: activePackage?.id === 'single_line' ? '#c2410c' : 'inherit' }}>
-                {activePackage?.id === 'single_line' ? (user?.selectedLine || 'Linja e pazgjedhur') : (!isStudent ? zoneName : '')}
-              </div>
-
-              <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 20, fontFamily: 'Arial, sans-serif' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <span style={{ minWidth: 70, fontWeight: 600 }}>{isStudent ? 'Emër:' : 'Emër:'}</span>
-                  <div style={{ borderBottom: '2px dotted #666', width: 450, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{firstName}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <span style={{ minWidth: 90, fontWeight: 600 }}>{isStudent ? 'Mbiemër:' : 'Mbiemër:'}</span>
-                  <div style={{ borderBottom: '2px dotted #666', width: 430, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{lastName}</div>
-                </div>
-                {isStudent ? (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                      <span style={{ minWidth: 100, fontWeight: 600 }}>Universiteti:</span>
-                      <div style={{ borderBottom: '2px dotted #666', width: 420, fontSize: 20, fontWeight: 800, paddingLeft: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.university || 'UT'}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                      <span style={{ minWidth: 120, fontWeight: 600 }}>Kodi i Studentit:</span>
-                      <div style={{ borderBottom: '2px dotted #666', width: 400, fontSize: 22, fontWeight: 800, paddingLeft: 10 }}>{user?.idNumber || 'S000000X'}</div>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                    <span style={{ minWidth: 80, fontWeight: 600 }}>ID / NIPT:</span>
-                    <div style={{ borderBottom: '2px dotted #666', width: 440, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{idNumber}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Panel Texts -> Photo Upload Box */}
-            <div style={{ position: 'absolute', right: 79, top: 208, width: 280, height: 300, padding: 0, overflow: 'hidden', borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
-              {user?.subscriptionPhoto ? (
-                <div style={{ width: '100%', height: '100%' }}>
-                  <img src={user.subscriptionPhoto} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0' }}>
-                  <User size={64} color="#94a3b8" />
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Main Text */}
-            <div style={{ position: 'absolute', left: 120, bottom: 35, color: '#172544' }}>
-              <div style={{ fontSize: 60, lineHeight: '80px', fontWeight: 700 }}>{monthYear}</div>
-              <div style={{ fontSize: 75, lineHeight: '90px', fontWeight: 700 }}>{passType}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 10 }}>
-                <span style={{ fontSize: 75, fontWeight: 700, lineHeight: 1 }}>{price}</span>
-                {price !== 'Falas' && price !== 'Free' && price !== 'Gratis' && (
-                  <span style={{ fontSize: 54 }}>Lekë</span>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Right Number */}
-            <div style={{ position: 'absolute', right: 100, bottom: 45, display: 'flex', alignItems: 'center', gap: 30 }}>
-              <span style={{ fontSize: 50, color: '#d56e10', fontWeight: 600 }}>Nr.</span>
-              <span style={{ fontSize: 50, letterSpacing: 4, color: '#f38a1a', fontWeight: 700 }}>{user?.serialNumber || serialNo}</span>
-            </div>
-
+            <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '12px', color: '#fff' }}>
+              {language === 'al' ? 'Asnjë pajtim aktiv' : 'No active subscription'}
+            </h2>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6', marginBottom: '30px' }}>
+              {language === 'al' 
+                ? 'Ju nuk keni asnjë pajtim aktiv aktualisht. Eksploroni paketat tona për të udhëtuar lirshëm në Tiranë.' 
+                : 'You currently have no active subscription. Explore our packages to travel freely in Tirana.'}
+            </p>
+            <button 
+              onClick={() => setView('packages')}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '16px',
+                background: '#fff', color: '#000', border: 'none',
+                fontWeight: '700', fontSize: '15px', cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 10px 25px rgba(255,255,255,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              {language === 'al' ? 'Shiko Paketat' : 'View Packages'}
+            </button>
           </div>
-        </div>
+        ) : (
+          <>
+            <div ref={wrapRef} style={{ width: '100%', maxWidth: W, position: 'relative' }}>
 
-        <p style={{ marginTop: 28, fontSize: 13, color: 'rgba(255,255,255,0.3)', textAlign: 'center', maxWidth: 480, lineHeight: 1.6 }}>
-          {t.sub_official_copy}
-        </p>
+              {/* Scaled Card */}
+              <div
+                ref={cardRef}
+                style={{
+                  width: W, height: H,
+                  position: 'relative',
+                  borderRadius: 34,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                  fontFamily: 'Georgia, serif',
+                  backgroundImage: `url(${activePackage?.id === 'student' ? '/abone-studenti.png' :
+                    activePackage?.id === 'tourist' ? '/abone-turistike.JPEG' :
+                      activePackage?.id === 'single_line' ? '/abone-linje.JPEG' :
+                        '/abone-gjenerale.PNG'
+                    })`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: '#f8f5f1' // fallback
+                }}
+              >
+                {/* Header Text */}
+                <div style={{ position: 'absolute', top: 5, width: '100%', textAlign: 'center', color: '#162544', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 28, letterSpacing: 4, fontWeight: 700 }}>REPUBLIKA E SHQIPËRISË</div>
+                  <div style={{ marginTop: 8, fontSize: 24, letterSpacing: 2 }}>MINISTRIA E FINANCAVE</div>
+                  <div style={{ fontSize: 21, letterSpacing: 1 }}>DREJTORIA E PËRGJITHSHME E TATIMEVE</div>
+                </div>
 
-        <div style={{ marginTop: 12, marginBottom: 20, padding: '10px 20px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 100, border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-            {t.sub_expires_in}
-          </span>
-          <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>{expirationDays} {t.sub_days}</span>
-        </div>
+                {/* Left Vertical Number */}
+                <div style={{ position: 'absolute', left: -70, top: 370, transform: 'rotate(-90deg)', color: '#f38a1a', fontSize: 40, letterSpacing: 4, fontWeight: 600 }}>
+                  Nr. {serialNo}
+                </div>
+
+                {/* Zone Number Box */}
+                <div style={{ position: 'absolute', left: 100, top: 175, width: 215, height: 205, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: 170, lineHeight: 1, fontWeight: 700, color: '#1a2747' }}>
+                    {zoneNumber}
+                  </div>
+                </div>
+
+                {/* Main Info (Name, Surname) */}
+                <div style={{ position: 'absolute', left: 330, top: 190, color: isStudent ? '#0c356a' : '#172544' }}>
+                  <div style={{ fontSize: 45, fontWeight: 700, lineHeight: 1.1, marginBottom: 8 }}>
+                    {isStudent ? 'ABONE STUDENTI' : (activePackage?.id === 'single_line' ? 'ABONE LINJE' : city)}
+                  </div>
+                  <div style={{ fontSize: 25, marginTop: 2, fontWeight: 600, color: activePackage?.id === 'single_line' ? '#c2410c' : 'inherit' }}>
+                    {activePackage?.id === 'single_line' ? (user?.selectedLine || 'Linja e pazgjedhur') : (!isStudent ? zoneName : '')}
+                  </div>
+
+                  <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 20, fontFamily: 'Arial, sans-serif' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                      <span style={{ minWidth: 70, fontWeight: 600 }}>{isStudent ? 'Emër:' : 'Emër:'}</span>
+                      <div style={{ borderBottom: '2px dotted #666', width: 450, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{firstName}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                      <span style={{ minWidth: 90, fontWeight: 600 }}>{isStudent ? 'Mbiemër:' : 'Mbiemër:'}</span>
+                      <div style={{ borderBottom: '2px dotted #666', width: 430, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{lastName}</div>
+                    </div>
+                    {isStudent ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                          <span style={{ minWidth: 100, fontWeight: 600 }}>Universiteti:</span>
+                          <div style={{ borderBottom: '2px dotted #666', width: 420, fontSize: 20, fontWeight: 800, paddingLeft: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.university || 'UT'}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                          <span style={{ minWidth: 120, fontWeight: 600 }}>Kodi i Studentit:</span>
+                          <div style={{ borderBottom: '2px dotted #666', width: 400, fontSize: 22, fontWeight: 800, paddingLeft: 10 }}>{user?.idNumber || 'S000000X'}</div>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                        <span style={{ minWidth: 80, fontWeight: 600 }}>ID / NIPT:</span>
+                        <div style={{ borderBottom: '2px dotted #666', width: 440, fontSize: 24, fontWeight: 800, paddingLeft: 10 }}>{idNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Panel Texts -> Photo Upload Box */}
+                <div style={{ position: 'absolute', right: 79, top: 208, width: 280, height: 300, padding: 0, overflow: 'hidden', borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
+                  {user?.subscriptionPhoto ? (
+                    <div style={{ width: '100%', height: '100%' }}>
+                      <img src={user.subscriptionPhoto} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0' }}>
+                      <User size={64} color="#94a3b8" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Main Text */}
+                <div style={{ position: 'absolute', left: 120, bottom: 35, color: '#172544' }}>
+                  <div style={{ fontSize: 60, lineHeight: '80px', fontWeight: 700 }}>{monthYear}</div>
+                  <div style={{ fontSize: 75, lineHeight: '90px', fontWeight: 700 }}>{passType}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 10 }}>
+                    <span style={{ fontSize: 75, fontWeight: 700, lineHeight: 1 }}>{price}</span>
+                    {price !== 'Falas' && price !== 'Free' && price !== 'Gratis' && (
+                      <span style={{ fontSize: 54 }}>Lekë</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Right Number */}
+                <div style={{ position: 'absolute', right: 100, bottom: 45, display: 'flex', alignItems: 'center', gap: 30 }}>
+                  <span style={{ fontSize: 50, color: '#d56e10', fontWeight: 600 }}>Nr.</span>
+                  <span style={{ fontSize: 50, letterSpacing: 4, color: '#f38a1a', fontWeight: 700 }}>{user?.serialNumber || serialNo}</span>
+                </div>
+
+              </div>
+            </div>
+
+            <p style={{ marginTop: 28, fontSize: 13, color: 'rgba(255,255,255,0.3)', textAlign: 'center', maxWidth: 480, lineHeight: 1.6 }}>
+              {t.sub_official_copy}
+            </p>
+
+            <div style={{ marginTop: 12, marginBottom: 20, padding: '10px 20px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 100, border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                {t.sub_expires_in}
+              </span>
+              <span style={{ fontSize: 14, color: '#f59e0b', fontWeight: 700 }}>{expirationDays} {t.sub_days}</span>
+            </div>
+          </>
+        )}
 
       </div>
+
     </div>
   );
 }
