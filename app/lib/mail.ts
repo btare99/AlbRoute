@@ -3,16 +3,26 @@ import nodemailer from 'nodemailer';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // true for 465, false for other ports
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  debug: true, // Shfaq detaje në konsolë
+  logger: true // Regjistron hapat e dërgimit
 });
 
 export async function sendWelcomeEmail(to: string, name: string) {
+  // Kontrollo lidhjen para dërgimit
+  try {
+    await transporter.verify();
+    console.log('[Mail] Server is ready to take our messages');
+  } catch (error) {
+    console.error('[Mail] Connection verify failed:', error);
+  }
+
   const mailOptions = {
-    from: `"Urbani Im" <${process.env.EMAIL_USER}>`,
+    from: `"Urbani Im" <btare99@gmail.com>`,
     to,
     subject: 'Mirë se erdhe në Urbani Im! 🚌',
     html: `
@@ -58,7 +68,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
 
 export async function sendResetCodeEmail(to: string, name: string, code: string) {
   const mailOptions = {
-    from: `"Urbani Im" <${process.env.EMAIL_USER}>`,
+    from: `"Urbani Im" <btare99@gmail.com>`,
     to,
     subject: 'Kodi i Rivendosjes së Fjalëkalimit - Urbani Im',
     html: `
