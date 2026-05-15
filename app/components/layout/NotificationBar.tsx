@@ -29,13 +29,6 @@ export default function NotificationBar() {
                 <Icon size={18} className="notification-icon" />
                 <p className="notification-msg">{n.msg}</p>
               </div>
-              <button 
-                className="notification-close" 
-                onClick={() => removeNotification(n.id)}
-                aria-label="Close notification"
-              >
-                <X size={14} />
-              </button>
             </motion.div>
           );
         })}

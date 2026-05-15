@@ -644,7 +644,7 @@ const useStore = create<any>()(
       addNotification: (msg: string, type = 'info') => {
         const id = Date.now();
         set((state: any) => ({ notifications: [...state.notifications, { id, msg, type }] }));
-        setTimeout(() => get().removeNotification(id), 4500);
+        setTimeout(() => get().removeNotification(id), 2000);
       },
       removeNotification: (id: number) => {
         set((state: any) => ({
