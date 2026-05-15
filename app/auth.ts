@@ -121,11 +121,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               travelHistory:  [],
             });
             dbUser = created.toObject();
-
-            // Dërgo email mirëseardhjeje vetëm për përdoruesit e rinj
-            const { sendWelcomeEmail } = await import("./lib/mail");
-            await sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
           }
+
+          // Dërgo email çdo herë që logohet me Google
+          const { sendWelcomeEmail } = await import("./lib/mail");
+          await sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
 
           token.id            = String(dbUser._id);
           token.role          = "user";
