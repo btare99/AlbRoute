@@ -28,19 +28,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const User = getUserModel();
           const Operator = getOperatorModel();
 
-          const emailStr = (credentials.email as string).toLowerCase();
-
+          const emailStr = (credentials.email as string).toLowerCase().trim();
+          console.log('Login attempt for:', emailStr);
+          
           let user = await User.findOne({ email: emailStr });
           let role = 'user';
 
           if (!user) {
+            console.log('User not found in Udhetaret, checking Operators...');
             user = await Operator.findOne({ email: emailStr });
-            role = (user as any)?.role || 'operator';
+            if (user) {
+              role = (user as any)?.role || 'operator';
+              console.log('User found in Operators with role:', role);
+            }
+          }
+          
+          if (!user || !user.password) {
+            console.log('Login failed: User not found or no password');
+            return null;
           }
 
-          if (!user || !user.password) return null;
-
           const isMatch = await bcrypt.compare(credentials.password as string, user.password);
+          console.log('Password match:', isMatch);
           if (!isMatch) return null;
 
           // Update lastLogin
