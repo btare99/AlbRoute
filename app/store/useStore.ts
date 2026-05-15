@@ -639,6 +639,10 @@ const useStore = create<any>()(
 
 
 
+      // ── UI States ──
+      isSplashFinished: false,
+      setSplashFinished: (val: boolean) => set({ isSplashFinished: val }),
+
       // ── Notifications ──
       notifications: [],
       addNotification: (msg: string, type = 'info') => {

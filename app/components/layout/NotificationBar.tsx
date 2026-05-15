@@ -34,6 +34,10 @@ function NotificationItem({ n, onRemove }: { n: any, onRemove: (id: number) => v
 export default function NotificationBar() {
   const notifications = useStore((state: any) => state.notifications);
   const removeNotification = useStore((state: any) => state.removeNotification);
+  const isSplashFinished = useStore((state: any) => state.isSplashFinished);
+
+  // Mos shfaq asgjë nëse Splash Screen është akoma aktiv
+  if (!isSplashFinished) return null;
 
   return (
     <div className="notification-container">

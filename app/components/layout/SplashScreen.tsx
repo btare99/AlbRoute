@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Bus } from 'lucide-react';
+import useStore from '../../store/useStore';
 
 export default function SplashScreen() {
   const [isVisible, setIsVisible] = useState(true);
@@ -8,7 +9,10 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const hide = setTimeout(() => setIsVisible(false), 2500);
-    const remove = setTimeout(() => setShouldRender(false), 3000);
+    const remove = setTimeout(() => {
+      setShouldRender(false);
+      useStore.getState().setSplashFinished(true);
+    }, 3000);
     return () => { clearTimeout(hide); clearTimeout(remove); };
   }, []);
 
