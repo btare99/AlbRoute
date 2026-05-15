@@ -105,6 +105,15 @@
   box-sizing: border-box;
 }
 
+/* Fix per [Intervention] touchmove */
+.leaflet-container,
+.leaflet-control-container,
+.sidebar-container,
+.map-wrapper,
+#map {
+  touch-action: pan-x pan-y !important;
+}
+
 html {
   scroll-behavior: smooth;
 }

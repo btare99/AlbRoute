@@ -2,6 +2,43 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/mongodb';
 import { getUserModel } from '@/app/lib/dynamicDb';
 
+export async function GET(request: Request) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'ID e përdoruesit mungon.' }, { status: 400 });
+    }
+
+    const User = getUserModel();
+    const user = await User.findById(userId).lean();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Përdoruesi nuk u gjet.' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      savedLocations: user.savedLocations,
+      travelHistory: user.travelHistory,
+      idNumber: user.idNumber,
+      university: user.university,
+      serialNumber: user.serialNumber,
+      selectedLine: user.selectedLine,
+      subscriptions: user.subscriptions
+    });
+
+  } catch (error: any) {
+    console.error('Fetch Profile Error:', error);
+    return NextResponse.json({ error: 'Gabim në server.' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     await connectDB();
@@ -39,7 +76,6 @@ export async function PUT(request: Request) {
         phone: updatedUser.phone,
         savedLocations: updatedUser.savedLocations,
         travelHistory: updatedUser.travelHistory,
-        subscriptionPhoto: updatedUser.subscriptionPhoto,
         idNumber: updatedUser.idNumber,
         university: updatedUser.university,
         serialNumber: updatedUser.serialNumber,

@@ -19,10 +19,16 @@ export default function ProfileView() {
 
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | null>(null);
 
+  const hasSubscription = activeUser?.subscriptions && activeUser.subscriptions.length > 0;
+  const activePackage = hasSubscription ? activeUser.subscriptions[activeUser.subscriptions.length - 1] : null;
+  const subscriptionValue = activePackage 
+    ? activePackage.name 
+    : (language === 'al' ? 'Nuk ka abonim' : language === 'it' ? 'Nessun abbonamento' : 'No subscription');
+
   const menuItems = [
     { icon: <Star size={18} />, label: t.prof_saved_stops, action: () => setView('favorites') },
     { icon: <Bell size={18} />, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
-    { icon: <Zap size={18} />, label: t.sub_my_subscription, value: 'Standard', action: () => setView('subscription') },
+    { icon: <Zap size={18} />, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
     { icon: <Globe size={18} />, label: t.prof_language, value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
     { icon: <Info size={18} />, label: t.prof_help_center, action: () => setActiveModal('help') },
     {

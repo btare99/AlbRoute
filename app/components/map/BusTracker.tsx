@@ -56,7 +56,7 @@ export default function BusTracker() {
   return (
     <div style={{
       minHeight: '100%',
-      background: '#08080D',
+      background: 'var(--bg-dark)',
       color: '#fff',
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
       overflowY: 'auto',
@@ -67,7 +67,7 @@ export default function BusTracker() {
       {/* ━━━━ HEADER ━━━━ */}
       <div style={{
         padding: '24px 20px 16px',
-        background: 'radial-gradient(ellipse at 50% -20%, rgba(48, 209, 88, 0.12), transparent 70%), linear-gradient(180deg, rgba(8,8,13,0.9) 60%, transparent 100%)',
+        background: 'radial-gradient(ellipse at 50% -20%, rgba(48, 209, 88, 0.12), transparent 70%), linear-gradient(180deg, rgba(10,15,26,0.9) 60%, transparent 100%)',
         backdropFilter: 'blur(12px)',
         position: 'sticky', top: 0, zIndex: 20,
       }}>

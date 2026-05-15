@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/mongodb';
 import { getUserModel } from '@/app/lib/dynamicDb';
 import bcrypt from 'bcryptjs';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/auth";
+import { auth } from "../../../auth";
 
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Ju duhet të jeni i loguar.' }, { status: 401 });
     }

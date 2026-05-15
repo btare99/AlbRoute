@@ -36,6 +36,15 @@ export default function AppShell() {
       const u = session.user as any;
       if (u.role === 'user') {
         useStore.getState().login(u, 'next-auth-session');
+        // Fetch full profile (with photos) from DB to supplement stripped JWT
+        fetch(`/api/user/profile?userId=${u.id}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.error) {
+              useStore.getState().login({ ...u, ...data }, 'next-auth-session');
+            }
+          })
+          .catch(console.error);
       } else {
         useStore.getState().loginAsStaff(u);
       }

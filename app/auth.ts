@@ -72,11 +72,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             phone:             dbUser.phone             ?? "",
             savedLocations:    dbUser.savedLocations    ?? { home: "", work: "" },
             travelHistory:     dbUser.travelHistory     ?? [],
-            subscriptionPhoto: dbUser.subscriptionPhoto ?? null,
             idNumber:          dbUser.idNumber          ?? null,
             university:        dbUser.university        ?? null,
             serialNumber:      dbUser.serialNumber      ?? null,
             selectedLine:      dbUser.selectedLine      ?? null,
+            // Do NOT include subscriptionPhoto or photo inside subscriptions in JWT
+            subscriptions:     (dbUser.subscriptions ?? []).map((sub: any) => {
+              const { photo, ...rest } = sub;
+              return rest;
+            }),
           };
         } catch (err) {
           console.error("[Auth] authorize error:", err);
@@ -97,7 +101,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.phone            = (user as any).phone            ?? "";
         token.savedLocations   = (user as any).savedLocations   ?? { home: "", work: "" };
         token.travelHistory    = (user as any).travelHistory    ?? [];
-        token.subscriptionPhoto= (user as any).subscriptionPhoto?? null;
         token.idNumber         = (user as any).idNumber         ?? null;
         token.university       = (user as any).university       ?? null;
         token.serialNumber     = (user as any).serialNumber     ?? null;
@@ -160,7 +163,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         phone:             token.phone,
         savedLocations:    token.savedLocations,
         travelHistory:     token.travelHistory,
-        subscriptionPhoto: token.subscriptionPhoto,
         idNumber:          token.idNumber,
         university:        token.university,
         serialNumber:      token.serialNumber,

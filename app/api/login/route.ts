@@ -49,7 +49,6 @@ export async function POST(request: Request) {
       phone: user.phone,
       savedLocations: user.savedLocations || { home: '', work: '' },
       travelHistory: user.travelHistory || [],
-      subscriptionPhoto: user.subscriptionPhoto,
       idNumber: user.idNumber,
       university: user.university,
       serialNumber: user.serialNumber,

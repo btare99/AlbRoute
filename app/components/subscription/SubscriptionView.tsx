@@ -33,16 +33,12 @@ export default function SubscriptionView() {
     return () => ro.disconnect();
   }, []);
 
-  // Dynamic Data Variables
-  const checkoutPkg = useStore((s: any) => s.checkoutPackage);
-  // Priority: if user has subscriptions in DB, use the last one. Otherwise use checkoutPackage (for immediate preview)
-  const activePackage = (user?.subscriptions && user.subscriptions.length > 0) 
-    ? user.subscriptions[user.subscriptions.length - 1] 
-    : checkoutPkg;
+  // Only use actual subscriptions from the user profile for the 'My Subscription' view
+  const hasSubscription = user?.subscriptions && user.subscriptions.length > 0;
+  const activePackage = hasSubscription ? user.subscriptions[user.subscriptions.length - 1] : null;
 
-  // Body Content Logic
-  // If NO active package from DB and NO checkout package, show empty state
-  if (!activePackage || (Array.isArray(user?.subscriptions) && user.subscriptions.length === 0 && !checkoutPkg)) {
+  // If NO active package from DB, show empty state
+  if (!activePackage) {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', color: '#fff' }}>
 
@@ -243,9 +239,9 @@ export default function SubscriptionView() {
 
             {/* Right Panel Texts -> Photo Upload Box */}
             <div style={{ position: 'absolute', right: 79, top: 208, width: 280, height: 300, padding: 0, overflow: 'hidden', borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
-              {user?.subscriptionPhoto ? (
+              {activePackage?.photo ? (
                 <div style={{ width: '100%', height: '100%' }}>
-                  <img src={user.subscriptionPhoto} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={activePackage.photo} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0' }}>

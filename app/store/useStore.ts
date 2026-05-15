@@ -498,42 +498,18 @@ const useStore = create<any>()(
         let bestTrip: any = null;
         let bestScore = Infinity;
 
-        const walkRouteCache = new Map<string, { dist: number, duration: number }>();
-        const getWalkRoute = async (from: any, to: any) => {
-          const key = `${from.id}|${to.id}`;
-          if (walkRouteCache.has(key)) return walkRouteCache.get(key)!;
-
-          let route = { dist: Math.round(Math.sqrt(Math.pow(from.lat - to.lat, 2) + Math.pow(from.lng - to.lng, 2)) * 111320), duration: Math.ceil(Math.round(Math.sqrt(Math.pow(from.lat - to.lat, 2) + Math.pow(from.lng - to.lng, 2)) * 111320) / 80) };
-          try {
-            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${from.lng},${from.lat};${to.lng},${to.lat}?overview=false`);
-            const data = await res.json();
-            if (data.routes && data.routes.length > 0) {
-              route = {
-                dist: Math.round(data.routes[0].distance),
-                duration: Math.ceil(data.routes[0].duration / 60)
-              };
-            }
-          } catch (err) {
-            // Keep fallback straight-line distance
-          }
-
-          walkRouteCache.set(key, route);
-          return route;
-        };
-
         const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '') => {
           const busLegs = legs.filter(l => l.route);
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
           const totalWalkDist = initialWalkDist + finalWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
 
-          if (totalWalkDist > 1200) return; // Max total walking allowed is 1.2km
+          if (totalWalkDist > 1500) return; // Max total walking allowed
 
-          // Weighted score: Transfers are expensive (15 min penalty), each stop is 2 mins, each min of walking is 1.5 units
-          const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
-          const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2) + walkTimeTransfer + transferPenalty;
-          const initialWalkPenalty = initialWalkDist > 0 ? initialWalkDist / 40 : 0;
-          const score = (totalWalkDist / 100) + totalTime + initialWalkPenalty;
+          // Weighted score: Transfers are expensive, each stop is ~2 mins, each min of walking is 1.5 units
+          const transferPenalty = Math.max(0, busLegs.length - 1) * 20;
+          const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
+          const score = (totalWalkDist / 50) + totalTime;
 
           if (score < bestScore) {
             bestScore = score;
@@ -550,75 +526,90 @@ const useStore = create<any>()(
               from: fromName, to: toName, actualFrom: actualFromStopName, actualTo: actualToStopName,
               walkingDist: initialWalkDist + finalWalkDist, walkingTime: initialWalkTime + finalWalkTime,
               totalStops, transfers: Math.max(0, busLegs.length - 1),
-              legs: finalLegs, travelTime: Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0)), // Estimated real time
+              legs: finalLegs, travelTime: Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0)),
               totalPrice: busLegs.length * 40
             };
           }
         };
 
+        // 1. DIRECT ROUTES
         for (const pfs of possibleFromStops) {
-          const { stop: fStop, walkDist, walkTime } = pfs;
-
-          for (const route1 of BUS_ROUTES) {
-            const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
-            for (const r1Arr of r1Paths) {
-              const fi = r1Arr.indexOf(fStop.id);
-              if (fi === -1) continue;
-
-              // 1. Direct route
-              for (const pts of possibleToStops) {
-                const tStop = pts.stop;
-                const ti = r1Arr.indexOf(tStop.id);
-                if (ti !== -1 && fi < ti) {
-                  const stopIds = r1Arr.slice(fi, ti + 1);
+          for (const pts of possibleToStops) {
+            for (const route of BUS_ROUTES) {
+              const paths = [route.stops, route.returnStops].filter(Boolean) as string[][];
+              for (const arr of paths) {
+                const fi = arr.indexOf(pfs.stop.id);
+                const ti = arr.indexOf(pts.stop.id);
+                if (fi !== -1 && ti !== -1 && fi < ti) {
+                  const stopIds = arr.slice(fi, ti + 1);
                   const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
-                  evaluateTrip([{ route: route1, stops, stopIds, boardAt: fStop.name, alightAt: tStop.name, numStops: ti - fi }], walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
+                  evaluateTrip([{
+                    route, stops, stopIds,
+                    boardAt: pfs.stop.name, alightAt: pts.stop.name,
+                    numStops: ti - fi
+                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                 }
               }
+            }
+          }
+        }
 
-              // 2. Transfer (1 change)
-              for (const route2 of BUS_ROUTES) {
-                if (route1.id === route2.id) continue;
-                const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
-                for (const r2Arr of r2Paths) {
-                  for (const pts of possibleToStops) {
-                    const tStop = pts.stop;
-                    const ti = r2Arr.indexOf(tStop.id);
-                    if (ti === -1) continue;
+        // 2. TRANSFER ROUTES (Max 1 transfer for performance)
+        // Optimization: Find all route-stop pairs first
+        if (!bestTrip || bestScore > 40) { // Only search transfers if no great direct route
+          for (const pfs of possibleFromStops) {
+            for (const route1 of BUS_ROUTES) {
+              const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
+              for (const r1Arr of r1Paths) {
+                const fi = r1Arr.indexOf(pfs.stop.id);
+                if (fi === -1) continue;
 
-                    // Check every stop on route1 after fi for potential transfer to route2 before ti
-                    for (let i = fi + 1; i < r1Arr.length; i++) {
-                      const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
-                      if (!s1) continue;
+                for (const pts of possibleToStops) {
+                  for (const route2 of BUS_ROUTES) {
+                    if (route1.id === route2.id) continue;
+                    const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
+                    for (const r2Arr of r2Paths) {
+                      const ti = r2Arr.indexOf(pts.stop.id);
+                      if (ti === -1) continue;
 
-                      for (let j = 0; j < ti; j++) {
-                        const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
-                        if (!s2) continue;
+                      // Find best transfer stop pair
+                      let bestTransfer: any = null;
+                      let minTransferDist = 500;
 
-                        const straightDist = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                        if (straightDist <= 400) { // Candidate transfer within walking range
-                          const walkSegment = await getWalkRoute(s1, s2);
-                          if (walkSegment.dist <= 700) {
-                            const stopIds1 = r1Arr.slice(fi, i + 1);
-                            const stopIds2 = r2Arr.slice(j, ti + 1);
-                            const legs = [
-                              { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: fStop.name, alightAt: s1.name, numStops: i - fi },
-                              walkSegment.dist > 30 ? {
-                                isWalking: true,
-                                boardAt: s1.name,
-                                alightAt: s2.name,
-                                boardNodeId: s1.id,
-                                alightNodeId: s2.id,
-                                walkingDist: walkSegment.dist,
-                                walkingTime: walkSegment.duration,
-                                numStops: 0
-                              } : null,
-                              { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: tStop.name, numStops: ti - j }
-                            ].filter(Boolean);
+                      // Limit search range to prevent O(N^2) explosion
+                      const startI = fi + 1;
+                      const endI = r1Arr.length;
+                      const endJ = ti;
 
-                            evaluateTrip(legs, walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
+                      for (let i = startI; i < endI; i++) {
+                        const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
+                        if (!s1) continue;
+
+                        for (let j = 0; j < endJ; j++) {
+                          const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
+                          if (!s2) continue;
+
+                          const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
+                          if (d < minTransferDist) {
+                            minTransferDist = d;
+                            bestTransfer = { s1, s2, i, j, dist: Math.round(d) };
                           }
+                          if (d === 0) break;
                         }
+                        if (minTransferDist === 0) break;
+                      }
+
+                      if (bestTransfer) {
+                        const { s1, s2, i, j, dist } = bestTransfer;
+                        const walkTime = Math.ceil(dist / 80);
+                        const stopIds1 = r1Arr.slice(fi, i + 1);
+                        const stopIds2 = r2Arr.slice(j, ti + 1);
+
+                        evaluateTrip([
+                          { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
+                          dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
+                          { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
+                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                       }
                     }
                   }

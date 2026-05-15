@@ -91,38 +91,52 @@ export default function MapView() {
     const fetchShapes = async () => {
       const newShapes: Record<string, [number, number][]> = {};
 
-      // 1. OSRM për ecjen nga pika e nisjes (nëse ka)
+      // Helper: merr rrugën pedestrian nga OSRM foot (trotuare, jo rrugë makinash)
+      const fetchFootRoute = async (fromLng: number, fromLat: number, toLng: number, toLat: number): Promise<[number, number][] | null> => {
+        try {
+          // /foot/ profili ne OSRM ndjek trotuaret dhe shtigjet pedestrian, jo rruget e makinave
+          const res = await fetch(
+            `https://router.project-osrm.org/route/v1/foot/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`
+          );
+          const data = await res.json();
+          if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+            return data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
+          }
+        } catch (err) {
+          console.error('OSRM foot routing error:', err);
+        }
+        return null;
+      };
+
+      // 1. Ecja nga pika e nisjes deri tek stacioni i pare
       if (activeTrip.walkingDist > 0 && tripOriginCoords) {
         const firstStop = BUS_STOPS.find((s: any) =>
           s.id === activeTrip.legs?.[0]?.boardNodeId || s.name === activeTrip.actualFrom
         );
-
         if (firstStop) {
-          try {
-            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${tripOriginCoords.lng},${tripOriginCoords.lat};${firstStop.lng},${firstStop.lat}?overview=full&geometries=geojson`);
-            const data = await res.json();
-            if (data.routes && data.routes.length > 0) {
-              newShapes['origin'] = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
-            }
-          } catch (err) { console.error('OSRM origin fetch error:', err); }
+          const coords = await fetchFootRoute(
+            tripOriginCoords.lng, tripOriginCoords.lat,
+            firstStop.lng, firstStop.lat
+          );
+          if (coords) newShapes['origin'] = coords;
         }
       }
 
-      // 2. OSRM për ndërrimet me ecje midis linjave
+      // 2. Ecja ndermjet ndërimeve të linjave
       if (activeTrip.legs) {
         for (let i = 0; i < activeTrip.legs.length; i++) {
           const leg = activeTrip.legs[i];
           if (leg.isWalking) {
-            const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-            const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+            const bStop = leg.boardNodeId
+              ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId)
+              : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+            const aStop = leg.alightNodeId
+              ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId)
+              : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+
             if (bStop && aStop) {
-              try {
-                const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${bStop.lng},${bStop.lat};${aStop.lng},${aStop.lat}?overview=full&geometries=geojson`);
-                const data = await res.json();
-                if (data.routes && data.routes.length > 0) {
-                  newShapes[`walk_${i}`] = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
-                }
-              } catch (err) { console.error(`OSRM walk_${i} fetch error:`, err); }
+              const coords = await fetchFootRoute(bStop.lng, bStop.lat, aStop.lng, aStop.lat);
+              if (coords) newShapes[`walk_${i}`] = coords;
             }
           }
         }
@@ -130,6 +144,7 @@ export default function MapView() {
 
       setWalkingShapes(newShapes);
     };
+
 
     fetchShapes();
 

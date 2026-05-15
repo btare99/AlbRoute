@@ -88,14 +88,33 @@ export default function SubscriptionCheckoutView() {
   );
 
   // If no package is selected, go back to packages view
-  if (!pkg) {
-    setView('packages');
-    return null;
-  }
+  useEffect(() => {
+    if (!pkg) setView('packages');
+  }, [pkg, setView]);
+
+  if (!pkg) return null;
 
   const handlePay = (e: any) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsProcessing(true);
+
+    // Prepare payment details
+    const paymentDetails: any = { method: paymentMethod };
+    if (paymentMethod === 'card') {
+      paymentDetails.cardHolder = name;
+      paymentDetails.cardNumberLast4 = cardNumber.replace(/\s/g, '').slice(-4) || '';
+    } else if (paymentMethod === 'counter') {
+      paymentDetails.customerName = name;
+      paymentDetails.idNumber = idNumber;
+    } else if (pkg.price === t.free || pkg.price === 'Falas') {
+      paymentDetails.method = 'free_student';
+    }
+    
+    // Update checkoutPackage with payment info
+    useStore.getState().setCheckoutPackage({
+      ...pkg,
+      payment: paymentDetails
+    });
 
     // Simulate API call
     setTimeout(() => {

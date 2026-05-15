@@ -12,7 +12,6 @@ const UserSchema = new mongoose.Schema({
     work: { type: String, default: '' },
   },
   travelHistory: { type: Array, default: [] },
-  subscriptionPhoto: { type: String, default: null },
   idNumber: { type: String, default: null },
   university: { type: String, default: null },
   serialNumber: { type: String, default: null },

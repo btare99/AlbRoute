@@ -52,10 +52,11 @@ export default function SubscriptionGetPassView() {
   const isStudent = activePackage?.id === 'student';
 
   // If no package is selected, go back to packages view (fail-safe)
-  if (!activePackage) {
-    setView('packages');
-    return null;
-  }
+  useEffect(() => {
+    if (!activePackage) setView('packages');
+  }, [activePackage, setView]);
+
+  if (!activePackage) return null;
 
   const handlePhotoDetected = (photoData: string) => {
     setPhoto(photoData);
@@ -68,11 +69,21 @@ export default function SubscriptionGetPassView() {
     // Simulate API call
     setTimeout(() => {
       // Save photo and line to user profile
-      const updateData: any = { subscriptionPhoto: photo };
+      const updateData: any = {};
       if (activePackage.id === 'single_line') {
         updateData.selectedLine = selectedLine;
       }
+      
+      const existingSubs = user?.subscriptions || [];
+      updateData.subscriptions = [...existingSubs, {
+        ...activePackage,
+        photo: photo,
+        purchasedAt: new Date().toISOString()
+      }];
+
       updateProfile(updateData);
+      // Clear checkout package so it doesn't linger
+      useStore.getState().setCheckoutPackage(null);
       setIsProcessing(false);
       setIsSuccess(true);
     }, 1500);

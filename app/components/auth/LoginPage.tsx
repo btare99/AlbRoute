@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
-
+import { AsYouType } from 'libphonenumber-js';
 const COUNTRY_CODES = [
   { code: '+93', flag: '🇦🇫', name: 'Afghanistan' },
   { code: '+355', flag: '🇦🇱', name: 'Albania' },
@@ -180,7 +180,41 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
         )}
       </div>
 
-      <input className="input-field" type="tel" placeholder="6X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} style={{ flex: 1 }} required />
+      <input 
+        className="input-field" 
+        type="tel" 
+        placeholder="6X XXX XXXX" 
+        value={phone} 
+        onChange={e => {
+          let val = e.target.value;
+          let digits = val.replace(/\D/g, '');
+          if (!digits) {
+            setPhone('');
+            return;
+          }
+          
+          const formatter = new AsYouType();
+          const fullFormatted = formatter.input(country.code + digits) || '';
+          
+          const codeFormatter = new AsYouType();
+          const formattedCode = codeFormatter.input(country.code) || country.code;
+          
+          let localFormatted = fullFormatted;
+          if (localFormatted.startsWith(formattedCode + ' ')) {
+            localFormatted = localFormatted.substring(formattedCode.length + 1);
+          } else if (localFormatted.startsWith(formattedCode)) {
+            localFormatted = localFormatted.substring(formattedCode.length).trim();
+          } else if (localFormatted.startsWith(country.code + ' ')) {
+            localFormatted = localFormatted.substring(country.code.length + 1);
+          } else if (localFormatted.startsWith(country.code)) {
+            localFormatted = localFormatted.substring(country.code.length).trim();
+          }
+          
+          setPhone(localFormatted || digits);
+        }} 
+        style={{ flex: 1 }} 
+        required 
+      />
     </div>
   );
 }
@@ -478,7 +512,7 @@ function LoginContent() {
                 )}
               </div>
               {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>{error}</div>}
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
+              <button type="submit" className="btn" style={{ width: '100%', padding: '13px', background: '#3b82f6', color: '#fff', boxShadow: '0 4px 14px rgba(59,130,246,0.4)', border: 'none', borderRadius: '8px', fontWeight: 'bold' }} disabled={loading}>
                 {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={16} />
               </button>
             </form>
@@ -541,11 +575,19 @@ function LoginContent() {
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                {['Apple', 'Google', 'Facebook'].map(s => (
-                  <button key={s} type="button" onClick={() => handleSocialLogin(s)} style={{ flex: 1, height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', fontSize: '12px' }}>
-                    {s}
-                  </button>
-                ))}
+                <button type="button" onClick={() => handleSocialLogin('Google')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', transition: 'var(--transition)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                </button>
+                <button type="button" onClick={() => handleSocialLogin('Apple')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', transition: 'var(--transition)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.88 3.5-.84 1.58.07 2.79.75 3.67 1.99-3.18 1.9-2.58 5.98.54 7.21-.71 1.83-1.6 3.65-2.79 4.83zm-3.69-14.86c-.53-2.05 1.25-4.14 3.19-4.42.74 2.3-1.69 4.38-3.19 4.42z"/>
+                  </svg>
+                </button>
               </div>
             </>
           )}

@@ -24,6 +24,8 @@ export default function PassesView() {
 
   const [activeTab, setActiveTab] = useState(PASS_TYPES[0].id);
   const activePass = PASS_TYPES.find(p => p.id === activeTab) || PASS_TYPES[0];
+  const userSubForPass = user?.subscriptions?.find((sub: any) => sub.id === activePass.id);
+  const photoToShow = userSubForPass?.photo || null;
 
   // Responsive scaling
   useEffect(() => {
@@ -158,9 +160,9 @@ export default function PassesView() {
 
             {/* Photo Placeholder */}
             <div style={{ position: 'absolute', right: 77, top: 217, width: 280, height: 300, padding: 0, overflow: 'hidden', borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
-              {user?.subscriptionPhoto ? (
+              {photoToShow ? (
                 <div style={{ width: '100%', height: '100%' }}>
-                  <img src={user.subscriptionPhoto} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={photoToShow} alt="Uploaded photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.05)' }}>
