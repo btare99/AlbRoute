@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     const { email, code } = await request.json();
 
     if (!email || !code) {
-      return NextResponse.json({ error: 'Ju lutem plotësoni email-in dhe kodin.' }, { status: 400 });
+      return NextResponse.json({ error: 'Email dhe kodi janë të detyrueshëm.' }, { status: 400 });
     }
 
     const User = getUserModel();
     const Operator = getOperatorModel();
-
+    
     let user = await User.findOne({ 
       email: email.toLowerCase(),
       resetCode: code,
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      user = await Operator.findOne({
+      user = await Operator.findOne({ 
         email: email.toLowerCase(),
         resetCode: code,
         resetCodeExpires: { $gt: new Date() }
@@ -32,10 +32,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Kodi është i pasaktë ose ka skaduar.' }, { status: 400 });
     }
 
-
-    return NextResponse.json({ message: 'Kodi u verifikua me sukses!' });
+    return NextResponse.json({ success: true, message: 'Kodi u verifikua me sukses.' });
   } catch (error: any) {
     console.error('Verify Code Error:', error);
-    return NextResponse.json({ error: 'Ndodhi një gabim gjatë verifikimit.' }, { status: 500 });
+    return NextResponse.json({ error: 'Ndodhi një gabim në server.' }, { status: 500 });
   }
 }

@@ -9,21 +9,22 @@ export async function POST(request: Request) {
     const { email, code, newPassword } = await request.json();
 
     if (!email || !code || !newPassword) {
-      return NextResponse.json({ error: 'Ju lutem plotësoni të gjitha fushat.' }, { status: 400 });
+      return NextResponse.json({ error: 'Të gjitha fushat janë të detyrueshme.' }, { status: 400 });
     }
 
     const User = getUserModel();
     const Operator = getOperatorModel();
-
+    
     let user = await User.findOne({ 
       email: email.toLowerCase(),
       resetCode: code,
       resetCodeExpires: { $gt: new Date() }
     });
+    
     let isOperator = false;
 
     if (!user) {
-      user = await Operator.findOne({
+      user = await Operator.findOne({ 
         email: email.toLowerCase(),
         resetCode: code,
         resetCodeExpires: { $gt: new Date() }
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user
+    // Update password and clear reset code
     if (isOperator) {
       await Operator.updateOne(
         { _id: user._id },
@@ -49,15 +50,14 @@ export async function POST(request: Request) {
       );
     } else {
       user.password = hashedPassword;
-      user.resetCode = null;
-      user.resetCodeExpires = null;
+      user.resetCode = undefined;
+      user.resetCodeExpires = undefined;
       await user.save();
     }
-
 
     return NextResponse.json({ message: 'Fjalëkalimi u ndryshua me sukses!' });
   } catch (error: any) {
     console.error('Reset Password Error:', error);
-    return NextResponse.json({ error: 'Ndodhi një gabim gjatë ndryshimit të fjalëkalimit.' }, { status: 500 });
+    return NextResponse.json({ error: 'Ndodhi një gabim në server.' }, { status: 500 });
   }
 }

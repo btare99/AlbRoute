@@ -119,6 +119,44 @@ export default function EditProfileView() {
   };
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPass, setIsChangingPass] = useState(false);
+  const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
+
+  const handleChangePassword = async () => {
+    if (passForm.new !== passForm.confirm) {
+      addNotification(t.edit_passwords_dont_match, 'error');
+      return;
+    }
+    if (passForm.new.length < 6) {
+      addNotification(t.edit_password_too_short, 'error');
+      return;
+    }
+
+    setIsChangingPass(true);
+    try {
+      const response = await fetch('/api/user/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passForm.current,
+          newPassword: passForm.new
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        addNotification(t.edit_password_updated, 'success');
+        setPassForm({ current: '', new: '', confirm: '' });
+      } else {
+        addNotification(result.error || 'Gabim!', 'error');
+      }
+    } catch (error) {
+      addNotification(t.edit_conn_error, 'error');
+    } finally {
+      setIsChangingPass(false);
+    }
+  };
+
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [phoneOnly, setPhoneOnly] = useState('');
 
@@ -370,6 +408,44 @@ export default function EditProfileView() {
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: 1.5 }}>
                 {t.security_notice}
               </p>
+            </div>
+
+            {/* ── Change Password Section ── */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '0 4px' }}>
+                <div style={{ width: '3px', height: '14px', background: '#ea580c', borderRadius: '4px' }} />
+                <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                  {t.edit_change_password}
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', padding: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div>
+                  <label style={labelStyle}>{t.edit_current_password}</label>
+                  <input type="password" placeholder="••••••••" style={inputStyle} value={passForm.current} onChange={e => setPassForm({...passForm, current: e.target.value})} />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t.edit_new_password}</label>
+                  <input type="password" placeholder="••••••••" style={inputStyle} value={passForm.new} onChange={e => setPassForm({...passForm, new: e.target.value})} />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t.edit_confirm_new_password}</label>
+                  <input type="password" placeholder="••••••••" style={inputStyle} value={passForm.confirm} onChange={e => setPassForm({...passForm, confirm: e.target.value})} />
+                </div>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={isChangingPass || !passForm.new}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '12px',
+                    background: 'rgba(234, 88, 12, 0.1)', border: '1px solid rgba(234, 88, 12, 0.2)',
+                    color: '#ea580c', fontWeight: '700', fontSize: '13px',
+                    cursor: (isChangingPass || !passForm.new) ? 'not-allowed' : 'pointer',
+                    marginTop: '4px', transition: 'all 0.2s'
+                  }}
+                >
+                  {isChangingPass ? '...' : t.edit_change_password}
+                </button>
+              </div>
             </div>
           </div>
 
