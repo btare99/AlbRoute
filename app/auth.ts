@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
+import Google from "next-auth/providers/google";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { clientPromise } from "./lib/mongodb";
 import connectDB from "./lib/mongodb";
@@ -9,156 +9,164 @@ import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
+
   providers: [
-    GoogleProvider({
-      clientId: process.env.NEXTAUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.NEXTAUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
+
     Credentials({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email:    { label: "Email",    type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          console.log("authorize: missing credentials");
+          return null;
+        }
+
+        const email = (credentials.email as string).toLowerCase().trim();
+        const password = credentials.password as string;
 
         try {
           await connectDB();
-          const User = getUserModel();
-          const Operator = getOperatorModel();
 
-          const emailStr = (credentials.email as string).toLowerCase().trim();
-          console.log('Login attempt for:', emailStr);
-          
-          let user = await User.findOne({ email: emailStr });
-          let role = 'user';
+          const UserModel     = getUserModel();
+          const OperatorModel = getOperatorModel();
 
-          if (!user) {
-            console.log('User not found in Udhetaret, checking Operators...');
-            user = await Operator.findOne({ email: emailStr });
-            if (user) {
-              role = (user as any)?.role || 'operator';
-              console.log('User found in Operators with role:', role);
-            }
+          // 1. Look in passengers collection first
+          let dbUser: any = await UserModel.findOne({ email });
+          let role = "user";
+
+          // 2. Fall back to staff/operators collection
+          if (!dbUser) {
+            dbUser = await OperatorModel.findOne({ email });
+            if (dbUser) role = dbUser.role ?? "operator";
           }
-          
-          if (!user || !user.password) {
-            console.log('Login failed: User not found or no password');
+
+          if (!dbUser) {
+            console.log("authorize: user not found →", email);
             return null;
           }
 
-          const isMatch = await bcrypt.compare(credentials.password as string, user.password);
-          console.log('Password match:', isMatch);
-          if (!isMatch) return null;
-
-          // Update lastLogin
-          user.lastLogin = new Date();
-          await user.save();
-
-          return {
-            id: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            role: role,
-            phone: user.phone,
-            savedLocations: user.savedLocations || { home: '', work: '' },
-            travelHistory: user.travelHistory || [],
-            subscriptionPhoto: user.subscriptionPhoto,
-            idNumber: user.idNumber,
-            university: user.university,
-            serialNumber: user.serialNumber,
-            selectedLine: user.selectedLine,
-          };
-        } catch (error) {
-          console.error('Auth error:', error);
-          return null;
-        }
-      }
-    })
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        // Handle Google OAuth user data
-        if ((user as any).backendData) {
-          token.user = {
-            id: (user as any).backendData.id,
-            name: user.name,
-            email: user.email,
-            role: (user as any).backendData.role,
-            phone: (user as any).backendData.phone,
-            savedLocations: (user as any).backendData.savedLocations,
-            travelHistory: (user as any).backendData.travelHistory,
-            subscriptionPhoto: (user as any).backendData.subscriptionPhoto,
-            idNumber: (user as any).backendData.idNumber,
-            university: (user as any).backendData.university,
-            serialNumber: (user as any).backendData.serialNumber,
-            selectedLine: (user as any).backendData.selectedLine,
-          };
-        } else {
-          // Handle credentials login
-          token.user = user;
-        }
-      }
-      return token;
-    },
-    async session({ session, token }: any) {
-      if (token?.user) {
-        session.user = token.user;
-      }
-      return session;
-    },
-    async signIn({ user, account, profile }) {
-      // Handle Google OAuth sign-in
-      if (account?.provider === "google") {
-        try {
-          await connectDB();
-          const User = getUserModel();
-
-          const emailStr = user.email?.toLowerCase();
-          if (!emailStr) return false;
-
-          let existingUser = await User.findOne({ email: emailStr });
-
-          if (!existingUser) {
-            existingUser = await User.create({
-              name: user.name,
-              email: emailStr,
-              image: user.image,
-              savedLocations: { home: '', work: '' },
-              travelHistory: [],
-              createdAt: new Date()
-            });
+          if (!dbUser.password) {
+            console.log("authorize: account has no password (OAuth account?)");
+            return null;
           }
 
-          // Store backend user data in the user object for JWT callback
-          (user as any).backendData = {
-            id: existingUser._id.toString(),
-            role: 'user',
-            phone: existingUser.phone,
-            savedLocations: existingUser.savedLocations || { home: '', work: '' },
-            travelHistory: existingUser.travelHistory || [],
-            subscriptionPhoto: existingUser.subscriptionPhoto,
-            idNumber: existingUser.idNumber,
-            university: existingUser.university,
-            serialNumber: existingUser.serialNumber,
-            selectedLine: existingUser.selectedLine,
+          const passwordOk = await bcrypt.compare(password, dbUser.password);
+          if (!passwordOk) {
+            console.log("authorize: wrong password for →", email);
+            return null;
+          }
+
+          // Update last login (non-blocking)
+          UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() }).catch(() => {});
+
+          console.log("authorize: success →", email, "role:", role);
+
+          return {
+            id:                dbUser._id.toString(),
+            name:              dbUser.name,
+            email:             dbUser.email,
+            role,
+            phone:             dbUser.phone             ?? "",
+            savedLocations:    dbUser.savedLocations    ?? { home: "", work: "" },
+            travelHistory:     dbUser.travelHistory     ?? [],
+            subscriptionPhoto: dbUser.subscriptionPhoto ?? null,
+            idNumber:          dbUser.idNumber          ?? null,
+            university:        dbUser.university        ?? null,
+            serialNumber:      dbUser.serialNumber      ?? null,
+            selectedLine:      dbUser.selectedLine      ?? null,
           };
-        } catch (error) {
-          console.error('Google sign-in DB error:', error);
-          return false;
+        } catch (err) {
+          console.error("authorize error:", err);
+          return null;
+        }
+      },
+    }),
+  ],
+
+  session: { strategy: "jwt" },
+
+  callbacks: {
+    // Persist extra fields into the JWT token
+    async jwt({ token, user, account, trigger, session }) {
+      if (user) {
+        token.id               = (user as any).id;
+        token.role             = (user as any).role             ?? "user";
+        token.phone            = (user as any).phone            ?? "";
+        token.savedLocations   = (user as any).savedLocations   ?? { home: "", work: "" };
+        token.travelHistory    = (user as any).travelHistory    ?? [];
+        token.subscriptionPhoto= (user as any).subscriptionPhoto?? null;
+        token.idNumber         = (user as any).idNumber         ?? null;
+        token.university       = (user as any).university       ?? null;
+        token.serialNumber     = (user as any).serialNumber     ?? null;
+        token.selectedLine     = (user as any).selectedLine     ?? null;
+
+        // For Google sign-in, look up or create the user in our own DB
+        if (account?.provider === "google") {
+          try {
+            await connectDB();
+            const UserModel = getUserModel();
+            const emailStr  = user.email!.toLowerCase();
+
+            let dbUser = await UserModel.findOne({ email: emailStr });
+            if (!dbUser) {
+              dbUser = await UserModel.create({
+                name:           user.name,
+                email:          emailStr,
+                savedLocations: { home: "", work: "" },
+                travelHistory:  [],
+              });
+            }
+
+            token.id            = dbUser._id.toString();
+            token.role          = "user";
+            token.phone         = dbUser.phone          ?? "";
+            token.savedLocations= dbUser.savedLocations ?? { home: "", work: "" };
+          } catch (err) {
+            console.error("jwt google upsert error:", err);
+          }
         }
       }
-      return true;
-    }
+
+      // Allow client-side session updates
+      if (trigger === "update" && session) {
+        return { ...token, ...session };
+      }
+
+      return token;
+    },
+
+    async session({ session, token }: any) {
+      session.user = {
+        id:                token.id,
+        name:              token.name,
+        email:             token.email,
+        image:             token.picture,
+        role:              token.role,
+        phone:             token.phone,
+        savedLocations:    token.savedLocations,
+        travelHistory:     token.travelHistory,
+        subscriptionPhoto: token.subscriptionPhoto,
+        idNumber:          token.idNumber,
+        university:        token.university,
+        serialNumber:      token.serialNumber,
+        selectedLine:      token.selectedLine,
+      };
+      return session;
+    },
   },
-  session: {
-    strategy: "jwt",
-  },
+
   pages: {
-    signIn: "/", // Since login is a modal/view in the main page
+    signIn: "/",
+    error:  "/",
   },
+
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
 });

@@ -5,60 +5,72 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
-    const { name, email, password, phone } = await request.json();
+    const body = await request.json().catch(() => null);
 
-    if (!name || !email || !password) {
-      console.log('Registration failed: Missing fields', { name: !!name, email: !!email, password: !!password });
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    const { name, email, password, phone } = body;
+
+    // ── Validate required fields ──────────────────────────────────────────
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
       return NextResponse.json(
-        { error: 'Ju lutem plotësoni të gjitha fushat.' },
+        { error: 'Name, email and password are required.' },
         { status: 400 }
       );
     }
 
-    const User = getUserModel();
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters.' },
+        { status: 400 }
+      );
+    }
+
     const emailStr = email.toLowerCase().trim();
 
-    // Kontrollo nëse përdoruesi ekziston
-    const existingUser = await User.findOne({ email: emailStr });
-    if (existingUser) {
-      console.log('Registration failed: User already exists', emailStr);
+    // ── Connect and check for duplicate ──────────────────────────────────
+    await connectDB();
+    const User = getUserModel();
+
+    const existing = await User.findOne({ email: emailStr }).lean();
+    if (existing) {
       return NextResponse.json(
-        { error: 'Ky email është i regjistruar më parë.' },
+        { error: 'This email is already registered.' },
         { status: 400 }
       );
     }
 
-    // Hash fjalëkalimin
+    // ── Hash password and create user ─────────────────────────────────────
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Krijo përdoruesin e ri
     const newUser = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      phone: phone || '',
+      name:           name.trim(),
+      email:          emailStr,
+      password:       hashedPassword,
+      phone:          phone?.trim() ?? '',
       savedLocations: { home: '', work: '' },
-      travelHistory: [],
-      createdAt: new Date()
+      travelHistory:  [],
     });
 
-    return NextResponse.json({
-      message: 'Llogaria u krijua me sukses!',
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        savedLocations: newUser.savedLocations,
-        travelHistory: newUser.travelHistory
-      }
-    }, { status: 201 });
+    console.log('✅ New user registered:', emailStr);
 
-  } catch (error: any) {
-    console.error('Registration Error:', error);
     return NextResponse.json(
-      { error: 'Ndodhi një gabim gjatë regjistrimit.' },
+      {
+        message: 'Account created successfully!',
+        user: {
+          id:    newUser._id.toString(),
+          name:  newUser.name,
+          email: newUser.email,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (err: any) {
+    console.error('Registration error:', err);
+    return NextResponse.json(
+      { error: 'Server error during registration.' },
       { status: 500 }
     );
   }
