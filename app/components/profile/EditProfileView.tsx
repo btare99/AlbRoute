@@ -3,9 +3,99 @@ import { useState } from 'react';
 import useStore from '../../store/useStore';
 import { 
   ArrowLeft, Save, User, MapPin, Home, Briefcase, 
-  Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera
+  Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera, Phone
 } from 'lucide-react';
 import { translations } from '../../store/translations';
+import { useEffect, useRef } from 'react';
+
+const COUNTRY_CODES = [
+  { code: '+355', flag: '🇦🇱', name: 'Albania' },
+  { code: '+383', flag: '🇽🇰', name: 'Kosovo' },
+  { code: '+389', flag: '🇲🇰', name: 'North Macedonia' },
+  { code: '+382', flag: '🇲🇪', name: 'Montenegro' },
+  { code: '+30', flag: '🇬🇷', name: 'Greece' },
+  { code: '+39', flag: '🇮🇹', name: 'Italy' },
+  { code: '+49', flag: '🇩🇪', name: 'Germany' },
+  { code: '+44', flag: '🇬🇧', name: 'UK' },
+  { code: '+1', flag: '🇺🇸', name: 'USA' },
+  // Add more if needed, but these are common
+];
+
+function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any; setCountry: (c: any) => void; phone: string; setPhone: (v: string) => void; t: any }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filtered = COUNTRY_CODES.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.code.includes(search)
+  );
+
+  return (
+    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+      <div style={{ position: 'relative' }} ref={dropdownRef}>
+        <button type="button" onClick={() => setOpen(!open)} style={{
+          height: '46px', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
+          borderRadius: '12px', color: '#fff', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '8px',
+          cursor: 'pointer', transition: 'all 0.2s'
+        }}>
+          <span style={{ fontSize: '18px' }}>{country.flag}</span>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{country.code}</span>
+        </button>
+
+        {open && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100,
+            background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+            width: '220px', padding: '8px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(20px)'
+          }}>
+            <input
+              autoFocus placeholder="Kërko..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                padding: '8px 10px', color: '#fff', fontSize: '12px', outline: 'none', marginBottom: '8px'
+              }}
+            />
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {filtered.map(c => (
+                <button key={c.code} type="button" onClick={() => { setCountry(c); setOpen(false); setSearch(''); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px',
+                    borderRadius: '6px', background: country.code === c.code ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left'
+                  }}>
+                  <span style={{ fontSize: '16px' }}>{c.flag}</span>
+                  <span style={{ flex: 1, fontSize: '12px' }}>{c.name}</span>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{c.code}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <input 
+        style={{
+          flex: 1, height: '46px', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
+          borderRadius: '12px', padding: '0 16px', color: '#fff', fontSize: '14px', outline: 'none'
+        }} 
+        type="tel" placeholder="6X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} 
+      />
+    </div>
+  );
+}
 
 export default function EditProfileView() {
   const user = useStore((state: any) => state.user);
@@ -29,13 +119,37 @@ export default function EditProfileView() {
   };
 
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
+  const [phoneOnly, setPhoneOnly] = useState('');
+
   const [form, setForm] = useState({
     name: activeUser?.name || '',
     email: activeUser?.email || '',
     home: user?.savedLocations?.home || '',
     work: user?.savedLocations?.work || '',
-    avatar: activeUser?.avatar || ''
+    avatar: activeUser?.avatar || '',
+    phone: activeUser?.phone || ''
   });
+
+  // Efekti për të ndarë prefix-in nga numri kur ngarkohet useri
+  useEffect(() => {
+    if (activeUser?.phone) {
+      const parts = activeUser.phone.split(' ');
+      if (parts.length >= 2) {
+        const prefix = parts[0];
+        const num = parts.slice(1).join(' ');
+        const country = COUNTRY_CODES.find(c => c.code === prefix);
+        if (country) {
+          setSelectedCountry(country);
+          setPhoneOnly(num);
+        } else {
+          setPhoneOnly(activeUser.phone);
+        }
+      } else {
+        setPhoneOnly(activeUser.phone);
+      }
+    }
+  }, [activeUser]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,13 +173,15 @@ export default function EditProfileView() {
     
     try {
       if (!isStaff) {
+        const fullPhone = `${selectedCountry.code} ${phoneOnly}`;
         const response = await fetch('/api/user/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            id: activeUser.id || activeUser._id,
+            userId: activeUser.id || activeUser._id,
             name: form.name,
             email: form.email,
+            phone: fullPhone,
             savedLocations: { home: form.home, work: form.work },
             avatar: form.avatar
           })
@@ -77,6 +193,7 @@ export default function EditProfileView() {
           updateProfile({ 
             name: form.name, 
             email: form.email,
+            phone: `${selectedCountry.code} ${phoneOnly}`,
             savedLocations: { home: form.home, work: form.work },
             avatar: form.avatar
           });
@@ -230,6 +347,17 @@ export default function EditProfileView() {
                 />
                 <Mail size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
               </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>{language === 'al' ? 'Numri i Telefonit' : 'Phone Number'}</label>
+              <PhoneInput 
+                country={selectedCountry} 
+                setCountry={setSelectedCountry} 
+                phone={phoneOnly} 
+                setPhone={setPhoneOnly} 
+                t={t} 
+              />
             </div>
 
             {/* Security Info (Inside Left Col) */}
