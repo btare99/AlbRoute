@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -26,9 +26,11 @@ export default function AppShell() {
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
   const language = useStore((state: any) => state.language);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
+  const addNotification = useStore((state: any) => state.addNotification);
   const t = translations[language] || translations.al;
+  const googleLoginHandled = useRef(false);
 
-  // ─── Sync Session with Store ───
+  // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
     if (session?.user) {
       const u = session.user as any;
@@ -36,6 +38,24 @@ export default function AppShell() {
         useStore.getState().login(u, 'next-auth-session');
       } else {
         useStore.getState().loginAsStaff(u);
+      }
+
+      // Zbulo Google login të ri nëpërmjet sessionStorage
+      if (!googleLoginHandled.current && typeof window !== 'undefined') {
+        const pending = sessionStorage.getItem('google_login_pending');
+        if (pending === '1') {
+          googleLoginHandled.current = true;
+          sessionStorage.removeItem('google_login_pending');
+          // Shfaq mirëseardhjen pasi Splash ka mbaruar
+          setTimeout(() => {
+            addNotification(
+              language === 'al'
+                ? `Mirë se erdhe, ${u.name?.split(' ')[0] || ''}! 👋`
+                : `Welcome, ${u.name?.split(' ')[0] || ''}! 👋`,
+              'success'
+            );
+          }, 500);
+        }
       }
     }
   }, [session]);

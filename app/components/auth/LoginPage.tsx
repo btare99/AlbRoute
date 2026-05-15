@@ -352,6 +352,10 @@ function LoginContent() {
   const handleSocialLogin = async (provider: string) => {
     try {
       setLoading(true);
+      if (provider.toLowerCase() === 'google') {
+        // Vendos flag në sessionStorage që mbijeton OAuth redirect-in
+        sessionStorage.setItem('google_login_pending', '1');
+      }
       await signIn(provider.toLowerCase());
     } catch (err) {
       addNotification('Social login failed.', 'danger');

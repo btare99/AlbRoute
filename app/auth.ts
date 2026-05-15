@@ -10,8 +10,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // JWT strategy is self-contained and does not need MongoDBAdapter.
   providers: [
     Google({
-      clientId:     process.env.GOOGLE_CLIENT_ID     ?? process.env.NEXTAUTH_GOOGLE_ID     ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.NEXTAUTH_GOOGLE_SECRET ?? "",
+      clientId:     process.env.NEXTAUTH_GOOGLE_ID     ?? process.env.GOOGLE_CLIENT_ID     ?? "",
+      clientSecret: process.env.NEXTAUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT_SECRET ?? "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
 
     Credentials({
