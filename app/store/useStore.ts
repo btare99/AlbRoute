@@ -460,8 +460,8 @@ const useStore = create<any>()(
             return { stop: s, dist };
           });
 
-          // Increase to 10 nearest stops to find more route possibilities, up to 700m
-          const nearby = distances.filter(d => d.dist <= 700).sort((a, b) => a.dist - b.dist).slice(0, 10);
+          // Increase to 10 nearest stops to find more route possibilities, up to 1000m
+          const nearby = distances.filter(d => d.dist <= 1000).sort((a, b) => a.dist - b.dist).slice(0, 10);
           if (!nearby.length) {
             set({ tripResult: { error: 'Nuk ka stacione afër vendndodhjes tuaj.' }, activeTrip: null });
             return;
@@ -481,6 +481,8 @@ const useStore = create<any>()(
           } catch (err) {
             possibleFromStops = nearby.map(n => ({ stop: n.stop, walkDist: n.dist, walkTime: Math.ceil(n.dist / 80) }));
           }
+
+          possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
         } else {
           const searchName = fromName.trim().toLowerCase();
           const stops = BUS_STOPS.filter(s => s.name.toLowerCase().trim() === searchName);
@@ -496,6 +498,29 @@ const useStore = create<any>()(
         let bestTrip: any = null;
         let bestScore = Infinity;
 
+        const walkRouteCache = new Map<string, { dist: number, duration: number }>();
+        const getWalkRoute = async (from: any, to: any) => {
+          const key = `${from.id}|${to.id}`;
+          if (walkRouteCache.has(key)) return walkRouteCache.get(key)!;
+
+          let route = { dist: Math.round(Math.sqrt(Math.pow(from.lat - to.lat, 2) + Math.pow(from.lng - to.lng, 2)) * 111320), duration: Math.ceil(Math.round(Math.sqrt(Math.pow(from.lat - to.lat, 2) + Math.pow(from.lng - to.lng, 2)) * 111320) / 80) };
+          try {
+            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${from.lng},${from.lat};${to.lng},${to.lat}?overview=false`);
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+              route = {
+                dist: Math.round(data.routes[0].distance),
+                duration: Math.ceil(data.routes[0].duration / 60)
+              };
+            }
+          } catch (err) {
+            // Keep fallback straight-line distance
+          }
+
+          walkRouteCache.set(key, route);
+          return route;
+        };
+
         const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '') => {
           const busLegs = legs.filter(l => l.route);
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
@@ -507,7 +532,8 @@ const useStore = create<any>()(
           // Weighted score: Transfers are expensive (15 min penalty), each stop is 2 mins, each min of walking is 1.5 units
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2) + walkTimeTransfer + transferPenalty;
-          const score = (totalWalkDist / 100) + totalTime;
+          const initialWalkPenalty = initialWalkDist > 0 ? initialWalkDist / 40 : 0;
+          const score = (totalWalkDist / 100) + totalTime + initialWalkPenalty;
 
           if (score < bestScore) {
             bestScore = score;
@@ -569,18 +595,29 @@ const useStore = create<any>()(
                         const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
                         if (!s2) continue;
 
-                        const dist = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                        if (dist <= 400) { // Max 400m transfer walk
-                          const stopIds1 = r1Arr.slice(fi, i + 1);
-                          const stopIds2 = r2Arr.slice(j, ti + 1);
-                          const legs = [
-                            { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: fStop.name, alightAt: s1.name, numStops: i - fi },
-                            dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: Math.round(dist), walkingTime: Math.ceil(dist / 80), numStops: 0 } : null,
-                            { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: tStop.name, numStops: ti - j }
-                          ].filter(Boolean);
+                        const straightDist = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
+                        if (straightDist <= 400) { // Candidate transfer within walking range
+                          const walkSegment = await getWalkRoute(s1, s2);
+                          if (walkSegment.dist <= 700) {
+                            const stopIds1 = r1Arr.slice(fi, i + 1);
+                            const stopIds2 = r2Arr.slice(j, ti + 1);
+                            const legs = [
+                              { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: fStop.name, alightAt: s1.name, numStops: i - fi },
+                              walkSegment.dist > 30 ? {
+                                isWalking: true,
+                                boardAt: s1.name,
+                                alightAt: s2.name,
+                                boardNodeId: s1.id,
+                                alightNodeId: s2.id,
+                                walkingDist: walkSegment.dist,
+                                walkingTime: walkSegment.duration,
+                                numStops: 0
+                              } : null,
+                              { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: tStop.name, numStops: ti - j }
+                            ].filter(Boolean);
 
-
-                          evaluateTrip(legs, walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
+                            evaluateTrip(legs, walkDist, walkTime, fStop.name, pts.walkDist, pts.walkTime, tStop.name);
+                          }
                         }
                       }
                     }

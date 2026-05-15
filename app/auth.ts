@@ -2,25 +2,17 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import { MongoClient } from "mongodb";
+import { clientPromise } from "./lib/mongodb";
 import connectDB from "./lib/mongodb";
 import { getUserModel, getOperatorModel } from "./lib/dynamicDb";
 import bcrypt from "bcryptjs";
 
-const mongoClient = new MongoClient(process.env.MONGODB_URI!);
-
-const getBaseUrl = () => {
-  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'http://localhost:3000';
-};
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: MongoDBAdapter(mongoClient as any),
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
-      clientId: process.env.NEXTAUTH_GOOGLE_ID || "",
-      clientSecret: process.env.NEXTAUTH_GOOGLE_SECRET || "",
+      clientId: process.env.NEXTAUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.NEXTAUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
     }),
     Credentials({
       name: "Credentials",
@@ -37,7 +29,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const Operator = getOperatorModel();
 
           const emailStr = (credentials.email as string).toLowerCase();
-          
+
           let user = await User.findOne({ email: emailStr });
           let role = 'user';
 
@@ -45,7 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             user = await Operator.findOne({ email: emailStr });
             role = (user as any)?.role || 'operator';
           }
-          
+
           if (!user || !user.password) return null;
 
           const isMatch = await bcrypt.compare(credentials.password as string, user.password);
@@ -114,12 +106,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           await connectDB();
           const User = getUserModel();
-          
+
           const emailStr = user.email?.toLowerCase();
           if (!emailStr) return false;
 
           let existingUser = await User.findOne({ email: emailStr });
-          
+
           if (!existingUser) {
             existingUser = await User.create({
               name: user.name,
@@ -159,5 +151,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/", // Since login is a modal/view in the main page
   },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 });

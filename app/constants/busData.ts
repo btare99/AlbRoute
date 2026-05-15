@@ -34,21 +34,30 @@ export const BUS_STOPS = [
 
   // ── LINJA 1A: Allias-Selite ─────────────────────────────────────────────
   { id: 'allias', name: 'Allias', lat: 41.350578339328315, lng: 19.831366656177238 },
-  { id: 'kopshti_27', name: 'Kopshti 27', lat: 41.34840374040633, lng: 19.833190558271294 },
-  { id: 'parafabrikatet', name: 'Parafabrikatet', lat: 41.34666400897193, lng: 19.836763260608468 },
-  { id: 'bajram_curri', name: 'Bajram Curri', lat: 41.346221014361646, lng: 19.838286755309618 },
-  { id: 'shkolla_bashkuar', name: 'Shkolla Bashkuar', lat: 41.3441107077933, lng: 19.836269734172642 },
-  { id: 'mjekesia', name: 'Mjekesia', lat: 41.341855342715284, lng: 19.832439539725485 },
-  { id: 'qsut', name: 'QSUT', lat: 41.34067929991471, lng: 19.830207941827435 },
-  { id: 'tregu_5_maji', name: 'Tregu 5 Maji', lat: 41.34008321531884, lng: 19.82540142327658 },
-  { id: 'dispanseria', name: 'Dispanseria', lat: 41.33799687627965, lng: 19.821399567443546 },
+  { id: 'kopshti_27_stop1', name: 'Kopshti 27', lat: 41.34840374040633, lng: 19.833190558271294 },
+  { id: 'kopshti_27_stop2', name: 'Kopshti 27', lat: 41.348067023818935, lng: 19.833256792625086 },
+  { id: 'parafabrikatet_stop1', name: 'Parafabrikatet', lat: 41.34674091797127, lng: 19.8367626740988 },
+  { id: 'parafabrikatet_stop2', name: 'Parafabrikatet', lat: 41.34666400897193, lng: 19.836763260608468 },
+  { id: 'bajram_curri_stop1', name: 'Bajram Curri', lat: 41.34620815703197, lng: 19.838344501662025 },
+  { id: 'bajram_curri_stop2', name: 'Bajram Curri', lat: 41.346221014361646, lng: 19.838286755309618 },
+  { id: 'shkolla_bashkuar_stop1', name: 'Shkolla Bashkuar', lat: 41.34452811015222, lng: 19.837270848588986 },
+  { id: 'shkolla_bashkuar_stop2', name: 'Shkolla Bashkuar', lat: 41.3441107077933, lng: 19.836269734172642 },
+  { id: 'mjekesia_stop1', name: 'Mjekesia', lat: 41.342413156760784, lng: 19.833954106370715 },
+  { id: 'mjekesia_stop2', name: 'Mjekesia', lat: 41.341855342715284, lng: 19.832439539725485 },
+  { id: 'qsut_stop1', name: 'QSUT', lat: 41.340286454665744, lng: 19.82978339083094 },
+  { id: 'qsut_stop2', name: 'QSUT', lat: 41.340680098365915, lng: 19.830218545288094 },
+  { id: 'tregu_5_maji_stop1', name: 'Tregu 5 Maji', lat: 41.33993025228956, lng: 19.82570528049075 },
+  { id: 'tregu_5_maji_stop2', name: 'Tregu 5 Maji', lat: 41.340068862061905, lng: 19.825399826048734 },
+  { id: 'dispanseria_stop1', name: 'Dispanseria', lat: 41.33765349565131, lng: 19.821208608745216 },
+  { id: 'dispanseria_stop2', name: 'Dispanseria', lat: 41.33799687627965, lng: 19.821399567443546 },
   { id: 'shkencat_natyres', name: 'Shkencat e Natyres', lat: 41.33524183977649, lng: 19.816303370346546 },
   { id: 'muzeu_kombetar', name: 'Muzeu Kombetar', lat: 41.33017855214433, lng: 19.816646693093652 },
   { id: 'shallvaret', name: 'Shallvaret', lat: 41.32415468926219, lng: 19.817221613815853 },
   { id: 'brigada_8', name: 'Brigada 8', lat: 41.32160624514186, lng: 19.813570964750276 },
   { id: 'rruga_moskat', name: 'Rruga Moskat', lat: 41.31927419835486, lng: 19.81422126035806 },
-  { id: 'posta_8', name: 'Posta 8', lat: 41.31821055912352, lng: 19.812893566903632 },
-  { id: 'komuna_e_parisit', name: 'Komuna e Parisit', lat: 41.31864770083064, lng: 19.80768471700935 },
+  { id: 'posta_8_stop1', name: 'Posta 8', lat: 41.31812700055339, lng: 19.813417959876933 },
+  { id: 'posta_8_stop2', name: 'Posta 8', lat: 41.31821055912352, lng: 19.812893566903632 },
+  { id: 'komuna_parisit_stop2', name: 'Komuna Parisit', lat: 41.31864770083064, lng: 19.80768471700935 },
   { id: 'tish_daija', name: 'Tish Daija', lat: 41.31637684528332, lng: 19.805824141391753 },
   { id: 'dhimiter_shuteriqi', name: 'Dhimiter Shuteriqi', lat: 41.31446976262468, lng: 19.804236596303475 },
   { id: 'qendra_kristal_1', name: 'Qendra Kristal 1', lat: 41.31382247506085, lng: 19.80151550375448 },
@@ -67,22 +76,28 @@ export const BUS_STOPS = [
   { id: 'stacioni_i_trenit', name: 'Stacioni i Trenit', lat: 41.33596882919001, lng: 19.817041584157213 },
 
   // ── LINJA 1B: Allias-Kodra e Diellit ─────────────────────────────────────────────
-  { id: 'rexhep_pinari', name: 'Rexhep Pinari', lat: 41.310292761582375, lng: 19.798134271473064 },
-  { id: 'kodra_diellit_2', name: 'Kodra e Diellit 2', lat: 41.30697284558859, lng: 19.798421102519683 },
-  { id: 'mentor_xhemali', name: 'Mentor Xhemali', lat: 41.314031814375035, lng: 19.79840592841797 },
+  { id: 'rexhep_pinari_stop1', name: 'Rexhep Pinari', lat: 41.3105241456187, lng: 19.797987379154495 },
+  { id: 'rexhep_pinari_stop2', name: 'Rexhep Pinari', lat: 41.310289968615095, lng: 19.79815158881314 },
+  { id: 'kodra_diellit_2', name: 'Kodra e Diellit 2', lat: 41.30691411670897, lng: 19.798410598315687 },
+  { id: 'mentor_xhemali_stop1', name: 'Mentor Xhemali', lat: 41.31403239724616, lng: 19.79836188035792 },
+  { id: 'mentor_xhemali_stop2', name: 'Mentor Xhemali', lat: 41.31379401988683, lng: 19.798283246413156 },
 
   // ── LINJA 2: Terminali Juglindor – Stacioni i Trenit ─────────────────────────────────────────────
   { id: 'terminal_jugilor', name: 'Terminali Juglindor ', lat: 41.283362180910885, lng: 19.855547708728487 },
   { id: 'teg', name: 'TEG ', lat: 41.28301273658262, lng: 19.858311742061524 },
   { id: 'tuneli', name: 'Tuneli ', lat: 41.30522471324829, lng: 19.82241895442661 },
-  { id: 'liqeni_i_thate', name: 'Liqeni i Thate ', lat: 41.305321427733894, lng: 19.81583144914248 },
+  { id: 'liqeni_i_thate_stop1', name: 'Liqeni i Thate ', lat: 41.305321427733894, lng: 19.81583144914248 },
+  { id: 'liqeni_i_thate_stop2', name: 'Liqeni i Thate ', lat: 41.305745963530185, lng: 19.814865658529722 },
   { id: 'rruga_peti', name: 'Rruga Peti ', lat: 41.30706226337961, lng: 19.813342359225885 },
-  { id: 'kopshti_zoologjik', name: 'Kopshti Zoologjik', lat: 41.30896423442469, lng: 19.811153676662514 },
-  { id: 'rruga_kosovareve', name: 'Rruga Kosovareve', lat: 41.312590720330434, lng: 19.814801480859966 },
+  { id: 'kopshti_zoologjik_stop1', name: 'Kopshti Zoologjik', lat: 41.30896423442469, lng: 19.811153676662514 },
+  { id: 'kopshti_zoologjik_stop2', name: 'Kopshti Zoologjik', lat: 41.309052802328296, lng: 19.81101332675374 },
+  { id: 'rruga_kosovareve_stop1', name: 'Rruga Kosovareve', lat: 41.312590720330434, lng: 19.814801480859966 },
+  { id: 'rruga_kosovareve_stop2', name: 'Rruga Kosovareve', lat: 41.31215487732939, lng: 19.81407626081466 },
   { id: 'petro_nini_luarasi', name: 'Petro Nini Luarasi ', lat: 41.317475351271646, lng: 19.81485948421849 },
   { id: 'sheshi_wilson', name: 'Sheshi Wilson', lat: 41.3176526276786, lng: 19.814682458427008 },
-  { id: 'libri_universitar', name: 'Libri Universitar ', lat: 41.31919168895222, lng: 19.81828198285922 },
-  { id: 'rektorati', name: 'Rektorati ', lat: 41.317757381693184, lng: 19.821881507349662 },
+  { id: 'libri_universitar_stop1', name: 'Libri Universitar ', lat: 41.31919168895222, lng: 19.81828198285922 },
+  { id: 'libri_universitar_stop2', name: 'Libri Universitar ', lat: 41.319248422393464, lng: 19.818127723607347 },
+  { id: 'rektorati', name: 'Rektorati ', lat: 41.31772953432703, lng: 19.821774246651948 },
   { id: 'piramida1', name: 'Piramida 1', lat: 41.32283177175518, lng: 19.82004965561363 },
   { id: 'piramida2', name: 'Piramida 2 ', lat: 41.32304126298168, lng: 19.819776070298364 },
 
@@ -352,7 +367,7 @@ export const BUS_STOPS = [
   { id: 'filip_jano', name: 'Filip Jano', lat: 41.345013852832125, lng: 19.808752845785687 },
 
   // ── LINJA 13A: Tirana e Re Orar ─────────────────────────────────────────────
-  { id: 'komuna_e_parisit_stop2', name: 'Komuna Parisit', lat: 41.31877300236136, lng: 19.808346342666322 },
+  { id: 'komuna_parisit_stop1', name: 'Komuna Parisit', lat: 41.31877300236136, lng: 19.808346342666322 },
   { id: 'stadiumi_dinamo_stop2', name: 'Stadiumi Dinamo', lat: 41.31888283303763, lng: 19.808570920477415 },
   { id: 'vasil_shanto_stop1', name: 'Vasil Shanto', lat: 41.32170310174288, lng: 19.80461203048531 },
   { id: 'vasil_shanto_stop2', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
@@ -423,17 +438,17 @@ export const BUS_ROUTES = [
   {
     id: 'L1A', name: '1A', label: 'Allias – Selitë', color: '#e63946',
     stops: [
-      'allias', 'kopshti_27', 'parafabrikatet', 'bajram_curri', 'shkolla_bashkuar',
-      'mjekesia', 'qsut', 'tregu_5_maji', 'dispanseria', 'shkencat_natyres',
-      'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8',
-      'komuna_e_parisit', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1', 'selite'
+      'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 'shkolla_bashkuar_stop2',
+      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres_stop2',
+      'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
+      'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1', 'selite'
     ],
     returnStops: [
       'selite', 'rrapo_hekali', 'nenkalimi', 'qendra_kristal_2', 'prokop_mima',
       'lulishtja', 'stadiumi_dinamo', 'lulishte_cajupi', 'drejtoria_e_policise_b',
-      'parku_rinia', 'kateshet_a', 'materniteti', 'stacioni_i_trenit', 'shkencat_natyres',
-      'dispanseria', 'tregu_5_maji', 'qsut', 'mjekesia', 'shkolla_bashkuar',
-      'bajram_curri', 'parafabrikatet', 'kopshti_27', 'allias'
+      'parku_rinia', 'kateshet_a', 'stacioni_i_trenit', 'shkencat_natyres',
+      'dispanseria_stop1', 'tregu_5_maji_stop1', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
+      'bajram_curri_stop1', 'parafabrikatet_stop1', 'kopshti_27_stop1', 'allias'
     ]
   },
 
@@ -441,19 +456,18 @@ export const BUS_ROUTES = [
   {
     id: 'L1B', name: '1B', label: 'Allias – Kodra e Diellit', color: '#f3797b',
     stops: [
-      'allias', 'kopshti_27', 'parafabrikatet', 'bajram_curri', 'shkolla_bashkuar',
-      'mjekesia', 'qsut', 'tregu_5_maji', 'dispanseria', 'shkencat_natyres',
-      'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8',
-      'komuna_e_parisit', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1',
-      'selite', 'rexhep_pinari', 'kodra_diellit_2'
+      'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 'shkolla_bashkuar_stop2',
+      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres_stop2',
+      'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
+      'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1',
+      'mentor_xhemali_stop2', 'rexhep_pinari_stop2', 'kodra_diellit_2'
     ],
     returnStops: [
-      'kodra_diellit_2', 'mentor_xhemali', 'selite', 'rrapo_hekali', 'nenkalimi',
-      'qendra_kristal_2', 'prokop_mima', 'lulishtja', 'stadiumi_dinamo',
-      'lulishte_cajupi', 'drejtoria_e_policise_b', 'parku_rinia', 'kateshet_a',
-      'materniteti', 'stacioni_i_trenit', 'shkencat_natyres', 'dispanseria',
-      'tregu_5_maji', 'qsut', 'mjekesia', 'shkolla_bashkuar', 'bajram_curri',
-      'parafabrikatet', 'kopshti_27', 'allias'
+      'kodra_diellit_2', 'rexhep_pinari_stop1', 'mentor_xhemali_stop1', 'rrapo_hekali', 'nenkalimi', 'qendra_kristal_2', 'prokop_mima',
+      'lulishtja', 'stadiumi_dinamo', 'lulishte_cajupi', 'drejtoria_e_policise_b',
+      'parku_rinia', 'kateshet_a', 'stacioni_i_trenit', 'shkencat_natyres',
+      'dispanseria_stop1', 'tregu_5_maji_stop1', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
+      'bajram_curri_stop1', 'parafabrikatet_stop1', 'kopshti_27_stop1', 'allias'
     ]
   },
 
@@ -461,14 +475,14 @@ export const BUS_ROUTES = [
   {
     id: 'L2', name: '2', label: 'Terminali Juglindor – Stacioni i Trenit', color: '#ed8bb8',
     stops: [
-      'terminal_jugilor', 'teg', 'tuneli', 'liqeni_i_thate', 'rruga_peti',
-      'kopshti_zoologjik', 'rruga_kosovareve', 'petro_nini_luarasi', 'sheshi_wilson',
-      'libri_universitar', 'piramida1', 'biblioteka', 'stacioni_i_trenit'
+      'terminal_jugilor', 'teg', 'tuneli', 'liqeni_i_thate_stop1', 'rruga_peti',
+      'kopshti_zoologjik_stop1', 'rruga_kosovareve_stop1', 'petro_nini_luarasi',
+      'libri_universitar_stop1', 'piramida1', 'biblioteka', 'stacioni_i_trenit'
     ],
     returnStops: [
-      'stacioni_i_trenit', 'biblioteka', 'piramida2', 'rektorati', 'sheshi_wilson',
-      'petro_nini_luarasi', 'rruga_kosovareve', 'kopshti_zoologjik', 'rruga_peti',
-      'liqeni_i_thate', 'tuneli', 'teg', 'terminal_jugilor'
+      'stacioni_i_trenit', 'biblioteka', 'piramida2', 'libri_universitar_stop2', 'sheshi_wilson',
+      'rruga_kosovareve_stop2', 'kopshti_zoologjik_stop2',
+      'liqeni_i_thate_stop2', 'tuneli', 'teg', 'terminal_jugilor'
     ]
   },
 

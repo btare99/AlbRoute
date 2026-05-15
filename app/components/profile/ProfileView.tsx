@@ -192,7 +192,11 @@ export default function ProfileView() {
                     {t.no}
                   </button>
                   <button
-                    onClick={() => { signOut(); setActiveModal(null); }}
+                    onClick={() => { 
+                      useStore.getState().setGuestMode(false);
+                      signOut({ callbackUrl: '/' }); 
+                      setActiveModal(null); 
+                    }}
                     style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
                   >
                     {t.yes}

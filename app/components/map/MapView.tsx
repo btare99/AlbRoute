@@ -37,6 +37,7 @@ export default function MapView() {
   const setView = useStore((s: any) => s.setView);
   const selectedStop = useStore((s: any) => s.selectedStop);
   const activeTrip = useStore((s: any) => s.activeTrip);
+  const tripOriginCoords = useStore((s: any) => s.tripOriginCoords);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
   const startTracking = useStore((s: any) => s.startTracking);
   const stopTracking = useStore((s: any) => s.stopTracking);
@@ -91,12 +92,14 @@ export default function MapView() {
       const newShapes: Record<string, [number, number][]> = {};
 
       // 1. OSRM për ecjen nga pika e nisjes (nëse ka)
-      const origin = useStore.getState().tripOriginCoords;
-      if (activeTrip.walkingDist > 0 && origin) {
-        const firstStop = BUS_STOPS.find((s: any) => s.name === activeTrip.actualFrom);
+      if (activeTrip.walkingDist > 0 && tripOriginCoords) {
+        const firstStop = BUS_STOPS.find((s: any) =>
+          s.id === activeTrip.legs?.[0]?.boardNodeId || s.name === activeTrip.actualFrom
+        );
+
         if (firstStop) {
           try {
-            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${origin.lng},${origin.lat};${firstStop.lng},${firstStop.lat}?overview=full&geometries=geojson`);
+            const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${tripOriginCoords.lng},${tripOriginCoords.lat};${firstStop.lng},${firstStop.lat}?overview=full&geometries=geojson`);
             const data = await res.json();
             if (data.routes && data.routes.length > 0) {
               newShapes['origin'] = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
@@ -578,7 +581,7 @@ export default function MapView() {
         });
       });
     }
-  }, [activeTrip, activeRouteFilter, showRoutes, mapReady, walkingShapes]);
+  }, [activeTrip, tripOriginCoords, activeRouteFilter, showRoutes, mapReady, walkingShapes]);
 
   // ── USER LOCATION MARKER ──────────────────────────────────────────────────────
   useEffect(() => {

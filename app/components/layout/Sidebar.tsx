@@ -1,6 +1,7 @@
 'use client';
 import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight, Ticket } from 'lucide-react';
 import { useState, Fragment } from 'react';
+import { signOut } from "next-auth/react";
 import useStore, { BUS_STOPS } from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -190,7 +191,10 @@ export default function Sidebar() {
             <span className="s-username">{user?.name || 'Admin'}</span>
             <span className="s-useremail">{user?.email || 'admin@busal.al'}</span>
           </div>
-          <button className="s-logout-btn" onClick={logout} title={t.logout}>
+          <button className="s-logout-btn" onClick={() => {
+            useStore.getState().setGuestMode(false);
+            signOut({ callbackUrl: '/' });
+          }} title={t.logout}>
             <LogOut size={15} />
           </button>
         </div>

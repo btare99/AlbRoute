@@ -49,9 +49,6 @@ async function connectDB() {
   return cached.conn;
 }
 
-export async function getMongoClient() {
-  await connectDB();
-  return cached.client;
-}
+export const clientPromise = connectDB().then(conn => conn.getClient());
 
 export default connectDB;

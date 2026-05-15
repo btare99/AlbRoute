@@ -1,5 +1,6 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { signIn } from "next-auth/react";
 import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
 import useStore from '../../store/useStore';
@@ -184,7 +185,8 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
   );
 }
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify' | 'new_password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -204,6 +206,19 @@ export default function LoginPage() {
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
   const t = translations[language] || translations.al;
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      if (errorParam === 'Configuration') {
+        setError('Gabim në konfigurimin e Google. Kontrolloni Client ID dhe Secret.');
+      } else if (errorParam === 'AccessDenied') {
+        setError('Aksesi u refuzua nga Google.');
+      } else {
+        setError(`Gabim gjatë autentikimit: ${errorParam}`);
+      }
+    }
+  }, [searchParams]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -544,5 +559,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-dark)' }} />}>
+      <LoginContent />
+    </Suspense>
   );
 }
