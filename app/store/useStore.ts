@@ -27,14 +27,7 @@ const useStore = create<any>()(
       token: 'dev-token',
       login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token }),
       loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard' }),
-      logout: () => set({ 
-        user: null, 
-        staffUser: null, 
-        isAuthenticated: false, 
-        token: null, 
-        currentView: 'login',
-        checkoutPackage: null // Pastro pajtimin gjatë daljes
-      }),
+      logout: () => set({ user: null, staffUser: null, isAuthenticated: false, token: null, currentView: 'login' }),
       updateProfile: async (data: any) => {
         const currentUser = get().user;
         if (!currentUser) return;

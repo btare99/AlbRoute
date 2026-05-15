@@ -19,7 +19,8 @@ const UserSchema = new mongoose.Schema({
   selectedLine: { type: String, default: null },
   resetCode: { type: String, default: null },
   resetCodeExpires: { type: Date, default: null },
-  lastLogin: { type: Date, default: null },
+  lastLogin: { type: Date, default: Date.now },
+  subscriptions: { type: Array, default: [] }, // Fusha e re për pajtimet
 }, { timestamps: true });
 
 /**

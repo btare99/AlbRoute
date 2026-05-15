@@ -102,6 +102,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.university       = (user as any).university       ?? null;
         token.serialNumber     = (user as any).serialNumber     ?? null;
         token.selectedLine     = (user as any).selectedLine     ?? null;
+        token.subscriptions    = (user as any).subscriptions    ?? [];
       }
 
       // Handle data synchronization and email notification on first sign-in
@@ -121,7 +122,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 email:          emailStr,
                 savedLocations: { home: "", work: "" },
                 travelHistory:  [],
-                lastLogin:      new Date()
+                lastLogin:      new Date(),
+                subscriptions:  []
               });
               dbUser = created.toObject();
             } else {
@@ -130,6 +132,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             token.id = String(dbUser._id);
             token.phone = dbUser.phone || "";
+            token.subscriptions = dbUser.subscriptions || [];
           } catch (err) {
             console.error("[Auth] Google sync error:", err);
           }
@@ -162,6 +165,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         university:        token.university,
         serialNumber:      token.serialNumber,
         selectedLine:      token.selectedLine,
+        subscriptions:     token.subscriptions ?? [],
       };
       return session;
     },

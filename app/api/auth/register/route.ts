@@ -41,7 +41,8 @@ export async function POST(request: Request) {
       savedLocations: { home: '', work: '' },
       travelHistory: [],
       createdAt: new Date(),
-      lastLogin: new Date()
+      lastLogin: new Date(),
+      subscriptions: []
     });
 
     return NextResponse.json({
