@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     const { name, email, password, phone } = await request.json();
 
     if (!name || !email || !password) {
+      console.log('Registration failed: Missing fields', { name: !!name, email: !!email, password: !!password });
       return NextResponse.json(
         { error: 'Ju lutem plotësoni të gjitha fushat.' },
         { status: 400 }
@@ -16,10 +17,12 @@ export async function POST(request: Request) {
     }
 
     const User = getUserModel();
+    const emailStr = email.toLowerCase().trim();
 
     // Kontrollo nëse përdoruesi ekziston
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: emailStr });
     if (existingUser) {
+      console.log('Registration failed: User already exists', emailStr);
       return NextResponse.json(
         { error: 'Ky email është i regjistruar më parë.' },
         { status: 400 }
