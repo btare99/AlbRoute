@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       phone: phone || '',
       savedLocations: { home: '', work: '' },
       travelHistory: [],
-      createdAt: new Date()
+      createdAt: new Date(),
+      lastLogin: new Date()
     });
 
     return NextResponse.json({

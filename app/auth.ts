@@ -123,6 +123,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             dbUser = created.toObject();
           }
 
+          // Update lastLogin
+          await UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() });
+
           // Dërgo email çdo herë që logohet me Google
           const { sendWelcomeEmail } = await import("./lib/mail");
           await sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
