@@ -124,7 +124,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             // Dërgo email mirëseardhjeje vetëm për përdoruesit e rinj
             const { sendWelcomeEmail } = await import("./lib/mail");
-            sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
+            await sendWelcomeEmail(emailStr, user.name ?? "Udhëtar");
           }
 
           token.id            = String(dbUser._id);
