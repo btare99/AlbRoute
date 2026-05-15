@@ -9,20 +9,33 @@ const BG: any = { success:'rgba(16,185,129,0.08)', info:'rgba(59,130,246,0.08)',
 
 export default function NotificationBar() {
   const notifications = useStore((state: any) => state.notifications);
+  const removeNotification = useStore((state: any) => state.removeNotification);
 
   return (
     <div className="notification-container">
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {notifications && notifications.map((n: any) => {
           const Icon = ICONS[n.type] || Info;
           return (
-            <motion.div key={n.id}
-              initial={{ opacity:0, x:50, scale:0.9 }}
-              animate={{ opacity:1, x:0, scale:1 }}
-              exit={{ opacity:0, x:50, scale:0.9 }}
-              style={{ background:BG[n.type]||BG.info, border:`1px solid ${COLORS[n.type]||COLORS.info}33`, borderRadius:'12px', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'flex-start', backdropFilter:'blur(12px)', pointerEvents:'all', boxShadow:'0 8px 24px rgba(0,0,0,0.3)' }}>
-              <Icon size={18} style={{ color: COLORS[n.type]||COLORS.info, flexShrink:0, marginTop:'1px' }} />
-              <p style={{ fontSize:'13px', lineHeight:'1.4', color:'var(--text)' }}>{n.msg}</p>
+            <motion.div 
+              key={n.id}
+              layout
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+              className={`notification-item ${n.type || 'info'}`}
+            >
+              <div className="notification-content">
+                <Icon size={18} className="notification-icon" />
+                <p className="notification-msg">{n.msg}</p>
+              </div>
+              <button 
+                className="notification-close" 
+                onClick={() => removeNotification(n.id)}
+                aria-label="Close notification"
+              >
+                <X size={14} />
+              </button>
             </motion.div>
           );
         })}

@@ -644,9 +644,12 @@ const useStore = create<any>()(
       addNotification: (msg: string, type = 'info') => {
         const id = Date.now();
         set((state: any) => ({ notifications: [...state.notifications, { id, msg, type }] }));
-        setTimeout(() => set((state: any) => ({
+        setTimeout(() => get().removeNotification(id), 4500);
+      },
+      removeNotification: (id: number) => {
+        set((state: any) => ({
           notifications: state.notifications.filter((n: any) => n.id !== id)
-        })), 4500);
+        }));
       },
 
       // ── Saved Routes ──
