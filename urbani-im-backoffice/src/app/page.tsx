@@ -63,8 +63,8 @@ export default function BackofficeApp() {
   // ── Not authenticated → Login ──────────────────────────────────────────────
   if (!isAuthenticated || !currentAccount) {
     return (
-      <div className="backoffice-shell">
-        <main className="page-frame page-content">
+      <div className="backoffice-shell" style={{ padding: 0, margin: 0 }}>
+        <main style={{ width: '100vw', height: '100vh', padding: 0, margin: 0 }}>
           <LoginPage />
         </main>
       </div>

@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../store/useStore';
 import {
   Users, UserCheck, Clock, Bus, Activity, LogOut,
-  Settings, Banknote, MapPin, AlertTriangle, ShieldCheck, User, Trash2, Edit2, Plus, Route, X, ChevronLeft, Check, Save, ChevronRight, Printer, Search
+  Settings, Banknote, MapPin, AlertTriangle, ShieldCheck, User, Trash2, Edit2, Plus, Route, X, ChevronLeft, Check, Save, ChevronRight, Printer, Search,
+  FileText
 } from 'lucide-react';
 
 const EMPTY_ARRAY: any[] = [];
@@ -221,7 +222,7 @@ const SkeletonBusCard = () => (
       {sk('56px', '20px', 20)}
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-      {[0,1].map(i => (
+      {[0, 1].map(i => (
         <div key={i} style={{ padding: '9px 11px', borderRadius: 8, background: T.bg, border: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {sk('40px', '9px', 4)}
           {sk('90px', '12px', 5)}
@@ -238,12 +239,12 @@ const SkeletonTableRow = ({ cols = 5 }: { cols?: number }) => (
       <td key={i} style={{ padding: '14px 16px', borderBottom: `1px solid ${T.border}` }}>
         {i === 0
           ? <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {sk('36px', '36px', 9)}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {sk('110px', '13px', 5)}
-                {sk('70px', '10px', 4)}
-              </div>
+            {sk('36px', '36px', 9)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {sk('110px', '13px', 5)}
+              {sk('70px', '10px', 4)}
             </div>
+          </div>
           : sk(`${60 + i * 10}px`, '13px', 5)
         }
       </td>
@@ -382,6 +383,8 @@ export default function AdminPanel() {
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [confModal, setConfModal] = useState<any>(null);
+  const [isAccountsExpanded, setIsAccountsExpanded] = useState(false);
+  const [isStaffExpanded, setIsStaffExpanded] = useState(false);
 
   const closeConf = () => setConfModal(null);
   const triggerConf = (data: any) => setConfModal({ ...data, isOpen: true });
@@ -563,7 +566,7 @@ export default function AdminPanel() {
     } else {
       if (view === 'form-driver') setFormData({ name: '', phone: '', shift: 'Mëngjes (05:00 - 13:00)', status: 'Aktiv', licenseCat: 'D', routeId: currentAccount?.role === 'operator' ? currentAccount.routeId : (selectedRouteId || BUS_ROUTES[0].id), personalId: '', username: '', pin: '', joinDate: new Date().toISOString().split('T')[0], address: '' });
       if (view === 'form-inspector') setFormData({ name: '', phone: '', status: 'Në Linjë', posCode: '', employmentType: 'Full-Time', routeId: currentAccount?.role === 'operator' ? currentAccount.routeId : (selectedRouteId || BUS_ROUTES[0].id), personalId: '', username: '', pin: '' });
-      if (view === 'form-bus') setFormData({ plate: '', routeId: currentAccount?.role === 'operator' ? currentAccount.routeId : (data?.routeId || selectedRouteId || BUS_ROUTES[0].id), driverId: '', inspectorId: '', year: new Date().getFullYear().toString(), brand: '', capacity: 60, status: 'Aktiv', schedules: { terminal1: [], terminal2: [] } });
+      if (view === 'form-bus') setFormData({ plate: '', routeId: currentAccount?.role === 'operator' ? currentAccount.routeId : (data?.routeId || selectedRouteId || BUS_ROUTES[0].id), driverId: '', inspectorId: '', year: new Date().getFullYear().toString(), brand: '', capacity: 60, status: 'Aktiv', isArticulated: false, schedules: { terminal1: [], terminal2: [] } });
     }
   };
 
@@ -583,7 +586,7 @@ export default function AdminPanel() {
       const newId = formMode === 'add' ? `d_${Date.now()}` : formData.id;
       const loginUsername = formData.username || formData.personalId || newId;
       const loginPin = formData.pin || '1234';
-      const driverToSave = isDispatcher ? { id: newId, name: formData.name, username: loginUsername, pin: loginPin, personalId: formData.personalId || loginUsername, phone: formData.phone, routeId: formData.routeId || selectedRouteId || '1A', shift: formData.shift, status: formData.status || 'Aktiv', weeklyProgram: formData.weeklyProgram || {}, role: 'driver' } : { id: formData.id, role: 'driver', routeId: formData.routeId, weeklyProgram: formData.weeklyProgram || {} };
+      const driverToSave = isDispatcher ? { id: newId, name: formData.name, username: loginUsername, pin: loginPin, personalId: formData.personalId || loginUsername, phone: formData.phone, routeId: formData.routeId || selectedRouteId || '1A', shift: formData.shift, status: formData.status || 'Aktiv', weeklyProgram: formData.weeklyProgram || {}, weeklyNotes: formData.weeklyNotes || '', role: 'driver' } : { id: formData.id, role: 'driver', routeId: formData.routeId, weeklyProgram: formData.weeklyProgram || {}, weeklyNotes: formData.weeklyNotes || '' };
       fetch('/api/admin/staff', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(driverToSave) })
         .then(async res => {
           if (!res.ok) throw new Error('Failed');
@@ -602,7 +605,7 @@ export default function AdminPanel() {
       const newId = formMode === 'add' ? `i_${Date.now()}` : formData.id;
       const loginUsername = formData.username || formData.personalId || newId;
       const loginPin = formData.pin || '1234';
-      const inspToSave = isDispatcher ? { id: newId, name: formData.name, username: loginUsername, pin: loginPin, personalId: formData.personalId || loginUsername, phone: formData.phone, routeId: formData.routeId || selectedRouteId || '1A', status: formData.status || 'Në Linjë', weeklyProgram: formData.weeklyProgram || {}, role: 'inspector' } : { id: formData.id, role: 'inspector', routeId: formData.routeId, weeklyProgram: formData.weeklyProgram || {} };
+      const inspToSave = isDispatcher ? { id: newId, name: formData.name, username: loginUsername, pin: loginPin, personalId: formData.personalId || loginUsername, phone: formData.phone, routeId: formData.routeId || selectedRouteId || '1A', status: formData.status || 'Në Linjë', weeklyProgram: formData.weeklyProgram || {}, weeklyNotes: formData.weeklyNotes || '', role: 'inspector' } : { id: formData.id, role: 'inspector', routeId: formData.routeId, weeklyProgram: formData.weeklyProgram || {}, weeklyNotes: formData.weeklyNotes || '' };
       fetch('/api/admin/staff', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inspToSave) })
         .then(async res => {
           if (!res.ok) throw new Error('Failed');
@@ -709,7 +712,25 @@ export default function AdminPanel() {
             );
           })}
         </div>
-        <p style={{ fontSize: 11, color: T.dim, marginTop: 12, fontStyle: 'italic' }}>* Programi pasqyrohet në dashboard-in e punonjësit.</p>
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: T.muted }}>
+            <FileText size={12} /> Shënime për punonjësin (opsionale)
+          </div>
+          <textarea
+            value={formData.weeklyNotes || ''}
+            onChange={e => setFormData({ ...formData, weeklyNotes: e.target.value })}
+            placeholder="Shkruani udhëzime specifike për këtë javë..."
+            style={{
+              width: '100%', minHeight: 80, padding: '12px', borderRadius: 12,
+              background: T.raised, border: `1px solid ${T.border}`,
+              color: T.text, fontSize: 12, fontFamily: 'inherit', outline: 'none',
+              resize: 'vertical', lineHeight: 1.5, transition: 'all .2s'
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = T.violet)}
+            onBlur={e => (e.currentTarget.style.borderColor = T.border)}
+          />
+        </div>
+        <p style={{ fontSize: 11, color: T.dim, marginTop: 12, fontStyle: 'italic' }}>* Programi dhe shënimet pasqyrohen në dashboard-in e punonjësit.</p>
       </div>
     );
   };
@@ -718,9 +739,23 @@ export default function AdminPanel() {
   const tabs = [
     { id: 'routes', label: 'Linjat', icon: Route },
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'drivers', label: 'Shoferët', icon: Users },
-    { id: 'inspectors', label: 'Faturino', icon: UserCheck },
-    ...(isDispatcher ? [{ id: 'accounts', label: 'Llogaritë', icon: ShieldCheck }, { id: 'logs', label: 'Auditimi', icon: Activity }] : []),
+    {
+      id: 'staff-menu',
+      label: 'Staf',
+      icon: Users,
+      subItems: [
+        { id: 'drivers', label: 'Shoferët', icon: Users },
+        { id: 'inspectors', label: 'Faturino', icon: UserCheck },
+      ]
+    },
+    ...(isDispatcher ? [{
+      id: 'accounts',
+      label: 'Llogaritë',
+      icon: ShieldCheck,
+      subItems: [
+        { id: 'operator', label: 'Operatorët', icon: Users },
+      ]
+    }] : []),
   ];
 
   const roleColor = (role: string) => ({ dispatcher: T.red, operator: T.violet, driver: T.amber, inspector: T.green }[role] || T.muted);
@@ -735,75 +770,155 @@ export default function AdminPanel() {
       boxSizing: 'border-box'
     }}>
 
-      {/* ── TOPBAR ──────────────────────────────────────────────────────── */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: `${T.surface}f0`, backdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${T.border}`,
-        padding: '0 24px', height: 56,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16
+      {/* ── FLOATING SIDEBAR ────────────────────────────────────────────────── */}
+      <div className="ap-sidebar-float" style={{
+        position: 'fixed', left: 24, top: 24, bottom: 24,
+        width: 240, zIndex: 1000,
+        background: `${T.surface}d0`, backdropFilter: 'blur(16px)',
+        border: `1px solid ${T.border}`, borderRadius: 24,
+        display: 'flex', flexDirection: 'column', gap: 32,
+        padding: '28px 16px', boxSizing: 'border-box',
+        boxShadow: '0 10px 40px rgba(0,0,0,.4)'
       }}>
-        {/* Left: brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 8px' }}>
           <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: T.violet,
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            width: 36, height: 36, borderRadius: 10,
+            background: `linear-gradient(135deg, ${T.violet}, ${T.blue})`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 4px 12px ${T.violet}40`
           }}>
-            <ShieldCheck size={16} color="#fff" />
+            <ShieldCheck size={20} color="#fff" />
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Backoffice</span>
-          {currentAccount?.role === 'operator' && (
-            <Badge color={T.violet}>Linja {currentAccount.routeId}</Badge>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: T.text, letterSpacing: '-0.02em' }}>Backoffice</span>
+            {currentAccount?.role === 'operator' && (
+              <Badge color={T.violet}>Linja {currentAccount.routeId}</Badge>
+            )}
+            <span style={{ fontSize: 10, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Control Center</span>
+          </div>
         </div>
 
-        {/* Center: tabs */}
-        <div style={{ display: 'flex', gap: 2, flex: 1, justifyContent: 'center', overflow: 'auto' }}>
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button key={id}
-              onClick={() => { setActiveTab(id); setCurrentView('list'); setSelectedRouteId(null); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 14px', borderRadius: 7,
-                background: activeTab === id ? T.raised : 'transparent',
-                border: `1px solid ${activeTab === id ? T.border : 'transparent'}`,
-                color: activeTab === id ? T.text : T.muted,
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                transition: 'all .15s', fontFamily: 'inherit', whiteSpace: 'nowrap'
-              }}>
-              <Icon size={13} />{label}
-            </button>
-          ))}
+        {/* Navigation */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+          {tabs.map((tab: any) => {
+            const { id, label, icon: Icon, subItems } = tab;
+            const active = activeTab === id || (subItems && subItems.some((s: any) => s.id === activeTab));
+            const isExpanded = (id === 'accounts' && isAccountsExpanded) || (id === 'staff-menu' && isStaffExpanded);
+
+            return (
+              <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <button
+                  onClick={() => {
+                    if (subItems) {
+                      if (id === 'accounts') setIsAccountsExpanded(!isAccountsExpanded);
+                      if (id === 'staff-menu') setIsStaffExpanded(!isStaffExpanded);
+                    } else {
+                      setActiveTab(id);
+                      setCurrentView('list');
+                      setSelectedRouteId(null);
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 14px', borderRadius: 14,
+                    background: active ? `${T.violet}14` : 'transparent',
+                    border: `1px solid ${active ? `${T.violet}30` : 'transparent'}`,
+                    color: active ? T.text : T.muted,
+                    fontSize: 13, fontWeight: active ? 700 : 500, cursor: 'pointer',
+                    transition: 'all .2s', fontFamily: 'inherit', textAlign: 'left',
+                    position: 'relative', width: '100%'
+                  }}
+                >
+                  {active && !subItems && <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: 3, background: T.violet, borderRadius: '0 4px 4px 0' }} />}
+                  <Icon size={18} color={active ? T.violet : T.dim} />
+                  <span style={{ flex: 1 }}>{label}</span>
+                  {subItems && (
+                    <ChevronRight size={14} style={{
+                      transform: isExpanded ? 'rotate(90deg)' : 'none',
+                      transition: 'transform .2s',
+                      opacity: 0.5
+                    }} />
+                  )}
+                </button>
+
+                {subItems && isExpanded && (
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: 2,
+                    marginLeft: 24, paddingLeft: 12,
+                    borderLeft: `1px solid ${T.border}`
+                  }}>
+                    {subItems.map((sub: any) => {
+                      const isSubActive = (id === 'accounts' && activeFilter === sub.id) || (id === 'staff-menu' && activeTab === sub.id);
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            if (id === 'accounts') {
+                              setActiveTab('accounts');
+                              setActiveFilter(sub.id);
+                            } else {
+                              setActiveTab(sub.id);
+                            }
+                            setCurrentView('list');
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 10px', borderRadius: 10,
+                            background: isSubActive ? `${T.violet}08` : 'transparent',
+                            color: isSubActive ? T.violet : T.muted,
+                            fontSize: 12, fontWeight: isSubActive ? 600 : 500,
+                            cursor: 'pointer', border: 'none', transition: 'all .2s',
+                            fontFamily: 'inherit', textAlign: 'left'
+                          }}
+                        >
+                          <sub.icon size={14} opacity={isSubActive ? 1 : 0.6} />
+                          {sub.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Right: user */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        {/* Bottom Section */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              padding: '14px', borderRadius: 18,
+              background: T.raised, border: `1px solid ${T.border}`,
+              display: 'flex', alignItems: 'center', gap: 12
+            }}>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%',
+                width: 32, height: 32, borderRadius: 10,
                 background: `${T.violet}20`, border: `1px solid ${T.violet}40`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
-                <User size={13} color={T.violet} />
+                <User size={14} color={T.violet} />
               </div>
-              <span style={{ fontSize: 12, color: T.muted }}>{user.name}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</span>
+                <span style={{ fontSize: 10, color: T.muted }}>{roleLabel(currentAccount?.role)}</span>
+              </div>
             </div>
           )}
-          <Btn variant="danger" onClick={() => triggerConf({
+
+          <Btn variant="danger" style={{ width: '100%', padding: '12px', borderRadius: 14 }} onClick={() => triggerConf({
             title: 'Dalja nga Sistemi',
             message: 'A je i sigurt që dëshiron të dalësh?',
             confirmText: 'Dil', confirmColor: T.red, icon: LogOut,
             onConfirm: logout
           })}>
-            <LogOut size={13} /> Dil
+            <LogOut size={16} /> Dil
           </Btn>
         </div>
       </div>
 
-      {/* ── CONTENT ─────────────────────────────────────────────────────── */}
-      <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
+      {/* ── CONTENT AREA ───────────────────────────────────────────────── */}
+      <div style={{ padding: '24px', marginLeft: 280, maxWidth: 1400 }}>
 
         {/* ── ROUTES LIST ─────────────────────────────────────────────── */}
         {currentView === 'list' && activeTab === 'routes' && (
@@ -919,7 +1034,10 @@ export default function AdminPanel() {
                           padding: '4px 10px', borderRadius: 7,
                           background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.2)'
                         }}>{bus.id || bus.plate}</span>
-                        <Badge color={isActive ? T.green : T.dim} dot={isActive}>{isActive ? 'Aktiv' : 'Garazh'}</Badge>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {bus.isArticulated && <Badge color={T.violet}><Activity size={10} /> Firzamonik</Badge>}
+                          <Badge color={isActive ? T.green : T.dim} dot={isActive}>{isActive ? 'Aktiv' : 'Garazh'}</Badge>
+                        </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                         {[
@@ -986,41 +1104,41 @@ export default function AdminPanel() {
                     {isLoadingBuses
                       ? Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={5} />)
                       : filteredDrivers.map((d: any, idx: number) => {
-                      const bus = filteredBuses.find((b: any) => b.driverId === d.id);
-                      const route = BUS_ROUTES.find(r => r.id === d.routeId);
-                      const sc = d.status === 'Aktiv' ? T.green : d.status === 'Pushim' ? T.amber : T.red;
-                      return (
-                        <tr key={`${d.id}-${idx}`} style={{ transition: 'background .1s' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = T.raised)}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <Td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ width: 36, height: 36, borderRadius: 9, background: T.raised, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <User size={16} color={T.muted} />
+                        const bus = filteredBuses.find((b: any) => b.driverId === d.id);
+                        const route = BUS_ROUTES.find(r => r.id === d.routeId);
+                        const sc = d.status === 'Aktiv' ? T.green : d.status === 'Pushim' ? T.amber : T.red;
+                        return (
+                          <tr key={`${d.id}-${idx}`} style={{ transition: 'background .1s' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = T.raised)}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <Td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 36, height: 36, borderRadius: 9, background: T.raised, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <User size={16} color={T.muted} />
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: 13 }}>{d.name}</div>
+                                  <div style={{ fontSize: 11, color: T.muted, fontFamily: 'monospace' }}>{d.personalId || d.id}</div>
+                                </div>
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>{d.name}</div>
-                                <div style={{ fontSize: 11, color: T.muted, fontFamily: 'monospace' }}>{d.personalId || d.id}</div>
+                            </Td>
+                            <Td>
+                              <div style={{ fontWeight: 600, fontSize: 12, color: route?.color || T.muted, marginBottom: 4 }}>{route?.name || '—'}</div>
+                              {bus ? <Badge color={T.dim}><Bus size={10} /> {bus.id}</Badge> : <span style={{ fontSize: 11, color: T.dim }}>Pa mjet</span>}
+                            </Td>
+                            <Td><span style={{ fontSize: 12, color: T.muted }}>{d.shift?.split('(')[0]?.trim()}</span></Td>
+                            <Td><Badge color={sc} dot>{d.status}</Badge></Td>
+                            <Td right>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <Btn onClick={() => { setFormData(d); setFormMode('edit'); setCurrentView('view-staff-schedule'); }}><Clock size={12} /> Program</Btn>
+                                <Btn onClick={() => navigateToForm('form-driver', 'edit', d)}><Edit2 size={12} /> Hap</Btn>
+                                {isDispatcher && <IconBtn icon={Trash2} color={T.red} onClick={() => handleDeleteDriver(d.id, d.routeId)} />}
                               </div>
-                            </div>
-                          </Td>
-                          <Td>
-                            <div style={{ fontWeight: 600, fontSize: 12, color: route?.color || T.muted, marginBottom: 4 }}>{route?.name || '—'}</div>
-                            {bus ? <Badge color={T.dim}><Bus size={10} /> {bus.id}</Badge> : <span style={{ fontSize: 11, color: T.dim }}>Pa mjet</span>}
-                          </Td>
-                          <Td><span style={{ fontSize: 12, color: T.muted }}>{d.shift?.split('(')[0]?.trim()}</span></Td>
-                          <Td><Badge color={sc} dot>{d.status}</Badge></Td>
-                          <Td right>
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <Btn onClick={() => { setFormData(d); setFormMode('edit'); setCurrentView('view-staff-schedule'); }}><Clock size={12} /> Program</Btn>
-                              <Btn onClick={() => navigateToForm('form-driver', 'edit', d)}><Edit2 size={12} /> Hap</Btn>
-                              {isDispatcher && <IconBtn icon={Trash2} color={T.red} onClick={() => handleDeleteDriver(d.id, d.routeId)} />}
-                            </div>
-                          </Td>
-                        </tr>
-                      );
-                    })}
+                            </Td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -1041,42 +1159,42 @@ export default function AdminPanel() {
                     {isLoadingBuses
                       ? Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={4} />)
                       : filteredInspectors.map((d: any, idx: number) => {
-                      const bus = adminBuses.find((b: any) => b.inspectorId === d.id);
-                      const route = BUS_ROUTES.find(r => r.id === d.routeId);
-                      return (
-                        <tr key={`${d.id}-${idx}`}
-                          onMouseEnter={e => (e.currentTarget.style.background = T.raised)}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <Td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ width: 36, height: 36, borderRadius: 9, background: T.raised, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Banknote size={16} color={T.muted} />
+                        const bus = adminBuses.find((b: any) => b.inspectorId === d.id);
+                        const route = BUS_ROUTES.find(r => r.id === d.routeId);
+                        return (
+                          <tr key={`${d.id}-${idx}`}
+                            onMouseEnter={e => (e.currentTarget.style.background = T.raised)}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <Td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 36, height: 36, borderRadius: 9, background: T.raised, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <Banknote size={16} color={T.muted} />
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: 13 }}>{d.name}</div>
+                                  <div style={{ fontSize: 11, color: T.muted, fontFamily: 'monospace' }}>{d.personalId || d.id}</div>
+                                </div>
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>{d.name}</div>
-                                <div style={{ fontSize: 11, color: T.muted, fontFamily: 'monospace' }}>{d.personalId || d.id}</div>
+                            </Td>
+                            <Td>
+                              <div style={{ fontWeight: 600, fontSize: 12, color: route?.color || T.muted, marginBottom: 4 }}>{route?.name || '—'}</div>
+                              {bus ? <Badge color={T.dim}><Bus size={10} /> {bus.id}</Badge> : <span style={{ fontSize: 11, color: T.dim }}>Pa mjet</span>}
+                            </Td>
+                            <Td>
+                              <div style={{ fontSize: 12 }}>POS: <span style={{ fontFamily: 'monospace', color: T.text }}>{d.posCode || '—'}</span></div>
+                              <div style={{ fontSize: 11, color: T.muted }}>{d.employmentType || 'Full-Time'}</div>
+                            </Td>
+                            <Td right>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <Btn onClick={() => { setFormData(d); setFormMode('edit'); setCurrentView('view-staff-schedule'); }}><Clock size={12} /> Program</Btn>
+                                <Btn onClick={() => navigateToForm('form-inspector', 'edit', d)}><Edit2 size={12} /> Hap</Btn>
+                                {isDispatcher && <IconBtn icon={Trash2} color={T.red} onClick={() => handleDeleteInspector(d.id, d.routeId)} />}
                               </div>
-                            </div>
-                          </Td>
-                          <Td>
-                            <div style={{ fontWeight: 600, fontSize: 12, color: route?.color || T.muted, marginBottom: 4 }}>{route?.name || '—'}</div>
-                            {bus ? <Badge color={T.dim}><Bus size={10} /> {bus.id}</Badge> : <span style={{ fontSize: 11, color: T.dim }}>Pa mjet</span>}
-                          </Td>
-                          <Td>
-                            <div style={{ fontSize: 12 }}>POS: <span style={{ fontFamily: 'monospace', color: T.text }}>{d.posCode || '—'}</span></div>
-                            <div style={{ fontSize: 11, color: T.muted }}>{d.employmentType || 'Full-Time'}</div>
-                          </Td>
-                          <Td right>
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <Btn onClick={() => { setFormData(d); setFormMode('edit'); setCurrentView('view-staff-schedule'); }}><Clock size={12} /> Program</Btn>
-                              <Btn onClick={() => navigateToForm('form-inspector', 'edit', d)}><Edit2 size={12} /> Hap</Btn>
-                              {isDispatcher && <IconBtn icon={Trash2} color={T.red} onClick={() => handleDeleteInspector(d.id, d.routeId)} />}
-                            </div>
-                          </Td>
-                        </tr>
-                      );
-                    })}
+                            </Td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -1307,6 +1425,38 @@ export default function AdminPanel() {
                       </Field>
                       <Field label="Marka / Modeli"><Input value={formData.brand || ''} onChange={(e: any) => setFormData({ ...formData, brand: e.target.value })} placeholder="Mercedes-Benz Citaro" /></Field>
                       <Field label="Viti"><Input type="number" value={formData.year || ''} onChange={(e: any) => setFormData({ ...formData, year: e.target.value })} placeholder="2018" /></Field>
+                      <Field label="Tipologjia e Mjetit">
+                        <div
+                          onClick={() => setFormData({ ...formData, isArticulated: !formData.isArticulated, capacity: !formData.isArticulated ? 120 : 60 })}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            padding: '12px 16px', borderRadius: 14,
+                            background: formData.isArticulated ? `${T.violet}10` : T.raised,
+                            border: `1px solid ${formData.isArticulated ? `${T.violet}40` : T.border}`,
+                            transition: 'all .25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            cursor: 'pointer', userSelect: 'none'
+                          }}
+                        >
+                          <div style={{
+                            width: 22, height: 22, borderRadius: '50%',
+                            border: `2px solid ${formData.isArticulated ? T.violet : T.dim}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all .2s', background: 'transparent', flexShrink: 0
+                          }}>
+                            {formData.isArticulated && (
+                              <div style={{
+                                width: 10, height: 10, borderRadius: '50%',
+                                background: T.violet, boxShadow: `0 0 8px ${T.violet}60`
+                              }} />
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: formData.isArticulated ? T.text : T.muted, transition: 'color .2s' }}>Autobus Firzamonik</span>
+                            <span style={{ fontSize: 10, color: T.dim }}>Mjet i gjatë i bashkuar (harmonikë)</span>
+                          </div>
+                        </div>
+                      </Field>
+                      <Field label="Kapaciteti (Pasagjerë)"><Input type="number" value={formData.capacity || 60} onChange={(e: any) => setFormData({ ...formData, capacity: parseInt(e.target.value) })} /></Field>
                     </div>
                   </Card>
                 )}

@@ -11,11 +11,9 @@ export default function SplashScreen({ isVisible }: SplashScreenProps) {
   useEffect(() => {
     if (isVisible) {
       setShouldRender(true);
-      document.body.style.overflow = 'hidden';
     } else {
       const timer = setTimeout(() => {
         setShouldRender(false);
-        document.body.style.overflow = 'auto';
       }, 500);
       return () => clearTimeout(timer);
     }

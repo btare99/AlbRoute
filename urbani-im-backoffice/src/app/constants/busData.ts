@@ -142,12 +142,18 @@ export const BUS_STOPS = [
   { id: 'pesembedhjete_kateshet', name: '15 Katëshat', lat: 41.330567730323644, lng: 19.81913830820661 },
 
   // ── LINJA 3C: Qender - Yrshek ───────────────────────────────────────────── 
-  { id: 'top_channel', name: 'Top Channel ', lat: 41.340910291422425, lng: 19.760677023177987 },
-  { id: 'radio_planet', name: 'Radio Planet', lat: 41.34331663662546, lng: 19.75745360988623 },
-  { id: 'pasqyra', name: 'Pasqyra', lat: 41.34597054630015, lng: 19.75383156070586 },
-  { id: 'rruga_demokracia', name: 'Rruga Demokracia', lat: 41.34951375839497, lng: 19.747797401650853 },
-  { id: 'xhamia', name: 'Xhamia', lat: 41.3509243423924, lng: 19.745291647356844 },
-  { id: 'fusha_sportit', name: 'Fusha Sportit', lat: 41.3526422908893, lng: 19.741807701716255 },
+  { id: 'top_channel_stop1', name: 'Top Channel ', lat: 41.340910291422425, lng: 19.760677023177987 },
+  { id: 'top_channel_stop2', name: 'Top Channel', lat: 41.340901221172636, lng: 19.760485310252168 },
+  { id: 'radio_planet_stop1', name: 'Radio Planet', lat: 41.34331663662546, lng: 19.75745360988623 },
+  { id: 'radio_planet_stop2', name: 'Radio Planet', lat: 41.343139889633356, lng: 19.757515682661733 },
+  { id: 'pasqyra_stop1', name: 'Pasqyra', lat: 41.34597054630015, lng: 19.75383156070586 },
+  { id: 'pasqyra_stop2', name: 'Pasqyra', lat: 41.34614323092765, lng: 19.753213905674382 },
+  { id: 'rruga_demokracia_stop1', name: 'Rruga Demokracia', lat: 41.34951375839497, lng: 19.747797401650853 },
+  { id: 'rruga_demokracia_stop2', name: 'Rruga Demokracia', lat: 41.34923015586798, lng: 19.7481561285584 },
+  { id: 'xhamia_stop1', name: 'Xhamia', lat: 41.3509243423924, lng: 19.745291647356844 },
+  { id: 'xhamia_stop2', name: 'Xhamia', lat: 41.351152811444734, lng: 19.744803039274053 },
+  { id: 'fusha_sportit_stop1', name: 'Fusha Sportit', lat: 41.3526422908893, lng: 19.741807701716255 },
+  { id: 'fusha_sportit_stop2', name: 'Fusha Sportit', lat: 41.35248168554631, lng: 19.74202427075276 },
   { id: '100_vjetori', name: '100 Vjetori', lat: 41.35308466650584, lng: 19.73797763024168 },
 
   // ── LINJA 4: Qender - City Park ──────────────────────────────────────────────
@@ -461,8 +467,14 @@ export const BUS_ROUTES = [
       'biblioteka', 'pesembedhjete_kateshet', 'banka_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
       'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
-      'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel',
-      'radio_planet', 'pasqyra', 'rruga_demokracia', 'xhamia', 'fusha_sportit', '100_vjetori'
+      'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel_stop1',
+      'radio_planet_stop1', 'pasqyra_stop1', 'rruga_demokracia_stop1', 'xhamia_stop1', 'fusha_sportit_stop1', '100_vjetori'
+    ],
+    returnStops: [
+      '100_vjetori', 'fusha_sportit_stop2', 'xhamia_stop2', 'rruga_demokracia_stop2', 'pasqyra_stop2',
+      'radio_planet_stop2', 'top_channel_stop2', 'mezez', 'ish_xhenio', 'pallati_minierave',
+      'yzberisht', 'besim_alla', 'bego_hoxha', 'joklin_persi', 'kombinati_mishit', 'tregu', 'ura_teknologjike',
+      'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'biblioteka'
     ]
   },
 

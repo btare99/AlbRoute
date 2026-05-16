@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, useCallback, useMemo, JSXElementConstructor, optimisticKey, ReactElement, ReactNode, ReactPortal } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, ChevronUp, Moon, Sun, Globe, Bus, Route, MapPin, Clock, Banknote, ChevronDown, RefreshCcw } from 'lucide-react';
@@ -16,7 +16,9 @@ export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const busMarkersRef = useRef<Record<string, any>>({});
-  const stopMarkersRef = useRef<any[]>([]);
+  const stopMarkersMapRef = useRef<Record<string, any>>({}); // id -> marker
+  const renderedStopIdsRef = useRef<Set<string>>(new Set());
+  const renderedBusIdsRef = useRef<Set<string>>(new Set());
   const routeLinesRef = useRef<any[]>([]);
   const LRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
@@ -30,6 +32,7 @@ export default function MapView() {
   const [activeRouteFilter, setActiveRouteFilter] = useState<string | null>(null);
   const [mapStyle, setMapStyle] = useState<'dark' | 'light' | 'satellite'>('dark');
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
+  const [mapBounds, setMapBounds] = useState<any>(null); // Lazy loading: viewport bounds
 
   const buses = useStore((s: any) => s.buses);
   const userLocation = useStore((s: any) => s.userLocation);
@@ -333,11 +336,15 @@ export default function MapView() {
           preferCanvas: true
         }).setView(TIRANA_CENTER, DEFAULT_ZOOM);
 
+        // LAZY LOADING: Update bounds on every map move/zoom
+        map.on('moveend zoomend', () => setMapBounds(map.getBounds()));
+
         const tileLayer = L.tileLayer(TILES.dark, { maxZoom: 19 });
         tileLayer.addTo(map);
         (map as any)._tileLayer = tileLayer;
         mapInstanceRef.current = map;
         setMapReady(true);
+        setMapBounds(map.getBounds());
       } catch (e) { console.error('Error init map:', e); }
     };
     init();
@@ -382,32 +389,51 @@ export default function MapView() {
     const L = LRef.current;
     if (!map || !L || !mapReady) return;
 
-    // Pastrojmë markerat ekzistues dhe grupin e klasterave
-    if (clusterGroupRef.current) {
-      map.removeLayer(clusterGroupRef.current);
+    // Ensure cluster group exists
+    if (!clusterGroupRef.current) {
+      // @ts-ignore
+      clusterGroupRef.current = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        spiderfyOnMaxZoom: true,
+        maxClusterRadius: 40,
+      }).addTo(map);
     }
-    stopMarkersRef.current.forEach((m: any) => map.removeLayer(m));
-    stopMarkersRef.current = [];
 
-    if (!showStops) return;
+    if (!showStops) {
+      clusterGroupRef.current.clearLayers();
+      renderedStopIdsRef.current.clear();
+      stopMarkersMapRef.current = {};
+      return;
+    }
 
     const activeTripStopIds = activeTrip ? activeTrip.legs.flatMap((l: any) => l.stopIds || []) : [];
-    const displayedStops = activeTrip
+    let displayedStops = activeTrip
       ? BUS_STOPS.filter((s: any) => activeTripStopIds.includes(s.id))
       : BUS_STOPS;
 
-    // Krijojmë grupin e ri të klasterave
-    // @ts-ignore
-    const clusters = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      spiderfyOnMaxZoom: true,
-      maxClusterRadius: 40,
+    // LAZY LOADING: filter to viewport only (skip for active trip — show all trip stops)
+    if (!activeTrip && mapBounds) {
+      const expanded = mapBounds.pad(0.15); // slight padding so markers don't pop at edge
+      displayedStops = displayedStops.filter((s: any) => expanded.contains([s.lat, s.lng]));
+    }
+
+    const nextIds = new Set(displayedStops.map((s: any) => s.id as string));
+
+    // 1. Remove stops that left the viewport
+    renderedStopIdsRef.current.forEach(id => {
+      if (!nextIds.has(id)) {
+        clusterGroupRef.current.removeLayer(stopMarkersMapRef.current[id]);
+        delete stopMarkersMapRef.current[id];
+      }
     });
 
+    // 2. Add only NEW stops with reveal animation
     displayedStops.forEach((stop: any) => {
+      if (renderedStopIdsRef.current.has(stop.id)) return; // already rendered
+
       const stopHtml = `
-        <div style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+        <div class="marker-enter" style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
             background: #1e293b;
             width: 28px; height: 28px;
@@ -448,17 +474,13 @@ export default function MapView() {
           </div>`, { direction: 'top', offset: [0, -8], className: 'square-tooltip' });
       }
 
-      marker.on('click', () => {
-        setSelectedStop(stop);
-      });
-
-      clusters.addLayer(marker);
-      stopMarkersRef.current.push(marker);
+      marker.on('click', () => setSelectedStop(stop));
+      clusterGroupRef.current.addLayer(marker);
+      stopMarkersMapRef.current[stop.id] = marker;
     });
 
-    clusters.addTo(map);
-    clusterGroupRef.current = clusters;
-  }, [showStops, mapReady, activeTrip]);
+    renderedStopIdsRef.current = nextIds;
+  }, [showStops, mapReady, activeTrip, mapBounds]);
 
 
   useEffect(() => {
@@ -679,6 +701,17 @@ export default function MapView() {
     buses.forEach((bus: any) => {
       if (!bus.id || !bus.lat || !bus.lng) return;
 
+      // LAZY LOADING: skip buses outside the viewport
+      if (mapBounds && !mapBounds.pad(0.1).contains([bus.lat, bus.lng])) {
+        // If it had a marker and went off screen, remove it
+        if (busMarkersRef.current[bus.id]) {
+          map.removeLayer(busMarkersRef.current[bus.id]);
+          delete busMarkersRef.current[bus.id];
+          renderedBusIdsRef.current.delete(bus.id.toString());
+        }
+        return;
+      }
+
       let isActive = true;
       if (activeTrip) {
         isActive = activeTrip.legs.some((leg: any) => leg.route?.id === bus.routeId);
@@ -692,13 +725,16 @@ export default function MapView() {
       const opacity = isActive ? 1 : 0.18;
       const label = (bus.routeName || bus.routeId?.replace('L', '') || 'Bus').toString();
 
+      const isNew = !renderedBusIdsRef.current.has(bus.id.toString());
+      const animClass = isNew ? 'marker-enter' : '';
+
       // Marker pill
       const markerHtml = `
       <div style="
         display:inline-flex;flex-direction:column;align-items:center;
         opacity:${opacity};transition:opacity 0.3s;
       ">
-        <div style="
+        <div class="${animClass}" style="
           background:${bus.routeColor};color:#fff;
           padding:5px 9px;border-radius:8px;
           font-size:11px;font-weight:700;letter-spacing:0.04em;
@@ -798,9 +834,10 @@ export default function MapView() {
         marker.on('click', () => { setInfoPanel(bus); setSelectedBus(bus); });
         marker.addTo(map);
         busMarkersRef.current[bus.id] = marker;
+        renderedBusIdsRef.current.add(bus.id.toString());
       }
     });
-  }, [buses, mapReady, activeRouteFilter, showBuses, activeTrip]);
+  }, [buses, mapReady, activeRouteFilter, showBuses, activeTrip, mapBounds]);
 
 
   // ── SELECTED STOP HIGHLIGHT ───────────────────────────────────────────────────
@@ -1502,60 +1539,60 @@ export default function MapView() {
                         </div>
                       )}
                       <div style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '0.5px solid rgba(255,255,255,0.06)',
-                      borderLeft: `2px solid ${color}`,
-                      borderRadius: '0 10px 10px 0',
-                      padding: '14px',
-                      marginBottom: '8px',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                        <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Bus size={10} /> {leg.route?.name}
-                        </div>
-                        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
-                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>{t.ticket_40}</span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {stopsToShow.map((stop: string, j: number) => {
-                          const isFirst = j === 0;
-                          const isLast = j === stopsToShow.length - 1;
-                          const isTerminal = isFirst || isLast;
-                          return (
-                            <div key={j} style={{ display: 'flex', gap: '12px' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
-                                {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                                <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
-                                {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', minHeight: '30px' }}>
-                                <span style={{ fontSize: '13px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)' }}>{stop}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {stops.length > 3 && (
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
-                              <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
-                            </div>
-                            <button
-                              onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
-                              style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
-                            >
-                              <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                              {allShown ? (language === 'al' ? 'Fshih stacionet' : 'Hide stations') : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${language === 'al' ? 'të tjera' : 'others'}`}
-                            </button>
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '0.5px solid rgba(255,255,255,0.06)',
+                        borderLeft: `2px solid ${color}`,
+                        borderRadius: '0 10px 10px 0',
+                        padding: '14px',
+                        marginBottom: '8px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                          <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Bus size={10} /> {leg.route?.name}
                           </div>
-                        )}
+                          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
+                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>{t.ticket_40}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {stopsToShow.map((stop: string, j: number) => {
+                            const isFirst = j === 0;
+                            const isLast = j === stopsToShow.length - 1;
+                            const isTerminal = isFirst || isLast;
+                            return (
+                              <div key={j} style={{ display: 'flex', gap: '12px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
+                                  {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                                  <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
+                                  {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', minHeight: '30px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)' }}>{stop}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {stops.length > 3 && (
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
+                                <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
+                              </div>
+                              <button
+                                onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
+                                style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
+                              >
+                                <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                                {allShown ? (language === 'al' ? 'Fshih stacionet' : 'Hide stations') : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${language === 'al' ? 'të tjera' : 'others'}`}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -1909,6 +1946,16 @@ export default function MapView() {
           80%, 100% { opacity: 0; }
         }
         @keyframes slide-up { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* ── LAZY LOADING: REVEAL ANIMATION (only new markers) ── */
+        :global(.marker-enter) {
+          animation: premiumReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          transform-origin: bottom center;
+        }
+        @keyframes premiumReveal {
+          0%   { opacity: 0; transform: translateY(20px) scale(0.5) rotateX(-40deg); filter: blur(6px); }
+          100% { opacity: 1; transform: translateY(0)   scale(1)   rotateX(0deg);   filter: blur(0px); }
+        }
 
         .mobile-drag-handle { display: none; }
 

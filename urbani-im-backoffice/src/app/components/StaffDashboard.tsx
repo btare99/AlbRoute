@@ -316,7 +316,7 @@ export default function StaffDashboard() {
           {/* METRICS ROW (Active on 'mjeti' or Desktop) */}
           <div className={`sds-metrics-row ${activeTab !== 'mjeti' ? 'sds-mobile-hidden' : ''}`}>
             {isLoading ? (
-              [0,1,2].map(i => (
+              [0, 1, 2].map(i => (
                 <div key={i} className="sds-metric-card">
                   <div className="sds-sk" style={{ width: '32px', height: '32px', borderRadius: '10px', margin: '0 auto 8px' }} />
                   <div className="sds-sk" style={{ width: '60px', height: '18px', borderRadius: 5, margin: '0 auto 6px' }} />
@@ -397,7 +397,7 @@ export default function StaffDashboard() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="sds-station-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
-                    {[0,1,2,3].map(ci => (
+                    {[0, 1, 2, 3].map(ci => (
                       <div key={ci} className="sds-station-cell">
                         <div className="sds-sk" style={{ width: '52px', height: '14px', borderRadius: 4, margin: '0 auto' }} />
                       </div>
