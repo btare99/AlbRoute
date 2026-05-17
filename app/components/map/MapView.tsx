@@ -41,6 +41,7 @@ export default function MapView() {
   const selectedStop = useStore((s: any) => s.selectedStop);
   const activeTrip = useStore((s: any) => s.activeTrip);
   const tripOriginCoords = useStore((s: any) => s.tripOriginCoords);
+  const tripDestCoords = useStore((s: any) => s.tripDestCoords);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
   const startTracking = useStore((s: any) => s.startTracking);
   const stopTracking = useStore((s: any) => s.stopTracking);
@@ -64,6 +65,110 @@ export default function MapView() {
       tripFromInputRef.current.focus();
     }
   }, [isSearching]);
+
+  interface AutocompleteItem {
+    name: string;
+    address: string;
+    type: string;
+    lat: number;
+    lng: number;
+  }
+
+  const [fromSuggestions, setFromSuggestions] = useState<AutocompleteItem[]>([]);
+  const [toSuggestions, setToSuggestions] = useState<AutocompleteItem[]>([]);
+
+  // Ndihmës për të formatuar dhe klasifikuar një rezultat nga Nominatim
+  const parsePlaceItem = (item: any): AutocompleteItem => {
+    const nameParts = item.display_name.split(',');
+    const title = nameParts[0].trim();
+    const subtitle = nameParts.slice(1, 3).map((p: string) => p.trim()).join(', ');
+
+    let typeLabel = '';
+    const placeClass = item.class;
+    const placeType = item.type;
+
+    if (placeClass === 'amenity') {
+      if (placeType === 'restaurant') typeLabel = language === 'al' ? 'Restorant' : 'Restaurant';
+      else if (placeType === 'cafe') typeLabel = language === 'al' ? 'Kafe' : 'Cafe';
+      else if (placeType === 'bar' || placeType === 'pub') typeLabel = 'Bar / Pub';
+      else if (placeType === 'fast_food') typeLabel = 'Fast Food';
+      else if (placeType === 'bank' || placeType === 'atm') typeLabel = language === 'al' ? 'Bankë' : 'Bank';
+      else if (placeType === 'hospital' || placeType === 'clinic' || placeType === 'pharmacy') typeLabel = language === 'al' ? 'Shëndetësi' : 'Medical';
+      else if (placeType === 'school' || placeType === 'university' || placeType === 'college' || placeType === 'kindergarten') typeLabel = language === 'al' ? 'Arsim / Shkollë' : 'Education';
+      else if (placeType === 'place_of_worship') typeLabel = language === 'al' ? 'Kult / Katedralë / Xhami' : 'Worship';
+      else typeLabel = language === 'al' ? 'Vendi' : 'Place';
+    } else if (placeClass === 'shop') {
+      typeLabel = language === 'al' ? 'Dyqan / Qendër Tregtare' : 'Shop / Mall';
+    } else if (placeClass === 'tourism') {
+      if (placeType === 'hotel' || placeType === 'hostel' || placeType === 'motel' || placeType === 'guest_house') typeLabel = 'Hotel';
+      else typeLabel = language === 'al' ? 'Turizëm' : 'Tourism';
+    } else if (placeClass === 'historic') {
+      typeLabel = language === 'al' ? 'Atraksion Historik' : 'Historical';
+    } else if (placeClass === 'leisure') {
+      if (placeType === 'park' || placeType === 'playground' || placeType === 'garden') typeLabel = language === 'al' ? 'Park / Çlodhje' : 'Park';
+      else typeLabel = language === 'al' ? 'Argëtim / Sport' : 'Recreation';
+    } else if (placeClass === 'highway') {
+      typeLabel = language === 'al' ? 'Rrugë' : 'Street';
+    } else {
+      typeLabel = language === 'al' ? 'Adresë' : 'Address';
+    }
+
+    return {
+      name: title,
+      address: subtitle,
+      type: typeLabel,
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon)
+    };
+  };
+
+  // Kërkim Autocomplete me Debounce për Pikën e Nisjes (Tirana)
+  useEffect(() => {
+    if (tripFrom.length < 3 || tripFrom.includes('📍')) {
+      setFromSuggestions([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(tripFrom + ', Tirana')}&format=json&limit=6&addressdetails=1&countrycodes=al`, {
+          headers: { 'User-Agent': 'UrbaniIm/1.0' }
+        });
+        const data = await res.json();
+        if (data && Array.isArray(data)) {
+          const parsed = data.map((item: any) => parsePlaceItem(item));
+          setFromSuggestions(parsed);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      }
+    }, 350);
+
+    return () => clearTimeout(delayDebounce);
+  }, [tripFrom]);
+
+  // Kërkim Autocomplete me Debounce për Destinacionin (Tirana)
+  useEffect(() => {
+    if (tripTo.length < 3) {
+      setToSuggestions([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(tripTo + ', Tirana')}&format=json&limit=6&addressdetails=1&countrycodes=al`, {
+          headers: { 'User-Agent': 'UrbaniIm/1.0' }
+        });
+        const data = await res.json();
+        if (data && Array.isArray(data)) {
+          const parsed = data.map((item: any) => parsePlaceItem(item));
+          setToSuggestions(parsed);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      }
+    }, 350);
+
+    return () => clearTimeout(delayDebounce);
+  }, [tripTo]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,21 +216,7 @@ export default function MapView() {
         return null;
       };
 
-      // 1. Ecja nga pika e nisjes deri tek stacioni i pare
-      if (activeTrip.walkingDist > 0 && tripOriginCoords) {
-        const firstStop = BUS_STOPS.find((s: any) =>
-          s.id === activeTrip.legs?.[0]?.boardNodeId || s.name === activeTrip.actualFrom
-        );
-        if (firstStop) {
-          const coords = await fetchFootRoute(
-            tripOriginCoords.lng, tripOriginCoords.lat,
-            firstStop.lng, firstStop.lat
-          );
-          if (coords) newShapes['origin'] = coords;
-        }
-      }
-
-      // 2. Ecja ndermjet ndërimeve të linjave
+      // Ecja për çdo leg pedestrian (nisje, transferime, ose mbërritje)
       if (activeTrip.legs) {
         for (let i = 0; i < activeTrip.legs.length; i++) {
           const leg = activeTrip.legs[i];
@@ -137,8 +228,25 @@ export default function MapView() {
               ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId)
               : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
 
-            if (bStop && aStop) {
-              const coords = await fetchFootRoute(bStop.lng, bStop.lat, aStop.lng, aStop.lat);
+            let startLat = bStop ? bStop.lat : null;
+            let startLng = bStop ? bStop.lng : null;
+            let destLat = aStop ? aStop.lat : null;
+            let destLng = aStop ? aStop.lng : null;
+
+            // Leg-u i parë: fillon tek tripOriginCoords nëse është ecje
+            if (i === 0 && tripOriginCoords) {
+              startLat = tripOriginCoords.lat;
+              startLng = tripOriginCoords.lng;
+            }
+
+            // Leg-u i fundit: mbaron tek tripDestCoords nëse është ecje
+            if (i === activeTrip.legs.length - 1 && tripDestCoords) {
+              destLat = tripDestCoords.lat;
+              destLng = tripDestCoords.lng;
+            }
+
+            if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
+              const coords = await fetchFootRoute(startLng, startLat, destLng, destLat);
               if (coords) newShapes[`walk_${i}`] = coords;
             }
           }
@@ -303,9 +411,17 @@ export default function MapView() {
 
 
   const TILES = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    dark: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
     light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  };
+
+  const getLayerOptions = (style: 'dark' | 'light' | 'satellite') => {
+    return {
+      maxZoom: 20,
+      subdomains: style === 'dark' || style === 'light' ? ['a', 'b', 'c', 'd'] : ['mt0', 'mt1', 'mt2', 'mt3'],
+      className: ''
+    };
   };
 
   // ─── EFFECTS ───────────────────────────────────────────────────────────────
@@ -339,7 +455,7 @@ export default function MapView() {
         // LAZY LOADING: Update bounds on every map move/zoom
         map.on('moveend zoomend', () => setMapBounds(map.getBounds()));
 
-        const tileLayer = L.tileLayer(TILES.dark, { maxZoom: 19 });
+        const tileLayer = L.tileLayer(TILES.dark, getLayerOptions('dark'));
         tileLayer.addTo(map);
         (map as any)._tileLayer = tileLayer;
         mapInstanceRef.current = map;
@@ -365,7 +481,7 @@ export default function MapView() {
     if (!map || !L) return;
     const existing = (map as any)._tileLayer;
     if (existing) map.removeLayer(existing);
-    const newTile = L.tileLayer(TILES[mapStyle], { maxZoom: 19 });
+    const newTile = L.tileLayer(TILES[mapStyle], getLayerOptions(mapStyle));
     newTile.addTo(map);
     (map as any)._tileLayer = newTile;
   }, [mapStyle]);
@@ -492,42 +608,84 @@ export default function MapView() {
     if (!showRoutes) return;
 
     if (activeTrip) {
-      // 1. Draw Walking Path
-      const tripOriginCoords = useStore.getState().tripOriginCoords;
-      if (activeTrip.walkingDist > 0 && tripOriginCoords) {
-        const firstStop = BUS_STOPS.find((s: any) => s.name === activeTrip.actualFrom);
-        if (firstStop) {
-          const walkCoords: [number, number][] = walkingShapes['origin'] || [
-            [tripOriginCoords.lat, tripOriginCoords.lng],
-            [firstStop.lat, firstStop.lng]
-          ];
-          const walkLine = L.polyline(walkCoords, {
-            color: '#10b981', // green for walking
-            weight: 5,
-            dashArray: '8, 8', // dashed/dotted line
-            opacity: 0.9
-          }).addTo(map);
-          routeLinesRef.current.push({ line: walkLine, routeId: 'walk' });
-        }
+      // 1. Draw Custom Address/Street Pin Markers (Nisja & Destinacioni)
+      const isCustomFrom = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.from.toLowerCase());
+      if (isCustomFrom && tripOriginCoords) {
+        const fromHtml = `
+          <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
+            <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <mask id="pin-mask-from">
+                  <rect width="24" height="36" fill="white" />
+                  <circle cx="12" cy="12" r="5" fill="black" />
+                </mask>
+              </defs>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#f97316" mask="url(#pin-mask-from)"/>
+            </svg>
+          </div>`;
+        const fromMarker = L.marker([tripOriginCoords.lat, tripOriginCoords.lng], {
+          icon: L.divIcon({ html: fromHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+          zIndexOffset: 1000
+        }).addTo(map);
+        routeLinesRef.current.push({ line: fromMarker, routeId: 'custom_origin_pin' });
       }
 
-      // 2. Draw Legs
+      const isCustomTo = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.to.toLowerCase());
+      if (isCustomTo && tripDestCoords) {
+        const toHtml = `
+          <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
+            <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <mask id="pin-mask-to">
+                  <rect width="24" height="36" fill="white" />
+                  <circle cx="12" cy="12" r="5" fill="black" />
+                </mask>
+              </defs>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#EA4335" mask="url(#pin-mask-to)"/>
+            </svg>
+          </div>`;
+        const toMarker = L.marker([tripDestCoords.lat, tripDestCoords.lng], {
+          icon: L.divIcon({ html: toHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+          zIndexOffset: 1000
+        }).addTo(map);
+        routeLinesRef.current.push({ line: toMarker, routeId: 'custom_dest_pin' });
+      }
+
+      // Draw Legs
       activeTrip.legs.forEach((leg: any, idx: number) => {
         if (leg.isWalking) {
           const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
           const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
-          if (bStop && aStop) {
+
+          let startLat = bStop ? bStop.lat : null;
+          let startLng = bStop ? bStop.lng : null;
+          let destLat = aStop ? aStop.lat : null;
+          let destLng = aStop ? aStop.lng : null;
+
+          // Leg-u i parë: fillon tek tripOriginCoords nëse është ecje
+          if (idx === 0 && tripOriginCoords) {
+            startLat = tripOriginCoords.lat;
+            startLng = tripOriginCoords.lng;
+          }
+
+          // Leg-u i fundit: mbaron tek tripDestCoords nëse është ecje
+          if (idx === activeTrip.legs.length - 1 && tripDestCoords) {
+            destLat = tripDestCoords.lat;
+            destLng = tripDestCoords.lng;
+          }
+
+          if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
             const walkCoords = walkingShapes[`walk_${idx}`] || [
-              [bStop.lat, bStop.lng],
-              [aStop.lat, aStop.lng]
+              [startLat, startLng],
+              [destLat, destLng]
             ];
-            const transferLine = L.polyline(walkCoords, {
-              color: '#10b981',
+            const walkLine = L.polyline(walkCoords, {
+              color: '#10b981', // green for walking
               weight: 5,
-              dashArray: '8, 8',
+              dashArray: '8, 8', // dashed/dotted line
               opacity: 0.9
             }).addTo(map);
-            routeLinesRef.current.push({ line: transferLine, routeId: `transfer_walk_${idx}` });
+            routeLinesRef.current.push({ line: walkLine, routeId: `walk_${idx}` });
           }
           return;
         }
@@ -1063,9 +1221,7 @@ export default function MapView() {
         </div>
 
         {/* ── AUTOCOMPLETE DROPDOWNS ── */}
-        {showFromDropdown && tripFrom.length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
-
-
+        {showFromDropdown && tripFrom.length > 0 && (
           <div style={{
             position: 'absolute',
             top: 'calc(100% + 10px)',
@@ -1082,69 +1238,131 @@ export default function MapView() {
             animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
             padding: '10px'
           }} className="station-dropdown-map">
-            <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {tripFrom ? t.results : (language === 'al' ? 'Zgjidh Stacionin' : 'Select Station')}
+            <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+              {language === 'al' ? 'Sugjerimet e Nisjes' : 'Departure Suggestions'}
             </div>
-            {(tripFrom
-              ? STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase()))
-              : STOP_NAMES
-            ).slice(0, 15).map(name => (
-              <button
-                key={name}
-                onClick={() => {
-                  setTripFrom(name);
-                  setShowFromDropdown(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.85)',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  fontSize: '15px',
-                  borderRadius: '16px',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  marginBottom: '2px'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.transform = 'translateX(6px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-                  e.currentTarget.style.transform = 'translateX(0)';
-                }}
-              >
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.04)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#94a3b8', flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.06)'
-                }}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-                  </svg>
 
-
+            {/* A. STACIONET E AUTOBUSIT */}
+            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
+              <>
+                <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
                 </div>
-                <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                <ChevronRight size={16} style={{ opacity: 0.2 }} />
-              </button>
-            ))}
+                {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).slice(0, 5).map(name => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setTripFrom(name);
+                      setShowFromDropdown(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                      color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                      borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                  >
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
+                      display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
+                      justifyContent: 'center'
+                    }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
+                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                      </svg>
+                    </div>
+                    <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
+                    <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* B. ADRESAT DHE ATRAKSIONET */}
+            {fromSuggestions.length > 0 && (
+              <>
+                <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
+                  {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
+                </div>
+                {fromSuggestions.map((item, idx) => {
+                  let badgeBg = 'rgba(100, 116, 139, 0.1)';
+                  let badgeColor = '#64748b';
+                  if (item.type.includes('Restorant') || item.type.includes('Kafe') || item.type.includes('Bar') || item.type.includes('Food') || item.type.includes('Cafe') || item.type.includes('Restaurant')) {
+                    badgeBg = 'rgba(245, 158, 11, 0.15)';
+                    badgeColor = '#f59e0b';
+                  } else if (item.type.includes('Dyqan') || item.type.includes('Shop') || item.type.includes('Mall')) {
+                    badgeBg = 'rgba(168, 85, 247, 0.15)';
+                    badgeColor = '#a855f7';
+                  } else if (item.type.includes('Arsim') || item.type.includes('Shkollë') || item.type.includes('Education')) {
+                    badgeBg = 'rgba(6, 182, 212, 0.15)';
+                    badgeColor = '#06b6d4';
+                  } else if (item.type.includes('Shëndetësi') || item.type.includes('Medical')) {
+                    badgeBg = 'rgba(239, 68, 68, 0.15)';
+                    badgeColor = '#ef4444';
+                  } else if (item.type.includes('Hotel')) {
+                    badgeBg = 'rgba(99, 102, 241, 0.15)';
+                    badgeColor = '#6366f1';
+                  } else if (item.type.includes('Historik') || item.type.includes('Turizëm') || item.type.includes('Tourism')) {
+                    badgeBg = 'rgba(236, 72, 153, 0.15)';
+                    badgeColor = '#ec4899';
+                  } else if (item.type.includes('Park')) {
+                    badgeBg = 'rgba(34, 197, 94, 0.15)';
+                    badgeColor = '#22c55e';
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const fullText = item.name + (item.address ? ', ' + item.address : '');
+                        setTripFrom(fullText);
+                        useStore.getState().setTripOriginCoords({ lat: item.lat, lng: item.lng });
+                        setShowFromDropdown(false);
+                      }}
+                      style={{
+                        width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                        color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                        borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)',
+                        display: 'flex', alignItems: 'center', color: '#f59e0b', flexShrink: 0,
+                        justifyContent: 'center'
+                      }}>
+                        <MapPin size={16} style={{ alignSelf: 'center' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                        {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
+                      </div>
+                      <span style={{
+                        fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
+                        padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
+                      }}>
+                        {item.type}
+                      </span>
+                      <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                    </button>
+                  );
+                })}
+              </>
+            )}
+
+            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length === 0 && fromSuggestions.length === 0 && (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+                {language === 'al' ? 'Po kërkohet për adresa...' : 'Searching for addresses...'}
+              </div>
+            )}
           </div>
         )}
 
-        {showToDropdown && tripTo.length > 0 && STOP_NAMES.filter((name: string) => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
-
-
+        {showToDropdown && tripTo.length > 0 && (
           <div style={{
             position: 'absolute',
             top: 'calc(100% + 10px)',
@@ -1161,63 +1379,127 @@ export default function MapView() {
             animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
             padding: '10px'
           }} className="station-dropdown-map">
-            <div style={{ padding: '10px 14px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {tripTo ? t.results : (language === 'al' ? 'Zgjidh Destinacionin' : 'Select Destination')}
+            <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+              {language === 'al' ? 'Sugjerimet e Destinacionit' : 'Destination Suggestions'}
             </div>
-            {(tripTo
-              ? STOP_NAMES.filter((name: string) => name.toLowerCase().includes(tripTo.toLowerCase()))
-              : STOP_NAMES
-            ).slice(0, 15).map((name: string) => (
-              <button
-                key={name}
-                onClick={() => {
-                  setTripTo(name);
-                  setShowToDropdown(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.85)',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  fontSize: '15px',
-                  borderRadius: '16px',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  marginBottom: '2px'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.transform = 'translateX(6px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-                  e.currentTarget.style.transform = 'translateX(0)';
-                }}
-              >
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.04)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#cbd5e1', flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.06)'
-                }}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-                  </svg>
 
-
+            {/* A. STACIONET E AUTOBUSIT */}
+            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
+              <>
+                <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
                 </div>
-                <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                <ChevronRight size={16} style={{ opacity: 0.2 }} />
-              </button>
-            ))}
+                {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).slice(0, 5).map(name => (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      setTripTo(name);
+                      setShowToDropdown(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                      color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                      borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                  >
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
+                      display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
+                      justifyContent: 'center'
+                    }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
+                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                      </svg>
+                    </div>
+                    <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
+                    <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* B. ADRESAT DHE ATRAKSIONET */}
+            {toSuggestions.length > 0 && (
+              <>
+                <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
+                  {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
+                </div>
+                {toSuggestions.map((item, idx) => {
+                  let badgeBg = 'rgba(100, 116, 139, 0.1)';
+                  let badgeColor = '#64748b';
+                  if (item.type.includes('Restorant') || item.type.includes('Kafe') || item.type.includes('Bar') || item.type.includes('Food') || item.type.includes('Cafe') || item.type.includes('Restaurant')) {
+                    badgeBg = 'rgba(245, 158, 11, 0.15)';
+                    badgeColor = '#f59e0b';
+                  } else if (item.type.includes('Dyqan') || item.type.includes('Shop') || item.type.includes('Mall')) {
+                    badgeBg = 'rgba(168, 85, 247, 0.15)';
+                    badgeColor = '#a855f7';
+                  } else if (item.type.includes('Arsim') || item.type.includes('Shkollë') || item.type.includes('Education')) {
+                    badgeBg = 'rgba(6, 182, 212, 0.15)';
+                    badgeColor = '#06b6d4';
+                  } else if (item.type.includes('Shëndetësi') || item.type.includes('Medical')) {
+                    badgeBg = 'rgba(239, 68, 68, 0.15)';
+                    badgeColor = '#ef4444';
+                  } else if (item.type.includes('Hotel')) {
+                    badgeBg = 'rgba(99, 102, 241, 0.15)';
+                    badgeColor = '#6366f1';
+                  } else if (item.type.includes('Historik') || item.type.includes('Turizëm') || item.type.includes('Tourism')) {
+                    badgeBg = 'rgba(236, 72, 153, 0.15)';
+                    badgeColor = '#ec4899';
+                  } else if (item.type.includes('Park')) {
+                    badgeBg = 'rgba(34, 197, 94, 0.15)';
+                    badgeColor = '#22c55e';
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const fullText = item.name + (item.address ? ', ' + item.address : '');
+                        setTripTo(fullText);
+                        useStore.getState().setTripDestCoords({ lat: item.lat, lng: item.lng });
+                        setShowToDropdown(false);
+                      }}
+                      style={{
+                        width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                        color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                        borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)',
+                        display: 'flex', alignItems: 'center', color: '#f59e0b', flexShrink: 0,
+                        justifyContent: 'center'
+                      }}>
+                        <MapPin size={16} style={{ alignSelf: 'center' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                        {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
+                      </div>
+                      <span style={{
+                        fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
+                        padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
+                      }}>
+                        {item.type}
+                      </span>
+                      <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                    </button>
+                  );
+                })}
+              </>
+            )}
+
+            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length === 0 && toSuggestions.length === 0 && (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+                {language === 'al' ? 'Po kërkohet për adresa...' : 'Searching for addresses...'}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1946,6 +2228,11 @@ export default function MapView() {
           80%, 100% { opacity: 0; }
         }
         @keyframes slide-up { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* ── GOOGLE MAPS DARK INVERSION FILTER ── */
+        :global(.google-dark-tiles) {
+          filter: invert(0.9) hue-rotate(180deg) brightness(0.9) contrast(1.2) saturate(1.2) !important;
+        }
 
         /* ── LAZY LOADING: REVEAL ANIMATION (only new markers) ── */
         :global(.marker-enter) {

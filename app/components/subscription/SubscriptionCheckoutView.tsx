@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight } from 'lucide-react';
+import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -48,6 +48,8 @@ export default function SubscriptionCheckoutView() {
   const [university, setUniversity] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'apple_pay' | 'counter'>('card');
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [isScanningAnim, setIsScanningAnim] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -696,9 +698,36 @@ export default function SubscriptionCheckoutView() {
                 </div>
               </div>
 
-              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>{t.student_verification || 'Verifikimi i Studentit'}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 8 }}>Plotësoni të dhënat e sakta nga karta juaj e studentit.</p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBarcodeScanner(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.25))',
+                    border: '1.5px solid rgba(16, 185, 129, 0.4)',
+                    color: '#10b981',
+                    padding: '14px 24px',
+                    borderRadius: 20,
+                    fontSize: 15,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    boxShadow: '0 8px 25px rgba(16, 185, 129, 0.2)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.25))'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <Barcode size={22} color="#10b981" />
+                  Skano Barkodin e Kartës (1D Barcode)
+                </button>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 32 }}>
@@ -825,6 +854,11 @@ export default function SubscriptionCheckoutView() {
             from { opacity: 0; transform: translateX(20px); }
             to { opacity: 1; transform: translateX(0); }
           }
+          @keyframes scanLaser {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+          }
           .checkout-input:focus {
             background: rgba(255,255,255,0.08) !important;
             border-color: #f59e0b !important;
@@ -844,6 +878,113 @@ export default function SubscriptionCheckoutView() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '20px', color: 'rgba(255,255,255,0.3)', fontSize: 13, marginTop: 'auto' }}>
         <ShieldCheck size={16} /> {t.secure_payment || 'Pagesë 100% e Sigurt'}
       </div>
+
+      {/* HORIZONTAL BARCODE SCANNER MODAL */}
+      {showBarcodeScanner && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20,
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          <div style={{
+            background: 'linear-gradient(145deg, #1e293b, #0f172a)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 32, width: '100%', maxWidth: 440, padding: 32,
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowBarcodeScanner(false)}
+              style={{ position: 'absolute', right: 24, top: 24, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+
+            <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: '2px solid rgba(16, 185, 129, 0.2)' }}>
+              <Barcode size={32} color="#10b981" />
+            </div>
+
+            <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center' }}>Skanuesi i Barkodit të Studentit</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', marginTop: 6, marginBottom: 24 }}>
+              Vendosni barkodin horizontal (1D Barcode) të kartës suaj të studentit brenda kornizës së gjelbër.
+            </p>
+
+            {/* CAMERA VIEWFINDER (HORIZONTAL 1D BARCODE SPECIFIC) */}
+            <div style={{
+              width: '100%', height: 220, background: '#000', borderRadius: 24, position: 'relative',
+              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: 'inset 0 0 30px rgba(0,0,0,0.8)', border: '2px solid rgba(255,255,255,0.1)'
+            }}>
+              {/* Simulated Camera Feed Background */}
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, background: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 4px)', pointerEvents: 'none' }}></div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600, letterSpacing: 2 }}>
+                [ CAMERA FEED ACTIVE ]
+              </div>
+
+              {/* Simulated Card inside Viewfinder */}
+              <div style={{
+                width: 280, height: 110, background: 'linear-gradient(135deg, #e0e7ff, #ede9fe)', borderRadius: 12,
+                padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.5)', transform: isScanningAnim ? 'scale(1.02)' : 'scale(1)',
+                transition: 'all 0.3s ease', position: 'relative'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, fontWeight: 900, color: '#1e3a8a', letterSpacing: 1 }}>STUDENT ID CARD</span>
+                  <div style={{ width: 30, height: 20, background: '#fbbf24', borderRadius: 4, opacity: 0.8 }}></div>
+                </div>
+                {/* Horizontal Barcode Representation */}
+                <div style={{ background: '#fff', padding: '8px 16px', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: '100%', height: 32, background: 'repeating-linear-gradient(90deg, #000 0px, #000 3px, transparent 3px, transparent 5px, #000 5px, #000 9px, transparent 9px, transparent 12px, #000 12px, #000 14px, transparent 14px, transparent 18px)', opacity: 0.9 }}></div>
+                  <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 800, color: '#000', letterSpacing: 3 }}>L30502040A</span>
+                </div>
+              </div>
+
+              {/* Horizontal Viewfinder Target Box */}
+              <div style={{
+                position: 'absolute', width: 310, height: 140, border: '2px solid #10b981', borderRadius: 20,
+                boxShadow: '0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(16, 185, 129, 0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {/* Corner Accents */}
+                <div style={{ position: 'absolute', top: -4, left: -4, width: 20, height: 20, borderLeft: '4px solid #10b981', borderTop: '4px solid #10b981', borderRadius: '4px 0 0 0' }}></div>
+                <div style={{ position: 'absolute', top: -4, right: -4, width: 20, height: 20, borderRight: '4px solid #10b981', borderTop: '4px solid #10b981', borderRadius: '0 4px 0 0' }}></div>
+                <div style={{ position: 'absolute', bottom: -4, left: -4, width: 20, height: 20, borderLeft: '4px solid #10b981', borderBottom: '4px solid #10b981', borderRadius: '0 0 0 4px' }}></div>
+                <div style={{ position: 'absolute', bottom: -4, right: -4, width: 20, height: 20, borderRight: '4px solid #10b981', borderBottom: '4px solid #10b981', borderRadius: '0 0 4px 0' }}></div>
+
+                {/* Laser Line Animation */}
+                <div style={{
+                  position: 'absolute', width: '100%', height: 2, background: '#ef4444',
+                  boxShadow: '0 0 12px 2px #ef4444', animation: 'scanLaser 2s ease-in-out infinite'
+                }}></div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setIsScanningAnim(true);
+                setTimeout(() => {
+                  setStudentId('L30502040A');
+                  setSerialNumber('A-987654');
+                  setUniversity('University of Tirana');
+                  setIsScanningAnim(false);
+                  setShowBarcodeScanner(false);
+                }, 1000);
+              }}
+              style={{
+                marginTop: 28, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff',
+                border: 'none', padding: '18px 32px', borderRadius: 100, fontSize: 16, fontWeight: 800,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                justifyContent: 'center', boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              <Camera size={20} />
+              {isScanningAnim ? 'Po Skanon...' : 'Kryej Skanimin e Barkodit'}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

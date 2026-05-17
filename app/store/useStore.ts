@@ -409,66 +409,146 @@ const useStore = create<any>()(
       tripResult: null,
       activeTrip: null,
       tripOriginCoords: null as { lat: number, lng: number } | null,
-      setTripOriginCoords: (coords: any) => set({ tripOriginCoords: coords }),
-      setActiveTrip: (trip: any) => set({ activeTrip: trip }),
+      tripOriginName: '',
+      setTripOriginCoords: (coords: any, name = '') => set({ tripOriginCoords: coords, tripOriginName: name }),
+      tripDestCoords: null as { lat: number, lng: number } | null,
+      tripDestName: '',
+      setTripDestCoords: (coords: any, name = '') => set({ tripDestCoords: coords, tripDestName: name }),
       tripFrom: '',
       tripTo: '',
-      setTripFrom: (v: any) => set({ tripFrom: v }),
-      setTripTo: (v: any) => set({ tripTo: v }),
+      setTripFrom: (v: any) => {
+        set({ tripFrom: v });
+        if (v !== get().tripOriginName) {
+          set({ tripOriginCoords: null, tripOriginName: '' });
+        }
+      },
+      setTripTo: (v: any) => {
+        set({ tripTo: v });
+        if (v !== get().tripDestName) {
+          set({ tripDestCoords: null, tripDestName: '' });
+        }
+      },
       setTripResult: (v: any) => set({ tripResult: v }),
+      setActiveTrip: (trip: any) => set({ activeTrip: trip }),
       planTrip: async (fromName: string, toName: string) => {
-        const { tripOriginCoords } = get();
         const searchTo = toName.trim().toLowerCase();
         const searchFrom = fromName.trim().toLowerCase();
 
-        const toStops = BUS_STOPS.filter(s => s.name.toLowerCase().trim() === searchTo);
-        if (!toStops.length) {
-          set({ tripResult: { error: 'Stacioni i destinacionit nuk u gjet.' }, activeTrip: null });
+        const cleanName = (n: string) => n.trim().toLowerCase().replace(/📍/g, '').trim();
+        const findExactStop = (name: string) => {
+          const clean = cleanName(name);
+          return BUS_STOPS.find(s => s.name.toLowerCase().trim() === clean);
+        };
+
+        const exactFromStop = findExactStop(fromName);
+        const exactToStop = findExactStop(toName);
+
+        // Ndihmës: Gjen koordinatat [lat, lng] për një adresë të shkruar (Geocoding)
+        const geocodeQuery = async (query: string): Promise<{ lat: number, lng: number } | null> => {
+          const stop = findExactStop(query);
+          if (stop) return { lat: stop.lat, lng: stop.lng };
+
+          const cleanQuery = query.toLowerCase().replace(/📍/g, '').trim();
+          const suffix = (cleanQuery.includes('tiran') || cleanQuery.includes('albania')) ? '' : ', Tirana';
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + suffix)}&format=json&limit=1`, {
+              headers: { 'User-Agent': 'UrbaniIm/1.0' }
+            });
+            const data = await res.json();
+            if (data && data.length > 0) {
+              return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            }
+          } catch (err) {
+            console.error('Geocoding error:', err);
+          }
+          return null;
+        };
+
+        // 1. Geocode destinacionin (toName) dhe përcakto stacionet e mbërritjes
+        let toCoords = get().tripDestName === toName ? get().tripDestCoords : null;
+        if (exactToStop) {
+          toCoords = { lat: exactToStop.lat, lng: exactToStop.lng };
+        } else if (!toCoords) {
+          toCoords = await geocodeQuery(toName);
+        }
+
+        if (!toCoords) {
+          set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
+          return;
+        }
+        set({ tripDestCoords: toCoords, tripDestName: toName });
+
+        let possibleToStops: { stop: any, walkDist: number, walkTime: number }[] = [];
+        if (exactToStop) {
+          possibleToStops = [{
+            stop: exactToStop,
+            walkDist: 0,
+            walkTime: 0
+          }];
+        } else {
+          BUS_STOPS.forEach(s => {
+            const dist = Math.sqrt(Math.pow(s.lat - toCoords!.lat, 2) + Math.pow(s.lng - toCoords!.lng, 2)) * 111320;
+            if (dist <= 1500) {
+              possibleToStops.push({
+                stop: s,
+                walkDist: Math.round(dist),
+                walkTime: Math.ceil(dist / 80)
+              });
+            }
+          });
+        }
+
+        if (!possibleToStops.length) {
+          set({ tripResult: { error: 'Nuk ka stacione autobusi afër destinacionit tuaj (deri në 1.5km).' }, activeTrip: null });
           return;
         }
 
-        let possibleToStops: { stop: any, walkDist: number, walkTime: number }[] = [];
-        toStops.forEach(ts => {
-          BUS_STOPS.forEach(s => {
-            const dist = s.id === ts.id ? 0 : Math.sqrt(Math.pow(s.lat - ts.lat, 2) + Math.pow(s.lng - ts.lng, 2)) * 111320;
-            if (dist <= 400) {
-              const existing = possibleToStops.find(p => p.stop.id === s.id);
-              if (existing) {
-                if (dist < existing.walkDist) {
-                  existing.walkDist = Math.round(dist);
-                  existing.walkTime = Math.ceil(dist / 80);
-                }
-              } else {
-                possibleToStops.push({ stop: s, walkDist: Math.round(dist), walkTime: Math.ceil(dist / 80) });
-              }
-            }
-          });
-        });
-
+        // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
         let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
-        const isMyLocation = searchFrom.includes('vendndodhja') || searchFrom.includes('my location') || searchFrom.includes('📍');
+        const isMyLocation = cleanName(fromName).includes('vendndodhja') || cleanName(fromName).includes('my location') || cleanName(fromName).includes('📍');
 
-        if (isMyLocation && tripOriginCoords) {
+        let fromCoords = get().tripOriginName === fromName ? get().tripOriginCoords : null;
+        if (exactFromStop) {
+          fromCoords = { lat: exactFromStop.lat, lng: exactFromStop.lng };
+        } else if (isMyLocation && get().tripOriginCoords) {
+          fromCoords = get().tripOriginCoords;
+        } else if (!fromCoords) {
+          fromCoords = await geocodeQuery(fromName);
+        }
+
+        if (!fromCoords) {
+          set({ tripResult: { error: 'Adresa e nisjes nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
+          return;
+        }
+        set({ tripOriginCoords: fromCoords, tripOriginName: fromName });
+
+        if (exactFromStop) {
+          possibleFromStops = [{
+            stop: exactFromStop,
+            walkDist: 0,
+            walkTime: 0
+          }];
+        } else if (isMyLocation) {
           const distances = BUS_STOPS.map(s => {
             const R = 6371e3;
-            const dLat = (s.lat - tripOriginCoords.lat) * Math.PI / 180;
-            const dLng = (s.lng - tripOriginCoords.lng) * Math.PI / 180;
+            const dLat = (s.lat - fromCoords!.lat) * Math.PI / 180;
+            const dLng = (s.lng - fromCoords!.lng) * Math.PI / 180;
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(tripOriginCoords.lat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) *
+              Math.cos(fromCoords!.lat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) *
               Math.sin(dLng / 2) * Math.sin(dLng / 2);
             const dist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
             return { stop: s, dist };
           });
 
-          // Increase to 10 nearest stops to find more route possibilities, up to 1000m
-          const nearby = distances.filter(d => d.dist <= 1000).sort((a, b) => a.dist - b.dist).slice(0, 10);
+          const nearby = distances.filter(d => d.dist <= 1500).sort((a, b) => a.dist - b.dist).slice(0, 10);
           if (!nearby.length) {
             set({ tripResult: { error: 'Nuk ka stacione afër vendndodhjes tuaj.' }, activeTrip: null });
             return;
           }
 
           try {
-            const coords = [`${tripOriginCoords.lng},${tripOriginCoords.lat}`, ...nearby.map(n => `${n.stop.lng},${n.stop.lat}`)];
+            const coords = [`${fromCoords!.lng},${fromCoords!.lat}`, ...nearby.map(n => `${n.stop.lng},${n.stop.lat}`)];
             const res = await fetch(`https://router.project-osrm.org/table/v1/foot/${coords.join(';')}?sources=0&annotations=distance,duration`);
             const data = await res.json();
             if (data.code === 'Ok') {
@@ -484,16 +564,22 @@ const useStore = create<any>()(
 
           possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
         } else {
-          const searchName = fromName.trim().toLowerCase();
-          const stops = BUS_STOPS.filter(s => s.name.toLowerCase().trim() === searchName);
-          if (!stops.length) {
-            set({ tripResult: { error: 'Stacioni i nisjes nuk u gjet.' }, activeTrip: null });
+          BUS_STOPS.forEach(s => {
+            const dist = Math.sqrt(Math.pow(s.lat - fromCoords!.lat, 2) + Math.pow(s.lng - fromCoords!.lng, 2)) * 111320;
+            if (dist <= 1500) {
+              possibleFromStops.push({
+                stop: s,
+                walkDist: Math.round(dist),
+                walkTime: Math.ceil(dist / 80)
+              });
+            }
+          });
+
+          if (!possibleFromStops.length) {
+            set({ tripResult: { error: 'Nuk ka stacione autobusi afër pikës suaj të nisjes (deri në 1.5km).' }, activeTrip: null });
             return;
           }
-          possibleFromStops = stops.map(s => ({ stop: s, walkDist: 0, walkTime: 0 }));
         }
-
-
 
         let bestTrip: any = null;
         let bestScore = Infinity;
@@ -504,21 +590,20 @@ const useStore = create<any>()(
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
           const totalWalkDist = initialWalkDist + finalWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
 
-          if (totalWalkDist > 1500) return; // Max total walking allowed
+          if (totalWalkDist > 2500) return; // Max walking limit
 
-          // Weighted score: Transfers are expensive, each stop is ~2 mins, each min of walking is 1.5 units
           const transferPenalty = Math.max(0, busLegs.length - 1) * 20;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
           const score = (totalWalkDist / 50) + totalTime;
 
           if (score < bestScore) {
             bestScore = score;
-            const finalLegs = initialWalkDist > 30 ? [
+            const finalLegs = !exactFromStop ? [
               { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
               ...legs
             ] : [...legs];
 
-            if (finalWalkDist > 30) {
+            if (!exactToStop) {
               finalLegs.push({ isWalking: true, boardAt: actualToStopName, alightAt: toName, walkingDist: finalWalkDist, walkingTime: finalWalkTime, numStops: 0 });
             }
 
@@ -547,16 +632,15 @@ const useStore = create<any>()(
                     route, stops, stopIds,
                     boardAt: pfs.stop.name, alightAt: pts.stop.name,
                     numStops: ti - fi
-                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
+                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name);
                 }
               }
             }
           }
         }
 
-        // 2. TRANSFER ROUTES (Max 1 transfer for performance)
-        // Optimization: Find all route-stop pairs first
-        if (!bestTrip || bestScore > 40) { // Only search transfers if no great direct route
+        // 2. TRANSFER ROUTES
+        if (!bestTrip || bestScore > 40) {
           for (const pfs of possibleFromStops) {
             for (const route1 of BUS_ROUTES) {
               const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
@@ -572,11 +656,9 @@ const useStore = create<any>()(
                       const ti = r2Arr.indexOf(pts.stop.id);
                       if (ti === -1) continue;
 
-                      // Find best transfer stop pair
                       let bestTransfer: any = null;
                       let minTransferDist = 500;
 
-                      // Limit search range to prevent O(N^2) explosion
                       const startI = fi + 1;
                       const endI = r1Arr.length;
                       const endJ = ti;
@@ -609,7 +691,7 @@ const useStore = create<any>()(
                           { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
                           dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
                           { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
-                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
+                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name);
                       }
                     }
                   }
