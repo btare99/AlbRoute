@@ -58,6 +58,42 @@ export default function SubscriptionCheckoutView() {
   const [isUniPickerOpen, setIsUniPickerOpen] = useState(false);
   const [uniSearch, setUniSearch] = useState('');
   const [step, setStep] = useState<'methods' | 'form'>('methods');
+  const [cameraError, setCameraError] = useState(false);
+
+  // ZXing Live Barcode Scanner Effect
+  useEffect(() => {
+    let codeReader: any = null;
+    if (showBarcodeScanner) {
+      setCameraError(false);
+      import('@zxing/library').then(({ BrowserMultiFormatReader }) => {
+        codeReader = new BrowserMultiFormatReader();
+        codeReader.decodeFromVideoDevice(null, 'video-preview', (result: any, err: any) => {
+          if (result) {
+            const text = result.getText();
+            setStudentId(text);
+            setSerialNumber('A-' + Math.floor(100000 + Math.random() * 900000));
+            setUniversity('University of Tirana');
+            setShowBarcodeScanner(false);
+          }
+          if (err && !(err.name === 'NotFoundException' || err.message?.includes('NotFoundException'))) {
+            console.warn('Barcode scan error:', err);
+          }
+        }).catch((e: any) => {
+          console.error('Camera init error:', e);
+          setCameraError(true);
+        });
+      }).catch((err: any) => {
+        console.error('Failed to import zxing:', err);
+        setCameraError(true);
+      });
+    }
+
+    return () => {
+      if (codeReader && codeReader.reset) {
+        codeReader.reset();
+      }
+    };
+  }, [showBarcodeScanner]);
 
   // Handle click outside uni picker
   useEffect(() => {
@@ -909,41 +945,31 @@ export default function SubscriptionCheckoutView() {
               Vendosni barkodin horizontal (1D Barcode) të kartës suaj të studentit brenda kornizës së gjelbër.
             </p>
 
-            {/* CAMERA VIEWFINDER (HORIZONTAL 1D BARCODE SPECIFIC) */}
+            {/* LIVE CAMERA VIEWFINDER (HORIZONTAL 1D BARCODE SPECIFIC) */}
             <div style={{
-              width: '100%', height: 220, background: '#000', borderRadius: 24, position: 'relative',
+              width: '100%', height: 240, background: '#000', borderRadius: 24, position: 'relative',
               overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: 'inset 0 0 30px rgba(0,0,0,0.8)', border: '2px solid rgba(255,255,255,0.1)'
             }}>
-              {/* Simulated Camera Feed Background */}
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, background: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 4px)', pointerEvents: 'none' }}></div>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 12, fontWeight: 600, letterSpacing: 2 }}>
-                [ CAMERA FEED ACTIVE ]
-              </div>
+              {/* REAL LIVE VIDEO FEED */}
+              <video
+                id="video-preview"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                playsInline
+                muted
+              ></video>
 
-              {/* Simulated Card inside Viewfinder */}
-              <div style={{
-                width: 280, height: 110, background: 'linear-gradient(135deg, #e0e7ff, #ede9fe)', borderRadius: 12,
-                padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.5)', transform: isScanningAnim ? 'scale(1.02)' : 'scale(1)',
-                transition: 'all 0.3s ease', position: 'relative'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: '#1e3a8a', letterSpacing: 1 }}>STUDENT ID CARD</span>
-                  <div style={{ width: 30, height: 20, background: '#fbbf24', borderRadius: 4, opacity: 0.8 }}></div>
-                </div>
-                {/* Horizontal Barcode Representation */}
-                <div style={{ background: '#fff', padding: '8px 16px', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div style={{ width: '100%', height: 32, background: 'repeating-linear-gradient(90deg, #000 0px, #000 3px, transparent 3px, transparent 5px, #000 5px, #000 9px, transparent 9px, transparent 12px, #000 12px, #000 14px, transparent 14px, transparent 18px)', opacity: 0.9 }}></div>
-                  <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 800, color: '#000', letterSpacing: 3 }}>L30502040A</span>
-                </div>
+              {/* Simulated Camera Feed Fallback Background (Visible before camera starts or if blocked) */}
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.3, background: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 4px)', pointerEvents: 'none' }}></div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 600, letterSpacing: 1, pointerEvents: 'none', zIndex: 1 }}>
+                {cameraError ? 'Kamera nuk u gjet. Përdorni skanimin e simuluar.' : 'Duke nisur kamerën...'}
               </div>
 
               {/* Horizontal Viewfinder Target Box */}
               <div style={{
                 position: 'absolute', width: 310, height: 140, border: '2px solid #10b981', borderRadius: 20,
                 boxShadow: '0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(16, 185, 129, 0.4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, pointerEvents: 'none'
               }}>
                 {/* Corner Accents */}
                 <div style={{ position: 'absolute', top: -4, left: -4, width: 20, height: 20, borderLeft: '4px solid #10b981', borderTop: '4px solid #10b981', borderRadius: '4px 0 0 0' }}></div>
@@ -971,16 +997,16 @@ export default function SubscriptionCheckoutView() {
                 }, 1000);
               }}
               style={{
-                marginTop: 28, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff',
-                border: 'none', padding: '18px 32px', borderRadius: 100, fontSize: 16, fontWeight: 800,
+                marginTop: 28, background: 'rgba(255,255,255,0.05)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.1)', padding: '16px 28px', borderRadius: 100, fontSize: 14, fontWeight: 700,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                justifyContent: 'center', boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)', transition: 'all 0.2s'
+                justifyContent: 'center', transition: 'all 0.2s'
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
             >
-              <Camera size={20} />
-              {isScanningAnim ? 'Po Skanon...' : 'Kryej Skanimin e Barkodit'}
+              <Camera size={18} />
+              {isScanningAnim ? 'Po Skanon...' : 'Kryej Skanimin e Simuluar (Test Fallback)'}
             </button>
           </div>
         </div>
