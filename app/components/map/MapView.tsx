@@ -788,11 +788,11 @@ export default function MapView() {
     const showArrow = userLocation.heading !== null || deviceHeading !== null;
 
     const html = `
-    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+    <div style="position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center">
       <!-- Outer Halo/Pulse -->
       <div style="
         position:absolute;width:100%;height:100%;border-radius:50%;
-        background:rgba(255,255,255,0.05);
+        background:rgba(245,158,11,0.15);
         animation:pulse-ring 3s ease-out infinite
       "></div>
       
@@ -807,32 +807,50 @@ export default function MapView() {
       ">
         <div style="
           width: 0; height: 0;
-          border-left: 5px solid transparent;
-          border-right: 5px solid transparent;
-          border-bottom: 9px solid #475569;
-          margin-top: 7px;
-          filter: drop-shadow(0 0 1px #fff);
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 10px solid #f59e0b;
+          margin-top: 4px;
+          filter: drop-shadow(0 0 2px #fff);
         "></div>
       </div>
       ` : ''}
 
-      <!-- Core Location Dot -->
+      <!-- Core Location Bus Badge -->
       <div style="
-        position:relative;width:16px;height:16px;border-radius:50%;
-        background:#475569;
+        position:relative;width:34px;height:34px;border-radius:50%;
+        background:#f59e0b;
         border:3px solid #fff;
-        box-shadow: 0 0 15px rgba(0,0,0,0.4);
-        z-index:10
-      "></div>
+        box-shadow: 0 0 15px rgba(245,158,11,0.5);
+        z-index:10;
+        display:flex;align-items:center;justify-content:center;
+        color:#fff;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bus">
+          <path d="M8 6v6"/>
+          <path d="M15 6v6"/>
+          <path d="M2 12h20"/>
+          <path d="M12 18h.01"/>
+          <path d="M21 17h1"/>
+          <path d="M17 18h1"/>
+          <path d="M2 17h1"/>
+          <path d="M6 18h1"/>
+          <rect width="20" height="12" x="2" y="3" rx="2"/>
+          <path d="M4 21c0 .6-.4 1-1 1H2"/>
+          <path d="M22 21c0 .6-.4 1-1 1h-1"/>
+          <path d="M5 18a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>
+          <path d="M15 18a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>
+        </svg>
+      </div>
     </div>
   `;
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }));
+      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [50, 50], iconAnchor: [25, 25] }));
     } else {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }),
+        icon: L.divIcon({ html, className: '', iconSize: [50, 50], iconAnchor: [25, 25] }),
         zIndexOffset: 999,
       }).addTo(map);
     }
