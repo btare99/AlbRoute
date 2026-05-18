@@ -214,11 +214,16 @@ const useStore = create<any>()(
             const currentUser = get().user;
             if (currentUser && (currentUser.id || currentUser._id)) {
               console.log(`💾 [Geolocation] Përdoruesi është i kyçur (ID: ${currentUser.id || currentUser._id}). Po dërgohen koordinatat në DB...`);
+              
+              // Konverto kohën aktuale në orën e Shqipërisë (+2:00 orë nga UTC)
+              const now = new Date();
+              const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
               get().updateProfile({
                 lastLocation: {
                   lat,
                   lng,
-                  updatedAt: new Date()
+                  updatedAt: albaniaTime
                 }
               });
             } else {
