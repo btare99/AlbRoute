@@ -38,17 +38,11 @@ const useStore = create<any>()(
         // Sync with MongoDB if user has an ID
         if (currentUser.id || currentUser._id) {
           try {
-            console.log('💾 [Profile Sync] Po sinkronizohet profili me MongoDB...', data);
-            const res = await fetch('/api/user/profile', {
+            await fetch('/api/user/profile', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: currentUser.id || currentUser._id, ...data }),
             });
-            if (res.ok) {
-              console.log('✅ [Profile Sync] U sinkronizua me sukses në MongoDB!');
-            } else {
-              console.error('❌ [Profile Sync] Dështoi përditësimi në MongoDB:', await res.text());
-            }
           } catch (error) {
             console.error('Failed to sync profile with MongoDB', error);
           }
@@ -198,22 +192,16 @@ const useStore = create<any>()(
         }
       },
       fetchUserLocation: () => {
-        if (!navigator.geolocation) {
-          console.warn('📍 [Geolocation] Geolocation nuk mbështetet në këtë shfletues.');
-          return;
-        }
-        console.log('📍 [Geolocation] U nis kërkesa për lejen e vendndodhjes...');
+        if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            console.log(`📍 [Geolocation] Sukses! U morën koordinatat: Lat = ${lat}, Lng = ${lng}`);
             set({ userLocation: { lat, lng } });
 
             // Sync location to MongoDB if user is authenticated
             const currentUser = get().user;
             if (currentUser && (currentUser.id || currentUser._id)) {
-              console.log(`💾 [Geolocation] Përdoruesi është i kyçur (ID: ${currentUser.id || currentUser._id}). Po dërgohen koordinatat në DB...`);
               
               // Konverto kohën aktuale në orën e Shqipërisë (+2:00 orë nga UTC)
               const now = new Date();
@@ -226,8 +214,6 @@ const useStore = create<any>()(
                   updatedAt: albaniaTime
                 }
               });
-            } else {
-              console.log('ℹ️ [Geolocation] Përdoruesi nuk është i kyçur. Koordinatat u ruajtën vetëm në memorie lokale.');
             }
           },
           (err) => console.error('❌ [Geolocation] Gabim gjatë marrjes ose leja u refuzua:', err),
