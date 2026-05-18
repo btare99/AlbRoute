@@ -194,8 +194,24 @@ const useStore = create<any>()(
       fetchUserLocation: () => {
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
-          (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-          (err) => console.error(err)
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            set({ userLocation: { lat, lng } });
+
+            // Sync location to MongoDB if user is authenticated
+            const currentUser = get().user;
+            if (currentUser && (currentUser.id || currentUser._id)) {
+              get().updateProfile({
+                lastLocation: {
+                  lat,
+                  lng,
+                  updatedAt: new Date()
+                }
+              });
+            }
+          },
+          (err) => console.error('Geolocation permission denied or error:', err)
         );
       },
       watchId: null as number | null,

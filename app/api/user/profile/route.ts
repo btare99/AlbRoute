@@ -30,7 +30,8 @@ export async function GET(request: Request) {
       university: user.university,
       serialNumber: user.serialNumber,
       selectedLine: user.selectedLine,
-      subscriptions: user.subscriptions
+      subscriptions: user.subscriptions,
+      lastLocation: user.lastLocation
     });
 
   } catch (error: any) {
@@ -79,7 +80,8 @@ export async function PUT(request: Request) {
         idNumber: updatedUser.idNumber,
         university: updatedUser.university,
         serialNumber: updatedUser.serialNumber,
-        selectedLine: updatedUser.selectedLine
+        selectedLine: updatedUser.selectedLine,
+        lastLocation: updatedUser.lastLocation
       }
     });
 

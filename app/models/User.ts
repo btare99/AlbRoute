@@ -32,6 +32,11 @@ const UserSchema = new Schema({
     type: String,
     default: null,
   },
+  lastLocation: {
+    lat: { type: Number },
+    lng: { type: Number },
+    updatedAt: { type: Date, default: Date.now }
+  },
   createdAt: {
     type: Date,
     default: Date.now,
