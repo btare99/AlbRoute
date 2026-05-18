@@ -20,6 +20,11 @@ const UserSchema = new mongoose.Schema({
   resetCodeExpires: { type: Date, default: null },
   lastLogin: { type: Date, default: Date.now },
   subscriptions: { type: Array, default: [] }, // Fusha e re për pajtimet
+  lastLocation: {
+    lat: { type: Number },
+    lng: { type: Number },
+    updatedAt: { type: Date, default: Date.now }
+  },
 }, { timestamps: true });
 
 /**
