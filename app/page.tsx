@@ -30,6 +30,11 @@ export default function Page() {
 
     loadInitialData();
 
+    // Kërko leje për vendndodhjen kur hapet aplikacioni
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      useStore.getState().fetchUserLocation();
+    }
+
     // The polling is now handled in AppShell for better view-specific control,
     // but we can keep a slow background refresh here if needed.
     const pollInterval = setInterval(async () => {
