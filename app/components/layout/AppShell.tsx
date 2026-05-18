@@ -83,6 +83,24 @@ export default function AppShell() {
 
     return () => clearInterval(interval);
   }, [currentView, fetchBuses]);
+ 
+  // ─── Periodic Geolocation Sync (every 5 seconds) ───
+  useEffect(() => {
+    const fetchUserLocation = useStore.getState().fetchUserLocation;
+
+    // Kërko lejen dhe përditëso vendndodhjen menjëherë sapo montohet AppShell (pas login)
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      fetchUserLocation();
+    }
+
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && navigator.geolocation) {
+        fetchUserLocation();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const MENU = [
     { id: 'map', label: t.map, icon: Map },

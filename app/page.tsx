@@ -30,28 +30,13 @@ export default function Page() {
 
     loadInitialData();
 
-    // Kërko leje për vendndodhjen kur hapet aplikacioni
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      useStore.getState().fetchUserLocation();
-    }
-
-    // Përditëso koordinatat e vendndodhjes çdo 5 sekonda (midis 4-6 sekondave)
-    const locationInterval = setInterval(() => {
-      if (typeof window !== 'undefined' && navigator.geolocation) {
-        useStore.getState().fetchUserLocation();
-      }
-    }, 5000);
-
     // The polling is now handled in AppShell for better view-specific control,
     // but we can keep a slow background refresh here if needed.
     const pollInterval = setInterval(async () => {
       await useStore.getState().fetchBuses();
     }, 15000);
 
-    return () => {
-      clearInterval(pollInterval);
-      clearInterval(locationInterval);
-    };
+    return () => clearInterval(pollInterval);
   }, []);
 
   // Simulation Movement (Disabled to use real DB data)

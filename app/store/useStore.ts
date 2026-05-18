@@ -225,7 +225,8 @@ const useStore = create<any>()(
               console.log('ℹ️ [Geolocation] Përdoruesi nuk është i kyçur. Koordinatat u ruajtën vetëm në memorie lokale.');
             }
           },
-          (err) => console.error('❌ [Geolocation] Gabim gjatë marrjes ose leja u refuzua:', err)
+          (err) => console.error('❌ [Geolocation] Gabim gjatë marrjes ose leja u refuzua:', err),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       },
       watchId: null as number | null,
