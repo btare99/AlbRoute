@@ -3,7 +3,8 @@ import { useState } from 'react';
 import useStore from '../../store/useStore';
 import { 
   ArrowLeft, Save, User, MapPin, Home, Briefcase, 
-  Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera, Phone
+  Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera, Phone,
+  Utensils, GraduationCap, Building2, ShoppingBag, TreePine, Navigation
 } from 'lucide-react';
 import { translations } from '../../store/translations';
 import { useEffect, useRef } from 'react';
@@ -155,6 +156,81 @@ export default function EditProfileView() {
     return { title, subtitle, full: item.display_name };
   };
 
+  const getPlaceIcon = (item: any) => {
+    const cls = item.class;
+    const type = item.type;
+    if (cls === 'amenity') {
+      if (type === 'restaurant' || type === 'cafe' || type === 'bar' || type === 'pub' || type === 'fast_food') {
+        return { icon: Utensils, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
+      }
+      if (type === 'school' || type === 'university' || type === 'college') {
+        return { icon: GraduationCap, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' };
+      }
+      if (type === 'hospital' || type === 'clinic' || type === 'pharmacy') {
+        return { icon: Building2, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+      }
+    }
+    if (cls === 'shop' || type === 'mall') {
+      return { icon: ShoppingBag, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' };
+    }
+    if (cls === 'tourism') {
+      return { icon: Building2, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' };
+    }
+    if (cls === 'leisure' && (type === 'park' || type === 'garden')) {
+      return { icon: TreePine, color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+    }
+    return { icon: MapPin, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
+  };
+
+  const handleUseCurrentLocation = (type: 'home' | 'work') => {
+    if (type === 'home') setIsSearchingHome(true);
+    else setIsSearchingWork(true);
+
+    if (!navigator.geolocation) {
+      alert(language === 'al' ? 'Gjeolokalizimi nuk mbështetet nga ky shfletues.' : 'Geolocation is not supported by this browser.');
+      setIsSearchingHome(false);
+      setIsSearchingWork(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+            headers: { 'User-Agent': 'UrbaniIm/1.0' }
+          });
+          const data = await res.json();
+          if (data && data.display_name) {
+            const parts = data.display_name.split(',');
+            const title = parts[0].trim();
+            const subtitle = parts.slice(1, 4).map((p: string) => p.trim()).join(', ');
+            const addressText = title + (subtitle ? ', ' + subtitle : '');
+
+            setForm(prev => ({ ...prev, [type]: addressText }));
+          } else {
+            alert(language === 'al' ? 'Nuk u gjet asnjë adresë për këtë vendndodhje.' : 'No address found for this location.');
+          }
+        } catch (err) {
+          console.error('Error reverse geocoding current location:', err);
+          alert(language === 'al' ? 'Gabim gjatë marrjes së adresës.' : 'Error fetching address for current location.');
+        } finally {
+          setIsSearchingHome(false);
+          setIsSearchingWork(false);
+          setShowHomeSuggestions(false);
+          setShowWorkSuggestions(false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert(language === 'al' ? 'U refuzua leja ose dështoi marrja e vendndodhjes.' : 'Permission denied or failed to retrieve location.');
+        setIsSearchingHome(false);
+        setIsSearchingWork(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -171,14 +247,15 @@ export default function EditProfileView() {
 
   // Home Autocomplete Debounce Query (Nominatim OpenStreetMap search)
   useEffect(() => {
-    if (!isTypingHome || form.home.length < 3 || form.home.includes('📍')) {
+    if (!isTypingHome || form.home.length < 3) {
       setHomeSuggestions([]);
       return;
     }
     const delayDebounce = setTimeout(async () => {
       setIsSearchingHome(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.home + ', Albania')}&format=json&limit=5&addressdetails=1&countrycodes=al`, {
+        // Appending ', Tirana' makes Nominatim prioritize POIs like shops, restaurants, businesses, etc.
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.home + ', Tirana')}&format=json&limit=10&addressdetails=1&countrycodes=al`, {
           headers: { 'User-Agent': 'UrbaniIm/1.0' }
         });
         const data = await res.json();
@@ -198,14 +275,15 @@ export default function EditProfileView() {
 
   // Work Autocomplete Debounce Query (Nominatim OpenStreetMap search)
   useEffect(() => {
-    if (!isTypingWork || form.work.length < 3 || form.work.includes('📍')) {
+    if (!isTypingWork || form.work.length < 3) {
       setWorkSuggestions([]);
       return;
     }
     const delayDebounce = setTimeout(async () => {
       setIsSearchingWork(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.work + ', Albania')}&format=json&limit=5&addressdetails=1&countrycodes=al`, {
+        // Appending ', Tirana' makes Nominatim prioritize POIs like shops, restaurants, businesses, etc.
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.work + ', Tirana')}&format=json&limit=10&addressdetails=1&countrycodes=al`, {
           headers: { 'User-Agent': 'UrbaniIm/1.0' }
         });
         const data = await res.json();
@@ -487,12 +565,9 @@ export default function EditProfileView() {
                       onChange={e => {
                         setForm({...form, home: e.target.value});
                         setIsTypingHome(true);
-                        if (e.target.value.length >= 3) {
-                          setShowHomeSuggestions(true);
-                        } else {
-                          setShowHomeSuggestions(false);
-                        }
+                        setShowHomeSuggestions(true);
                       }}
+                      onFocus={() => setShowHomeSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
                     <Home size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
@@ -504,15 +579,51 @@ export default function EditProfileView() {
                     )}
                   </div>
 
-                  {showHomeSuggestions && homeSuggestions.length > 0 && (
+                  {showHomeSuggestions && (
                     <div style={{
                       position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
                       background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
                       boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
                       backdropFilter: 'blur(20px)'
                     }}>
+                      {/* Current Location Option */}
+                      <button
+                        type="button"
+                        onClick={() => handleUseCurrentLocation('home')}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '12px 12px 14px 12px', borderRadius: '0px',
+                          background: 'none', border: 'none',
+                          borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                      >
+                        <div style={{
+                          width: '24px', height: '24px', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <div style={{
+                            width: '14px', height: '14px', borderRadius: '50%',
+                            border: '2px solid #3b82f6', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                          }}>
+                            <div style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              background: '#3b82f6'
+                            }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                          {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                        </span>
+                      </button>
                       {homeSuggestions.map((item, idx) => {
                         const parsed = parseAddressName(item);
+                        const placeIcon = getPlaceIcon(item);
+                        const IconComp = placeIcon.icon;
                         return (
                           <button
                             key={idx}
@@ -529,7 +640,13 @@ export default function EditProfileView() {
                             }}
                             className="suggestion-item"
                           >
-                            <MapPin size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{
+                              width: '24px', height: '24px', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <IconComp size={16} style={{ color: placeIcon.color }} />
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                               <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
                               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
@@ -550,12 +667,9 @@ export default function EditProfileView() {
                       onChange={e => {
                         setForm({...form, work: e.target.value});
                         setIsTypingWork(true);
-                        if (e.target.value.length >= 3) {
-                          setShowWorkSuggestions(true);
-                        } else {
-                          setShowWorkSuggestions(false);
-                        }
+                        setShowWorkSuggestions(true);
                       }}
+                      onFocus={() => setShowWorkSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
                     <Briefcase size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
@@ -567,15 +681,51 @@ export default function EditProfileView() {
                     )}
                   </div>
 
-                  {showWorkSuggestions && workSuggestions.length > 0 && (
+                  {showWorkSuggestions && (
                     <div style={{
                       position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
                       background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
                       boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
                       backdropFilter: 'blur(20px)'
                     }}>
+                      {/* Current Location Option */}
+                      <button
+                        type="button"
+                        onClick={() => handleUseCurrentLocation('work')}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '12px 12px 14px 12px', borderRadius: '0px',
+                          background: 'none', border: 'none',
+                          borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                      >
+                        <div style={{
+                          width: '24px', height: '24px', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <div style={{
+                            width: '14px', height: '14px', borderRadius: '50%',
+                            border: '2px solid #3b82f6', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                          }}>
+                            <div style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              background: '#3b82f6'
+                            }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                          {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                        </span>
+                      </button>
                       {workSuggestions.map((item, idx) => {
                         const parsed = parseAddressName(item);
+                        const placeIcon = getPlaceIcon(item);
+                        const IconComp = placeIcon.icon;
                         return (
                           <button
                             key={idx}
@@ -592,7 +742,13 @@ export default function EditProfileView() {
                             }}
                             className="suggestion-item"
                           >
-                            <MapPin size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{
+                              width: '24px', height: '24px', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <IconComp size={16} style={{ color: placeIcon.color }} />
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                               <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
                               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>

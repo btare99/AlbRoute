@@ -542,11 +542,22 @@ const useStore = create<any>()(
               });
             }
           });
-        }
 
-        if (!possibleToStops.length) {
-          set({ tripResult: { error: 'Nuk ka stacione autobusi afër destinacionit tuaj (deri në 1.5km).' }, activeTrip: null });
-          return;
+          // Fallback: nëse nuk ka asnjë stacion brenda 1.5km, gjej 3 stacionet më të afërta të qytetit!
+          if (possibleToStops.length === 0) {
+            const sortedStops = BUS_STOPS.map(s => {
+              const dist = Math.sqrt(Math.pow(s.lat - toCoords!.lat, 2) + Math.pow(s.lng - toCoords!.lng, 2)) * 111320;
+              return { stop: s, dist };
+            }).sort((a, b) => a.dist - b.dist);
+
+            sortedStops.slice(0, 3).forEach(item => {
+              possibleToStops.push({
+                stop: item.stop,
+                walkDist: Math.round(item.dist),
+                walkTime: Math.ceil(item.dist / 80)
+              });
+            });
+          }
         }
 
         // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
@@ -586,10 +597,9 @@ const useStore = create<any>()(
             return { stop: s, dist };
           });
 
-          const nearby = distances.filter(d => d.dist <= 1500).sort((a, b) => a.dist - b.dist).slice(0, 10);
+          let nearby = distances.filter(d => d.dist <= 1500).sort((a, b) => a.dist - b.dist).slice(0, 10);
           if (!nearby.length) {
-            set({ tripResult: { error: 'Nuk ka stacione afër vendndodhjes tuaj.' }, activeTrip: null });
-            return;
+            nearby = distances.sort((a, b) => a.dist - b.dist).slice(0, 3);
           }
 
           try {
@@ -620,9 +630,20 @@ const useStore = create<any>()(
             }
           });
 
-          if (!possibleFromStops.length) {
-            set({ tripResult: { error: 'Nuk ka stacione autobusi afër pikës suaj të nisjes (deri në 1.5km).' }, activeTrip: null });
-            return;
+          // Fallback: nëse nuk ka asnjë stacion brenda 1.5km, gjej 3 stacionet më të afërta të qytetit!
+          if (possibleFromStops.length === 0) {
+            const sortedStops = BUS_STOPS.map(s => {
+              const dist = Math.sqrt(Math.pow(s.lat - fromCoords!.lat, 2) + Math.pow(s.lng - fromCoords!.lng, 2)) * 111320;
+              return { stop: s, dist };
+            }).sort((a, b) => a.dist - b.dist);
+
+            sortedStops.slice(0, 3).forEach(item => {
+              possibleFromStops.push({
+                stop: item.stop,
+                walkDist: Math.round(item.dist),
+                walkTime: Math.ceil(item.dist / 80)
+              });
+            });
           }
         }
 
