@@ -133,6 +133,96 @@ export default function EditProfileView() {
     phone: activeUser?.phone || ''
   });
 
+  // Saved locations suggestions state
+  const [homeSuggestions, setHomeSuggestions] = useState<any[]>([]);
+  const [showHomeSuggestions, setShowHomeSuggestions] = useState(false);
+  const [isSearchingHome, setIsSearchingHome] = useState(false);
+  const [isTypingHome, setIsTypingHome] = useState(false);
+
+  const [workSuggestions, setWorkSuggestions] = useState<any[]>([]);
+  const [showWorkSuggestions, setShowWorkSuggestions] = useState(false);
+  const [isSearchingWork, setIsSearchingWork] = useState(false);
+  const [isTypingWork, setIsTypingWork] = useState(false);
+
+  const homeRef = useRef<HTMLDivElement>(null);
+  const workRef = useRef<HTMLDivElement>(null);
+
+  // Parse location suggestion details
+  const parseAddressName = (item: any) => {
+    const parts = item.display_name.split(',');
+    const title = parts[0].trim();
+    const subtitle = parts.slice(1, 4).map((p: string) => p.trim()).join(', ');
+    return { title, subtitle, full: item.display_name };
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (homeRef.current && !homeRef.current.contains(event.target as Node)) {
+        setShowHomeSuggestions(false);
+      }
+      if (workRef.current && !workRef.current.contains(event.target as Node)) {
+        setShowWorkSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Home Autocomplete Debounce Query (Nominatim OpenStreetMap search)
+  useEffect(() => {
+    if (!isTypingHome || form.home.length < 3 || form.home.includes('📍')) {
+      setHomeSuggestions([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setIsSearchingHome(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.home + ', Albania')}&format=json&limit=5&addressdetails=1&countrycodes=al`, {
+          headers: { 'User-Agent': 'UrbaniIm/1.0' }
+        });
+        const data = await res.json();
+        if (data && Array.isArray(data)) {
+          setHomeSuggestions(data);
+          setShowHomeSuggestions(true);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      } finally {
+        setIsSearchingHome(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(delayDebounce);
+  }, [form.home, isTypingHome]);
+
+  // Work Autocomplete Debounce Query (Nominatim OpenStreetMap search)
+  useEffect(() => {
+    if (!isTypingWork || form.work.length < 3 || form.work.includes('📍')) {
+      setWorkSuggestions([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setIsSearchingWork(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.work + ', Albania')}&format=json&limit=5&addressdetails=1&countrycodes=al`, {
+          headers: { 'User-Agent': 'UrbaniIm/1.0' }
+        });
+        const data = await res.json();
+        if (data && Array.isArray(data)) {
+          setWorkSuggestions(data);
+          setShowWorkSuggestions(true);
+        }
+      } catch (err) {
+        console.error('Autocomplete fetch error:', err);
+      } finally {
+        setIsSearchingWork(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(delayDebounce);
+  }, [form.work]);
+
   // Efekti për të ndarë prefix-in nga numri kur ngarkohet useri
   useEffect(() => {
     if (activeUser?.phone) {
@@ -388,30 +478,130 @@ export default function EditProfileView() {
                   <MapPin size={16} style={{ color: '#10b981' }} /> {t.saved_places}
                 </h3>
 
-                <div>
+                <div ref={homeRef} style={{ position: 'relative' }}>
                   <label style={labelStyle}>{t.home}</label>
                   <div style={{ position: 'relative' }}>
                     <input 
-                      style={{ ...inputStyle, paddingLeft: '40px' }} 
+                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }} 
                       value={form.home} 
-                      onChange={e => setForm({...form, home: e.target.value})}
+                      onChange={e => {
+                        setForm({...form, home: e.target.value});
+                        setIsTypingHome(true);
+                        if (e.target.value.length >= 3) {
+                          setShowHomeSuggestions(true);
+                        } else {
+                          setShowHomeSuggestions(false);
+                        }
+                      }}
                       placeholder={t.edit_add_address}
                     />
                     <Home size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
+                    
+                    {isSearchingHome && (
+                      <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ width: '12px', height: '12px', border: '1.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                      </div>
+                    )}
                   </div>
+
+                  {showHomeSuggestions && homeSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
+                      background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
+                      backdropFilter: 'blur(20px)'
+                    }}>
+                      {homeSuggestions.map((item, idx) => {
+                        const parsed = parseAddressName(item);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setForm({ ...form, home: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
+                              setIsTypingHome(false);
+                              setShowHomeSuggestions(false);
+                            }}
+                            style={{
+                              width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                              borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
+                              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                            }}
+                            className="suggestion-item"
+                          >
+                            <MapPin size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
+                              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
-                <div>
+                <div ref={workRef} style={{ position: 'relative' }}>
                   <label style={labelStyle}>{t.work}</label>
                   <div style={{ position: 'relative' }}>
                     <input 
-                      style={{ ...inputStyle, paddingLeft: '40px' }} 
+                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }} 
                       value={form.work} 
-                      onChange={e => setForm({...form, work: e.target.value})}
+                      onChange={e => {
+                        setForm({...form, work: e.target.value});
+                        setIsTypingWork(true);
+                        if (e.target.value.length >= 3) {
+                          setShowWorkSuggestions(true);
+                        } else {
+                          setShowWorkSuggestions(false);
+                        }
+                      }}
                       placeholder={t.edit_add_address}
                     />
                     <Briefcase size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
+                    
+                    {isSearchingWork && (
+                      <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ width: '12px', height: '12px', border: '1.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                      </div>
+                    )}
                   </div>
+
+                  {showWorkSuggestions && workSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
+                      background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
+                      backdropFilter: 'blur(20px)'
+                    }}>
+                      {workSuggestions.map((item, idx) => {
+                        const parsed = parseAddressName(item);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setForm({ ...form, work: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
+                              setIsTypingWork(false);
+                              setShowWorkSuggestions(false);
+                            }}
+                            style={{
+                              width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                              borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
+                              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                            }}
+                            className="suggestion-item"
+                          >
+                            <MapPin size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
+                              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -497,6 +687,9 @@ export default function EditProfileView() {
           @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
+          }
+          .suggestion-item:hover {
+            background: rgba(255,255,255,0.06) !important;
           }
         `}</style>
       </div>
