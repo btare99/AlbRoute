@@ -216,7 +216,30 @@ const useStore = create<any>()(
               });
             }
           },
-          (err) => console.error('❌ [Geolocation] Gabim gjatë marrjes ose leja u refuzua:', err),
+          (err) => {
+            console.warn('⚠️ [Geolocation] Gabim me saktësi të lartë, provohet fallback me saktësi normale...', err);
+            // Fallback: Provo të marrësh vendndodhjen pa High Accuracy (më e shpejtë dhe më e thjeshtë për desktop/browserë)
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                set({ userLocation: { lat, lng } });
+                
+                const currentUser = get().user;
+                if (currentUser && (currentUser.id || currentUser._id)) {
+                  const now = new Date();
+                  const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+                  get().updateProfile({
+                    lastLocation: { lat, lng, updatedAt: albaniaTime }
+                  });
+                }
+              },
+              (fallbackErr) => {
+                console.error('❌ [Geolocation] Dështoi edhe përpjekja e dytë ose leja u refuzua:', fallbackErr);
+              },
+              { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }
+            );
+          },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       },
