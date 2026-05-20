@@ -753,6 +753,7 @@ input::placeholder {
   width: 100% !important;
   height: 100% !important;
   background: #0d1929 !important;
+  touch-action: none !important;
 }
 
 .sidebar-overlay {
@@ -851,14 +852,37 @@ input::placeholder {
 }
 
 /* Types */
-.notification-item.success { border-left: 4px solid var(--success); }
-.notification-item.success .notification-icon { color: var(--success); }
-.notification-item.info { border-left: 4px solid var(--info); }
-.notification-item.info .notification-icon { color: var(--info); }
-.notification-item.warning { border-left: 4px solid var(--warning); }
-.notification-item.warning .notification-icon { color: var(--warning); }
-.notification-item.error { border-left: 4px solid var(--danger); }
-.notification-item.error .notification-icon { color: var(--danger); }
+.notification-item.success {
+  border-left: 4px solid var(--success);
+}
+
+.notification-item.success .notification-icon {
+  color: var(--success);
+}
+
+.notification-item.info {
+  border-left: 4px solid var(--info);
+}
+
+.notification-item.info .notification-icon {
+  color: var(--info);
+}
+
+.notification-item.warning {
+  border-left: 4px solid var(--warning);
+}
+
+.notification-item.warning .notification-icon {
+  color: var(--warning);
+}
+
+.notification-item.error {
+  border-left: 4px solid var(--danger);
+}
+
+.notification-item.error .notification-icon {
+  color: var(--danger);
+}
 
 @media (max-width: 900px) {
   .mobile-close-btn {
@@ -947,6 +971,7 @@ input::placeholder {
 .leaflet-container {
   background: #0d1929 !important;
   font-family: 'Inter', sans-serif !important;
+  touch-action: none !important;
 }
 
 .leaflet-popup-content-wrapper {

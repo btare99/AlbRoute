@@ -70,6 +70,10 @@ const useStore = create<any>()(
 
       setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open }),
 
+      // ── Map Selection Mode ──
+      selectingOnMap: null as 'from' | 'to' | null,
+      setSelectingOnMap: (val: 'from' | 'to' | null) => set({ selectingOnMap: val }),
+
       // ── Admin Data ──
       adminDrivers: [],
       adminInspectors: [],
@@ -202,7 +206,7 @@ const useStore = create<any>()(
             // Sync location to MongoDB if user is authenticated
             const currentUser = get().user;
             if (currentUser && (currentUser.id || currentUser._id)) {
-              
+
               // Konverto kohën aktuale në orën e Shqipërisë (+2:00 orë nga UTC)
               const now = new Date();
               const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -224,7 +228,7 @@ const useStore = create<any>()(
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
                 set({ userLocation: { lat, lng } });
-                
+
                 const currentUser = get().user;
                 if (currentUser && (currentUser.id || currentUser._id)) {
                   const now = new Date();
@@ -567,8 +571,8 @@ const useStore = create<any>()(
         let fromCoords = get().tripOriginName === fromName ? get().tripOriginCoords : null;
         if (exactFromStop) {
           fromCoords = { lat: exactFromStop.lat, lng: exactFromStop.lng };
-        } else if (isMyLocation && get().tripOriginCoords) {
-          fromCoords = get().tripOriginCoords;
+        } else if (isMyLocation) {
+          fromCoords = get().tripOriginCoords || get().userLocation;
         } else if (!fromCoords) {
           fromCoords = await geocodeQuery(fromName);
         }
@@ -658,7 +662,7 @@ const useStore = create<any>()(
 
           if (totalWalkDist > 2500) return; // Max walking limit
 
-          const transferPenalty = Math.max(0, busLegs.length - 1) * 20;
+          const transferPenalty = Math.max(0, busLegs.length - 1) * 50;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
           const score = (totalWalkDist / 50) + totalTime;
 
@@ -698,7 +702,7 @@ const useStore = create<any>()(
                     route, stops, stopIds,
                     boardAt: pfs.stop.name, alightAt: pts.stop.name,
                     numStops: ti - fi
-                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name);
+                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                 }
               }
             }
@@ -706,7 +710,7 @@ const useStore = create<any>()(
         }
 
         // 2. TRANSFER ROUTES
-        if (!bestTrip || bestScore > 40) {
+        if (!bestTrip || bestTrip.walkingDist > 1200 || bestScore > 75) {
           for (const pfs of possibleFromStops) {
             for (const route1 of BUS_ROUTES) {
               const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
@@ -757,7 +761,7 @@ const useStore = create<any>()(
                           { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
                           dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
                           { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
-                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name);
+                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                       }
                     }
                   }

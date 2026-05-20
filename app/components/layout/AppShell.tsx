@@ -25,6 +25,7 @@ export default function AppShell() {
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
   const language = useStore((state: any) => state.language);
+  const selectingOnMap = useStore((state: any) => state.selectingOnMap);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const addNotification = useStore((state: any) => state.addNotification);
   const t = translations[language] || translations.al;
@@ -83,7 +84,7 @@ export default function AppShell() {
 
     return () => clearInterval(interval);
   }, [currentView, fetchBuses]);
- 
+
   // ─── Periodic Geolocation Sync (every 5 seconds) ───
   useEffect(() => {
     const fetchUserLocation = useStore.getState().fetchUserLocation;
@@ -165,6 +166,7 @@ export default function AppShell() {
       </main>
 
       {/* Floating bottom nav — mobile only */}
+      {!selectingOnMap && (
       <nav className="bottom-nav" aria-label="Main navigation">
         {MENU.map(({ id, label, icon: Icon }) => {
           const active = currentView === id ||
@@ -185,6 +187,7 @@ export default function AppShell() {
           );
         })}
       </nav>
+      )}
 
       <style jsx>{`
         /* ── Layout ───────────────────────────────── */

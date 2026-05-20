@@ -21,8 +21,8 @@ export default function ProfileView() {
 
   const hasSubscription = activeUser?.subscriptions && activeUser.subscriptions.length > 0;
   const activePackage = hasSubscription ? activeUser.subscriptions[activeUser.subscriptions.length - 1] : null;
-  const subscriptionValue = activePackage 
-    ? activePackage.name 
+  const subscriptionValue = activePackage
+    ? activePackage.name
     : (language === 'al' ? 'Nuk ka abonim' : language === 'it' ? 'Nessun abbonamento' : 'No subscription');
 
   const menuItems = [
@@ -198,10 +198,10 @@ export default function ProfileView() {
                     {t.no}
                   </button>
                   <button
-                    onClick={() => { 
+                    onClick={() => {
                       useStore.getState().setGuestMode(false);
-                      signOut({ callbackUrl: '/' }); 
-                      setActiveModal(null); 
+                      signOut({ callbackUrl: '/' });
+                      setActiveModal(null);
                     }}
                     style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
                   >

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import { BUS_SHAPES } from '../../store/busShapes';
-import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, ChevronUp, Moon, Sun, Globe, Bus, Route, MapPin, Clock, Banknote, ChevronDown, RefreshCcw, Home, Briefcase, Utensils, GraduationCap, Building2, ShoppingBag, TreePine, Fuel } from 'lucide-react';
+import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, ChevronUp, Moon, Sun, Globe, Bus, Route, MapPin, Clock, Banknote, ChevronDown, RefreshCcw, Home, Briefcase, Utensils, GraduationCap, Building2, ShoppingBag, TreePine, Fuel, Check } from 'lucide-react';
 import { translations } from '../../store/translations';
 import SwipeDismissView from '../layout/SwipeDismissView';
 
@@ -23,6 +23,8 @@ export default function MapView() {
   const LRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const routeScrollerRef = useRef<HTMLDivElement>(null);
+  const originPinMarkerRef = useRef<any>(null);
+  const destPinMarkerRef = useRef<any>(null);
 
   const language = useStore((s: any) => s.language);
   const t = translations[language] || translations.al;
@@ -57,6 +59,8 @@ export default function MapView() {
   const [isSearching, setIsSearching] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const selectingOnMap = useStore((s: any) => s.selectingOnMap);
+  const setSelectingOnMap = useStore((s: any) => s.setSelectingOnMap);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const tripFromInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,7 +130,7 @@ export default function MapView() {
     } else {
       typeLabel = language === 'al' ? 'Adresë' : 'Address';
     }
- 
+
     return {
       name: title,
       address: subtitle,
@@ -536,14 +540,82 @@ export default function MapView() {
     const map = mapInstanceRef.current;
     if (!map || !mapReady) return;
 
-    const onMapClick = () => {
+    const onMapClick = async (e: any) => {
+      if (selectingOnMap) {
+        return; // Selection handled by Confirm button now
+      }
+
       setSelectedStop(null);
       setInfoPanel(null);
     };
 
     map.on('click', onMapClick);
     return () => { map.off('click', onMapClick); };
-  }, [mapReady, setSelectedStop]);
+  }, [mapReady, setSelectedStop, selectingOnMap, language, setTripFrom, setTripTo, setIsSearching]);
+
+  // ── CUSTOM PIN MARKERS FOR SELECTED LOCATION (WHEN NO ACTIVE TRIP IS SHOWN) ──
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
+
+    // 1. Manage Origin Pin (Only if no activeTrip is present, because activeTrip renders its own pin)
+    if (originPinMarkerRef.current) {
+      map.removeLayer(originPinMarkerRef.current);
+      originPinMarkerRef.current = null;
+    }
+    if (tripOriginCoords && !activeTrip) {
+      const fromHtml = `
+        <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
+          <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <mask id="pin-mask-from-temp">
+                <rect width="24" height="36" fill="white" />
+                <circle cx="12" cy="12" r="5" fill="black" />
+              </mask>
+            </defs>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#f97316" mask="url(#pin-mask-from-temp)"/>
+          </svg>
+        </div>`;
+      originPinMarkerRef.current = L.marker([tripOriginCoords.lat, tripOriginCoords.lng], {
+        icon: L.divIcon({ html: fromHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+        zIndexOffset: 1000
+      }).addTo(map);
+    }
+
+    // 2. Manage Destination Pin (Only if no activeTrip is present, because activeTrip renders its own pin)
+    if (destPinMarkerRef.current) {
+      map.removeLayer(destPinMarkerRef.current);
+      destPinMarkerRef.current = null;
+    }
+    if (tripDestCoords && !activeTrip) {
+      const toHtml = `
+        <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
+          <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <mask id="pin-mask-to-temp">
+                <rect width="24" height="36" fill="white" />
+                <circle cx="12" cy="12" r="5" fill="black" />
+              </mask>
+            </defs>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#EA4335" mask="url(#pin-mask-to-temp)"/>
+          </svg>
+        </div>`;
+      destPinMarkerRef.current = L.marker([tripDestCoords.lat, tripDestCoords.lng], {
+        icon: L.divIcon({ html: toHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+        zIndexOffset: 1000
+      }).addTo(map);
+    }
+
+    return () => {
+      if (originPinMarkerRef.current) {
+        map.removeLayer(originPinMarkerRef.current);
+      }
+      if (destPinMarkerRef.current) {
+        map.removeLayer(destPinMarkerRef.current);
+      }
+    };
+  }, [mapReady, tripOriginCoords, tripDestCoords, activeTrip]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -569,6 +641,14 @@ export default function MapView() {
     }
 
     const activeTripStopIds = activeTrip ? activeTrip.legs.flatMap((l: any) => l.stopIds || []) : [];
+
+    // Wipe all other stops from Leaflet layers when planning/active trip is set
+    if (activeTrip) {
+      clusterGroupRef.current.clearLayers();
+      renderedStopIdsRef.current.clear();
+      stopMarkersMapRef.current = {};
+    }
+
     let displayedStops = activeTrip
       ? BUS_STOPS.filter((s: any) => activeTripStopIds.includes(s.id))
       : BUS_STOPS;
@@ -724,11 +804,25 @@ export default function MapView() {
               [startLat, startLng],
               [destLat, destLng]
             ];
+
+            // 1. Premium glowing background track
+            const walkLineGlow = L.polyline(walkCoords, {
+              color: '#10b981',
+              weight: 10,
+              opacity: 0.22,
+              lineCap: 'round',
+              lineJoin: 'round'
+            }).addTo(map);
+            routeLinesRef.current.push({ line: walkLineGlow, routeId: `walk_glow_${idx}` });
+
+            // 2. High-fidelity circular dots representing pedestrian footsteps
             const walkLine = L.polyline(walkCoords, {
-              color: '#10b981', // green for walking
+              color: '#10b981',
               weight: 5,
-              dashArray: '8, 8', // dashed/dotted line
-              opacity: 0.9
+              dashArray: '1, 12',
+              lineCap: 'round',
+              lineJoin: 'round',
+              opacity: 0.95
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLine, routeId: `walk_${idx}` });
           }
@@ -833,11 +927,11 @@ export default function MapView() {
     const showArrow = userLocation.heading !== null || deviceHeading !== null;
 
     const html = `
-    <div style="position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center">
+    <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
       <!-- Outer Halo/Pulse -->
       <div style="
         position:absolute;width:100%;height:100%;border-radius:50%;
-        background:rgba(245,158,11,0.15);
+        background:rgba(71,85,105,0.15);
         animation:pulse-ring 3s ease-out infinite
       "></div>
       
@@ -852,50 +946,32 @@ export default function MapView() {
       ">
         <div style="
           width: 0; height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-bottom: 10px solid #f59e0b;
-          margin-top: 4px;
-          filter: drop-shadow(0 0 2px #fff);
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-bottom: 9px solid #475569;
+          margin-top: 7px;
+          filter: drop-shadow(0 0 1px #fff);
         "></div>
       </div>
       ` : ''}
 
-      <!-- Core Location Bus Badge -->
+      <!-- Core Location Dot -->
       <div style="
-        position:relative;width:34px;height:34px;border-radius:50%;
-        background:#f59e0b;
+        position:relative;width:16px;height:16px;border-radius:50%;
+        background:#475569;
         border:3px solid #fff;
-        box-shadow: 0 0 15px rgba(245,158,11,0.5);
-        z-index:10;
-        display:flex;align-items:center;justify-content:center;
-        color:#fff;
-      ">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bus">
-          <path d="M8 6v6"/>
-          <path d="M15 6v6"/>
-          <path d="M2 12h20"/>
-          <path d="M12 18h.01"/>
-          <path d="M21 17h1"/>
-          <path d="M17 18h1"/>
-          <path d="M2 17h1"/>
-          <path d="M6 18h1"/>
-          <rect width="20" height="12" x="2" y="3" rx="2"/>
-          <path d="M4 21c0 .6-.4 1-1 1H2"/>
-          <path d="M22 21c0 .6-.4 1-1 1h-1"/>
-          <path d="M5 18a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>
-          <path d="M15 18a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/>
-        </svg>
-      </div>
+        box-shadow: 0 0 15px rgba(71,85,105,0.5);
+        z-index:10
+      "></div>
     </div>
   `;
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
-      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [50, 50], iconAnchor: [25, 25] }));
+      userMarkerRef.current.setIcon(L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }));
     } else {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: L.divIcon({ html, className: '', iconSize: [50, 50], iconAnchor: [25, 25] }),
+        icon: L.divIcon({ html, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }),
         zIndexOffset: 999,
       }).addTo(map);
     }
@@ -1105,6 +1181,8 @@ export default function MapView() {
     <div className="full-screen-map">
       <div ref={mapContainerRef} className="map-container" />
 
+      {/* (Top Banner for Map Selection moved to center-map UI below) */}
+
       {/* ── TOP OVERLAY: BRANDING ── */}
       <div className="overlay-top-left desktop-only">
         <div className="glass-panel main-brand-panel">
@@ -1117,14 +1195,15 @@ export default function MapView() {
       </div>
 
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
-      <div
-        ref={searchContainerRef}
-        className="overlay-top-mobile mobile-only"
-        style={{
-          position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 2002,
-          display: 'flex', flexDirection: 'column', overflow: 'visible'
-        }}
-      >
+      {!selectingOnMap && (
+        <div
+          ref={searchContainerRef}
+          className="overlay-top-mobile mobile-only"
+          style={{
+            position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 2002,
+            display: 'flex', flexDirection: 'column', overflow: 'visible'
+          }}
+        >
         {/* Main Bar */}
         <div className="glass-panel" style={{
           display: 'flex', alignItems: 'center', padding: '6px',
@@ -1155,6 +1234,7 @@ export default function MapView() {
               placeholder={t.select_departure}
               onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
               onFocus={() => { setShowFromDropdown(true); setShowToDropdown(false); }}
+              onBlur={() => setTimeout(() => setShowFromDropdown(false), 200)}
               style={{
                 background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
                 fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
@@ -1243,6 +1323,7 @@ export default function MapView() {
               }}
               placeholder={t.select_destination}
               onFocus={() => { setShowToDropdown(true); setShowFromDropdown(false); }}
+              onBlur={() => setTimeout(() => setShowToDropdown(false), 200)}
               style={{
                 background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
                 fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
@@ -1307,22 +1388,20 @@ export default function MapView() {
               {language === 'al' ? 'Sugjerimet e Nisjes' : 'Departure Suggestions'}
             </div>
 
-            {/* Current Location Option */}
+
+            {/* Choose on Map Option */}
             <button
               type="button"
               onClick={() => {
-                if (userLocation) {
-                  const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
-                  useStore.getState().setTripOriginCoords(userLocation, myLocStr);
-                  setTripFrom(myLocStr);
-                  setShowFromDropdown(false);
-                }
+                setSelectingOnMap('from');
+                setShowFromDropdown(false);
+                setIsSearching(false);
               }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '12px 14px 14px 14px', borderRadius: '0px',
                 background: 'none', border: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
                 cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
@@ -1333,19 +1412,10 @@ export default function MapView() {
                 alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <div style={{
-                  width: '14px', height: '14px', borderRadius: '50%',
-                  border: '2px solid #3b82f6', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                }}>
-                  <div style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    background: '#3b82f6'
-                  }} />
-                </div>
+                <MapPin size={18} style={{ color: '#f59e0b' }} />
               </div>
               <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                {language === 'al' ? 'Zgjidh në hartë' : 'Choose on map'}
               </span>
             </button>
 
@@ -1401,7 +1471,7 @@ export default function MapView() {
             )}
 
             {/* A. STACIONET E AUTOBUSIT */}
-            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
+            {tripFrom.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
               <>
                 <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
@@ -1439,7 +1509,7 @@ export default function MapView() {
             )}
 
             {/* B. ADRESAT DHE ATRAKSIONET */}
-            {fromSuggestions.length > 0 && (
+            {tripFrom.trim().length > 0 && fromSuggestions.length > 0 && (
               <>
                 <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
                   {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
@@ -1546,22 +1616,20 @@ export default function MapView() {
               {language === 'al' ? 'Sugjerimet e Destinacionit' : 'Destination Suggestions'}
             </div>
 
-            {/* Current Location Option */}
+
+            {/* Choose on Map Option */}
             <button
               type="button"
               onClick={() => {
-                if (userLocation) {
-                  const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
-                  useStore.getState().setTripDestCoords(userLocation, myLocStr);
-                  setTripTo(myLocStr);
-                  setShowToDropdown(false);
-                }
+                setSelectingOnMap('to');
+                setShowToDropdown(false);
+                setIsSearching(false);
               }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '12px 14px 14px 14px', borderRadius: '0px',
                 background: 'none', border: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
                 cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
@@ -1572,19 +1640,10 @@ export default function MapView() {
                 alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <div style={{
-                  width: '14px', height: '14px', borderRadius: '50%',
-                  border: '2px solid #3b82f6', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                }}>
-                  <div style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    background: '#3b82f6'
-                  }} />
-                </div>
+                <MapPin size={18} style={{ color: '#f59e0b' }} />
               </div>
               <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                {language === 'al' ? 'Zgjidh në hartë' : 'Choose on map'}
               </span>
             </button>
 
@@ -1640,7 +1699,7 @@ export default function MapView() {
             )}
 
             {/* A. STACIONET E AUTOBUSIT */}
-            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
+            {tripTo.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
               <>
                 <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
@@ -1678,7 +1737,7 @@ export default function MapView() {
             )}
 
             {/* B. ADRESAT DHE ATRAKSIONET */}
-            {toSuggestions.length > 0 && (
+            {tripTo.trim().length > 0 && toSuggestions.length > 0 && (
               <>
                 <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
                   {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
@@ -1763,7 +1822,8 @@ export default function MapView() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes slideUp {
@@ -2232,7 +2292,11 @@ export default function MapView() {
               maxHeight: 'calc(100vh - 90px)',
               borderRadius: sheetHeight === 'full' ? '0' : '28px 28px 0 0',
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              position: 'relative'
+              position: 'relative',
+              background: '#040712',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: 'none',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.8)'
             }}
           >
             {/* Filler background to prevent map showing below during swipe-up */}
@@ -2242,24 +2306,44 @@ export default function MapView() {
               left: 0,
               right: 0,
               height: '100vh',
-              background: '#1e293b',
+              background: '#040712',
               zIndex: -1
             }} />
 
             <div className="mobile-drag-handle">
-              <div className="drag-indicator" />
+              <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.25)' }} />
             </div>
-            <div className="card-header" style={{ background: '#1e293b', borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
+            <div className="card-header" style={{ background: '#040712', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '20px 24px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="header-main">
                 <span className="route-num" style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none' }}>
-                  <MapPin size={28} color="#38bdf8" style={{ filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.4))' }} />
+                  <MapPin size={28} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
                 </span>
                 <div className="route-texts">
-                  <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedStop.name}</h3>
-                  <p>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
+                  <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
                 </div>
               </div>
-              <button className="close-btn" onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}><X size={20} /></button>
+              <button
+                className="close-btn"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}
+              >
+                <X size={16} />
+              </button>
             </div>
 
             <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
@@ -2336,26 +2420,249 @@ export default function MapView() {
                 </div>
               )}
 
-              <button
-                className="view-details-btn"
-                style={{ background: 'rgba(255, 255, 255, 0.04)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '24px', borderRadius: 16 }}
-                onClick={() => {
-                  useStore.getState().setTripFrom(selectedStop.name);
-                  setIsSearching(true);
-                  setInfoPanel(null);
-                  setSelectedStop(null);
-                  setTimeout(() => {
-                    document.getElementById('trip-to-input')?.focus();
-                  }, 100);
-                }}
-              >
-                {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={16} />
-              </button>
+              {sheetHeight !== 'half' && (
+                <button
+                  className="view-details-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    marginTop: '24px',
+                    borderRadius: 16,
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 20px',
+                    width: '100%',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    height: '52px'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(245, 158, 11, 0.45)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(245, 158, 11, 0.3)';
+                  }}
+                  onClick={() => {
+                    useStore.getState().setTripFrom(selectedStop.name);
+                    setIsSearching(true);
+                    setInfoPanel(null);
+                    setSelectedStop(null);
+                    setTimeout(() => {
+                      document.getElementById('trip-to-input')?.focus();
+                    }, 100);
+                  }}
+                >
+                  {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={18} />
+                </button>
+              )}
             </div>
           </div>
         </SwipeDismissView>
       )}
 
+      {/* NEW: Map Selection Crosshair, Header, and Bottom Confirm Button */}
+      {selectingOnMap && (
+        <>
+          {/* ── TOP HEADER BAR: IOS 18 STYLE ── */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '20px',
+              left: '16px',
+              right: '16px',
+              zIndex: 4000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              borderRadius: '20px',
+              background: 'rgba(10, 14, 24, 0.82)',
+              backdropFilter: 'blur(20px) saturate(160%)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Back Arrow to Cancel */}
+            <button
+              onClick={() => {
+                setSelectingOnMap(null);
+                setIsSearching(true);
+              }}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'; }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+
+            {/* Center Info Text */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: 1 }}>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>
+                {selectingOnMap === 'from' 
+                  ? (language === 'al' ? 'Zgjidh pikën e nisjes' : 'Choose departure point') 
+                  : (language === 'al' ? 'Zgjidh destinacionin' : 'Choose destination')}
+              </span>
+              <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.45)', fontWeight: 600, marginTop: '2px' }}>
+                {language === 'al' ? 'Lëviz dhe zmadho për ta rregulluar' : 'Pan and zoom to adjust'}
+              </span>
+            </div>
+
+            {/* Hidden spacer to perfectly center the text */}
+            <div style={{ width: '40px' }} />
+          </div>
+
+          {/* ── ABSOLUTE CENTER TARGET MARKER ── */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 2000,
+              pointerEvents: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            {/* Fine Location Pin floating above */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                transform: 'translateY(-6px)',
+                animation: 'floatPin 2s ease-in-out infinite',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))'
+              }}
+            >
+              <MapPin size={28} color="#f59e0b" fill="rgba(245, 158, 11, 0.18)" strokeWidth={2.5} />
+              <div
+                style={{
+                  width: '1.5px',
+                  height: '10px',
+                  background: 'linear-gradient(to bottom, #f59e0b, rgba(245, 158, 11, 0))',
+                  marginTop: '-2px'
+                }}
+              />
+            </div>
+            {/* Small orange X at the exact map center */}
+            <X size={16} color="#f59e0b" strokeWidth={3.5} style={{ marginTop: '-4px' }} />
+          </div>
+
+          {/* ── BOTTOM SELECTION PILL (OK BUTTON) ── */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '12px',
+              right: '12px',
+              height: '64px',
+              padding: '0 10px',
+              background: 'rgba(10, 14, 24, 0.82)',
+              backdropFilter: 'blur(20px) saturate(160%)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '20px',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255,255,255,0.05) inset',
+              zIndex: 4000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <button
+              onClick={async () => {
+                const map = mapInstanceRef.current;
+                if (!map) return;
+                const center = map.getCenter();
+                const lat = center.lat;
+                const lng = center.lng;
+                
+                const tempName = language === 'al' ? '📍 Pikë në Hartë' : '📍 Point on Map';
+                if (selectingOnMap === 'from') {
+                  useStore.getState().setTripOriginCoords({ lat, lng }, tempName);
+                  setTripFrom(tempName);
+                } else {
+                  useStore.getState().setTripDestCoords({ lat, lng }, tempName);
+                  setTripTo(tempName);
+                }
+
+                const previousSelection = selectingOnMap; // Keep reference before nulling it
+                setSelectingOnMap(null);
+                setIsSearching(true);
+
+                try {
+                  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language === 'al' ? 'sq' : 'en'}`, {
+                    headers: { 'User-Agent': 'UrbaniIm/1.0' }
+                  });
+                  const data = await res.json();
+                  if (data && data.display_name) {
+                    const nameParts = data.display_name.split(',');
+                    const title = nameParts[0].trim();
+                    const niceName = `📍 ${title}`;
+                    if (previousSelection === 'from') {
+                      useStore.getState().setTripOriginCoords({ lat, lng }, niceName);
+                      setTripFrom(niceName);
+                    } else {
+                      useStore.getState().setTripDestCoords({ lat, lng }, niceName);
+                      setTripTo(niceName);
+                    }
+                  }
+                } catch (err) {
+                  console.error('Reverse geocoding error:', err);
+                }
+              }}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '14px',
+                background: 'rgba(10, 14, 24, 0.82)',
+                backdropFilter: 'blur(20px) saturate(160%)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.25)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.transform = 'scale(1.01)'; 
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.background = 'rgba(10, 14, 24, 0.82)';
+                e.currentTarget.style.transform = 'scale(1)'; 
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </>
+      )}
 
       <style jsx>{`
         .full-screen-map {
@@ -2440,16 +2747,16 @@ export default function MapView() {
         /* ── BUS INFO PANEL ── */
         .bus-info-card {
           position: absolute; bottom: 120px; right: 20px; width: 320px;
-          background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+          background: #040712; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
           z-index: 1000; overflow: hidden;
         }
 
         /* ── STOP INFO PANEL ── */
         .stop-info-card {
           position: absolute; top: 120px; left: 20px; width: 320px;
-          background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+          background: #040712; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
           z-index: 1000; overflow: hidden;
         }
 
@@ -2484,6 +2791,10 @@ export default function MapView() {
         }
 
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+        @keyframes floatPin {
+          0%, 100% { transform: translateY(-6px); }
+          50% { transform: translateY(-12px); }
+        }
         @keyframes pulse-ring {
           0% { transform: scale(0.33); opacity: 1; }
           80%, 100% { opacity: 0; }
