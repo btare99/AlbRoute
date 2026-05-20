@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -17,6 +17,18 @@ import { useSession } from "next-auth/react";
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
+import {
+  ProfileSkeleton,
+  BusTrackerSkeleton,
+  PackagesSkeleton,
+  SubscriptionSkeleton,
+  PassesSkeleton,
+  EditProfileSkeleton,
+  FavoritesSkeleton,
+  CheckoutSkeleton,
+  MapSkeleton,
+  TripPlannerSkeleton,
+} from '../ui/Skeleton';
 
 
 export default function AppShell() {
@@ -30,6 +42,18 @@ export default function AppShell() {
   const addNotification = useStore((state: any) => state.addNotification);
   const t = translations[language] || translations.al;
   const googleLoginHandled = useRef(false);
+
+  const [viewLoading, setViewLoading] = useState(false);
+  const [activeView, setActiveView] = useState(currentView);
+
+  useEffect(() => {
+    setViewLoading(true);
+    const timer = setTimeout(() => {
+      setActiveView(currentView);
+      setViewLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [currentView]);
 
   // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
@@ -111,7 +135,24 @@ export default function AppShell() {
   ];
 
   const renderView = () => {
-    switch (currentView) {
+    if (viewLoading) {
+      switch (currentView) {
+        case 'map': return <MapSkeleton />;
+        case 'tracker': return <BusTrackerSkeleton />;
+        case 'planner': return <TripPlannerSkeleton />;
+        case 'profile': return <ProfileSkeleton />;
+        case 'favorites': return <FavoritesSkeleton />;
+        case 'edit_profile': return <EditProfileSkeleton />;
+        case 'subscription': return <SubscriptionSkeleton />;
+        case 'packages': return <PackagesSkeleton />;
+        case 'checkout': return <CheckoutSkeleton />;
+        case 'get_pass': return <SubscriptionSkeleton />;
+        case 'passes': return <PassesSkeleton />;
+        default: return <MapSkeleton />;
+      }
+    }
+
+    switch (activeView) {
       case 'map': return <MapView />;
       case 'tracker': return <BusTracker />;
       case 'planner': return <TripPlanner />;
