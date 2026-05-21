@@ -138,6 +138,13 @@ button {
   background: none;
   font-family: inherit;
   line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 
 img {
@@ -772,8 +779,8 @@ input::placeholder {
   pointer-events: auto;
 }
 
-/* 📱 MOBILE RESPONSIVENESS */
-@media (max-width: 900px) {
+/* 📱 MOBILE + TABLET RESPONSIVENESS (≤ 1180px covers all iPads) */
+@media (max-width: 1180px) {
   .sidebar {
     position: fixed;
     left: 0;
@@ -805,6 +812,38 @@ input::placeholder {
 
   .mobile-only {
     display: flex !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   🖥️ TABLET / iPAD SPECIFIC (901px – 1180px)
+═══════════════════════════════════════════════════ */
+@media (min-width: 901px) and (max-width: 1180px) {
+  /* Bottom nav – slightly larger on iPad */
+  .bottom-nav {
+    left: 32px !important;
+    right: 32px !important;
+    bottom: 24px !important;
+    height: 72px !important;
+    padding: 0 24px !important;
+    border-radius: 28px !important;
+  }
+
+  .nav-btn {
+    gap: 5px !important;
+    padding: 12px 0 !important;
+    min-width: 60px;
+    min-height: 56px;
+  }
+
+  .nav-label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Sidebar wider on iPad */
+  .sidebar {
+    width: min(360px, 85vw);
   }
 }
 
@@ -884,7 +923,7 @@ input::placeholder {
   color: var(--danger);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .mobile-close-btn {
     display: flex !important;
   }
@@ -911,7 +950,7 @@ input::placeholder {
   }
 }
 
-@media (min-width: 901px) {
+@media (min-width: 1181px) {
   .mobile-only {
     display: none !important;
   }
@@ -1124,27 +1163,4 @@ input::placeholder {
 
 .glow-danger {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-}
-
-/* ═══════════════════════════════════════════════════
-   SKELETON SHIMMER ANIMATION
-═══════════════════════════════════════════════════ */
-@keyframes skeletonShimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.08) 40%,
-    rgba(255, 255, 255, 0.04) 80%
-  );
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
 }

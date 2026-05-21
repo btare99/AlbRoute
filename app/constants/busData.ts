@@ -885,7 +885,7 @@ export const BUS_ROUTES = [
   {
     id: 'L15A', name: '15A', label: 'Kombinat – Kinostudio', color: '#d35400',
     stops: [
-      'kinostudio_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
+      'kinostudio_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar_stop2', 'mjekesia_stop2', 'qsut_stop2',
       'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht_stop2', 'misto_mame', 'ukt_stop2', 'mapo_stop2', 'kombinat_stop2'
@@ -894,17 +894,19 @@ export const BUS_ROUTES = [
       'kombinat_stop1', 'mapo_stop1', 'ukt_stop1', 'misto_mame', 'kthesa_yzberisht_stop1', 'tregu', 'ura_teknologjike',
       'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
       'kateshet_a',
-      'selvia_stop2', 'medreseja_stop2', 'qsut', 'mjekesia', 'shkolla_bashkuar',
+      'selvia_stop2', 'medreseja_stop2', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
       'rruga_ura_stop2', 'kinostudio_stop2', 'aleksander_moisiu'
     ]
   },
+
 
   // ── LINJA 15B: Kombinat – Tufinë ───────────────────────────────────────────
   {
     id: 'L15B', name: '15B', label: 'Kombinat – Tufinë', color: '#f39c12',
     stops: [
       'rruga_arberit', 'xhamia_stop1', 'varrezat_tufine_stop1', 'instituti_ndertimit_stop1',
-      'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
+      'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1', 
+      'shkolla_bashkuar_stop2', 'mjekesia_stop2', 'qsut_stop2',
       'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht_stop2', 'misto_mame', 'ukt_stop2', 'mapo_stop2', 'kombinat_stop2'
@@ -913,7 +915,7 @@ export const BUS_ROUTES = [
       'kombinat_stop1', 'mapo_stop1', 'ukt_stop1', 'misto_mame', 'kthesa_yzberisht_stop1', 'tregu', 'ura_teknologjike',
       'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
       'kateshet_a',
-      'selvia_stop2', 'medreseja_stop2', 'qsut', 'mjekesia', 'shkolla_bashkuar',
+      'selvia_stop2', 'medreseja_stop2', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
       'rruga_ura_stop2', 'ura_gjorices_stop2', 'shefqet_kuka_stop2', 'profarma_stop2',
       'elez_isufi_stop2', 'instituti_ndertimit_stop2', 'varrezat_tufine_stop2', 'xhamia_stop2', 'rruga_arberit'
     ]

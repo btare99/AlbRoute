@@ -38,11 +38,16 @@ const useStore = create<any>()(
         // Sync with MongoDB if user has an ID
         if (currentUser.id || currentUser._id) {
           try {
-            await fetch('/api/user/profile', {
+            const res = await fetch('/api/user/profile', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: currentUser.id || currentUser._id, ...data }),
             });
+
+            if (!res.ok) {
+              const body = await res.text();
+              throw new Error(`Profile sync failed (${res.status} ${res.statusText}): ${body}`);
+            }
           } catch (error) {
             console.error('Failed to sync profile with MongoDB', error);
           }
@@ -163,6 +168,10 @@ const useStore = create<any>()(
       fetchBuses: async () => {
         try {
           const res = await fetch('/api/buses');
+          if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Buses fetch failed (${res.status} ${res.statusText}): ${body}`);
+          }
           const buses = await res.json();
           if (Array.isArray(buses)) {
             // Normalize routeId to match the BUS_ROUTES format (e.g., '1A' -> 'L1A')
@@ -562,16 +571,21 @@ const useStore = create<any>()(
               });
             });
           }
+          possibleToStops.sort((a, b) => a.walkDist - b.walkDist);
         }
 
         // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
         let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
         const isMyLocation = cleanName(fromName).includes('vendndodhja') || cleanName(fromName).includes('my location') || cleanName(fromName).includes('📍');
+        
+        // Kontrollo nëse ky është zgjedhje në hartë (map selection)
+        const storedOriginCoords = get().tripOriginCoords;
+        const isMapSelection = storedOriginCoords && get().tripOriginName === fromName;
 
         let fromCoords = get().tripOriginName === fromName ? get().tripOriginCoords : null;
         if (exactFromStop) {
           fromCoords = { lat: exactFromStop.lat, lng: exactFromStop.lng };
-        } else if (isMyLocation) {
+        } else if (isMyLocation || isMapSelection) {
           fromCoords = get().tripOriginCoords || get().userLocation;
         } else if (!fromCoords) {
           fromCoords = await geocodeQuery(fromName);
@@ -589,7 +603,7 @@ const useStore = create<any>()(
             walkDist: 0,
             walkTime: 0
           }];
-        } else if (isMyLocation) {
+        } else if (isMyLocation || isMapSelection) {
           const distances = BUS_STOPS.map(s => {
             const R = 6371e3;
             const dLat = (s.lat - fromCoords!.lat) * Math.PI / 180;
@@ -649,6 +663,7 @@ const useStore = create<any>()(
               });
             });
           }
+          possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
         }
 
         let bestTrip: any = null;
@@ -662,9 +677,9 @@ const useStore = create<any>()(
 
           if (totalWalkDist > 2500) return; // Max walking limit
 
-          const transferPenalty = Math.max(0, busLegs.length - 1) * 50;
+          const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
-          const score = (totalWalkDist / 50) + totalTime;
+          const score = (totalWalkDist / 8) + totalTime;
 
           if (score < bestScore) {
             bestScore = score;
@@ -710,7 +725,7 @@ const useStore = create<any>()(
         }
 
         // 2. TRANSFER ROUTES
-        if (!bestTrip || bestTrip.walkingDist > 1200 || bestScore > 75) {
+        if (!bestTrip) {
           for (const pfs of possibleFromStops) {
             for (const route1 of BUS_ROUTES) {
               const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
@@ -726,9 +741,6 @@ const useStore = create<any>()(
                       const ti = r2Arr.indexOf(pts.stop.id);
                       if (ti === -1) continue;
 
-                      let bestTransfer: any = null;
-                      let minTransferDist = 500;
-
                       const startI = fi + 1;
                       const endI = r1Arr.length;
                       const endJ = ti;
@@ -742,26 +754,19 @@ const useStore = create<any>()(
                           if (!s2) continue;
 
                           const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                          if (d < minTransferDist) {
-                            minTransferDist = d;
-                            bestTransfer = { s1, s2, i, j, dist: Math.round(d) };
-                          }
-                          if (d === 0) break;
+                          if (d > 300) continue;
+
+                          const dist = Math.round(d);
+                          const walkTime = Math.ceil(dist / 80);
+                          const stopIds1 = r1Arr.slice(fi, i + 1);
+                          const stopIds2 = r2Arr.slice(j, ti + 1);
+
+                          evaluateTrip([
+                            { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
+                            dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
+                            { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
+                          ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                         }
-                        if (minTransferDist === 0) break;
-                      }
-
-                      if (bestTransfer) {
-                        const { s1, s2, i, j, dist } = bestTransfer;
-                        const walkTime = Math.ceil(dist / 80);
-                        const stopIds1 = r1Arr.slice(fi, i + 1);
-                        const stopIds2 = r2Arr.slice(j, ti + 1);
-
-                        evaluateTrip([
-                          { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
-                          dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
-                          { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
-                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
                       }
                     }
                   }

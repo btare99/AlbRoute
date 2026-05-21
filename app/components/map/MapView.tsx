@@ -54,6 +54,20 @@ export default function MapView() {
   const tripTo = useStore((s: any) => s.tripTo);
   const setTripTo = useStore((s: any) => s.setTripTo);
   const planTrip = useStore((s: any) => s.planTrip);
+  const tripOriginName = useStore((s: any) => s.tripOriginName);
+  const tripDestName = useStore((s: any) => s.tripDestName);
+
+  const isUserLocation = useCallback((name: string, coords: any) => {
+    if (!coords || !userLocation) return false;
+    const cleanName = name ? name.toLowerCase() : '';
+    const isNameMatch = cleanName.includes('vendndodhja') || 
+                        cleanName.includes('location') || 
+                        cleanName.includes('posizione') || 
+                        cleanName.includes('📍');
+    const isCoordsMatch = Math.abs(coords.lat - userLocation.lat) < 0.0002 && 
+                          Math.abs(coords.lng - userLocation.lng) < 0.0002;
+    return isNameMatch || isCoordsMatch;
+  }, [userLocation]);
 
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
   const [isSearching, setIsSearching] = useState(false);
@@ -359,8 +373,8 @@ export default function MapView() {
 
     initOrientation();
 
-    // Default layers for mobile: Only stations
-    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    // Default layers for tablet/mobile: Only stations
+    if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
       const store = useStore.getState();
       store.setShowRoutes(false);
       store.setShowBuses(false);
@@ -564,7 +578,8 @@ export default function MapView() {
       map.removeLayer(originPinMarkerRef.current);
       originPinMarkerRef.current = null;
     }
-    if (tripOriginCoords && !activeTrip) {
+    const isFromUserLoc = isUserLocation(tripFrom || tripOriginName, tripOriginCoords);
+    if (tripOriginCoords && !activeTrip && !isFromUserLoc) {
       const fromHtml = `
         <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
           <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -588,7 +603,8 @@ export default function MapView() {
       map.removeLayer(destPinMarkerRef.current);
       destPinMarkerRef.current = null;
     }
-    if (tripDestCoords && !activeTrip) {
+    const isToUserLoc = isUserLocation(tripTo || tripDestName, tripDestCoords);
+    if (tripDestCoords && !activeTrip && !isToUserLoc) {
       const toHtml = `
         <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
           <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -615,7 +631,7 @@ export default function MapView() {
         map.removeLayer(destPinMarkerRef.current);
       }
     };
-  }, [mapReady, tripOriginCoords, tripDestCoords, activeTrip]);
+  }, [mapReady, tripOriginCoords, tripDestCoords, activeTrip, tripFrom, tripTo, tripOriginName, tripDestName, isUserLocation]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -706,7 +722,7 @@ export default function MapView() {
       const stoppingLines = BUS_ROUTES.filter((r: any) => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
       const linesHtml = stoppingLines.map((l: any) => `<span style="background:${l.color};color:white;padding:3px;font-size:10px;font-weight:800;text-align:center;width:100%;display:block;">${l.name}</span>`).join('');
 
-      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 1180;
       if (!isMobile) {
         marker.bindTooltip(`
           <div style="padding:4px; border-radius:0; min-width:120px;">
@@ -735,7 +751,8 @@ export default function MapView() {
     if (activeTrip) {
       // 1. Draw Custom Address/Street Pin Markers (Nisja & Destinacioni)
       const isCustomFrom = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.from.toLowerCase());
-      if (isCustomFrom && tripOriginCoords) {
+      const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
+      if (isCustomFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
           <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
             <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -756,7 +773,8 @@ export default function MapView() {
       }
 
       const isCustomTo = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.to.toLowerCase());
-      if (isCustomTo && tripDestCoords) {
+      const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
+      if (isCustomTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
           <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
             <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -915,7 +933,7 @@ export default function MapView() {
         });
       });
     }
-  }, [activeTrip, tripOriginCoords, activeRouteFilter, showRoutes, mapReady, walkingShapes]);
+  }, [activeTrip, tripOriginCoords, tripDestCoords, activeRouteFilter, showRoutes, mapReady, walkingShapes, isUserLocation]);
 
   // ── USER LOCATION MARKER ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -931,7 +949,7 @@ export default function MapView() {
       <!-- Outer Halo/Pulse -->
       <div style="
         position:absolute;width:100%;height:100%;border-radius:50%;
-        background:rgba(71,85,105,0.15);
+        background:rgba(59,130,246,0.22);
         animation:pulse-ring 3s ease-out infinite
       "></div>
       
@@ -948,7 +966,7 @@ export default function MapView() {
           width: 0; height: 0;
           border-left: 5px solid transparent;
           border-right: 5px solid transparent;
-          border-bottom: 9px solid #475569;
+          border-bottom: 9px solid #3b82f6;
           margin-top: 7px;
           filter: drop-shadow(0 0 1px #fff);
         "></div>
@@ -958,9 +976,9 @@ export default function MapView() {
       <!-- Core Location Dot -->
       <div style="
         position:relative;width:16px;height:16px;border-radius:50%;
-        background:#475569;
+        background:#3b82f6;
         border:3px solid #fff;
-        box-shadow: 0 0 15px rgba(71,85,105,0.5);
+        box-shadow: 0 0 15px rgba(59,130,246,0.6);
         z-index:10
       "></div>
     </div>
@@ -2679,7 +2697,7 @@ export default function MapView() {
 
         .mobile-only { display: none !important; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1180px) {
           .desktop-only { display: none !important; }
           .mobile-only { display: block !important; }
           .overlay-right-center { top: auto; bottom: 20px; transform: none; right: 20px; }
@@ -2880,6 +2898,59 @@ export default function MapView() {
             border: 2px solid #fff;
           }
 
+        }
+
+        /* ═══ TABLET MAP OVERRIDES (iPad) ═══ */
+        @media (min-width: 901px) and (max-width: 1180px) {
+          /* Right controls: bigger touch targets on iPad */
+          .vertical-group button {
+            width: 52px !important;
+            height: 52px !important;
+          }
+
+          /* Mobile search bar: centered + max-width on iPad */
+          .overlay-top-mobile {
+            left: 50% !important;
+            right: auto !important;
+            width: calc(100% - 64px) !important;
+            max-width: 680px !important;
+            transform: translateX(-50%) !important;
+          }
+
+          /* Bus/stop info panels: side sheet on iPad instead of full-width */
+          .bus-info-card, .stop-info-card {
+            left: auto !important;
+            right: 0 !important;
+            width: min(440px, 100%) !important;
+            bottom: 0 !important;
+            top: auto !important;
+            border-top-left-radius: 28px !important;
+            border-top-right-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px) !important;
+          }
+
+          /* Bottom route scroller: centered with max-width */
+          .overlay-bottom-center {
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            width: calc(100% - 64px) !important;
+            max-width: 740px !important;
+          }
+
+          /* Map controls column: move up to avoid bottom nav */
+          .overlay-right-center { bottom: 130px !important; }
+
+          /* Location pin OK button: centered + max-width */
+          .map-selection-ok-bar {
+            left: 50% !important;
+            right: auto !important;
+            width: calc(100% - 64px) !important;
+            max-width: 680px !important;
+            transform: translateX(-50%) !important;
+          }
         }
       `}</style>
     </div>

@@ -40,7 +40,7 @@ export default function Sidebar() {
 
   const handleViewChange = (id: string) => {
     setView(id);
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
       useStore.getState().setSidebarOpen(false);
     }
   };
@@ -49,7 +49,7 @@ export default function Sidebar() {
     setSelectedStop(stop);
     setSearchQuery('');
     setView('map');
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
       useStore.getState().setSidebarOpen(false);
     }
   };
@@ -229,7 +229,7 @@ export default function Sidebar() {
           background: none; border: none; color: #475569; cursor: pointer;
           padding: 5px; border-radius: 8px; display: none; align-items: center;
         }
-        @media (max-width: 900px) { .s-close-btn { display: flex; } }
+        @media (max-width: 1180px) { .s-close-btn { display: flex; } }
 
         /* Search */
         .s-search { padding: 12px 12px 8px; position: relative; }

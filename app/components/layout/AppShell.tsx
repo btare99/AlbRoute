@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -17,18 +17,6 @@ import { useSession } from "next-auth/react";
 import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
-import {
-  ProfileSkeleton,
-  BusTrackerSkeleton,
-  PackagesSkeleton,
-  SubscriptionSkeleton,
-  PassesSkeleton,
-  EditProfileSkeleton,
-  FavoritesSkeleton,
-  CheckoutSkeleton,
-  MapSkeleton,
-  TripPlannerSkeleton,
-} from '../ui/Skeleton';
 
 
 export default function AppShell() {
@@ -43,18 +31,6 @@ export default function AppShell() {
   const t = translations[language] || translations.al;
   const googleLoginHandled = useRef(false);
 
-  const [viewLoading, setViewLoading] = useState(false);
-  const [activeView, setActiveView] = useState(currentView);
-
-  useEffect(() => {
-    setViewLoading(true);
-    const timer = setTimeout(() => {
-      setActiveView(currentView);
-      setViewLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [currentView]);
-
   // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
     if (session?.user) {
@@ -63,13 +39,18 @@ export default function AppShell() {
         useStore.getState().login(u, 'next-auth-session');
         // Fetch full profile (with photos) from DB to supplement stripped JWT
         fetch(`/api/user/profile?userId=${u.id}`)
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) throw new Error(`Profile fetch failed (${res.status} ${res.statusText})`);
+            return res.json();
+          })
           .then(data => {
             if (!data.error) {
               useStore.getState().login({ ...u, ...data }, 'next-auth-session');
             }
           })
-          .catch(console.error);
+          .catch(error => {
+            console.error('Failed to load full user profile:', error);
+          });
       } else {
         useStore.getState().loginAsStaff(u);
       }
@@ -135,24 +116,7 @@ export default function AppShell() {
   ];
 
   const renderView = () => {
-    if (viewLoading) {
-      switch (currentView) {
-        case 'map': return <MapSkeleton />;
-        case 'tracker': return <BusTrackerSkeleton />;
-        case 'planner': return <TripPlannerSkeleton />;
-        case 'profile': return <ProfileSkeleton />;
-        case 'favorites': return <FavoritesSkeleton />;
-        case 'edit_profile': return <EditProfileSkeleton />;
-        case 'subscription': return <SubscriptionSkeleton />;
-        case 'packages': return <PackagesSkeleton />;
-        case 'checkout': return <CheckoutSkeleton />;
-        case 'get_pass': return <SubscriptionSkeleton />;
-        case 'passes': return <PassesSkeleton />;
-        default: return <MapSkeleton />;
-      }
-    }
-
-    switch (activeView) {
+    switch (currentView) {
       case 'map': return <MapView />;
       case 'tracker': return <BusTracker />;
       case 'planner': return <TripPlanner />;
@@ -208,26 +172,26 @@ export default function AppShell() {
 
       {/* Floating bottom nav — mobile only */}
       {!selectingOnMap && (
-      <nav className="bottom-nav" aria-label="Main navigation">
-        {MENU.map(({ id, label, icon: Icon }) => {
-          const active = currentView === id ||
-            (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'get_pass')) ||
-            (id === 'packages' && (currentView === 'checkout'));
-          return (
-            <button
-              key={id}
-              onClick={() => setView(id)}
-              className={`nav-btn ${active ? 'active' : ''}`}
-              aria-current={active ? 'page' : undefined}
-            >
-              <span className="nav-icon">
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-              </span>
-              <span className="nav-label">{label}</span>
-            </button>
-          );
-        })}
-      </nav>
+        <nav className="bottom-nav" aria-label="Main navigation">
+          {MENU.map(({ id, label, icon: Icon }) => {
+            const active = currentView === id ||
+              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'get_pass')) ||
+              (id === 'packages' && (currentView === 'checkout'));
+            return (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={`nav-btn ${active ? 'active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <span className="nav-icon">
+                  <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+                </span>
+                <span className="nav-label">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
       )}
 
       <style jsx>{`
@@ -250,8 +214,8 @@ export default function AppShell() {
           display: none;
         }
 
-        /* ── Mobile breakpoint ───────────────────── */
-        @media (max-width: 900px) {
+        /* ── Mobile + Tablet breakpoint (≤ 1180px) ─── */
+        @media (max-width: 1180px) {
           .sidebar { display: none !important; }
 
           .main-area {
@@ -291,6 +255,8 @@ export default function AppShell() {
             gap: 3px;
             flex: 1;
             padding: 8px 0;
+            min-height: 44px;
+            min-width: 44px;
 
             background: none;
             border: none;
@@ -316,6 +282,33 @@ export default function AppShell() {
             letter-spacing: 0.02em;
             line-height: 1;
             margin-top: 2px;
+          }
+        }
+
+        /* ── Tablet-specific refinements (iPad) ── */
+        @media (min-width: 901px) and (max-width: 1180px) {
+          .main-area {
+            padding-bottom: 112px;
+          }
+
+          .bottom-nav {
+            left: 32px;
+            right: 32px;
+            bottom: 24px;
+            height: 72px;
+            padding: 0 24px;
+            border-radius: 28px;
+          }
+
+          .nav-btn {
+            padding: 12px 0;
+            min-height: 56px;
+            min-width: 60px;
+          }
+
+          .nav-label {
+            font-size: 11px;
+            font-weight: 700;
           }
         }
       `}</style>
