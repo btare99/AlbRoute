@@ -99,6 +99,15 @@ export const translations: Record<string, any> = {
     return_btn: "Kthim",
     ticket_40: "40 Lekë",
     ticket_info: "Bileta: 40L/linjë · Ndërrimet llogariten veçmas · Oraret mund të ndryshojnë sipas pikut.",
+    route_options: "Opsionet e rrugës",
+    select_option: "Zgjidh një opsion për detaje",
+    direct_route: "Rrugë e drejtë",
+    via_routes: "përmes linjave",
+    departure_mode_now: "Tani",
+    departure_mode_depart_at: "Nis në",
+    departure_mode_arrive_by: "Arrij në",
+    departure_at: "Nisje",
+    arrival_at: "Mbërritje",
 
     // ── Profile ──
     staff_space: "Hapësira e punonjësit",
@@ -383,6 +392,15 @@ export const translations: Record<string, any> = {
     return_btn: "Return",
     ticket_40: "40 Lek",
     ticket_info: "Ticket: 40L/route · Transfers calculated separately · Schedules may vary.",
+    route_options: "Route options",
+    select_option: "Tap an option to see details",
+    direct_route: "Direct route",
+    via_routes: "Via routes",
+    departure_mode_now: "Now",
+    departure_mode_depart_at: "Depart at",
+    departure_mode_arrive_by: "Arrive by",
+    departure_at: "Depart at",
+    arrival_at: "Arrive at",
 
     // ── Profile ──
     staff_space: "Staff Space",
@@ -667,6 +685,15 @@ export const translations: Record<string, any> = {
     return_btn: "Ritorno",
     ticket_40: "40 Lek",
     ticket_info: "Biglietto: 40L/linea · I cambi sono calcolati separatamente · Gli orari possono variare.",
+    route_options: "Opzioni percorso",
+    select_option: "Seleziona un'opzione per i dettagli",
+    direct_route: "Percorso diretto",
+    via_routes: "tramite linee",
+    departure_mode_now: "Ora",
+    departure_mode_depart_at: "Parti alle",
+    departure_mode_arrive_by: "Arriva entro",
+    departure_at: "Partenza",
+    arrival_at: "Arrivo",
 
     // ── Profile ──
     staff_space: "Area Personale",

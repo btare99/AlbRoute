@@ -177,7 +177,16 @@ export default function TripPlanner() {
   const tripTo = useStore((state: any) => state.tripTo);
   const setTripTo = useStore((state: any) => state.setTripTo);
   const tripResult = useStore((state: any) => state.tripResult);
+  const tripOptions = useStore((state: any) => state.tripOptions);
+  const selectedTripOptionIndex = useStore((state: any) => state.selectedTripOptionIndex);
+  const tripDepartureMode = useStore((state: any) => state.tripDepartureMode);
+  const tripDepartureTime = useStore((state: any) => state.tripDepartureTime);
+  const setTripDepartureMode = useStore((state: any) => state.setTripDepartureMode);
+  const setTripDepartureTime = useStore((state: any) => state.setTripDepartureTime);
   const planTrip = useStore((state: any) => state.planTrip);
+  const setTripResult = useStore((state: any) => state.setTripResult);
+  const setSelectedTripOptionIndex = useStore((state: any) => state.setSelectedTripOptionIndex);
+  const setActiveTrip = useStore((state: any) => state.setActiveTrip);
   const addNotification = useStore((state: any) => state.addNotification);
   const setView = useStore((state: any) => state.setView);
   const language = useStore((state: any) => state.language);
@@ -214,6 +223,14 @@ export default function TripPlanner() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const selectOption = (index: number) => {
+    const option = tripOptions[index];
+    if (!option) return;
+    setSelectedTripOptionIndex(index);
+    setTripResult(option);
+    setActiveTrip(option);
   };
 
   const useMyLocation = () => {
@@ -379,353 +396,48 @@ export default function TripPlanner() {
               </>
             )}
           </button>
-        </form>
 
-        {/* Recent / Suggested */}
-        {!tripResult && (
-          <div style={{ marginTop: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-              <Zap size={12} style={{ color: 'rgba(255,255,255,0.25)' }} />
-              <span style={{ fontSize: '10px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>
-                {t.frequent_routes}
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
               {[
-                { f: 'Selitë', t: 'Qëndër' },
-                { f: 'Blloku', t: 'TEG' },
-                { f: 'Porcelan', t: 'Zogu i Zi' }
-              ].map((r, i) => (
+                { value: 'now', label: t.departure_mode_now || 'Now' },
+                { value: 'depart_at', label: t.departure_mode_depart_at || 'Depart at' },
+                { value: 'arrive_by', label: t.departure_mode_arrive_by || 'Arrive by' }
+              ].map((option) => (
                 <button
-                  key={i}
-                  onClick={() => { setTripFrom(r.f); setTripTo(r.t); }}
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTripDepartureMode(option.value as any)}
                   style={{
-                    background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)',
-                    borderRadius: '8px', padding: '7px 12px', fontSize: '12px',
-                    color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    flex: 1,
+                    padding: '10px 12px',
+                    borderRadius: '12px',
+                    background: tripDepartureMode === option.value ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.05)',
+                    border: tripDepartureMode === option.value ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent',
+                    color: '#fff',
+                    fontSize: '12px',
+                    cursor: 'pointer'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
                 >
-                  {r.f} ➔ {r.t}
+                  {option.label}
                 </button>
               ))}
             </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <input
+                type="datetime-local"
+                value={tripDepartureTime}
+                onChange={(e) => setTripDepartureTime(e.target.value)}
+                disabled={tripDepartureMode === 'now'}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)',
+                  background: tripDepartureMode === 'now' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)',
+                  color: '#fff', fontSize: '12px'
+                }}
+              />
+            </div>
           </div>
-        )}
-
-        {/* RESULTS */}
-        {tripResult && (
-          tripResult.error ? (
-            <div className="glass-panel" style={{ padding: '20px', borderRadius: '14px', display: 'flex', gap: '15px', alignItems: 'flex-start', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-              <AlertCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
-              <div>
-                <p style={{ color: '#ef4444', fontWeight: '600', fontSize: '13px', marginBottom: '3px' }}>{t.route_not_found}</p>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>{tripResult.error}</p>
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px', marginTop: '6px' }}>
-                  {t.try_full_name}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div ref={resultsRef} className="animate-fade-in" style={{ paddingBottom: '120px' }}>
-
-              {/* Summary card */}
-              <div style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '0.5px solid rgba(255,255,255,0.07)',
-                borderRadius: '14px',
-                overflow: 'hidden',
-                marginBottom: '16px',
-              }}>
-                {/* Header strip */}
-                <div style={{
-                  padding: '14px 18px',
-                  borderBottom: '0.5px solid rgba(255,255,255,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#10b981', letterSpacing: '0.04em' }}>
-                      {t.best_route}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>Urbani Im AI</span>
-                </div>
-
-                {/* From → To */}
-                <div style={{ padding: '16px 18px', borderBottom: '0.5px dashed rgba(255,255,255,0.06)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginBottom: '3px', letterSpacing: '0.06em' }}>{t.departure.toUpperCase()}</div>
-                      <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {tripResult.from}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, gap: '3px' }}>
-                      <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>{tripResult.travelTime} min</span>
-                      <ArrowRight size={14} style={{ color: 'rgba(255,255,255,0.15)' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
-                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginBottom: '3px', letterSpacing: '0.06em' }}>{t.destination.toUpperCase()}</div>
-                      <div style={{ fontSize: '15px', fontWeight: '600', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {tripResult.to}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Walking notice */}
-                {tripResult.walkingDist > 0 && (
-                  <div style={{
-                    padding: '10px 18px',
-                    borderBottom: '0.5px solid rgba(255,255,255,0.05)',
-                    display: 'flex', gap: '10px', alignItems: 'flex-start',
-                  }}>
-                    <div style={{
-                      width: '26px', height: '26px', borderRadius: '8px',
-                      background: 'rgba(59,130,246,0.08)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <Locate size={13} style={{ color: '#3b82f6' }} />
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
-                      {t.nearest_station}: <span style={{ color: 'rgba(255,255,255,0.7)' }}>{tripResult.actualFrom}</span>
-                      <span style={{ display: 'block', marginTop: '2px', color: '#3b82f6' }}>
-                        {t.walking_notice.replace('{dist}', tripResult.walkingDist.toString()).replace('{time}', tripResult.walkingTime.toString())}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
-                  {[
-                    { icon: <Clock size={14} />, value: `${tripResult.travelTime}m`, label: t.time_label, color: '#3b82f6' },
-                    { icon: <MapPin size={14} />, value: tripResult.totalStops, label: t.stations, color: '#8b5cf6' },
-                    { icon: <Banknote size={14} />, value: `${tripResult.totalPrice}L`, label: t.cost_label, color: '#10b981' },
-                    { icon: <Route size={14} />, value: tripResult.transfers, label: t.transfers_label, color: '#f59e0b' },
-                  ].map(({ icon, value, label, color }, idx) => (
-                    <div key={label} style={{
-                      padding: '12px 8px',
-                      borderRight: idx < 3 ? '0.5px solid rgba(255,255,255,0.05)' : 'none',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                    }}>
-                      <span style={{ color }}>{icon}</span>
-                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{value}</span>
-                      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step-by-step label */}
-              <div style={{
-                fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)',
-                marginBottom: '10px', paddingLeft: '2px',
-              }}>
-                {t.step_by_step}
-              </div>
-
-              {tripResult.legs.map((leg: any, i: number) => {
-                if (leg.isWalking) {
-                  return (
-                    <div key={i} style={{
-                      background: 'rgba(16,185,129,0.04)',
-                      border: '0.5px solid rgba(16,185,129,0.15)',
-                      borderLeft: '2px solid #10b981',
-                      borderRadius: '0 10px 10px 0',
-                      padding: '12px 14px',
-                      marginBottom: '8px',
-                      display: 'flex', gap: '12px', alignItems: 'center',
-                    }}>
-                      <div style={{
-                        width: '30px', height: '30px', borderRadius: '8px',
-                        background: 'rgba(16,185,129,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>
-                        <Locate size={15} style={{ color: '#10b981' }} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>
-                          {t.walk_transfer}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-                          {leg.boardAt} → {leg.alightAt}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                          {t.walking_notice.replace('{dist}', leg.walkingDist.toString()).replace('{time}', leg.walkingTime.toString())}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
-                const color = r?.color || '#888';
-                const allShown = showAllStops[i];
-                const stopsToShow = allShown
-                  ? leg.stops
-                  : [leg.stops[0], ...(leg.stops.length > 3 ? [] : leg.stops.slice(1, -1)), leg.stops[leg.stops.length - 1]].filter(Boolean);
-                const hiddenCount = leg.stops.length - 2;
-
-                return (
-                  <div key={i} style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '0.5px solid rgba(255,255,255,0.06)',
-                    borderLeft: `2px solid ${color}`,
-                    borderRadius: '0 10px 10px 0',
-                    padding: '14px',
-                    marginBottom: '8px',
-                  }}>
-                    {/* Transfer notice */}
-                    {leg.transferAt && (
-                      <div style={{
-                        marginBottom: '10px', padding: '8px 12px',
-                        background: 'rgba(245,158,11,0.06)',
-                        border: '0.5px solid rgba(245,158,11,0.2)',
-                        borderRadius: '8px',
-                        fontSize: '12px', color: '#f59e0b',
-                        display: 'flex', alignItems: 'center', gap: '7px',
-                      }}>
-                        <RefreshCcw size={12} />
-                        {t.transfer_at}: <strong>{leg.transferAt}</strong>
-                      </div>
-                    )}
-
-                    {/* Route header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                      <RouteBadge routeId={leg.route?.id} />
-                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
-                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>{t.ticket_40}</span>
-                      </div>
-                    </div>
-
-                    {/* Stop timeline */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {stopsToShow.map((stop: string, j: number) => {
-                        const isFirst = j === 0;
-                        const isLast = j === stopsToShow.length - 1;
-                        const isTerminal = isFirst || isLast;
-                        return (
-                          <div key={j} style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
-                              {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                              <div style={{
-                                width: isTerminal ? '11px' : '6px',
-                                height: isTerminal ? '11px' : '6px',
-                                borderRadius: '50%',
-                                background: isTerminal ? color : 'rgba(255,255,255,0.08)',
-                                border: isTerminal ? `2px solid ${color}` : 'none',
-                                flexShrink: 0,
-                              }} />
-                              {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', minHeight: '30px' }}>
-                              <span style={{
-                                fontSize: '13px',
-                                fontWeight: isTerminal ? '600' : '400',
-                                color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)',
-                              }}>
-                                {stop}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {leg.stops.length > 3 && (
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
-                          </div>
-                          <button
-                            onClick={() => toggleStops(i)}
-                            style={{
-                              padding: '5px 0', background: 'none', border: 'none',
-                              cursor: 'pointer', color: color,
-                              fontSize: '12px', fontWeight: '600',
-                              display: 'flex', alignItems: 'center', gap: '5px',
-                            }}
-                          >
-                            <ChevronDown size={13} style={{
-                              transform: allShown ? 'rotate(180deg)' : 'none',
-                              transition: 'transform 0.2s',
-                            }} />
-                            {allShown ? (language === 'al' ? 'Fshih stacionet' : language === 'en' ? 'Hide stations' : 'Nascondi fermate') : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${language === 'al' ? 'të tjera' : language === 'en' ? 'others' : 'altre'}`}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Info note */}
-              <div style={{
-                padding: '10px 14px',
-                background: 'rgba(255,255,255,0.02)',
-                border: '0.5px solid rgba(255,255,255,0.06)',
-                borderRadius: '10px',
-                display: 'flex', gap: '10px', alignItems: 'flex-start',
-                marginBottom: '12px',
-              }}>
-                <Info size={13} style={{ color: 'rgba(255,255,255,0.2)', marginTop: '1px', flexShrink: 0 }} />
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: '1.6' }}>
-                  {t.ticket_info}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <button
-
-                  style={{
-                    padding: '11px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.9)', color: '#000',
-                    border: '0.5px solid rgba(255,255,255,0.1)',
-                    fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-                    transition: 'opacity 0.15s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                  onClick={() => {
-                    useStore.getState().setActiveTrip(tripResult);
-                    setView('map');
-                    addNotification(language === 'al' ? 'Rruga u shfaq në hartë.' : language === 'en' ? 'Route shown on map.' : 'Percorso mostrato sulla mappa.', 'success');
-                  }}
-                >
-                  <MapPin size={13} /> {t.view_on_map}
-                </button>
-                <button
-                  style={{
-                    padding: '11px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)',
-                    border: '0.5px solid rgba(255,255,255,0.08)',
-                    fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
-                  onClick={() => {
-                    const t = tripFrom; setTripFrom(tripTo); setTripTo(t);
-                    handlePlan({ preventDefault: () => { } } as any);
-                  }}
-                >
-                  <RefreshCcw size={13} /> {t.return_btn}
-                </button>
-              </div>
-
-            </div>
-          )
-        )}
-
+        </form>
       </div>
 
       <style jsx>{`

@@ -1,0 +1,204 @@
+﻿DIAG 2792 line 3 char 128 Cannot find module 'lucide-react'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+----
+DIAG 2792 line 68 char 14 Cannot find module '@zxing/library'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+65:     let codeReader: any = null;
+66:     if (showBarcodeScanner) {
+67:       setCameraError(false);
+68:       import('@zxing/library').then(({ BrowserMultiFormatReader }) => {
+69:         codeReader = new BrowserMultiFormatReader();
+70:         codeReader.decodeFromVideoDevice(null, 'video-preview', (result: any, err: any) => {
+71:           if (result) {
+----
+DIAG 2792 line 1 char 24 Cannot find module 'zustand'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+----
+DIAG 2792 line 2 char 25 Cannot find module 'zustand/middleware'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+----
+DIAG 2792 line 3 char 25 Cannot find module 'undici-types'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+----
+DIAG 2792 line 62 char 34 Cannot find module 'undici-types'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+59:   const [uniSearch, setUniSearch] = useState('');
+60:   const [step, setStep] = useState<'methods' | 'form'>('methods');
+61:   const [cameraError, setCameraError] = useState(false);
+62: 
+63:   // ZXing Live Barcode Scanner Effect
+64:   useEffect(() => {
+65:     let codeReader: any = null;
+----
+DIAG 2792 line 3 char 32 Cannot find module './lib/json-transport'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+----
+DIAG 2792 line 4 char 23 Cannot find module './lib/mailer'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+----
+DIAG 2792 line 6 char 36 Cannot find module './lib/sendmail-transport'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+----
+DIAG 2792 line 7 char 31 Cannot find module './lib/ses-transport'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+10:   "Agricultural University of Tirana",
+----
+DIAG 2792 line 8 char 27 Cannot find module './lib/smtp-pool'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+10:   "Agricultural University of Tirana",
+11:   "Albanian University",
+----
+DIAG 2792 line 9 char 32 Cannot find module './lib/smtp-transport'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+10:   "Agricultural University of Tirana",
+11:   "Albanian University",
+12:   "Aldent University",
+----
+DIAG 2792 line 10 char 34 Cannot find module './lib/stream-transport'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+10:   "Agricultural University of Tirana",
+11:   "Albanian University",
+12:   "Aldent University",
+13:   "Bed├½r University College",
+----
+DIAG 2792 line 5 char 23 Cannot find module '.'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+----
+DIAG 2792 line 6 char 27 Cannot find module '../mime-node'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+----
+DIAG 2792 line 7 char 22 Cannot find module 'csstype'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+4: import useStore from '../../store/useStore';
+5: import { translations } from '../../store/translations';
+6: 
+7: const UNIVERSITIES = [
+8:   "Academy of Albanological Studies",
+9:   "Academy of Security",
+10:   "Agricultural University of Tirana",
+----
+DIAG 2792 line 1 char 22 Cannot find module './lib'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+1: 'use client';
+2: import { useState, useEffect } from 'react';
+3: import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+4: import useStore from '../../store/useStore';
+----
+DIAG 2717 line 53 char 11 Subsequent property declarations must have the same type.  Property 'RGBA16F_EXT' must be of type '34842', but here has type 'number'.
+50:   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'apple_pay' | 'counter'>('card');
+51:   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+52:   const [isScanningAnim, setIsScanningAnim] = useState(false);
+53:   const [isProcessing, setIsProcessing] = useState(false);
+54:   const [isSuccess, setIsSuccess] = useState(false);
+55:   const [acceptedTerms, setAcceptedTerms] = useState(false);
+56:   const [showQr, setShowQr] = useState(false);
+----
+DIAG 2717 line 54 char 11 Subsequent property declarations must have the same type.  Property 'RGB16F_EXT' must be of type '34843', but here has type 'number'.
+51:   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+52:   const [isScanningAnim, setIsScanningAnim] = useState(false);
+53:   const [isProcessing, setIsProcessing] = useState(false);
+54:   const [isSuccess, setIsSuccess] = useState(false);
+55:   const [acceptedTerms, setAcceptedTerms] = useState(false);
+56:   const [showQr, setShowQr] = useState(false);
+57:   const [idNumber, setIdNumber] = useState('');
+----
+DIAG 2717 line 55 char 11 Subsequent property declarations must have the same type.  Property 'FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE_EXT' must be of type '33297', but here has type 'number'.
+52:   const [isScanningAnim, setIsScanningAnim] = useState(false);
+53:   const [isProcessing, setIsProcessing] = useState(false);
+54:   const [isSuccess, setIsSuccess] = useState(false);
+55:   const [acceptedTerms, setAcceptedTerms] = useState(false);
+56:   const [showQr, setShowQr] = useState(false);
+57:   const [idNumber, setIdNumber] = useState('');
+58:   const [isUniPickerOpen, setIsUniPickerOpen] = useState(false);
+----
+DIAG 2717 line 56 char 11 Subsequent property declarations must have the same type.  Property 'UNSIGNED_NORMALIZED_EXT' must be of type '35863', but here has type 'number'.
+53:   const [isProcessing, setIsProcessing] = useState(false);
+54:   const [isSuccess, setIsSuccess] = useState(false);
+55:   const [acceptedTerms, setAcceptedTerms] = useState(false);
+56:   const [showQr, setShowQr] = useState(false);
+57:   const [idNumber, setIdNumber] = useState('');
+58:   const [isUniPickerOpen, setIsUniPickerOpen] = useState(false);
+59:   const [uniSearch, setUniSearch] = useState('');
+----
+DIAG 2717 line 74 char 11 Subsequent property declarations must have the same type.  Property 'COMPRESSED_RGB_ETC1_WEBGL' must be of type '36196', but here has type 'number'.
+71:           if (result) {
+72:             const text = result.getText();
+73:             setStudentId(text);
+74:             setSerialNumber('A-' + Math.floor(100000 + Math.random() * 900000));
+75:             setUniversity('University of Tirana');
+76:             setShowBarcodeScanner(false);
+77:           }
+----
+DIAG 2403 line 582 char 13 Subsequent variable declarations must have the same type.  Variable 'WebGL2RenderingContext' must be of type '{ new (): WebGL2RenderingContext; prototype: WebGL2RenderingContext; readonly READ_BUFFER: 3074; readonly UNPACK_ROW_LENGTH: 3314; ... 556 more ...; readonly BROWSER_DEFAULT_WEBGL: 37444; }', but here has type '{ new (): WebGL2RenderingContext; prototype: WebGL2RenderingContext; readonly ACTIVE_ATTRIBUTES: number; readonly ACTIVE_TEXTURE: number; ... 557 more ...; readonly MAX_CLIENT_WAIT_TIMEOUT_WEBGL: number; }'.
+579:                           marginTop: 24, 
+580:                           background: '#fff', 
+581:                           color: '#000', 
+582:                           border: 'none', 
+583:                           padding: '20px', 
+584:                           borderRadius: 100, 
+585:                           fontSize: 18, 
+----
+DIAG 2430 line 33804 char 11 Interface 'WebGL2RenderingContext' incorrectly extends interface 'WebGL2RenderingContextBase'.   Types of property 'clearBufferfv' are incompatible.     Type '(buffer: number, drawbuffer: number, values: ArrayLike<number> | Float32Array<ArrayBufferLike>, srcOffset?: number) => void' is not assignable to type '{ (buffer: number, drawbuffer: number, values: Float32List, srcOffset?: number): void; (buffer: number, drawbuffer: number, values: Iterable<number>, srcOffset?: number): void; }'.       Types of parameters 'values' and 'values' are incompatible.         Type 'Iterable<number>' is not assignable to type 'ArrayLike<number> | Float32Array<ArrayBufferLike>'.           Type 'Iterable<number>' is missing the following properties from type 'Float32Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 26 more.
+----
+DIAG 2430 line 33804 char 11 Interface 'WebGL2RenderingContext' incorrectly extends interface 'WebGL2RenderingContextOverloads'.   Types of property 'uniform1fv' are incompatible.     Type '(location: WebGLUniformLocation, data: ArrayLike<number> | Float32Array<ArrayBufferLike>, srcOffset?: number, srcLength?: number) => void' is not assignable to type '{ (location: WebGLUniformLocation, data: Float32List, srcOffset?: number, srcLength?: number): void; (location: WebGLUniformLocation, data: Iterable<...>, srcOffset?: number, srcLength?: number): void; }'.       Types of parameters 'data' and 'data' are incompatible.         Type 'Iterable<number>' is not assignable to type 'ArrayLike<number> | Float32Array<ArrayBufferLike>'.           Type 'Iterable<number>' is missing the following properties from type 'Float32Array<ArrayBufferLike>': BYTES_PER_ELEMENT, buffer, byteLength, byteOffset, and 26 more.
+----
+DIAG 2430 line 33804 char 11 Interface 'WebGL2RenderingContext' incorrectly extends interface 'WebGLRenderingContext'.   Types of property 'RGBA8' are incompatible.     Type 'number' is not assignable to type '32856'.
+----
+DIAG 2430 line 33804 char 11 Interface 'WebGL2RenderingContext' incorrectly extends interface 'WebGLRenderingContextBase'.   Types of property 'RGBA8' are incompatible.     Type 'number' is not assignable to type '32856'.
+----

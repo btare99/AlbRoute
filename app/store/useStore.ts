@@ -487,6 +487,14 @@ const useStore = create<any>()(
         }
       },
       setTripResult: (v: any) => set({ tripResult: v }),
+      tripOptions: [] as any[],
+      selectedTripOptionIndex: 0,
+      tripDepartureMode: 'now' as 'now' | 'depart_at' | 'arrive_by',
+      tripDepartureTime: new Date().toISOString().slice(0, 16),
+      setTripOptions: (options: any[]) => set({ tripOptions: options }),
+      setSelectedTripOptionIndex: (idx: number) => set({ selectedTripOptionIndex: idx }),
+      setTripDepartureMode: (mode: 'now' | 'depart_at' | 'arrive_by') => set({ tripDepartureMode: mode }),
+      setTripDepartureTime: (time: string) => set({ tripDepartureTime: time }),
       setActiveTrip: (trip: any) => set({ activeTrip: trip }),
       planTrip: async (fromName: string, toName: string) => {
         const searchTo = toName.trim().toLowerCase();
@@ -500,6 +508,17 @@ const useStore = create<any>()(
 
         const exactFromStop = findExactStop(fromName);
         const exactToStop = findExactStop(toName);
+
+        const departureMode = get().tripDepartureMode;
+        const desiredTime = departureMode !== 'now' && get().tripDepartureTime
+          ? new Date(get().tripDepartureTime)
+          : new Date();
+        const isArriveBy = departureMode === 'arrive_by';
+
+        const formatIso = (date: Date) => date.toISOString();
+        const candidates: any[] = [];
+        let bestTrip: any = null;
+        let bestScore = Infinity;
 
         // Ndihmës: Gjen koordinatat [lat, lng] për një adresë të shkruar (Geocoding)
         const geocodeQuery = async (query: string): Promise<{ lat: number, lng: number } | null> => {
@@ -573,6 +592,10 @@ const useStore = create<any>()(
           }
           possibleToStops.sort((a, b) => a.walkDist - b.walkDist);
         }
+
+        const primaryToStops = possibleToStops.filter(p => p.walkDist <= 400);
+        const directToStops = primaryToStops.filter(p => p.walkDist <= 300);
+        const toStopsForEvaluation = primaryToStops.length > 0 ? primaryToStops : possibleToStops;
 
         // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
         let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
@@ -666,10 +689,7 @@ const useStore = create<any>()(
           possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
         }
 
-        let bestTrip: any = null;
-        let bestScore = Infinity;
-
-        const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '') => {
+        const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '', secondLegLength = 0) => {
           const busLegs = legs.filter(l => l.route);
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
@@ -679,32 +699,53 @@ const useStore = create<any>()(
 
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
-          const score = (totalWalkDist / 8) + totalTime;
+          const secondLegBonus = busLegs.length > 1 ? secondLegLength * 0.25 : 0;
+          const score = (totalWalkDist / 8) + totalTime - secondLegBonus;
+
+          if (finalWalkDist > 400) return;
+          const finalLegs = !exactFromStop ? [
+            { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
+            ...legs
+          ] : [...legs];
+
+          if (!exactToStop) {
+            finalLegs.push({ isWalking: true, boardAt: actualToStopName, alightAt: toName, walkingDist: finalWalkDist, walkingTime: finalWalkTime, numStops: 0 });
+          }
+
+          const travelTime = Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0));
+          const departure = isArriveBy ? new Date(desiredTime.getTime() - travelTime * 60000) : new Date(desiredTime);
+          const arrival = isArriveBy ? new Date(desiredTime) : new Date(desiredTime.getTime() + travelTime * 60000);
+
+          const trip = {
+            from: fromName,
+            to: toName,
+            actualFrom: actualFromStopName,
+            actualTo: actualToStopName,
+            walkingDist: initialWalkDist + finalWalkDist,
+            walkingTime: initialWalkTime + finalWalkTime,
+            totalStops,
+            transfers: Math.max(0, busLegs.length - 1),
+            legs: finalLegs,
+            travelTime,
+            totalPrice: busLegs.length * 40,
+            score,
+            departureTime: formatIso(departure),
+            arrivalTime: formatIso(arrival),
+            isDirect: busLegs.length === 1,
+            routeNames: busLegs.map((leg: any) => leg.route?.name).filter(Boolean).join(' → ')
+          };
+
+          candidates.push(trip);
 
           if (score < bestScore) {
             bestScore = score;
-            const finalLegs = !exactFromStop ? [
-              { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
-              ...legs
-            ] : [...legs];
-
-            if (!exactToStop) {
-              finalLegs.push({ isWalking: true, boardAt: actualToStopName, alightAt: toName, walkingDist: finalWalkDist, walkingTime: finalWalkTime, numStops: 0 });
-            }
-
-            bestTrip = {
-              from: fromName, to: toName, actualFrom: actualFromStopName, actualTo: actualToStopName,
-              walkingDist: initialWalkDist + finalWalkDist, walkingTime: initialWalkTime + finalWalkTime,
-              totalStops, transfers: Math.max(0, busLegs.length - 1),
-              legs: finalLegs, travelTime: Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0)),
-              totalPrice: busLegs.length * 40
-            };
+            bestTrip = trip;
           }
         };
 
-        // 1. DIRECT ROUTES
+        // 1. DIRECT ROUTES (prefer direct routes when destination is within 300m)
         for (const pfs of possibleFromStops) {
-          for (const pts of possibleToStops) {
+          for (const pts of directToStops.length ? directToStops : toStopsForEvaluation) {
             for (const route of BUS_ROUTES) {
               const paths = [route.stops, route.returnStops].filter(Boolean) as string[][];
               for (const arr of paths) {
@@ -725,48 +766,46 @@ const useStore = create<any>()(
         }
 
         // 2. TRANSFER ROUTES
-        if (!bestTrip) {
-          for (const pfs of possibleFromStops) {
-            for (const route1 of BUS_ROUTES) {
-              const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
-              for (const r1Arr of r1Paths) {
-                const fi = r1Arr.indexOf(pfs.stop.id);
-                if (fi === -1) continue;
+        for (const pfs of possibleFromStops) {
+          for (const route1 of BUS_ROUTES) {
+            const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
+            for (const r1Arr of r1Paths) {
+              const fi = r1Arr.indexOf(pfs.stop.id);
+              if (fi === -1) continue;
 
-                for (const pts of possibleToStops) {
-                  for (const route2 of BUS_ROUTES) {
-                    if (route1.id === route2.id) continue;
-                    const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
-                    for (const r2Arr of r2Paths) {
-                      const ti = r2Arr.indexOf(pts.stop.id);
-                      if (ti === -1) continue;
+              for (const pts of toStopsForEvaluation) {
+                for (const route2 of BUS_ROUTES) {
+                  if (route1.id === route2.id) continue;
+                  const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
+                  for (const r2Arr of r2Paths) {
+                    const ti = r2Arr.indexOf(pts.stop.id);
+                    if (ti === -1) continue;
 
-                      const startI = fi + 1;
-                      const endI = r1Arr.length;
-                      const endJ = ti;
+                    const startI = fi + 1;
+                    const endI = r1Arr.length;
+                    const endJ = ti;
 
-                      for (let i = startI; i < endI; i++) {
-                        const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
-                        if (!s1) continue;
+                    for (let i = startI; i < endI; i++) {
+                      const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
+                      if (!s1) continue;
 
-                        for (let j = 0; j < endJ; j++) {
-                          const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
-                          if (!s2) continue;
+                      for (let j = 0; j < endJ; j++) {
+                        const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
+                        if (!s2) continue;
 
-                          const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                          if (d > 300) continue;
+                        const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
+                        if (d > 300) continue;
 
-                          const dist = Math.round(d);
-                          const walkTime = Math.ceil(dist / 80);
-                          const stopIds1 = r1Arr.slice(fi, i + 1);
-                          const stopIds2 = r2Arr.slice(j, ti + 1);
+                        const dist = Math.round(d);
+                        const walkTime = Math.ceil(dist / 80);
+                        const stopIds1 = r1Arr.slice(fi, i + 1);
+                        const stopIds2 = r2Arr.slice(j, ti + 1);
 
-                          evaluateTrip([
-                            { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
-                            dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
-                            { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
-                          ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
-                        }
+                        evaluateTrip([
+                          { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
+                          dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
+                          { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
+                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name, stopIds2.length - 1);
                       }
                     }
                   }
@@ -776,10 +815,18 @@ const useStore = create<any>()(
           }
         }
 
-        const result = bestTrip || { error: 'Nuk u gjet rrugë e përshtatshme. Provo stacione të tjera.' };
+        const sortedCandidates = candidates
+          .filter(c => !!c)
+          .sort((a, b) => a.score - b.score);
+
+        const topOptions = sortedCandidates.slice(0, 4).map((option, index) => ({ ...option, optionIndex: index + 1 }));
+        const selected = topOptions[0] || null;
+
         set({
-          tripResult: result,
-          activeTrip: bestTrip ? result : null,
+          tripResult: selected,
+          tripOptions: topOptions,
+          selectedTripOptionIndex: 0,
+          activeTrip: selected,
           showRoutes: true,
           showBuses: true
         });
@@ -828,6 +875,8 @@ const useStore = create<any>()(
           'tripFrom',
           'tripTo',
           'tripResult',
+          'tripOptions',
+          'selectedTripOptionIndex',
           'activeTrip',
           'selectedStop',
           'activeRouteFilter',
