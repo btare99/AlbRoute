@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { chevronBackOutline } from 'ionicons/icons';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -64,7 +65,7 @@ export default function PassesView() {
       {/* Nav */}
       <div style={{ padding: '24px 20px', display: 'flex', alignItems: 'center', gap: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
         <button onClick={() => setView('profile')} style={{ color: '#fff', padding: 8, borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', display: 'flex' }}>
-          <ChevronLeft size={20} />
+          <IonIcon icon={chevronBackOutline} style={{ fontSize: 20, color: '#fff' }} />
         </button>
         <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>
           {t.sub_passes_catalog}

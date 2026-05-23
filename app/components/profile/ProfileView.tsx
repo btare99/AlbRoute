@@ -3,8 +3,16 @@
 import { useState } from 'react';
 import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
-import { User, LogOut, ChevronRight, Bell, Share2, Info, Trash2, AlertTriangle, X, Mail, Phone, Globe, Zap, Star, CheckCircle2 } from 'lucide-react';
+import {
+  bookmarkOutline, logOutOutline, chevronForwardOutline, notificationsOutline, shareOutline,
+  helpCircleOutline, trashOutline, alertOutline, closeOutline, mailOutline, callOutline,
+  globeOutline, ticketOutline, checkmarkCircleOutline
+} from 'ionicons/icons';
+import { IonIcon } from '@ionic/react';
 import { translations } from '../../store/translations';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export default function ProfileView() {
   const user = useStore((state: any) => state.user);
@@ -26,25 +34,54 @@ export default function ProfileView() {
     : (language === 'al' ? 'Nuk ka abonim' : language === 'it' ? 'Nessun abbonamento' : 'No subscription');
 
   const menuItems = [
-    { icon: <Star size={18} />, label: t.prof_saved_stops, action: () => setView('favorites') },
-    { icon: <Bell size={18} />, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
-    { icon: <Zap size={18} />, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
-    { icon: <Globe size={18} />, label: t.prof_language, value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
-    { icon: <Info size={18} />, label: t.prof_help_center, action: () => setActiveModal('help') },
+    { icon: bookmarkOutline, label: t.prof_saved_stops, action: () => setView('favorites') },
+    { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
+    { icon: ticketOutline, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
+    { icon: globeOutline, label: t.prof_language, value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
+    { icon: helpCircleOutline, label: t.prof_help_center, action: async () => {
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await Browser.open({ url: 'https://urbanim.app/help', windowName: '_blank' });
+            return;
+          } catch (error) {
+            console.warn('Browser plugin failed to open help page:', error);
+          }
+        }
+        setActiveModal('help');
+      } },
     {
-      icon: <Share2 size={18} />, label: 'Share Urbani Im', action: () => {
-        if (navigator.share) {
-          navigator.share({
-            title: 'Urbani Im',
-            text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
-            url: window.location.origin
-          }).catch(console.error);
-        } else {
-          addNotification(t.prof_link_copied, 'success');
+      icon: shareOutline, label: 'Share Urbani Im', action: async () => {
+        try {
+          if (Capacitor.isNativePlatform()) {
+            // Përdor Capacitor Share për mobilet
+            await Share.share({
+              title: 'Urbani Im',
+              text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
+              url: 'https://urbanim.app'
+            });
+            addNotification(language === 'al' ? 'Aplikacioni u ndaq me sukses!' : 'App shared successfully!', 'success');
+          } else if (navigator.share) {
+            // Përdor Web Share API për browserët
+            await navigator.share({
+              title: 'Urbani Im',
+              text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
+              url: window.location.origin
+            });
+            addNotification(language === 'al' ? 'Aplikacioni u ndaq me sukses!' : 'App shared successfully!', 'success');
+          } else {
+            addNotification(t.prof_link_copied, 'success');
+          }
+        } catch (error: any) {
+          // Ignoro share canceled errors
+          if (error?.message?.includes('canceled') || error?.message?.includes('Canceled')) {
+            return;
+          }
+          console.error('Share error:', error);
+          addNotification(language === 'al' ? 'Gabim në ndarje të aplikacionit' : 'Error sharing app', 'danger');
         }
       }
     },
-    { icon: <LogOut size={18} />, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
+    { icon: logOutOutline, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
   ];
 
   return (
@@ -86,7 +123,7 @@ export default function ProfileView() {
             background: 'rgba(255,255,255,0.05)', display: 'flex',
             alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
-            <ChevronRight size={16} />
+            <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px' }} />
           </div>
         </button>
       </div>
@@ -112,7 +149,7 @@ export default function ProfileView() {
               color: item.isDestructive ? '#ef4444' : 'rgba(255,255,255,0.5)',
               transition: 'all 0.2s ease'
             }}>
-              {item.icon}
+              <IonIcon icon={item.icon} style={{ fontSize: '18px' }} />
             </div>
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: '15px', fontWeight: '500' }}>{item.label}</span>
@@ -123,7 +160,7 @@ export default function ProfileView() {
               )}
             </div>
             {!item.isDestructive && (
-              <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: 'rgba(255,255,255,0.15)' }} />
             )}
           </button>
         ))}
@@ -148,7 +185,7 @@ export default function ProfileView() {
                     activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
               </h3>
               <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                <X size={20} />
+                <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
               </button>
             </div>
 
@@ -180,7 +217,7 @@ export default function ProfileView() {
                       <span style={{ fontSize: '15px', color: language === lang.id ? '#fff' : 'inherit', fontWeight: language === lang.id ? '600' : '500' }}>{lang.name}</span>
                     </div>
                     {language === lang.id && (
-                      <CheckCircle2 size={18} color="#ea580c" />
+                      <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '18px', color: '#ea580c' }} />
                     )}
                   </button>
                 ))}

@@ -24,7 +24,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
   const mailOptions = {
     from: `"Urbani Im" <btare99@gmail.com>`,
     to,
-    subject: 'Mirë se erdhe në Urbani Im! 🚌',
+    subject: 'Mirë se erdhe në Urbani Im!',
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -33,7 +33,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
         </div>
         
         <div style="color: #1e293b; line-height: 1.6;">
-          <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Përshëndetje ${name}! 👋</h2>
+          <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Përshëndetje ${name}!</h2>
           <p style="margin-bottom: 16px;">Jemi shumë të lumtur që jeni bashkuar me platformën **Urbani Im**. Tani mund të ndiqni autobusët në kohë reale dhe të planifikoni udhëtimet tuaja në Tiranë më lehtë se kurrë.</p>
           
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border-left: 4px solid #2563eb; margin: 24px 0;">

@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { BUS_STOPS, BUS_ROUTES } from '../constants/busData';
 import { BUS_SHAPES } from './busShapes';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { Device } from '@capacitor/device';
+import { Geolocation } from '@capacitor/geolocation';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Network } from '@capacitor/network';
+import { Preferences } from '@capacitor/preferences';
 export { BUS_STOPS, BUS_ROUTES };
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
@@ -56,19 +63,52 @@ const useStore = create<any>()(
 
       // ── Language ──
       language: 'al',
-      setLanguage: (lang: string) => set({ language: lang }),
+      setLanguage: async (lang: string) => {
+        set({ language: lang });
+        try {
+          await Preferences.set({ key: 'app_language', value: lang });
+        } catch (error) {
+          console.warn('Failed to persist language preference:', error);
+        }
+      },
 
-      // ── Navigation ──
+      // ── Device + Network ──
+      deviceInfo: null,
+      networkStatus: { connected: true, connectionType: 'unknown' },
+      appState: { isActive: true },
+      initializeNativeServices: async () => {
+        try {
+          const [deviceInfo, networkStatus, appState] = await Promise.all([
+            Device.getInfo(),
+            Network.getStatus(),
+            App.getState()
+          ]);
+          set({ deviceInfo, networkStatus, appState });
+
+          Network.addListener('networkStatusChange', (status) => {
+            set({ networkStatus: status });
+          });
+
+          App.addListener('appStateChange', (state) => {
+            set({ appState: state });
+          });
+
+          try {
+            await LocalNotifications.requestPermissions();
+            await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
+          } catch (notifyCleanupError) {
+            console.warn('Local notification cleanup failed:', notifyCleanupError);
+          }
+        } catch (error) {
+          console.warn('Native service initialization failed:', error);
+        }
+      },
       currentView: 'map',
       isSidebarOpen: false,
-      checkoutPackage: null,
-      setView: (v: any) => set({ currentView: v, isSidebarOpen: false }),
-      setCheckoutPackage: (pkg: any) => set({ checkoutPackage: pkg, currentView: 'checkout' }),
-      toggleSidebar: () => set((state: any) => ({ isSidebarOpen: !state.isSidebarOpen })),
-      // ── Map Settings ──
       showStops: true,
       showRoutes: true,
       showBuses: true,
+      setView: (v: any) => set({ currentView: v, isSidebarOpen: false }),
       setShowStops: (val: boolean) => set({ showStops: val }),
       setShowRoutes: (val: boolean) => set({ showRoutes: val }),
       setShowBuses: (val: boolean) => set({ showBuses: val }),
@@ -204,72 +244,119 @@ const useStore = create<any>()(
           console.error('Failed to update bus', error);
         }
       },
-      fetchUserLocation: () => {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
+      getCurrentPosition: async (options: any = {}) => {
+        const fallbackToBrowser = async () => {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            return new Promise<any>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, options);
+            });
+          }
+          throw new Error('Geolocation not supported');
+        };
+
+        if (Capacitor.isNativePlatform()) {
+          try {
+            try {
+              await Geolocation.requestPermissions();
+            } catch (permissionError) {
+              console.warn('Geolocation permission request failed:', permissionError);
+            }
+            return await Geolocation.getCurrentPosition(options);
+          } catch (nativeError) {
+            console.warn('Native geolocation failed, falling back to browser', nativeError);
+            return await fallbackToBrowser();
+          }
+        }
+
+        return await fallbackToBrowser();
+      },
+      fetchUserLocation: async (notify = false) => {
+        try {
+          const position = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          set({ userLocation: { lat, lng } });
+
+          const currentUser = get().user;
+          const lastLocation = currentUser?.lastLocation;
+          const now = new Date();
+          const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+          const locationChanged = !lastLocation ||
+            Math.abs(lastLocation.lat - lat) > 0.0001 ||
+            Math.abs(lastLocation.lng - lng) > 0.0001;
+
+          if (currentUser && (currentUser.id || currentUser._id)) {
+            get().updateProfile({
+              lastLocation: { lat, lng, updatedAt: albaniaTime }
+            });
+          }
+
+        } catch (error) {
+          console.warn('[Geolocation] primary location request failed, attempting fallback', error);
+          try {
+            const fallbackPosition = await get().getCurrentPosition({ enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+            const lat = fallbackPosition.coords.latitude;
+            const lng = fallbackPosition.coords.longitude;
             set({ userLocation: { lat, lng } });
 
-            // Sync location to MongoDB if user is authenticated
             const currentUser = get().user;
             if (currentUser && (currentUser.id || currentUser._id)) {
-
-              // Konverto kohën aktuale në orën e Shqipërisë (+2:00 orë nga UTC)
               const now = new Date();
               const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-              get().updateProfile({
-                lastLocation: {
-                  lat,
-                  lng,
-                  updatedAt: albaniaTime
-                }
-              });
+              get().updateProfile({ lastLocation: { lat, lng, updatedAt: albaniaTime } });
             }
-          },
-          (err) => {
-            console.warn('⚠️ [Geolocation] Gabim me saktësi të lartë, provohet fallback me saktësi normale...', err);
-            // Fallback: Provo të marrësh vendndodhjen pa High Accuracy (më e shpejtë dhe më e thjeshtë për desktop/browserë)
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                set({ userLocation: { lat, lng } });
-
-                const currentUser = get().user;
-                if (currentUser && (currentUser.id || currentUser._id)) {
-                  const now = new Date();
-                  const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-                  get().updateProfile({
-                    lastLocation: { lat, lng, updatedAt: albaniaTime }
-                  });
-                }
-              },
-              (fallbackErr) => {
-                console.error('❌ [Geolocation] Dështoi edhe përpjekja e dytë ose leja u refuzua:', fallbackErr);
-              },
-              { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }
+          } catch (fallbackError) {
+            console.error('[Geolocation] fallback request failed:', fallbackError);
+          }
+        }
+      },
+      watchId: null as string | null,
+      startTracking: async () => {
+        if (get().watchId) return;
+        const fallbackWatch = () => {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            const id = navigator.geolocation.watchPosition(
+              (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
+              (err) => console.error('Browser geolocation watch error:', err),
+              { enableHighAccuracy: true }
             );
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+            set({ watchId: id });
+          }
+        };
+
+        if (Capacitor.isNativePlatform()) {
+          try {
+            const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (position, err) => {
+              if (err) {
+                console.error('Geolocation watch error:', err);
+                return;
+              }
+              if (position?.coords) {
+                set({ userLocation: { lat: position.coords.latitude, lng: position.coords.longitude } });
+              }
+            });
+            set({ watchId: id });
+            return;
+          } catch (error) {
+            console.warn('Native watchPosition failed, falling back to browser', error);
+          }
+        }
+
+        fallbackWatch();
       },
-      watchId: null as number | null,
-      startTracking: () => {
-        if (!navigator.geolocation || get().watchId) return;
-        const id = navigator.geolocation.watchPosition(
-          (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-          (err) => console.error(err),
-          { enableHighAccuracy: true }
-        );
-        set({ watchId: id });
-      },
-      stopTracking: () => {
+      stopTracking: async () => {
         const { watchId } = get();
         if (watchId) {
-          navigator.geolocation.clearWatch(watchId);
+          if (Capacitor.isNativePlatform()) {
+            try {
+              await Geolocation.clearWatch({ id: watchId });
+            } catch (clearError) {
+              console.warn('Failed to clear native geolocation watch:', clearError);
+            }
+          } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            navigator.geolocation.clearWatch(watchId as number);
+          }
           set({ watchId: null });
         }
       },
@@ -500,7 +587,7 @@ const useStore = create<any>()(
         const searchTo = toName.trim().toLowerCase();
         const searchFrom = fromName.trim().toLowerCase();
 
-        const cleanName = (n: string) => n.trim().toLowerCase().replace(/📍/g, '').trim();
+        const cleanName = (n: string) => n.trim().toLowerCase();
         const findExactStop = (name: string) => {
           const clean = cleanName(name);
           return BUS_STOPS.find(s => s.name.toLowerCase().trim() === clean);
@@ -525,7 +612,7 @@ const useStore = create<any>()(
           const stop = findExactStop(query);
           if (stop) return { lat: stop.lat, lng: stop.lng };
 
-          const cleanQuery = query.toLowerCase().replace(/📍/g, '').trim();
+          const cleanQuery = query.toLowerCase().trim();
           const suffix = (cleanQuery.includes('tiran') || cleanQuery.includes('albania')) ? '' : ', Tirana';
 
           try {
@@ -599,7 +686,7 @@ const useStore = create<any>()(
 
         // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
         let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
-        const isMyLocation = cleanName(fromName).includes('vendndodhja') || cleanName(fromName).includes('my location') || cleanName(fromName).includes('📍');
+        const isMyLocation = cleanName(fromName).includes('vendndodhja') || cleanName(fromName).includes('my location');
         
         // Kontrollo nëse ky është zgjedhje në hartë (map selection)
         const storedOriginCoords = get().tripOriginCoords;

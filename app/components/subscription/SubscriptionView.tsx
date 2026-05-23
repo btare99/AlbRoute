@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, User, Zap } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { ticketOutline, chevronBackOutline, personCircleOutline } from 'ionicons/icons';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -63,7 +64,7 @@ export default function SubscriptionView() {
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
           >
-            <ChevronLeft size={20} />
+            <IonIcon icon={chevronBackOutline} style={{ fontSize: 20, color: '#fff' }} />
           </button>
 
           <div style={{ flex: 1 }}>
@@ -74,8 +75,8 @@ export default function SubscriptionView() {
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)' }}>
-          <Zap size={48} style={{ marginBottom: 16 }} />
-          <p>{t.sub_no_active_found || 'Nuk keni asnjë abone aktive.'}</p>
+          <IonIcon icon={ticketOutline} style={{ fontSize: '48px', marginBottom: 16, color: 'rgba(255,255,255,0.65)' }} />
+          <p>{t.sub_no_active_found || 'Nuk keni asnjë abonim aktiv.'}</p>
         </div>
       </div>
     );
@@ -142,7 +143,7 @@ export default function SubscriptionView() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
-          <ChevronLeft size={20} />
+          <IonIcon icon={chevronBackOutline} style={{ fontSize: 20, color: '#fff' }} />
         </button>
 
         <div style={{ flex: 1 }}>
@@ -245,7 +246,7 @@ export default function SubscriptionView() {
                 </div>
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0' }}>
-                  <User size={64} color="#94a3b8" />
+                  <IonIcon icon={personCircleOutline} style={{ fontSize: 64, color: '#94a3b8' }} />
                 </div>
               )}
             </div>

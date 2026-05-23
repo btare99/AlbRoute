@@ -1,12 +1,26 @@
 'use client';
 import { useState } from 'react';
+import { IonIcon } from '@ionic/react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import {
-  Star, Trash2, Bus, ArrowRight, MapPin, Route,
-  Bell, BellOff, Clock, Navigation, Zap, Plus,
-  Shield, CheckCircle2, History, TrendingUp, Leaf, ArrowLeft,
-  ChevronLeft
-} from 'lucide-react';
+  chevronBackOutline,
+  trashOutline,
+  busOutline,
+  arrowForwardOutline,
+  locationOutline,
+  navigateOutline,
+  notificationsOutline,
+  notificationsOffOutline,
+  timeOutline,
+  starOutline,
+  compassOutline,
+  flashOutline,
+  addOutline,
+  shieldOutline,
+  checkmarkCircleOutline,
+  trendingUpOutline,
+  leafOutline
+} from 'ionicons/icons';
 import { translations } from '../../store/translations';
 
 type Tab = 'routes' | 'stops' | 'activity';
@@ -38,7 +52,7 @@ function EmptyTab({ icon, text, action, actionLabel }: {
           fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
         }}
       >
-        <Plus size={14} /> {actionLabel}
+        <IonIcon icon={addOutline} style={{ fontSize: 14 }} /> {actionLabel}
       </button>
     </div>
   );
@@ -93,7 +107,7 @@ export default function UserFavorites() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
-          <ChevronLeft size={20} />
+          <IonIcon icon={chevronBackOutline} style={{ fontSize: 20 }} />
         </button>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.saved}</h1>
@@ -114,9 +128,9 @@ export default function UserFavorites() {
       {/* ── Stats Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
         {[
-          { label: t.fav_trips, val: '24', icon: <History size={13} />, color: '#3b82f6' },
-          { label: t.fav_saved, val: '12kg', icon: <Leaf size={13} />, color: '#10b981' },
-          { label: t.fav_usage, val: '92%', icon: <TrendingUp size={13} />, color: '#8b5cf6' },
+          { label: t.fav_trips, val: '24', icon: <IonIcon icon={timeOutline} style={{ fontSize: 13, color: '#3b82f6' }} />, color: '#3b82f6' },
+          { label: t.fav_saved, val: '12kg', icon: <IonIcon icon={leafOutline} style={{ fontSize: 13, color: '#10b981' }} />, color: '#10b981' },
+          { label: t.fav_usage, val: '92%', icon: <IonIcon icon={trendingUpOutline} style={{ fontSize: 13, color: '#8b5cf6' }} />, color: '#8b5cf6' },
         ].map(s => (
           <div key={s.label} style={{
             background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
@@ -137,10 +151,10 @@ export default function UserFavorites() {
         border: '0.5px solid rgba(255,255,255,0.08)'
       }}>
         {([
-          { key: 'routes' as Tab, label: t.routes, icon: Bus, count: savedRoutes?.length || 0 },
-          { key: 'stops' as Tab, label: t.stations, icon: MapPin, count: savedStops?.length || 0 },
-          { key: 'activity' as Tab, label: t.fav_activity, icon: History, count: 0 },
-        ]).map(({ key, label, icon: Icon, count }) => (
+          { key: 'routes' as Tab, label: t.routes, icon: busOutline, count: savedRoutes?.length || 0 },
+          { key: 'stops' as Tab, label: t.stations, icon: locationOutline, count: savedStops?.length || 0 },
+          { key: 'activity' as Tab, label: t.fav_activity, icon: timeOutline, count: 0 },
+        ]).map(({ key, label, icon, count }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -156,7 +170,7 @@ export default function UserFavorites() {
               boxShadow: tab === key ? '0 4px 12px rgba(255,255,255,0.1)' : 'none'
             }}
           >
-            <Icon size={16} />
+            <IonIcon icon={icon} style={{ fontSize: 16 }} />
             {label}
             {count > 0 && (
               <span style={{
@@ -182,7 +196,7 @@ export default function UserFavorites() {
           }}>
             {!savedRoutes || savedRoutes.length === 0 ? (
               <EmptyTab
-                icon={<Bus size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
+                icon={<IonIcon icon={busOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.2)' }} />}
                 text={t.fav_no_routes}
                 action={() => setView('tracker')}
                 actionLabel={t.routes}
@@ -243,7 +257,9 @@ export default function UserFavorites() {
                             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                           }}
                         >
-                          {notified[r.id] ? <Bell size={13} /> : <BellOff size={13} />}
+                          {notified[r.id]
+                            ? <IonIcon icon={notificationsOutline} style={{ fontSize: 13 }} />
+                            : <IonIcon icon={notificationsOffOutline} style={{ fontSize: 13 }} />}
                         </button>
                         <button
                           onClick={() => { setSelectedRoute?.(r.id); setView('tracker'); }}
@@ -254,7 +270,7 @@ export default function UserFavorites() {
                             display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
                           }}
                         >
-                          <ArrowRight size={12} /> {t.fav_track}
+                          <IonIcon icon={arrowForwardOutline} style={{ fontSize: 12 }} /> {t.fav_track}
                         </button>
                         <button
                           onClick={() => removeSavedRoute(r.id)}
@@ -264,7 +280,7 @@ export default function UserFavorites() {
                             color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                           }}
                         >
-                          <Trash2 size={13} />
+                          <IonIcon icon={trashOutline} style={{ fontSize: 13 }} />
                         </button>
                       </div>
                     </div>
@@ -283,7 +299,7 @@ export default function UserFavorites() {
           }}>
             {!savedStops || savedStops.length === 0 ? (
               <EmptyTab
-                icon={<MapPin size={24} style={{ color: 'rgba(255,255,255,0.2)' }} />}
+                icon={<IonIcon icon={locationOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.2)' }} />}
                 text={t.fav_no_stops}
                 action={() => setView('map')}
                 actionLabel={t.map}
@@ -313,7 +329,7 @@ export default function UserFavorites() {
                         background: 'rgba(59,130,246,0.1)', border: '0.5px solid rgba(59,130,246,0.2)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}>
-                        <MapPin size={18} style={{ color: '#3b82f6' }} />
+                        <IonIcon icon={locationOutline} style={{ fontSize: 18, color: '#3b82f6' }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: 0 }}>{s.name}</h3>
@@ -330,7 +346,7 @@ export default function UserFavorites() {
                             color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                           }}
                         >
-                          <Route size={13} />
+                          <IonIcon icon={navigateOutline} style={{ fontSize: 13 }} />
                         </button>
                         <button
                           onClick={() => removeSavedStop?.(s.id || s.name)}
@@ -340,7 +356,7 @@ export default function UserFavorites() {
                             color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                           }}
                         >
-                          <Trash2 size={13} />
+                          <IonIcon icon={trashOutline} style={{ fontSize: 13 }} />
                         </button>
                       </div>
                     </div>
@@ -366,7 +382,11 @@ export default function UserFavorites() {
                   width: '32px', height: '32px', borderRadius: '8px',
                   background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  {act.type === 'trip' ? <Route size={13} /> : (act.type === 'save' ? <Star size={13} /> : <CheckCircle2 size={13} />)}
+                  {act.type === 'trip'
+                    ? <IonIcon icon={navigateOutline} style={{ fontSize: 13 }} />
+                    : (act.type === 'save'
+                      ? <IonIcon icon={starOutline} style={{ fontSize: 13 }} />
+                      : <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 13 }} />)}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: '500', color: '#fff' }}>{act.label}</div>
@@ -389,7 +409,7 @@ export default function UserFavorites() {
           width: '32px', height: '32px', borderRadius: '10px',
           background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <Shield size={16} style={{ color: '#10b981' }} />
+          <IonIcon icon={shieldOutline} style={{ fontSize: 16, color: '#10b981' }} />
         </div>
         <div>
           <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>{t.fav_data_protection}</p>

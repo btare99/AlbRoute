@@ -1,7 +1,9 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Camera, User, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { cameraOutline, personCircleOutline, alertCircleOutline, checkmarkCircleOutline, syncOutline } from 'ionicons/icons';
 import * as faceapi from 'face-api.js';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface FacePhotoUploadProps {
   onPhotoDetected: (photo: string) => void;
@@ -113,13 +115,44 @@ export default function FacePhotoUpload({ onPhotoDetected, currentPhoto }: FaceP
           <img src={preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile preview" />
         ) : (
           <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Camera size={48} color="rgba(255,255,255,0.2)" />
+            <IonIcon icon={cameraOutline} style={{ fontSize: 48, color: 'rgba(255,255,255,0.2)' }} />
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '12px' }}>
               Kliko për të ngarkuar foton
             </p>
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={async () => {
+          setError(null);
+          try {
+            const photo = await Camera.getPhoto({
+              quality: 70,
+              resultType: CameraResultType.Base64,
+              source: CameraSource.Prompt,
+              width: 800
+            });
+            if (photo && photo.base64String) {
+              const base64Data = `data:${photo.format};base64,${photo.base64String}`;
+              setPreview(base64Data);
+              onPhotoDetected(base64Data);
+              setError(null);
+            }
+          } catch (cameraError) {
+            console.warn('Camera capture failed:', cameraError);
+            setError('Ndodhi një gabim gjatë marrjes së fotos. Ju lutem provoni përsëri.');
+          }
+        }}
+        style={{
+          width: '100%', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px',
+          background: 'rgba(255,255,255,0.05)', color: '#fff', padding: '12px 16px',
+          cursor: 'pointer', fontSize: '14px', fontWeight: 600
+        }}
+      >
+        Përdor kamerën për të marrë foton
+      </button>
 
       {/* Feedback Messages */}
       {error && (
@@ -128,7 +161,7 @@ export default function FacePhotoUpload({ onPhotoDetected, currentPhoto }: FaceP
           background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
           padding: '10px 16px', borderRadius: '12px', color: '#ef4444', fontSize: '13px'
         }}>
-          <AlertCircle size={16} />
+          <IonIcon icon={alertCircleOutline} style={{ fontSize: 16, color: '#ef4444' }} />
           {error}
         </div>
       )}
@@ -139,7 +172,7 @@ export default function FacePhotoUpload({ onPhotoDetected, currentPhoto }: FaceP
           background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)',
           padding: '8px 14px', borderRadius: '12px', color: '#10b981', fontSize: '13px'
         }}>
-          <CheckCircle2 size={16} />
+          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 16, color: '#10b981' }} />
           Fotoja u verifikua me sukses!
         </div>
       )}

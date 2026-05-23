@@ -1,5 +1,6 @@
 'use client';
-import { Map, Navigation, Route, User, Star, LogOut, Bus, Search, Globe, X, ChevronRight, Ticket } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline } from 'ionicons/icons';
 import { useState, Fragment } from 'react';
 import { signOut } from "next-auth/react";
 import useStore, { BUS_STOPS } from '../../store/useStore';
@@ -21,11 +22,11 @@ export default function Sidebar() {
   const t = translations[language] || translations.al;
 
   const MENU = [
-    { id: 'map', label: t.map, icon: Map },
-    { id: 'tracker', label: t.live_buses, icon: Bus },
-    { id: 'packages', label: t.packages, icon: Ticket },
-    { id: 'favorites', label: t.saved, icon: Star },
-    { id: 'profile', label: t.profile, icon: User },
+    { id: 'map', label: t.map, icon: mapOutline },
+    { id: 'tracker', label: t.live_buses, icon: busOutline },
+    { id: 'packages', label: t.packages, icon: ticketOutline },
+    { id: 'favorites', label: t.saved, icon: starOutline },
+    { id: 'profile', label: t.profile, icon: personOutline },
   ];
 
   const filteredStops = BUS_STOPS.filter(stop =>
@@ -76,14 +77,14 @@ export default function Sidebar() {
           onClick={() => useStore.getState().setSidebarOpen(false)}
           aria-label={t.close}
         >
-          <X size={16} />
+          <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
         </button>
       </div>
 
       {/* ── Search ── */}
       <div className="s-search">
         <div className="s-search-box">
-          <Search size={14} className="s-search-icon" />
+          <IonIcon icon={searchOutline} style={{ fontSize: 14 }} className="s-search-icon" />
           <input
             type="text"
             placeholder={t.searchPlaceholder}
@@ -92,7 +93,7 @@ export default function Sidebar() {
           />
           {searchQuery && (
             <button className="s-clear" onClick={() => setSearchQuery('')}>
-              <X size={12} />
+              <IonIcon icon={closeOutline} style={{ fontSize: 12 }} />
             </button>
           )}
         </div>
@@ -116,7 +117,7 @@ export default function Sidebar() {
                     <span className="s-result-name">{stop.name}</span>
                     <span className="s-result-sub">{t.stations}</span>
                   </div>
-                  <ChevronRight size={13} className="s-result-arrow" />
+                  <IonIcon icon={chevronForwardOutline} style={{ fontSize: 13 }} className="s-result-arrow" />
                 </button>
               ))
             ) : (
@@ -139,7 +140,7 @@ export default function Sidebar() {
               className={`s-nav-item ${currentView === id ? 'active' : ''}`}
             >
               <div className="s-icon-wrap">
-                <Icon size={16} />
+                <IonIcon icon={Icon} style={{ fontSize: 16 }} />
               </div>
               <span className="s-item-label">{label}</span>
             </button>
@@ -161,7 +162,7 @@ export default function Sidebar() {
               alt={language}
             />
             <span>{language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano'}</span>
-            <Globe size={13} className="s-globe" />
+            <IonIcon icon={globeOutline} style={{ fontSize: 13 }} className="s-globe" />
           </button>
 
           {isLangOpen && (
@@ -195,7 +196,7 @@ export default function Sidebar() {
             useStore.getState().setGuestMode(false);
             signOut({ callbackUrl: '/' });
           }} title={t.logout}>
-            <LogOut size={15} />
+            <IonIcon icon={logOutOutline} style={{ fontSize: 15 }} />
           </button>
         </div>
 

@@ -1,11 +1,32 @@
 'use client';
 import { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 import useStore from '../../store/useStore';
-import { 
-  ArrowLeft, Save, User, MapPin, Home, Briefcase, 
-  Shield, CheckCircle2, Lock, Mail, Trash2, AlertTriangle, X, Camera, Phone,
-  Utensils, GraduationCap, Building2, ShoppingBag, TreePine, Navigation
-} from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import {
+  arrowBackOutline,
+  saveOutline,
+  personOutline,
+  locationOutline,
+  homeOutline,
+  briefcaseOutline,
+  shieldCheckmarkOutline,
+  checkmarkCircleOutline,
+  lockClosedOutline,
+  mailOutline,
+  trashOutline,
+  alertOutline,
+  closeOutline,
+  cameraOutline,
+  callOutline,
+  restaurantOutline,
+  schoolOutline,
+  businessOutline,
+  bagHandleOutline,
+  leafOutline,
+  navigateOutline
+} from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import { useEffect, useRef } from 'react';
 
@@ -161,74 +182,89 @@ export default function EditProfileView() {
     const type = item.type;
     if (cls === 'amenity') {
       if (type === 'restaurant' || type === 'cafe' || type === 'bar' || type === 'pub' || type === 'fast_food') {
-        return { icon: Utensils, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
+        return { icon: restaurantOutline, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
       }
       if (type === 'school' || type === 'university' || type === 'college') {
-        return { icon: GraduationCap, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' };
+        return { icon: schoolOutline, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' };
       }
       if (type === 'hospital' || type === 'clinic' || type === 'pharmacy') {
-        return { icon: Building2, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+        return { icon: businessOutline, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
       }
     }
     if (cls === 'shop' || type === 'mall') {
-      return { icon: ShoppingBag, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' };
+      return { icon: bagHandleOutline, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' };
     }
     if (cls === 'tourism') {
-      return { icon: Building2, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' };
+      return { icon: businessOutline, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' };
     }
     if (cls === 'leisure' && (type === 'park' || type === 'garden')) {
-      return { icon: TreePine, color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+      return { icon: leafOutline, color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
     }
-    return { icon: MapPin, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
+    return { icon: locationOutline, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
   };
 
-  const handleUseCurrentLocation = (type: 'home' | 'work') => {
+  const getCurrentPosition = async (options: any = {}) => {
+    const fallbackToBrowser = async () => {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        return new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
+      }
+      throw new Error('Geolocation not supported');
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        try {
+          await Geolocation.requestPermissions();
+        } catch (permissionError) {
+          console.warn('Geolocation permission request failed:', permissionError);
+        }
+        return await Geolocation.getCurrentPosition(options);
+      } catch (nativeError) {
+        console.warn('Native geolocation failed, falling back to browser', nativeError);
+        return await fallbackToBrowser();
+      }
+    }
+
+    return await fallbackToBrowser();
+  };
+
+  const handleUseCurrentLocation = async (type: 'home' | 'work') => {
     if (type === 'home') setIsSearchingHome(true);
     else setIsSearchingWork(true);
 
-    if (!navigator.geolocation) {
-      alert(language === 'al' ? 'Gjeolokalizimi nuk mbështetet nga ky shfletues.' : 'Geolocation is not supported by this browser.');
+    try {
+      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      const { latitude, longitude } = position.coords;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
+          headers: { 'User-Agent': 'UrbaniIm/1.0' }
+        });
+        const data = await res.json();
+        if (data && data.display_name) {
+          const parts = data.display_name.split(',');
+          const title = parts[0].trim();
+          const subtitle = parts.slice(1, 4).map((p: string) => p.trim()).join(', ');
+          const addressText = title + (subtitle ? ', ' + subtitle : '');
+
+          setForm(prev => ({ ...prev, [type]: addressText }));
+        } else {
+          alert(language === 'al' ? 'Nuk u gjet asnjë adresë për këtë vendndodhje.' : 'No address found for this location.');
+        }
+      } catch (err) {
+        console.error('Error reverse geocoding current location:', err);
+        alert(language === 'al' ? 'Gabim gjatë marrjes së adresës.' : 'Error fetching address for current location.');
+      }
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      alert(language === 'al' ? 'U refuzua leja ose dështoi marrja e vendndodhjes.' : 'Permission denied or failed to retrieve location.');
+    } finally {
       setIsSearchingHome(false);
       setIsSearchingWork(false);
-      return;
+      setShowHomeSuggestions(false);
+      setShowWorkSuggestions(false);
     }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {
-            headers: { 'User-Agent': 'UrbaniIm/1.0' }
-          });
-          const data = await res.json();
-          if (data && data.display_name) {
-            const parts = data.display_name.split(',');
-            const title = parts[0].trim();
-            const subtitle = parts.slice(1, 4).map((p: string) => p.trim()).join(', ');
-            const addressText = title + (subtitle ? ', ' + subtitle : '');
-
-            setForm(prev => ({ ...prev, [type]: addressText }));
-          } else {
-            alert(language === 'al' ? 'Nuk u gjet asnjë adresë për këtë vendndodhje.' : 'No address found for this location.');
-          }
-        } catch (err) {
-          console.error('Error reverse geocoding current location:', err);
-          alert(language === 'al' ? 'Gabim gjatë marrjes së adresës.' : 'Error fetching address for current location.');
-        } finally {
-          setIsSearchingHome(false);
-          setIsSearchingWork(false);
-          setShowHomeSuggestions(false);
-          setShowWorkSuggestions(false);
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        alert(language === 'al' ? 'U refuzua leja ose dështoi marrja e vendndodhjes.' : 'Permission denied or failed to retrieve location.');
-        setIsSearchingHome(false);
-        setIsSearchingWork(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
   };
 
   // Close suggestions when clicking outside
@@ -421,7 +457,7 @@ export default function EditProfileView() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff'
             }}
           >
-            <ArrowLeft size={18} />
+            <IonIcon icon={arrowBackOutline} style={{ fontSize: 18 }} />
           </button>
           <div>
             <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{t.edit_credentials}</h1>
@@ -464,7 +500,7 @@ export default function EditProfileView() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
               zIndex: 2
             }}>
-              <Camera size={14} color="#fff" strokeWidth={2} />
+              <IonIcon icon={cameraOutline} style={{ fontSize: 14, color: '#fff' }} />
             </div>
             <input 
               type="file" 
@@ -495,7 +531,7 @@ export default function EditProfileView() {
             padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={16} style={{ color: '#475569' }} /> {t.edit_personal_info}
+              <IonIcon icon={personOutline} style={{ fontSize: 16, color: '#475569' }} /> {t.edit_personal_info}
             </h3>
             
             <div>
@@ -515,7 +551,7 @@ export default function EditProfileView() {
                   value={form.email} 
                   onChange={e => setForm({...form, email: e.target.value})}
                 />
-                <Mail size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
+                <IonIcon icon={mailOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
               </div>
             </div>
 
@@ -536,7 +572,7 @@ export default function EditProfileView() {
               background: 'rgba(59,130,246,0.03)', border: '0.5px solid rgba(59,130,246,0.1)',
               display: 'flex', gap: '12px', alignItems: 'center'
             }}>
-              <Lock size={14} style={{ color: '#475569' }} />
+              <IonIcon icon={lockClosedOutline} style={{ fontSize: 14, color: '#475569' }} />
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: 1.5 }}>
                 {t.security_notice}
               </p>
@@ -553,7 +589,7 @@ export default function EditProfileView() {
                 padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
               }}>
                 <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MapPin size={16} style={{ color: '#10b981' }} /> {t.saved_places}
+                  <IonIcon icon={locationOutline} style={{ fontSize: 16, color: '#10b981' }} /> {t.saved_places}
                 </h3>
 
                 <div ref={homeRef} style={{ position: 'relative' }}>
@@ -570,7 +606,7 @@ export default function EditProfileView() {
                       onFocus={() => setShowHomeSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
-                    <Home size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
+                    <IonIcon icon={homeOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
                     
                     {isSearchingHome && (
                       <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
@@ -623,7 +659,6 @@ export default function EditProfileView() {
                       {homeSuggestions.map((item, idx) => {
                         const parsed = parseAddressName(item);
                         const placeIcon = getPlaceIcon(item);
-                        const IconComp = placeIcon.icon;
                         return (
                           <button
                             key={idx}
@@ -645,7 +680,7 @@ export default function EditProfileView() {
                               alignItems: 'center', justifyContent: 'center',
                               flexShrink: 0
                             }}>
-                              <IconComp size={16} style={{ color: placeIcon.color }} />
+                              <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                               <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
@@ -672,7 +707,7 @@ export default function EditProfileView() {
                       onFocus={() => setShowWorkSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
-                    <Briefcase size={14} style={{ position: 'absolute', left: '14px', top: '22px', color: 'rgba(255,255,255,0.2)' }} />
+                    <IonIcon icon={briefcaseOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
                     
                     {isSearchingWork && (
                       <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
@@ -725,7 +760,6 @@ export default function EditProfileView() {
                       {workSuggestions.map((item, idx) => {
                         const parsed = parseAddressName(item);
                         const placeIcon = getPlaceIcon(item);
-                        const IconComp = placeIcon.icon;
                         return (
                           <button
                             key={idx}
@@ -747,7 +781,7 @@ export default function EditProfileView() {
                               alignItems: 'center', justifyContent: 'center',
                               flexShrink: 0
                             }}>
-                              <IconComp size={16} style={{ color: placeIcon.color }} />
+                              <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                               <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
@@ -784,7 +818,7 @@ export default function EditProfileView() {
                 {isSaving ? (
                   <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                 ) : (
-                  <><Save size={16} /> {t.edit_save_changes}</>
+                  <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
                 )}
               </button>
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
@@ -803,7 +837,7 @@ export default function EditProfileView() {
                 transition: 'all 0.2s'
               }}
             >
-              <Trash2 size={16} /> {t.edit_delete_account}
+              <IonIcon icon={trashOutline} style={{ fontSize: 16 }} /> {t.edit_delete_account}
             </button>
           </div>
         </div>

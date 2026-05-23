@@ -779,7 +779,7 @@ input::placeholder {
   pointer-events: auto;
 }
 
-/* 📱 MOBILE + TABLET RESPONSIVENESS (≤ 1180px covers all iPads) */
+/* MOBILE + TABLET RESPONSIVENESS (≤ 1180px covers all iPads) */
 @media (max-width: 1180px) {
   .sidebar {
     position: fixed;
@@ -816,7 +816,7 @@ input::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════
-   🖥️ TABLET / iPAD SPECIFIC (901px – 1180px)
+   TABLET / iPAD SPECIFIC (901px – 1180px)
 ═══════════════════════════════════════════════════ */
 @media (min-width: 901px) and (max-width: 1180px) {
   /* Bottom nav – slightly larger on iPad */

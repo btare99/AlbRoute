@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Camera, CheckCircle2, User, ArrowRight } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { chevronBackOutline, cameraOutline, checkmarkCircleOutline, personCircleOutline, arrowForwardOutline } from 'ionicons/icons';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -129,7 +130,7 @@ export default function SubscriptionGetPassView() {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', color: '#fff', padding: 20, textAlign: 'center' }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, animation: 'scaleIn 0.5s cubic-bezier(0.25, 1, 0.5, 1)' }}>
-          <CheckCircle2 size={40} color="#10b981" />
+          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 40, color: '#10b981' }} />
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Po Gjenerohet...</h2>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, maxWidth: 300 }}>
@@ -165,7 +166,7 @@ export default function SubscriptionGetPassView() {
           border: '1px solid rgba(16, 185, 129, 0.3)',
           animation: 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
         }}>
-          <CheckCircle2 size={48} color="#10b981" />
+          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 48, color: '#10b981' }} />
         </div>
         
         <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>U gjenerua me sukses!</h2>
@@ -191,7 +192,7 @@ export default function SubscriptionGetPassView() {
             transition: 'all 0.3s ease'
           }}
         >
-          <User size={20} />
+          <IonIcon icon={personCircleOutline} style={{ fontSize: 20, color: '#fff' }} />
           Shko tek Abonimi Im
         </button>
 
@@ -306,7 +307,7 @@ export default function SubscriptionGetPassView() {
                 <img src={photo} alt="Pass photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <User size={64} color="rgba(255,255,255,0.2)" />
+                  <IonIcon icon={personCircleOutline} style={{ fontSize: 64, color: 'rgba(255,255,255,0.2)' }} />
                 </div>
               )}
             </div>
@@ -359,7 +360,7 @@ export default function SubscriptionGetPassView() {
                     borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16, outline: 'none'
                   }}
                 />
-                <ArrowRight size={18} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%) rotate(90deg)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+                <IonIcon icon={arrowForwardOutline} style={{ fontSize: 18, position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%) rotate(90deg)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
               </div>
 
               {isLinePickerOpen && (lineSearch || selectedLine) && (

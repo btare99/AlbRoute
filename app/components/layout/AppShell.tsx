@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
@@ -14,7 +16,8 @@ import SubscriptionGetPassView from '../subscription/SubscriptionGetPassView';
 import PassesView from '../subscription/PassesView';
 import useStore from '../../store/useStore';
 import { useSession } from "next-auth/react";
-import { Map, Bus, Navigation, Star, User, Ticket } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { mapOutline, busOutline, ticketOutline, personOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
 
@@ -33,47 +36,49 @@ export default function AppShell() {
 
   // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
-    if (session?.user) {
+    const handleSession = async () => {
+      if (!session?.user) return;
       const u = session.user as any;
       if (u.role === 'user') {
         useStore.getState().login(u, 'next-auth-session');
         // Fetch full profile (with photos) from DB to supplement stripped JWT
-        fetch(`/api/user/profile?userId=${u.id}`)
-          .then(res => {
-            if (!res.ok) throw new Error(`Profile fetch failed (${res.status} ${res.statusText})`);
-            return res.json();
-          })
-          .then(data => {
-            if (!data.error) {
-              useStore.getState().login({ ...u, ...data }, 'next-auth-session');
-            }
-          })
-          .catch(error => {
-            console.error('Failed to load full user profile:', error);
-          });
+        try {
+          const res = await fetch(`/api/user/profile?userId=${u.id}`);
+          if (!res.ok) throw new Error(`Profile fetch failed (${res.status} ${res.statusText})`);
+          const data = await res.json();
+          if (!data.error) {
+            useStore.getState().login({ ...u, ...data }, 'next-auth-session');
+          }
+        } catch (error) {
+          console.error('Failed to load full user profile:', error);
+        }
       } else {
         useStore.getState().loginAsStaff(u);
       }
 
-      // Zbulo Google login të ri nëpërmjet sessionStorage
-      if (!googleLoginHandled.current && typeof window !== 'undefined') {
-        const pending = sessionStorage.getItem('google_login_pending');
-        if (pending === '1') {
-          googleLoginHandled.current = true;
-          sessionStorage.removeItem('google_login_pending');
-          // Shfaq mirëseardhjen pasi Splash ka mbaruar
-          setTimeout(() => {
-            addNotification(
-              language === 'al'
-                ? `Mirë se erdhe, ${u.name?.split(' ')[0] || ''}! 👋`
-                : `Welcome, ${u.name?.split(' ')[0] || ''}! 👋`,
-              'success'
-            );
-          }, 500);
+      if (!googleLoginHandled.current) {
+        try {
+          const { value } = await Preferences.get({ key: 'google_login_pending' });
+          if (value === '1') {
+            googleLoginHandled.current = true;
+            await Preferences.remove({ key: 'google_login_pending' });
+            setTimeout(() => {
+              addNotification(
+                language === 'al'
+                  ? `Mirë se erdhe, ${u.name?.split(' ')[0] || ''}!`
+                  : `Welcome, ${u.name?.split(' ')[0] || ''}!`,
+                'success'
+              );
+            }, 500);
+          }
+        } catch (error) {
+          console.warn('Could not load login pending state from preferences:', error);
         }
       }
-    }
-  }, [session]);
+    };
+
+    handleSession();
+  }, [session, language, addNotification]);
 
   // ─── Live Data Polling ───
   useEffect(() => {
@@ -92,27 +97,31 @@ export default function AppShell() {
 
   // ─── Periodic Geolocation Sync (every 5 seconds) ───
   useEffect(() => {
-    const fetchUserLocation = useStore.getState().fetchUserLocation;
+    const initializeNativePlugins = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await useStore.getState().initializeNativeServices?.();
+        } catch (error) {
+          console.warn('Failed to initialize native services:', error);
+        }
+      }
+      await useStore.getState().fetchUserLocation?.();
+    };
 
-    // Kërko lejen dhe përditëso vendndodhjen menjëherë sapo montohet AppShell (pas login)
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      fetchUserLocation();
-    }
+    initializeNativePlugins();
 
     const interval = setInterval(() => {
-      if (typeof window !== 'undefined' && navigator.geolocation) {
-        fetchUserLocation();
-      }
-    }, 5000);
+      useStore.getState().fetchUserLocation?.();
+    }, 15000);
 
     return () => clearInterval(interval);
   }, []);
 
   const MENU = [
-    { id: 'map', label: t.map, icon: Map },
-    { id: 'tracker', label: t.live_buses, icon: Bus },
-    { id: 'packages', label: t.packages, icon: Ticket },
-    { id: 'profile', label: t.profile, icon: User },
+    { id: 'map', label: t.map, icon: mapOutline },
+    { id: 'tracker', label: t.live_buses, icon: busOutline },
+    { id: 'packages', label: t.packages, icon: ticketOutline },
+    { id: 'profile', label: t.profile, icon: personOutline },
   ];
 
   const renderView = () => {
@@ -185,7 +194,7 @@ export default function AppShell() {
                 aria-current={active ? 'page' : undefined}
               >
                 <span className="nav-icon">
-                  <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+                  <IonIcon icon={Icon} style={{ fontSize: 20, color: 'currentColor' }} />
                 </span>
                 <span className="nav-label">{label}</span>
               </button>

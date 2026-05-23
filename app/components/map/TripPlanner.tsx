@@ -1,11 +1,22 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+import { IonIcon } from '@ionic/react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import {
-  MapPin, Clock, Banknote, Route, ChevronRight, Navigation, AlertCircle, ChevronDown, Zap, Bus,
-  ArrowUpDown, Search, X, CheckCircle2, Info, Locate, RefreshCcw, ArrowRight
-} from 'lucide-react';
+  busOutline,
+  navigateOutline,
+  locationOutline,
+  chevronForwardOutline,
+  swapVerticalOutline,
+  searchOutline,
+  closeOutline,
+  arrowForwardOutline,
+  locateOutline,
+  timeOutline
+} from 'ionicons/icons';
 import { translations } from '../../store/translations';
 
 const STOP_NAMES = Array.from(new Set(BUS_STOPS.map(s => s.name))).sort();
@@ -26,7 +37,7 @@ function RouteBadge({ routeId }: { routeId: string }) {
       alignItems: 'center',
       gap: '4px'
     }}>
-      <Bus size={10} />
+      <IonIcon icon={busOutline} style={{ fontSize: 10 }} />
       {route.name}
     </div>
   );
@@ -61,7 +72,7 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
         height: '44px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', flexShrink: 0 }}>
-          <Icon size={20} style={{ color: value ? accentColor : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }} />
+          <IonIcon icon={Icon} style={{ fontSize: 20, color: value ? accentColor : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }} />
         </div>
 
         <div style={{ flex: 1 }}>
@@ -93,7 +104,7 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
           >
-            <X size={16} />
+            <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
           </button>
         )}
       </div>
@@ -138,21 +149,17 @@ function StopInput({ label, value, onChange, placeholder, icon: Icon, accentColo
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: accentColor, flexShrink: 0
                 }}>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                    <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-                  </svg>
-
-
+                  <IonIcon icon={locationOutline} style={{ fontSize: 14, color: accentColor }} />
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {name}
                 </div>
-                <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                <IonIcon icon={chevronForwardOutline} style={{ fontSize: 14, opacity: 0.2 }} />
               </button>
             ))
           ) : (
             <div style={{ padding: '20px', textAlign: 'center' }}>
-              <Search size={24} style={{ color: 'rgba(255,255,255,0.05)', marginBottom: '8px' }} />
+              <IonIcon icon={searchOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.05)', marginBottom: '8px' }} />
               <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.2)' }}>
                 Nuk u gjet asnjë stacion
               </p>
@@ -233,19 +240,44 @@ export default function TripPlanner() {
     setActiveTrip(option);
   };
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) {
-      addNotification('Geolocation not supported.', 'warning');
-      return;
+  const getCurrentPosition = async (options: any = {}) => {
+    const fallbackToBrowser = async () => {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        return new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
+      }
+      throw new Error('Geolocation not supported');
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        try {
+          await Geolocation.requestPermissions();
+        } catch (permissionError) {
+          console.warn('Geolocation permission request failed:', permissionError);
+        }
+        return await Geolocation.getCurrentPosition(options);
+      } catch (nativeError) {
+        console.warn('Native geolocation failed, falling back to browser', nativeError);
+        return await fallbackToBrowser();
+      }
     }
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const { latitude, longitude } = pos.coords;
+
+    return await fallbackToBrowser();
+  };
+
+  const useMyLocation = async () => {
+    try {
+      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      const { latitude, longitude } = position.coords;
       useStore.getState().setTripOriginCoords({ lat: latitude, lng: longitude });
-      setTripFrom(language === 'al' ? '📍 Vendndodhja Ime' : language === 'en' ? '📍 My Location' : '📍 La Mia Posizione');
+      setTripFrom(language === 'al' ? 'Vendndodhja Ime' : language === 'en' ? 'My Location' : 'La Mia Posizione');
       addNotification(language === 'al' ? 'U mor vendndodhja juaj!' : language === 'en' ? 'Location acquired!' : 'Posizione acquisita!', 'info');
-    }, () => {
+    } catch (error) {
+      console.error('TripPlanner location error:', error);
       addNotification(language === 'al' ? 'Dështoi marrja e vendndodhjes.' : language === 'en' ? 'Failed to get location.' : 'Impossibile ottenere la posizione.', 'danger');
-    });
+    }
   };
 
   const toggleStops = (legIndex: number) => {
@@ -266,7 +298,7 @@ export default function TripPlanner() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
         }}>
-          <Route size={18} style={{ color: '#fff' }} />
+          <IonIcon icon={navigateOutline} style={{ fontSize: 18, color: '#fff' }} />
         </div>
         <div>
           <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>{t.plan_trip_title}</h1>
@@ -309,7 +341,7 @@ export default function TripPlanner() {
                 value={tripFrom}
                 onChange={setTripFrom}
                 placeholder={t.select_departure}
-                icon={Navigation}
+                icon={navigateOutline}
                 accentColor="#94a3b8"
               />
             </div>
@@ -322,7 +354,7 @@ export default function TripPlanner() {
                 value={tripTo}
                 onChange={setTripTo}
                 placeholder={t.select_destination}
-                icon={MapPin}
+                icon={locationOutline}
                 accentColor="#cbd5e1"
               />
             </div>
@@ -347,7 +379,7 @@ export default function TripPlanner() {
               onMouseLeave={e => { e.currentTarget.style.background = '#151a22'; }}
               title={t.swap_stations}
             >
-              <ArrowUpDown size={14} />
+              <IonIcon icon={swapVerticalOutline} style={{ fontSize: 14 }} />
             </button>
           </div>
 
@@ -364,7 +396,7 @@ export default function TripPlanner() {
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
               onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
             >
-              <Locate size={13} /> {t.my_location}
+              <IonIcon icon={locateOutline} style={{ fontSize: 13 }} /> {t.my_location}
             </button>
           </div>
 
@@ -392,7 +424,7 @@ export default function TripPlanner() {
               </>
             ) : (
               <>
-                <Search size={14} /> {t.find_route} <ArrowRight size={14} />
+                <IonIcon icon={searchOutline} style={{ fontSize: 14 }} /> {t.find_route} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 14 }} />
               </>
             )}
           </button>

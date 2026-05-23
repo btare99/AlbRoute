@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, CreditCard, ShieldCheck, CheckCircle2, Check, Store, QrCode, User, ArrowRight, Barcode, Camera, X } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { cardOutline, logoPaypal, logoApple, cashOutline, chevronForwardOutline, chevronBackOutline, checkmarkCircleOutline, shieldCheckmarkOutline, personOutline, qrCodeOutline, barcodeOutline, closeOutline, cameraOutline, chevronDownOutline } from 'ionicons/icons';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -41,106 +42,6 @@ const getCardType = (num: string) => {
   if (clean.startsWith('3')) return 'amex';
   return 'generic';
 };
-
-const CreditCardIcon = () => (
-  <div style={{
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    background: 'linear-gradient(135deg, #1e1e24 0%, #2a2b36 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    position: 'relative'
-  }}>
-    <div style={{
-      position: 'absolute',
-      left: 6,
-      top: 14,
-      width: 8,
-      height: 6,
-      borderRadius: 2,
-      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-      opacity: 0.8
-    }} />
-    <div style={{
-      position: 'absolute',
-      right: 6,
-      bottom: 6,
-      display: 'flex',
-      alignItems: 'center'
-    }}>
-      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#eb001b', opacity: 0.95 }} />
-      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f79e1b', opacity: 0.95, marginLeft: -5 }} />
-    </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: 22 }}>
-      <div style={{ height: 1.5, background: 'rgba(255,255,255,0.2)', width: '100%' }} />
-      <div style={{ height: 1.5, background: 'rgba(255,255,255,0.2)', width: '60%' }} />
-    </div>
-  </div>
-);
-
-const PayPalIcon = () => (
-  <div style={{
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    background: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    position: 'relative'
-  }}>
-    <svg viewBox="0 0 24 24" width="24" height="24">
-      <path d="M10.8 4.8H5.6c-.3 0-.6.2-.7.5l-2 12.1c0 .2.1.4.3.4h2.7l.6-3.8c0-.3.3-.5.6-.5h2.1c2.8 0 4.9-1.1 5.5-4.2.3-1.3.2-2.3-.5-2.8-.7-.5-1.9-.7-3.4-.7zm.9 3.8c-.2 1.1-.9 1.8-2 1.8H8.3l.5-3h1.4c.7 0 1.2.1 1.4.3.2.2.3.5.1.9z" fill="#003087" />
-      <path d="M13 7.8H7.8c-.3 0-.6.2-.7.5l-2 12.1c0 .2.1.4.3.4h2.7l.6-3.8c0-.3.3-.5.6-.5h2.1c2.8 0 4.9-1.1 5.5-4.2.3-1.3.2-2.3-.5-2.8-.7-.5-1.9-.7-3.4-.7zm.9 3.8c-.2 1.1-.9 1.8-2 1.8H10.5l.5-3h1.4c.7 0 1.2.1 1.4.3.2.2.3.5.1.9z" fill="#0070ba" style={{ transform: 'translate(1.5px, 1.5px)' }} />
-    </svg>
-  </div>
-);
-
-const ApplePayIcon = () => (
-  <div style={{
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 20%, #a1c4fd 50%, #c2e9fb 70%, #e0c3fc 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 15px rgba(224, 195, 252, 0.4)',
-    border: '1px solid rgba(255,255,255,0.4)',
-    color: '#000'
-  }}>
-    <svg viewBox="0 0 170 170" width="22" height="22" fill="currentColor">
-      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.04-1.92-14.1-6.15-3.57-2.99-7.37-7.63-11.39-13.91-8.57-13.43-14.37-27.97-17.4-43.61-3.03-15.64-2.28-29.8 2.27-42.49 4.1-11.45 10.74-20.22 19.92-26.31 9.18-6.09 19.14-9.15 29.9-9.17 6.13 0 12.82 1.57 20.08 4.71 7.25 3.14 11.96 4.71 14.13 4.71 2.05 0 6.64-1.57 13.78-4.71 7.14-3.14 13.6-4.59 19.38-4.34 18.08 1.45 32 8.08 41.74 19.87-14.83 8.97-22.1 21.31-21.8 37.03.3 12.06 4.76 21.99 13.4 29.77 8.63 7.78 19 12.06 31.11 12.86-2.65 7.64-6.11 15.11-10.37 22.41zM119.22 30c0-7.84 2.8-15.11 8.4-21.82 7-8.14 15.3-12.28 24.9-12.43.15 8.14-2.6 15.53-8.25 22.17-6.9 8.29-15 12.38-24.3 12.28-.6-.2-.75-.2-.75-.2z"/>
-    </svg>
-  </div>
-);
-
-const CashIcon = () => (
-  <div style={{
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    color: '#fff'
-  }}>
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="6" width="20" height="12" rx="2" />
-      <circle cx="12" cy="12" r="2" />
-      <path d="M6 12h.01M18 12h.01" />
-    </svg>
-  </div>
-);
 
 export default function SubscriptionCheckoutView() {
   const setView = useStore((s: any) => s.setView);
@@ -290,7 +191,7 @@ export default function SubscriptionCheckoutView() {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', color: '#fff', padding: 20, textAlign: 'center' }}>
         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, animation: 'scaleIn 0.5s cubic-bezier(0.25, 1, 0.5, 1)' }}>
-          <CheckCircle2 size={40} color="#10b981" />
+          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 40, color: '#10b981' }} />
         </div>
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Pagesë e Suksesshme!</h2>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, maxWidth: 300 }}>
@@ -319,7 +220,7 @@ export default function SubscriptionCheckoutView() {
           }}
           style={{ color: '#fff', padding: 12, minWidth: 44, minHeight: 44, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <ChevronLeft size={20} />
+          <IonIcon icon={chevronBackOutline} style={{ fontSize: 20 }} />
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
           {step === 'form' ? (
@@ -356,10 +257,10 @@ export default function SubscriptionCheckoutView() {
                   marginBottom: 28
                 }}>
                   {[
-                    { id: 'card', name: 'Karta Kredit / Debit', desc: 'Visa, Mastercard, Amex', icon: <CreditCardIcon />, glowColor: 'rgba(245, 158, 11, 0.2)' },
-                    { id: 'paypal', name: 'PayPal', desc: 'Pagesë e shpejtë me llogari', icon: <PayPalIcon />, glowColor: 'rgba(0, 112, 186, 0.25)' },
-                    { id: 'apple_pay', name: 'Apple Pay', desc: 'Pagesë e shpejtë me pajisje Apple', icon: <ApplePayIcon />, glowColor: 'rgba(224, 195, 252, 0.25)' },
-                    { id: 'counter', name: 'Sportel / Cash', desc: 'Gjenero QR dhe paguaj me kesh', icon: <CashIcon />, glowColor: 'rgba(16, 185, 129, 0.25)' }
+                    { id: 'card', name: 'Karta Kredit / Debit', desc: 'Visa, Mastercard, Amex', icon: <IonIcon icon={cardOutline} style={{ fontSize: 24, color: '#f59e0b' }} />, glowColor: 'rgba(245, 158, 11, 0.2)' },
+                    { id: 'paypal', name: 'PayPal', desc: 'Pagesë e shpejtë me llogari', icon: <IonIcon icon={logoPaypal} style={{ fontSize: 24, color: '#0070ba' }} />, glowColor: 'rgba(0, 112, 186, 0.25)' },
+                    { id: 'apple_pay', name: 'Apple Pay', desc: 'Pagesë e shpejtë me pajisje Apple', icon: <IonIcon icon={logoApple} style={{ fontSize: 24, color: '#fff' }} />, glowColor: 'rgba(224, 195, 252, 0.25)' },
+                    { id: 'counter', name: 'Sportel / Cash', desc: 'Gjenero QR dhe paguaj me kesh', icon: <IonIcon icon={cashOutline} style={{ fontSize: 24, color: '#10b981' }} />, glowColor: 'rgba(16, 185, 129, 0.25)' }
                   ].map(method => (
                     <button
                       key={method.id}
@@ -399,7 +300,7 @@ export default function SubscriptionCheckoutView() {
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}>
-                          <ChevronLeft size={16} style={{ transform: 'rotate(180deg)', opacity: 0.6 }} />
+                          <IonIcon icon={chevronForwardOutline} style={{ fontSize: 16, opacity: 0.6 }} />
                         </div>
                       </div>
                       
@@ -486,7 +387,7 @@ export default function SubscriptionCheckoutView() {
                             <span style={{ fontSize: 16, fontWeight: 800, color: '#93c5fd', letterSpacing: 0.5 }}>AMEX</span>
                           )}
                           {getCardType(cardNumber) === 'generic' && (
-                            <CreditCard size={22} color="rgba(255,255,255,0.7)" />
+                            <IonIcon icon={cardOutline} style={{ fontSize: '22px', color: 'rgba(255,255,255,0.7)' }} />
                           )}
                         </div>
                       </div>
@@ -669,11 +570,11 @@ export default function SubscriptionCheckoutView() {
                       
                       <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px 20px', borderRadius: 20, marginBottom: 32, textAlign: 'left', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.85)', fontSize: 15, fontWeight: 600 }}>
-                          <CheckCircle2 size={16} color="#10b981" />
+                          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 16, color: '#10b981' }} />
                           Ridrejtim i sigurt
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.85)', fontSize: 15, fontWeight: 600, marginTop: 8 }}>
-                          <CheckCircle2 size={16} color="#10b981" />
+                          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 16, color: '#10b981' }} />
                           Mbrojtje e blerësit
                         </div>
                       </div>
@@ -736,7 +637,7 @@ export default function SubscriptionCheckoutView() {
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 16 }}>
-                          <ShieldCheck size={20} color="#10b981" />
+                          <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 20, color: '#10b981' }} />
                           <div style={{ textAlign: 'left' }}>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>E sigurt dhe private</div>
                             <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)' }}>Numri i kartës suaj nuk ruhet</div>
@@ -784,7 +685,7 @@ export default function SubscriptionCheckoutView() {
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
                           <div style={{ width: 80, height: 80, background: 'rgba(245, 158, 11, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(245, 158, 11, 0.3)' }}>
-                            <User size={36} color="#f59e0b" />
+                            <IonIcon icon={personOutline} style={{ fontSize: 36, color: '#f59e0b' }} />
                           </div>
                         </div>
 
@@ -838,7 +739,7 @@ export default function SubscriptionCheckoutView() {
                             boxShadow: '0 10px 30px rgba(245, 158, 11, 0.25)'
                           }}
                         >
-                          <QrCode size={20} />
+                          <IonIcon icon={qrCodeOutline} style={{ fontSize: 20, color: '#10b981' }} />
                           Gjenero QR Code
                         </button>
                       </div>
@@ -866,7 +767,7 @@ export default function SubscriptionCheckoutView() {
                           display: 'inline-block',
                           boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.02)'
                         }}>
-                          <QrCode size={200} color="#111" strokeWidth={1.5} />
+                          <IonIcon icon={qrCodeOutline} style={{ fontSize: 200, color: '#111', strokeWidth: 1.5 }} />
                         </div>
 
                         <div style={{ textAlign: 'left', background: '#f8fafc', padding: 20, borderRadius: 20, marginBottom: 32, border: '1px solid #f1f5f9' }}>
@@ -923,7 +824,7 @@ export default function SubscriptionCheckoutView() {
 
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
                 <div style={{ width: 80, height: 80, background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
-                  <User size={36} color="#10b981" />
+                  <IonIcon icon={personOutline} style={{ fontSize: 36, color: '#10b981' }} />
                 </div>
               </div>
 
@@ -953,7 +854,7 @@ export default function SubscriptionCheckoutView() {
                   onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35))'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.25))'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  <Barcode size={22} color="#10b981" />
+                  <IonIcon icon={barcodeOutline} style={{ fontSize: 22, color: '#10b981' }} />
                   Skano Barkodin e Kartës (1D Barcode)
                 </button>
               </div>
@@ -1004,7 +905,7 @@ export default function SubscriptionCheckoutView() {
                         borderRadius: 16, padding: '16px', color: '#fff', fontSize: 15, outline: 'none'
                       }}
                     />
-                    <ChevronLeft size={18} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%) rotate(-90deg)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+                    <IonIcon icon={chevronDownOutline} style={{ fontSize: 18, position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
                   </div>
 
                   {isUniPickerOpen && (uniSearch || university) && (
@@ -1133,7 +1034,7 @@ export default function SubscriptionCheckoutView() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '20px', color: 'rgba(255,255,255,0.55)', fontSize: 15, marginTop: 'auto' }}>
-        <ShieldCheck size={16} /> {t.secure_payment || 'Pagesë 100% e Sigurt'}
+        <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 16 }} /> {t.secure_payment || 'Pagesë 100% e Sigurt'}
       </div>
 
       {/* HORIZONTAL BARCODE SCANNER MODAL */}
@@ -1155,11 +1056,11 @@ export default function SubscriptionCheckoutView() {
               onClick={() => setShowBarcodeScanner(false)}
               style={{ position: 'absolute', right: 24, top: 24, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}
             >
-              <X size={18} />
+              <IonIcon icon={closeOutline} style={{ fontSize: 18 }} />
             </button>
 
             <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: '2px solid rgba(16, 185, 129, 0.2)' }}>
-              <Barcode size={32} color="#10b981" />
+              <IonIcon icon={barcodeOutline} style={{ fontSize: 32, color: '#10b981' }} />
             </div>
 
             <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center' }}>Skanuesi i Barkodit të Studentit</h3>
@@ -1227,7 +1128,7 @@ export default function SubscriptionCheckoutView() {
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
             >
-              <Camera size={18} />
+              <IonIcon icon={cameraOutline} style={{ fontSize: 18 }} />
               {isScanningAnim ? 'Po Skanon...' : 'Kryej Skanimin e Simuluar (Test Fallback)'}
             </button>
           </div>

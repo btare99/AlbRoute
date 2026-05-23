@@ -1,7 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
-import { Bus, Star, Search, ChevronDown, ChevronUp, X, MapPin, Zap, Users, Clock } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { searchOutline, closeOutline, starOutline, chevronUpOutline, chevronDownOutline, busOutline, peopleOutline, flashOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 
 export default function BusTracker() {
@@ -101,7 +102,7 @@ export default function BusTracker() {
           background: 'rgba(255,255,255,0.07)',
           borderRadius: 16, padding: '12px 16px',
         }}>
-          <Search size={15} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+          <IonIcon icon={searchOutline} style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -118,7 +119,7 @@ export default function BusTracker() {
               color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center',
               justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', padding: 0,
             }}>
-              <X size={12} />
+              <IonIcon icon={closeOutline} style={{ fontSize: 12 }} />
             </button>
           )}
         </div>
@@ -223,7 +224,7 @@ export default function BusTracker() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  <Star size={15} style={{ color: isSaved ? '#FF9F0A' : 'rgba(255,255,255,0.4)', fill: isSaved ? '#FF9F0A' : 'none' }} />
+                  <IonIcon icon={starOutline} style={{ fontSize: 15, color: isSaved ? '#FF9F0A' : 'rgba(255,255,255,0.4)' }} />
                 </button>
               </div>
             </div>
@@ -290,8 +291,8 @@ export default function BusTracker() {
                   padding: '4px 18px 16px', fontFamily: 'inherit',
                 }}>
                 {showAllStops
-                  ? <><ChevronUp size={13} /> {t.show_less}</>
-                  : <><ChevronDown size={13} /> {t.show_all_stations.replace('{count}', route.stops.length.toString())}</>}
+                  ? <><IonIcon icon={chevronUpOutline} style={{ fontSize: 13 }} /> {t.show_less}</>
+                  : <><IonIcon icon={chevronDownOutline} style={{ fontSize: 13 }} /> {t.show_all_stations.replace('{count}', route.stops.length.toString())}</>}
               </button>
             )}
           </div>
@@ -340,7 +341,7 @@ export default function BusTracker() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, position: 'relative',
                   }}>
-                    <Bus size={22} style={{ color: route?.color }} />
+                    <IonIcon icon={busOutline} style={{ fontSize: 22, color: route?.color }} />
                     {bus.delay > 0 && (
                       <div style={{
                         position: 'absolute', top: -5, right: -5,
@@ -408,13 +409,13 @@ export default function BusTracker() {
                 <div style={{ marginTop: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Users size={11} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                      <IonIcon icon={peopleOutline} style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }} />
                       <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
                         {bus.passengerLoad} / 50
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Zap size={11} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                      <IonIcon icon={flashOutline} style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }} />
                       <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
                         {Math.round(bus.speed)} km/h
                       </span>
@@ -460,7 +461,7 @@ export default function BusTracker() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 16px',
               }}>
-                <Bus size={24} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <IonIcon icon={busOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.15)' }} />
               </div>
               <p style={{ fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 5, fontSize: 15 }}>
                 {t.no_active_buses}

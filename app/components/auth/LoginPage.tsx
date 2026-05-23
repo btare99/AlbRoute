@@ -2,7 +2,9 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from "next-auth/react";
-import { Bus, Eye, EyeOff, ArrowRight, MapPin } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { busOutline, eyeOutline, eyeOffOutline, arrowForwardOutline, locationOutline } from 'ionicons/icons';
+import { Preferences } from '@capacitor/preferences';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 import { AsYouType } from 'libphonenumber-js';
@@ -387,8 +389,7 @@ function LoginContent() {
     try {
       setLoading(true);
       if (provider.toLowerCase() === 'google') {
-        // Vendos flag në sessionStorage që mbijeton OAuth redirect-in
-        sessionStorage.setItem('google_login_pending', '1');
+        await Preferences.set({ key: 'google_login_pending', value: '1' });
       }
       await signIn(provider.toLowerCase());
     } catch (err) {
@@ -500,7 +501,7 @@ function LoginContent() {
                 <div style={{ position: 'relative' }}>
                   <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
                   <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPass ? <IonIcon icon={eyeOffOutline} style={{ fontSize: 16 }} /> : <IonIcon icon={eyeOutline} style={{ fontSize: 16 }} />}
                   </button>
                 </div>
                 {mode === 'login' && (
@@ -513,7 +514,7 @@ function LoginContent() {
               </div>
               {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>{error}</div>}
               <button type="submit" className="btn" style={{ width: '100%', padding: '13px', background: '#3b82f6', color: '#fff', boxShadow: '0 4px 14px rgba(59,130,246,0.4)', border: 'none', borderRadius: '8px', fontWeight: 'bold' }} disabled={loading}>
-                {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={16} />
+                {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 16 }} />
               </button>
             </form>
           )}
@@ -594,7 +595,7 @@ function LoginContent() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-dim)', opacity: 0.6 }}>
-          <MapPin size={12} style={{ display: 'inline', marginRight: '4px' }} />
+          <IonIcon icon={locationOutline} style={{ fontSize: 12, display: 'inline', marginRight: '4px' }} />
           Tirana, Shqipëri &nbsp;·&nbsp; 
           <span 
             onClick={() => setGuestMode(true)} 

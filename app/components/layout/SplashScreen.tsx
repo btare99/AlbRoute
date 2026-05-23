@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Bus } from 'lucide-react';
 import useStore from '../../store/useStore';
 
 export default function SplashScreen() {

@@ -56,14 +56,16 @@ export default function MapView() {
   const planTrip = useStore((s: any) => s.planTrip);
   const tripOriginName = useStore((s: any) => s.tripOriginName);
   const tripDestName = useStore((s: any) => s.tripDestName);
+  const setActiveTrip = useStore((s: any) => s.setActiveTrip);
+  const setTripOriginCoords = useStore((s: any) => s.setTripOriginCoords);
+  const setTripDestCoords = useStore((s: any) => s.setTripDestCoords);
 
   const isUserLocation = useCallback((name: string, coords: any) => {
     if (!coords || !userLocation) return false;
     const cleanName = name ? name.toLowerCase() : '';
     const isNameMatch = cleanName.includes('vendndodhja') || 
                         cleanName.includes('location') || 
-                        cleanName.includes('posizione') || 
-                        cleanName.includes('📍');
+                        cleanName.includes('posizione');
     const isCoordsMatch = Math.abs(coords.lat - userLocation.lat) < 0.0002 && 
                           Math.abs(coords.lng - userLocation.lng) < 0.0002;
     return isNameMatch || isCoordsMatch;
@@ -187,7 +189,7 @@ export default function MapView() {
 
   // Kërkim Autocomplete me Debounce për Pikën e Nisjes (Tirana)
   useEffect(() => {
-    if (tripFrom.length < 3 || tripFrom.includes('📍')) {
+    if (tripFrom.length < 3) {
       setFromSuggestions([]);
       return;
     }
@@ -375,10 +377,9 @@ export default function MapView() {
 
     // Default layers for tablet/mobile: Only stations
     if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
-      const store = useStore.getState();
-      store.setShowRoutes(false);
-      store.setShowBuses(false);
-      store.setShowStops(true);
+      setShowRoutes(false);
+      setShowBuses(false);
+      setShowStops(true);
     }
 
     return () => {
@@ -395,7 +396,7 @@ export default function MapView() {
       try {
         const permission = await (DeviceOrientationEvent as any).requestPermission();
         if (permission === 'granted') {
-          addNotification(language === 'al' ? 'Busulla u aktivizua! 🧭' : language === 'en' ? 'Compass activated! 🧭' : 'Bussola attivata! 🧭', 'success');
+          addNotification(language === 'al' ? 'Busulla u aktivizua!' : language === 'en' ? 'Compass activated!' : 'Bussola attivata!', 'success');
         }
       } catch (err) {
         console.error('Compass permission error:', err);
@@ -1266,13 +1267,13 @@ export default function MapView() {
           {activeTrip ? (
             <button
               onClick={() => {
-                useStore.getState().setActiveTrip(null);
+                setActiveTrip(null);
                 setWalkingShapes({});
                 setShowTripDetails(false);
                 setTripFrom('');
                 setTripTo('');
-                useStore.getState().setShowRoutes(false);
-                useStore.getState().setShowStops(true);
+                setShowRoutes(false);
+                setShowStops(true);
                 setActiveRouteFilter(null);
                 mapInstanceRef.current?.flyTo(TIRANA_CENTER, DEFAULT_ZOOM);
               }}
@@ -1287,19 +1288,18 @@ export default function MapView() {
             </button>
           ) : (
             <button
-              onClick={() => {
+              onClick={async () => {
                 requestCompassPermission();
-                fetchUserLocation();
+                await fetchUserLocation(true);
                 // Update trip origin coords whenever user location is requested for planning
-                if (userLocation) {
-                  const myLocStr = language === 'al' ? '📍 Vendndodhja Ime' : '📍 My Location';
-                  useStore.getState().setTripOriginCoords(userLocation, myLocStr);
+                const currentUserLocation = userLocation;
+                if (currentUserLocation) {
+                  const myLocStr = language === 'al' ? 'Vendndodhja Ime' : 'My Location';
+                  setTripOriginCoords(currentUserLocation, myLocStr);
                   if (isSearching) {
                     setTripFrom(myLocStr);
                   }
-                }
-                if (userLocation) {
-                  mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
+                  mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
                 }
               }}
               style={{
@@ -1878,10 +1878,13 @@ export default function MapView() {
           {/* Locate Button */}
           <button
             className="glass-panel action-btn locate-btn"
-            onClick={() => {
+            onClick={async () => {
               requestCompassPermission();
-              fetchUserLocation();
-              mapInstanceRef.current?.flyTo([userLocation.lat, userLocation.lng], 17);
+              await fetchUserLocation(true);
+              const currentUserLocation = useStore.getState().userLocation;
+              if (currentUserLocation) {
+                mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
+              }
             }}
             title={t.locate_me}
           >
@@ -1938,7 +1941,7 @@ export default function MapView() {
               </button>
               <button
                 onClick={() => {
-                  useStore.getState().setActiveTrip(null);
+                  setActiveTrip(null);
                   setWalkingShapes({});
                   setShowTripDetails(false);
                 }}
@@ -2616,7 +2619,7 @@ export default function MapView() {
                 const lat = center.lat;
                 const lng = center.lng;
                 
-                const tempName = language === 'al' ? '📍 Pikë në Hartë' : '📍 Point on Map';
+const tempName = language === 'al' ? 'Pikë në Hartë' : 'Point on Map';
                 if (selectingOnMap === 'from') {
                   useStore.getState().setTripOriginCoords({ lat, lng }, tempName);
                   setTripFrom(tempName);
@@ -2637,7 +2640,7 @@ export default function MapView() {
                   if (data && data.display_name) {
                     const nameParts = data.display_name.split(',');
                     const title = nameParts[0].trim();
-                    const niceName = `📍 ${title}`;
+                    const niceName = title;
                     if (previousSelection === 'from') {
                       useStore.getState().setTripOriginCoords({ lat, lng }, niceName);
                       setTripFrom(niceName);

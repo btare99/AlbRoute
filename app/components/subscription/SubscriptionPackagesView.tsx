@@ -1,15 +1,22 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, Ticket, Sparkles, CreditCard, ShieldCheck, ArrowRight, Zap, Star, Clock, Route, Shirt } from 'lucide-react';
+
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 
+const COLORS = {
+  general:     { bg: 'rgba(186,117,23,0.10)', accent: '#BA7517', pill: 'rgba(186,117,23,0.14)', pillText: '#BA7517' },
+  student:     { bg: 'rgba(59,109,17,0.10)',  accent: '#3B6D11', pill: 'rgba(59,109,17,0.14)',  pillText: '#3B6D11' },
+  tourist:     { bg: 'rgba(24,95,165,0.10)',  accent: '#185FA5', pill: 'rgba(24,95,165,0.14)',  pillText: '#185FA5' },
+  single_line: { bg: 'rgba(126,89,255,0.12)', accent: '#7E59FF', pill: 'rgba(126,89,255,0.18)', pillText: '#E8E0FF' },
+} as const;
+
 export default function SubscriptionPackagesView() {
-  const setView = useStore((s: any) => s.setView);
-  const language = useStore((s: any) => s.language);
-  const t = translations[language as keyof typeof translations] || translations.al;
-  const [selectedPkg, setSelectedPkg] = useState<string | null>('general');
+  const setView   = useStore((s: any) => s.setView);
+  const language  = useStore((s: any) => s.language);
+  const t         = translations[language as keyof typeof translations] || translations.al;
+  const [selectedPkg, setSelectedPkg] = useState<string>('general');
 
   const PACKAGES = [
     {
@@ -17,265 +24,285 @@ export default function SubscriptionPackagesView() {
       name: t.general_pass,
       price: '1600',
       duration: t.thirty_days,
-      color: '#f59e0b',
-      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       popular: true,
-      icon: Zap,
       description: t.sub_desc_general,
-      features: [
-        t.unlimited_rides,
-        t.valid_all_lines,
-        t.digital_format,
-        t.one_month_validity
-      ]
+      features: [t.unlimited_rides, t.valid_all_lines, t.digital_format, t.one_month_validity],
     },
     {
       id: 'student',
       name: t.student_pass,
       price: t.free,
       duration: t.thirty_days,
-      color: '#10b981',
-      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       popular: false,
-      icon: Star,
       description: t.sub_desc_student,
-      features: [
-        t.student_discount,
-        t.student_card_required,
-        t.valid_every_line,
-        t.digital_format
-      ]
+      features: [t.student_discount, t.student_card_required, t.valid_every_line, t.digital_format],
     },
     {
       id: 'tourist',
       name: t.tourist_pass,
       price: '800',
       duration: t.seven_days,
-      color: '#3b82f6',
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       popular: false,
-      icon: Shirt,
       description: t.sub_desc_tourist,
-      features: [
-        t.tourist_unlimited,
-        t.valid_all_lines,
-        t.digital_format,
-        t.sub_7day_validity
-      ]
+      features: [t.tourist_unlimited, t.valid_all_lines, t.digital_format, t.sub_7day_validity],
     },
     {
       id: 'single_line',
       name: t.single_line_pass,
       price: '900',
       duration: t.thirty_days,
-      color: '#a855f7',
-      gradient: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
       popular: false,
-      icon: Route,
       description: t.sub_desc_single_line,
-      features: [
-        t.single_line_choice,
-        t.unlimited_single_line,
-        t.digital_format,
-        t.ideal_fixed_route
-      ]
-    }
+      features: [t.single_line_choice, t.unlimited_single_line, t.digital_format, t.ideal_fixed_route],
+    },
   ];
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#0a0f1a',
-        color: '#fff',
-        overflowY: 'auto',
-        paddingBottom: 120,
-        position: 'relative'
-      }}
-      onClick={() => setSelectedPkg(null)}
-    >
+    <div style={styles.root}>
 
-
-      {/* Header */}
-      <div style={{
-        padding: '24px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '14px',
-        position: 'sticky',
-        top: 0,
-        background: 'radial-gradient(ellipse at 50% -20%, rgba(245, 158, 11, 0.12), transparent 70%), linear-gradient(180deg, rgba(10,15,26,0.9) 60%, transparent 100%)',
-        backdropFilter: 'blur(12px)',
-        zIndex: 20,
-      }}>
-
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '26px', fontWeight: '800', margin: 0, letterSpacing: '-0.8px', lineHeight: 1.1, background: 'linear-gradient(to right, #ffffff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {t.packages}
-          </h1>
-          <p style={{ color: 'rgba(245, 158, 11, 0.8)', fontSize: '13px', margin: '4px 0 0 0', fontWeight: '600', letterSpacing: '0.2px' }}>
-            {t.sub_choose_travel_plan}
-          </p>
-        </div>
+      {/* ── Header ── */}
+      <div style={styles.header}>
+        <h1 style={styles.h1}>{t.choose_plan}</h1>
+        <p style={styles.subtitle}>{t.plan_subtitle}</p>
       </div>
 
-      {/* Hero Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        style={{ padding: '32px 24px 16px', position: 'relative', zIndex: 1 }}
-      >
-        <h2 style={{ fontSize: '32px', fontWeight: '900', margin: '0 0 8px 0', lineHeight: 1.1, background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          {t.choose_plan}
-        </h2>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0, lineHeight: 1.5, maxWidth: '280px' }}>
-          {t.plan_subtitle}
-        </p>
-      </motion.div>
+      {/* ── Cards ── */}
+      <div style={styles.list}>
+        {PACKAGES.map((pkg, idx) => {
+          const isSelected = selectedPkg === pkg.id;
+          const colors     = COLORS[pkg.id as keyof typeof COLORS];
 
-      {/* Packages List */}
-      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', zIndex: 1 }}>
-        <AnimatePresence>
-          {PACKAGES.map((pkg, idx) => {
-            const isSelected = selectedPkg === pkg.id;
-            const Icon = pkg.icon;
-
-            return (
-              <motion.div
-                key={pkg.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedPkg(pkg.id);
-                }}
-                style={{
-                  background: isSelected ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${isSelected ? pkg.color : 'rgba(255,255,255,0.05)'}`,
-                  borderRadius: '28px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: isSelected ? `0 20px 40px ${pkg.color}15` : 'none'
-                }}
-              >
-                {/* Popular Badge */}
-                {pkg.popular && (
-                  <div style={{
-                    position: 'absolute', top: 0, right: 0,
-                    background: pkg.gradient,
-                    padding: '6px 16px',
-                    borderBottomLeftRadius: '16px',
-                    fontSize: '11px', fontWeight: '800',
-                    display: 'flex', alignItems: 'center', gap: '4px', color: '#fff',
-                    textTransform: 'uppercase', letterSpacing: '0.05em'
-                  }}>
-                    <Sparkles size={12} /> {t.best_seller}
-                  </div>
-                )}
-                
-                {/* Card Header */}
-                <div style={{ display: 'flex', marginBottom: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ margin: '0', fontSize: '18px', fontWeight: '800', color: isSelected ? '#fff' : 'rgba(255,255,255,0.9)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {pkg.name}
-                    </h3>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: pkg.color }}>
-                      {pkg.duration}
-                    </div>
-                  </div>
-                  <div style={{ 
-                    background: isSelected ? 'rgba(255,255,255,0.15)' : `${pkg.color}15`,
-                    padding: '6px 12px',
-                    borderRadius: '12px',
-                    fontSize: '15px',
-                    fontWeight: '900',
-                    color: isSelected ? '#fff' : pkg.color,
-                    transition: 'all 0.3s ease',
-                    flexShrink: 0
-                  }}>
-                    {pkg.price === t.free ? t.free : `${pkg.price}L`}
-                  </div>
+          return (
+            <motion.div
+              key={pkg.id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: idx * 0.07 }}
+              onClick={() => setSelectedPkg(pkg.id)}
+              style={{
+                ...styles.card,
+                borderColor: isSelected ? colors.accent : 'rgba(255,255,255,0.08)',
+                borderWidth: isSelected ? 1.5 : 1,
+                background: isSelected ? `linear-gradient(145deg, ${colors.accent}15 0%, rgba(255,255,255,0.06) 100%)` : 'rgba(255,255,255,0.04)',
+                boxShadow: isSelected ? `0 24px 60px ${colors.accent}20` : 'none',
+                transform: isSelected ? 'scale(1.01)' : 'none',
+              }}
+            >
+              {/* Card top row */}
+              <div style={styles.cardTop}>
+                <div style={styles.nameBlock}>
+                  <div style={styles.cardName}>{pkg.name}</div>
+                  <div style={styles.cardDur}>{pkg.duration}</div>
+                  {pkg.popular && (
+                    <span style={{ ...styles.badge, background: colors.pill, color: colors.pillText }}>
+                      {t.best_seller}
+                    </span>
+                  )}
                 </div>
 
-                {/* Description */}
-                <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
-                  {pkg.description}
-                </p>
-
-                {/* Features */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {pkg.features.map((feature, fIdx) => (
-                    <div key={fIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        • {feature}
-                      </span>
-                    </div>
-                  ))}
+                <div style={{
+                  ...styles.priceTag,
+                  background: isSelected ? colors.accent : 'rgba(255,255,255,0.10)',
+                  color: isSelected ? '#fff' : 'rgba(255,255,255,0.9)',
+                  borderColor: isSelected ? 'transparent' : 'rgba(255,255,255,0.08)',
+                }}>
+                  {pkg.price === t.free ? t.free : `${pkg.price} L`}
                 </div>
+              </div>
 
-                {/* Action Button - Shows when selected */}
-                <motion.div
-                  initial={false}
-                  animate={{ height: isSelected ? 'auto' : 0, opacity: isSelected ? 1 : 0, marginTop: isSelected ? 24 : 0 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ overflow: 'hidden' }}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      useStore.getState().setCheckoutPackage(pkg);
-                      setView('checkout');
-                    }}
-                    style={{
-                      width: '100%',
-                      background: pkg.gradient,
-                      color: '#fff',
-                      border: 'none',
-                      padding: '14px',
-                      borderRadius: '16px',
-                      fontSize: '15px',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: `0 10px 20px ${pkg.color}30`
-                    }}
+              {/* Divider */}
+              <div style={styles.divider} />
+
+              {/* Features */}
+              <div style={styles.features}>
+                {pkg.features.map((feat, fi) => (
+                  <div key={fi} style={styles.feat}>
+                    <span style={{ ...styles.dot, background: isSelected ? colors.accent : 'rgba(255,255,255,0.55)' }} />
+                    <span style={styles.featText}>{feat}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA — only when selected */}
+              <AnimatePresence>
+                {isSelected && (
+                  <motion.div
+                    key="cta"
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{ overflow: 'hidden' }}
                   >
-                    {t.continue_btn} <ArrowRight size={18} />
-                  </button>
-                </motion.div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        useStore.getState().setCheckoutPackage(pkg);
+                        setView('checkout');
+                      }}
+                      style={{ ...styles.ctaBtn, background: colors.accent }}
+                    >
+                      {t.continue_btn}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Footer / Trust Badge */}
-      <div style={{ padding: '20px', marginTop: 'auto', textAlign: 'center' }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '10px 20px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: '100px',
-          border: '1px solid rgba(255,255,255,0.05)'
-        }}>
-          <ShieldCheck size={16} color="#10b981" />
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>
-            {t.secure_payment}
-          </span>
-        </div>
+      {/* ── Footer ── */}
+      <div style={styles.footer}>
+        <span style={styles.footerText}>{t.secure_payment}</span>
       </div>
     </div>
   );
 }
+
+/* ─── Styles ─────────────────────────────────────────────────── */
+const styles: Record<string, React.CSSProperties> = {
+  root: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--bg-dark, #040712)',
+    color: '#fff',
+    overflowY: 'auto',
+    paddingBottom: 100,
+  },
+  header: {
+    padding: '32px 20px 16px',
+    background: 'radial-gradient(ellipse at 50% -20%, rgba(48, 209, 88, 0.12), transparent 70%), linear-gradient(180deg, rgba(10,15,26,0.9) 60%, transparent 100%)',
+    backdropFilter: 'blur(12px)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+  },
+  h1: {
+    fontSize: 24,
+    fontWeight: 600,
+    color: '#fff',
+    margin: 0,
+    letterSpacing: '-0.5px',
+    background: 'linear-gradient(to right, #ffffff, rgba(255,255,255,0.65))',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.65)',
+    margin: '4px 0 0',
+    fontWeight: 400,
+  },
+  list: {
+    padding: '8px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  card: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 20,
+    padding: '20px',
+    cursor: 'pointer',
+    transition: 'border-color 0.2s, background 0.2s, transform 0.2s',
+    userSelect: 'none',
+    backdropFilter: 'blur(10px)',
+  },
+  cardTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  nameBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    flex: 1,
+    minWidth: 0,
+  },
+  cardName: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: '#fff',
+    letterSpacing: '-0.2px',
+  },
+  cardDur: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.68)',
+    fontWeight: 500,
+  },
+  badge: {
+    marginTop: 4,
+    display: 'inline-block',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: 999,
+    letterSpacing: '0.02em',
+    alignSelf: 'flex-start',
+    border: '1px solid rgba(255,255,255,0.12)',
+  },
+  priceTag: {
+    fontSize: 14,
+    fontWeight: 700,
+    padding: '8px 14px',
+    borderRadius: 12,
+    transition: 'background 0.2s, color 0.2s',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  divider: {
+    height: 0.5,
+    background: 'rgba(255,255,255,0.08)',
+    margin: '14px 0',
+  },
+  features: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  feat: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
+    flexShrink: 0,
+    transition: 'background 0.2s',
+  },
+  featText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 1.4,
+  },
+  ctaBtn: {
+    width: '100%',
+    padding: '13px',
+    borderRadius: 12,
+    border: 'none',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    letterSpacing: '-0.1px',
+    transition: 'opacity 0.15s',
+  },
+  footer: {
+    marginTop: 'auto',
+    padding: '20px',
+    textAlign: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: 500,
+  },
+};

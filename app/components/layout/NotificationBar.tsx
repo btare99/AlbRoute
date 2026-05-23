@@ -2,9 +2,10 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useStore from '../../store/useStore';
-import { CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { IonIcon } from '@ionic/react';
+import { checkmarkCircleOutline, informationCircleOutline, alertOutline, closeOutline } from 'ionicons/icons';
 
-const ICONS: any = { success: CheckCircle, info: Info, warning: AlertTriangle, error: X };
+const ICONS: any = { success: checkmarkCircleOutline, info: informationCircleOutline, warning: alertOutline, error: closeOutline };
 
 function NotificationItem({ n, onRemove }: { n: any, onRemove: (id: number) => void }) {
   useEffect(() => {
@@ -14,7 +15,7 @@ function NotificationItem({ n, onRemove }: { n: any, onRemove: (id: number) => v
     return () => clearTimeout(timer);
   }, [n.id, onRemove]);
 
-  const Icon = ICONS[n.type] || Info;
+  const icon = ICONS[n.type] || informationCircleOutline;
 
   return (
     <motion.div
@@ -24,7 +25,7 @@ function NotificationItem({ n, onRemove }: { n: any, onRemove: (id: number) => v
       className={`notification-item ${n.type || 'info'}`}
     >
       <div className="notification-content">
-        <Icon size={18} className="notification-icon" />
+        <IonIcon icon={icon} style={{ fontSize: 18 }} className="notification-icon" />
         <p className="notification-msg">{n.msg}</p>
       </div>
     </motion.div>
