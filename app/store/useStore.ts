@@ -318,7 +318,11 @@ const useStore = create<any>()(
           }
 
         } catch (error) {
-          console.warn('[Geolocation] primary location request failed, attempting fallback', error);
+          // Suppress permission denied errors (code 1), log others as warnings
+          const isPermissionDenied = error instanceof GeolocationPositionError && error.code === 1;
+          if (!isPermissionDenied) {
+            console.warn('[Geolocation] primary location request failed, attempting fallback', error);
+          }
           try {
             // Fallback com timeout ainda maior
             const fallbackPosition = await get().getCurrentPosition({ 
@@ -338,19 +342,23 @@ const useStore = create<any>()(
             }
           } catch (fallbackError) {
             // Suppress permission denied errors, log others as warnings
-            const isPermissionDenied = fallbackError instanceof GeolocationPositionError && fallbackError.code === 1;
-            if (!isPermissionDenied) {
+            const isFallbackPermissionDenied = fallbackError instanceof GeolocationPositionError && fallbackError.code === 1;
+            if (!isFallbackPermissionDenied) {
               console.warn('[Geolocation] fallback request failed:', fallbackError);
             }
             // Fallback final: usar última localização conhecida ou localização padrão
             const lastLocation = get().user?.lastLocation;
             if (lastLocation) {
               set({ userLocation: { lat: lastLocation.lat, lng: lastLocation.lng } });
-              console.warn('[Geolocation] using cached user location');
+              if (!isFallbackPermissionDenied) {
+                console.debug('[Geolocation] using cached user location');
+              }
             } else {
               // Localização padrão (centro de Tirana)
               set({ userLocation: { lat: 41.3275, lng: 19.8187 } });
-              console.warn('[Geolocation] using default location (Tirana center)');
+              if (!isFallbackPermissionDenied) {
+                console.debug('[Geolocation] using default location (Tirana center)');
+              }
             }
           }
         }
