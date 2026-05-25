@@ -269,7 +269,7 @@ export default function TripPlanner() {
 
   const useMyLocation = async () => {
     try {
-      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
       const { latitude, longitude } = position.coords;
       useStore.getState().setTripOriginCoords({ lat: latitude, lng: longitude });
       setTripFrom(language === 'al' ? 'Vendndodhja Ime' : language === 'en' ? 'My Location' : 'La Mia Posizione');

@@ -247,7 +247,7 @@ const useStore = create<any>()(
         }
       },
       getCurrentPosition: async (options: any = {}) => {
-        const defaultOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+        const defaultOptions = { enableHighAccuracy: true, timeout: 45000, maximumAge: 120000 }; // 45s timeout, 2min cache
         const mergedOptions = { ...defaultOptions, ...options };
 
         const fallbackToBrowser = async () => {
@@ -276,9 +276,9 @@ const useStore = create<any>()(
           } catch (nativeError: any) {
             const message = String(nativeError?.message || '').toLowerCase();
             const isTimeoutError = message.includes('timeout') || message.includes('could not obtain location in time');
-            if (isTimeoutError && attemptTimeout < 30000) {
+            if (isTimeoutError && attemptTimeout < 60000) {
               console.warn(`Native geolocation timeout after ${attemptTimeout}ms, retrying with a longer timeout...`);
-              return await tryNativePosition(30000);
+              return await tryNativePosition(60000);
             }
             throw nativeError;
           }
@@ -297,7 +297,7 @@ const useStore = create<any>()(
       },
       fetchUserLocation: async (notify = false) => {
         try {
-          const position = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+          const position = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           set({ userLocation: { lat, lng } });
@@ -337,7 +337,11 @@ const useStore = create<any>()(
               get().updateProfile({ lastLocation: { lat, lng, updatedAt: albaniaTime } });
             }
           } catch (fallbackError) {
-            console.error('[Geolocation] fallback request failed:', fallbackError);
+            // Suppress permission denied errors, log others as warnings
+            const isPermissionDenied = fallbackError instanceof GeolocationPositionError && fallbackError.code === 1;
+            if (!isPermissionDenied) {
+              console.warn('[Geolocation] fallback request failed:', fallbackError);
+            }
             // Fallback final: usar última localização conhecida ou localização padrão
             const lastLocation = get().user?.lastLocation;
             if (lastLocation) {
@@ -358,11 +362,18 @@ const useStore = create<any>()(
           if (typeof navigator !== 'undefined' && navigator.geolocation) {
             const id = navigator.geolocation.watchPosition(
               (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-              (err) => console.error('Browser geolocation watch error:', err),
+              (err) => {
+                // Suppress permission denied (code 1) and timeout (code 3) errors
+                const message = String(err?.message || '').toLowerCase();
+                const isTimeout = err.code === 3 || message.includes('timeout') || message.includes('could not obtain location');
+                if (!isTimeout && err.code !== 1) {
+                  console.warn('Browser geolocation watch error:', err);
+                }
+              },
               { 
                 enableHighAccuracy: true,
-                timeout: 45000,  // 45 segundos de timeout para watch
-                maximumAge: 300000  // 5 minutos de cache
+                timeout: 60000,  // 60 segundos de timeout para watch
+                maximumAge: 600000  // 10 minutos de cache
               }
             );
             set({ watchId: id });
@@ -373,7 +384,13 @@ const useStore = create<any>()(
           try {
             const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (position, err) => {
               if (err) {
-                console.error('Geolocation watch error:', err);
+                // Suppress timeout errors silently
+                const message = String(err?.message || '').toLowerCase();
+                const errorCode = String(err?.code || '').toLowerCase();
+                const isTimeout = message.includes('timeout') || message.includes('could not obtain location') || errorCode.includes('timeout') || errorCode.includes('gloc-0010');
+                if (!isTimeout) {
+                  console.warn('Capacitor geolocation watch error:', err);
+                }
                 return;
               }
               if (position?.coords) {

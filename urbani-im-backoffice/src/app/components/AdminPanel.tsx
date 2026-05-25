@@ -590,11 +590,15 @@ export default function AdminPanel() {
       fetch('/api/admin/staff', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(driverToSave) })
         .then(async res => {
           if (!res.ok) throw new Error('Failed');
-          const saved = await res.json();
-          if (formMode === 'add') setAdminDrivers([...adminDrivers, saved]);
-          else setAdminDrivers(adminDrivers.map((d: any) => d.id === driverToSave.id ? { ...d, ...saved } : d));
-          addStaffAccount({ id: saved.id || driverToSave.id, name: saved.name || formData.name, username: saved.username || loginUsername, pin: saved.pin || loginPin, role: 'driver', routeId: saved.routeId || formData.routeId, weeklyProgram: saved.weeklyProgram, status: saved.status || 'Aktiv', createdAt: Date.now() });
-          closeForm(); setTimeout(() => setNotification({ msg: isDispatcher ? 'Shoferi u ruajt! ✓' : 'Programi u ruajt! ✓', type: 'success' }), 300);
+          try {
+            const saved = await res.json();
+            if (formMode === 'add') setAdminDrivers([...adminDrivers, saved]);
+            else setAdminDrivers(adminDrivers.map((d: any) => d.id === driverToSave.id ? { ...d, ...saved } : d));
+            addStaffAccount({ id: saved.id || driverToSave.id, name: saved.name || formData.name, username: saved.username || loginUsername, pin: saved.pin || loginPin, role: 'driver', routeId: saved.routeId || formData.routeId, weeklyProgram: saved.weeklyProgram, status: saved.status || 'Aktiv', createdAt: Date.now() });
+            closeForm(); setTimeout(() => setNotification({ msg: isDispatcher ? 'Shoferi u ruajt! ✓' : 'Programi u ruajt! ✓', type: 'success' }), 300);
+          } catch (e) {
+            setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' });
+          }
         })
         .catch(() => setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' }))
         .finally(() => setIsSaving(false));
@@ -609,11 +613,15 @@ export default function AdminPanel() {
       fetch('/api/admin/staff', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inspToSave) })
         .then(async res => {
           if (!res.ok) throw new Error('Failed');
-          const saved = await res.json();
-          if (formMode === 'add') setAdminInspectors([...adminInspectors, saved]);
-          else setAdminInspectors(adminInspectors.map((i: any) => i.id === inspToSave.id ? { ...i, ...saved } : i));
-          addStaffAccount({ id: saved.id || inspToSave.id, name: saved.name || formData.name, username: saved.username || loginUsername, pin: saved.pin || loginPin, role: 'inspector', routeId: saved.routeId || formData.routeId, weeklyProgram: saved.weeklyProgram, status: saved.status || 'Aktiv', createdAt: Date.now() });
-          closeForm(); setTimeout(() => setNotification({ msg: isDispatcher ? 'Faturino u ruajt! ✓' : 'Programi u ruajt! ✓', type: 'success' }), 300);
+          try {
+            const saved = await res.json();
+            if (formMode === 'add') setAdminInspectors([...adminInspectors, saved]);
+            else setAdminInspectors(adminInspectors.map((i: any) => i.id === inspToSave.id ? { ...i, ...saved } : i));
+            addStaffAccount({ id: saved.id || inspToSave.id, name: saved.name || formData.name, username: saved.username || loginUsername, pin: saved.pin || loginPin, role: 'inspector', routeId: saved.routeId || formData.routeId, weeklyProgram: saved.weeklyProgram, status: saved.status || 'Aktiv', createdAt: Date.now() });
+            closeForm(); setTimeout(() => setNotification({ msg: isDispatcher ? 'Faturino u ruajt! ✓' : 'Programi u ruajt! ✓', type: 'success' }), 300);
+          } catch (e) {
+            setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' });
+          }
         })
         .catch(() => setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' }))
         .finally(() => setIsSaving(false));
@@ -627,14 +635,18 @@ export default function AdminPanel() {
       fetch('/api/admin/buses', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(busToSave) })
         .then(async res => {
           if (!res.ok) { if (res.status === 404) throw new Error('Autobusi nuk u gjet.'); throw new Error(`Gabim ${res.status}`); }
-          const saved = await res.json();
-          if (formMode === 'add') setAdminBuses([...adminBuses, saved]);
-          else setAdminBuses(adminBuses.map((b: any) => (b.id === busId || b._id?.toString() === busId) ? { ...b, ...saved } : b));
-          if (typeof syncBusesWithAdmin === 'function') syncBusesWithAdmin();
-          refreshData(); closeForm();
-          setTimeout(() => setNotification({ msg: isDispatcher ? 'Mjeti u ruajt! ✓' : 'Mjeti u përditësua! ✓', type: 'success' }), 300);
+          try {
+            const saved = await res.json();
+            if (formMode === 'add') setAdminBuses([...adminBuses, saved]);
+            else setAdminBuses(adminBuses.map((b: any) => (b.id === busId || b._id?.toString() === busId) ? { ...b, ...saved } : b));
+            if (typeof syncBusesWithAdmin === 'function') syncBusesWithAdmin();
+            refreshData(); closeForm();
+            setTimeout(() => setNotification({ msg: isDispatcher ? 'Mjeti u ruajt! ✓' : 'Mjeti u përditësua! ✓', type: 'success' }), 300);
+          } catch (e) {
+            setNotification({ msg: `Gabim: ${e instanceof Error ? e.message : 'Ndodhi një gabim'}`, type: 'error' });
+          }
         })
-        .catch(err => setNotification({ msg: `Gabim: ${err.message}`, type: 'error' }))
+        .catch(err => setNotification({ msg: `Gabim: ${err instanceof Error ? err.message : 'Ndodhi një gabim'}`, type: 'error' }))
         .finally(() => setIsSaving(false));
 
     } else if (currentView === 'form-account') {
@@ -643,10 +655,14 @@ export default function AdminPanel() {
       fetch('/api/admin/staff', { method: formMode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(accToSave) })
         .then(async res => {
           if (!res.ok) throw new Error('Failed');
-          const saved = await res.json();
-          if (formMode === 'add') addStaffAccount(saved); else updateStaffAccount(saved.id, saved);
-          fetchDbAccounts(); closeForm();
-          setTimeout(() => setNotification({ msg: 'Llogaria u ruajt! ✓', type: 'success' }), 300);
+          try {
+            const saved = await res.json();
+            if (formMode === 'add') addStaffAccount(saved); else updateStaffAccount(saved.id, saved);
+            fetchDbAccounts(); closeForm();
+            setTimeout(() => setNotification({ msg: 'Llogaria u ruajt! ✓', type: 'success' }), 300);
+          } catch (e) {
+            setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' });
+          }
         })
         .catch(() => setNotification({ msg: 'Gabim gjatë ruajtjes.', type: 'error' }))
         .finally(() => setIsSaving(false));

@@ -509,7 +509,8 @@ const useStore = create(
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
           (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-          (err) => console.error(err)
+          (err) => console.error(err),
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
         );
       },
       watchId: null as number | null,
@@ -518,7 +519,7 @@ const useStore = create(
         const id = navigator.geolocation.watchPosition(
           (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
           (err) => console.error(err),
-          { enableHighAccuracy: true }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
         );
         set({ watchId: id });
       },

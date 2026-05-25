@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
 import {
@@ -73,17 +74,23 @@ export default function ProfileView() {
           }
         } catch (error: any) {
           const errorMessage = error?.message || String(error) || '';
-          // Ignore share canceled errors
-          if (errorMessage.toLowerCase().includes('canceled') || errorMessage.toLowerCase().includes('abort')) {
+          // Ignore share canceled errors, timeouts, and permission denied
+          if (errorMessage.toLowerCase().includes('canceled') || 
+              errorMessage.toLowerCase().includes('abort') ||
+              errorMessage.toLowerCase().includes('timeout') ||
+              errorMessage.toLowerCase().includes('denied')) {
             return;
           }
           // Safely log error
           if (error instanceof Error) {
-            console.error('Share error:', error.message);
+            console.warn('Share error:', error.message);
           } else {
             console.warn('Share action dismissed or unavailable');
           }
-          addNotification(language === 'al' ? 'Gabim në ndarje të aplikacionit' : 'Error sharing app', 'danger');
+          // Only show notification for actual failures
+          if (!errorMessage.toLowerCase().includes('user')) {
+            addNotification(language === 'al' ? 'Gabim në ndarje të aplikacionit' : 'Error sharing app', 'danger');
+          }
         }
       }
     },
@@ -94,7 +101,11 @@ export default function ProfileView() {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}>
 
       {/* Header Profile Card */}
-      <div style={{ padding: '30px 20px 20px 20px' }}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
+        style={{ padding: '30px 20px 20px 20px' }}>
         <button
           onClick={() => setView('edit_profile')}
           style={{
@@ -132,14 +143,18 @@ export default function ProfileView() {
             <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px' }} />
           </div>
         </button>
-      </div>
+      </motion.div>
 
       {/* Menu List */}
       <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-        {menuItems.map((item, idx) => (
-          <button
-            key={idx}
-            onClick={item.action}
+        <AnimatePresence>
+          {menuItems.map((item, idx) => (
+            <motion.button
+              key={idx}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.05 }}
+              onClick={item.action}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
               background: 'transparent', border: 'none', borderRadius: '14px',
@@ -168,31 +183,42 @@ export default function ProfileView() {
             {!item.isDestructive && (
               <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: 'rgba(255,255,255,0.15)' }} />
             )}
-          </button>
-        ))}
+            </motion.button>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Modals */}
-      {activeModal && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-        }}>
-          <div style={{
-            width: '100%', maxWidth: '400px', background: '#111318', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            animation: 'fadeIn 0.3s ease-out'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
-                {activeModal === 'logout' ? t.logout :
-                  activeModal === 'language' ? t.prof_language :
-                    activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
-              </h3>
-              <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
-              </button>
+      <AnimatePresence>
+        {activeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
+              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+            }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                width: '100%', maxWidth: '400px', background: '#111318', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                  {activeModal === 'logout' ? t.logout :
+                    activeModal === 'language' ? t.prof_language :
+                      activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
+                </h3>
+                <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                  <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
+                </button>
             </div>
 
             {activeModal === 'language' ? (
@@ -260,9 +286,10 @@ export default function ProfileView() {
             )}
 
 
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx>{`
         @keyframes fadeIn {

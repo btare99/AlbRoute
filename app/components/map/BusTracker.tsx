@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import { IonIcon } from '@ionic/react';
 import { searchOutline, closeOutline, starOutline, chevronUpOutline, chevronDownOutline, busOutline, peopleOutline, flashOutline } from 'ionicons/icons';
@@ -135,8 +136,11 @@ export default function BusTracker() {
           const isActive = selectedRouteId === r.id;
           const live = buses.filter((b: any) => b.routeId === r.id).length;
           return (
-            <button
+            <motion.button
               key={`${r.id}-${idx}`}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.05 }}
               onClick={() => { setSelectedRouteId(r.id); setShowAllStops(false); }}
               style={{
                 flexShrink: 0,
@@ -160,14 +164,22 @@ export default function BusTracker() {
                   fontSize: 11, fontWeight: 700, color: '#fff',
                 }}>{live}</span>
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
 
       {/* ━━━━ ROUTE HERO CARD ━━━━ */}
-      {route && (
-        <div style={{ padding: '16px 20px 0' }}>
+      <AnimatePresence mode="wait">
+        {route && (
+          <motion.div
+            key={route.id}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.35 }}
+            style={{ padding: '16px 20px 0' }}
+          >
           <div style={{
             borderRadius: 24, overflow: 'hidden',
             background: `linear-gradient(145deg, ${route.color}22 0%, rgba(255,255,255,0.03) 100%)`,
@@ -296,8 +308,9 @@ export default function BusTracker() {
               </button>
             )}
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ━━━━ BUS CARDS ━━━━ */}
       <div style={{ padding: '20px 20px 0' }}>
@@ -310,28 +323,33 @@ export default function BusTracker() {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {routeBuses.map((bus: any, idx: number) => {
-            const load = getLoad(bus.passengerLoad);
-            const isSelected = selectedBus?.id === bus.id;
-            const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
-            const arrMin = Math.round(2 + Math.random() * 6);
+          <AnimatePresence>
+            {routeBuses.map((bus: any, idx: number) => {
+              const load = getLoad(bus.passengerLoad);
+              const isSelected = selectedBus?.id === bus.id;
+              const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
+              const arrMin = Math.round(2 + Math.random() * 6);
 
-            return (
-              <div
-                key={bus.id || `bus-${idx}`}
-                onClick={() => setSelectedBus(isSelected ? null : bus)}
-                style={{
-                  borderRadius: 20,
-                  background: isSelected
-                    ? `linear-gradient(145deg, ${route?.color}18, ${route?.color}08)`
-                    : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${isSelected ? route?.color + '45' : 'rgba(255,255,255,0.07)'}`,
-                  padding: '16px',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s cubic-bezier(.34,1.56,.64,1)',
-                  transform: isSelected ? 'scale(1.01)' : 'scale(1)',
-                }}
-              >
+              return (
+                <motion.div
+                  key={bus.id || `bus-${idx}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  onClick={() => setSelectedBus(isSelected ? null : bus)}
+                  style={{
+                    borderRadius: 20,
+                    background: isSelected
+                      ? `linear-gradient(145deg, ${route?.color}18, ${route?.color}08)`
+                      : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${isSelected ? route?.color + '45' : 'rgba(255,255,255,0.07)'}`,
+                    padding: '16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(.34,1.56,.64,1)',
+                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                  }}
+                >
                 {/* Row 1: icon + name + arrival */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {/* Bus dot icon */}
@@ -443,18 +461,24 @@ export default function BusTracker() {
                     }} />
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
+          </AnimatePresence>
 
           {/* Empty state */}
           {routeBuses.length === 0 && (
-            <div style={{
-              padding: '52px 24px', textAlign: 'center',
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: 24,
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              style={{
+                padding: '52px 24px', textAlign: 'center',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 24,
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
               <div style={{
                 width: 56, height: 56, borderRadius: 18,
                 background: 'rgba(255,255,255,0.05)',
@@ -469,7 +493,7 @@ export default function BusTracker() {
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', margin: 0 }}>
                 {t.check_later}
               </p>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

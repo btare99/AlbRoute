@@ -235,7 +235,7 @@ export default function EditProfileView() {
     else setIsSearchingWork(true);
 
     try {
-      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 20000 });
       const { latitude, longitude } = position.coords;
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`, {

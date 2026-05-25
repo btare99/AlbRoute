@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from "next-auth/react";
 import { IonIcon } from '@ionic/react';
-import { busOutline, eyeOutline, eyeOffOutline, arrowForwardOutline, locationOutline } from 'ionicons/icons';
+import { busOutline, eyeOutline, eyeOffOutline, arrowForwardOutline } from 'ionicons/icons';
 import { Preferences } from '@capacitor/preferences';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
@@ -568,7 +568,7 @@ function LoginContent() {
 
 
           {/* Social Logins */}
-          {(mode === 'login' || mode === 'register') && (
+          {mode === 'login' && (
             <>
               <div style={{ margin: '20px 0 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
@@ -595,7 +595,6 @@ function LoginContent() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-dim)', opacity: 0.6 }}>
-          <IonIcon icon={locationOutline} style={{ fontSize: 12, display: 'inline', marginRight: '4px' }} />
           Tirana, Shqipëri &nbsp;·&nbsp; 
           <span 
             onClick={() => setGuestMode(true)} 

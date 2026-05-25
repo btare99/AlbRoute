@@ -1,9 +1,9 @@
 'use client';
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
+import { ArrowRight, Banknote, Briefcase, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BUS_SHAPES } from '../../store/busShapes';
-import { X, Layers, ZoomIn, ZoomOut, Locate, Filter, Navigation, ArrowRight, MoreVertical, Eye, EyeOff, Map as MapIcon, Info, Search, Settings, ChevronRight, ChevronLeft, ChevronUp, Moon, Sun, Globe, Bus, Route, MapPin, Clock, Banknote, ChevronDown, RefreshCcw, Home, Briefcase, Utensils, GraduationCap, Building2, ShoppingBag, TreePine, Fuel, Check } from 'lucide-react';
 import { translations } from '../../store/translations';
+import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
 import SwipeDismissView from '../layout/SwipeDismissView';
 
 
@@ -984,6 +984,9 @@ export default function MapView() {
       "></div>
     </div>
   `;
+
+    // Validate coordinates before creating/updating marker
+    if (userLocation.lat === undefined || userLocation.lng === undefined) return;
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
