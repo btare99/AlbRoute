@@ -679,6 +679,7 @@ const useStore = create<any>()(
       setTripDepartureTime: (time: string) => set({ tripDepartureTime: time }),
       setActiveTrip: (trip: any) => set({ activeTrip: trip }),
       planTrip: async (fromName: string, toName: string) => {
+        console.log('🔍 planTrip iniciuar:', { fromName, toName });
         const searchTo = toName.trim().toLowerCase();
         const searchFrom = fromName.trim().toLowerCase();
 
@@ -877,14 +878,20 @@ const useStore = create<any>()(
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
           const totalWalkDist = initialWalkDist + finalWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
 
-          if (totalWalkDist > 2500) return; // Max walking limit
+          if (totalWalkDist > 2500) {
+            console.log('⛔ Kalim shumë i madh ecjeje:', totalWalkDist);
+            return;
+          }
 
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
           const secondLegBonus = busLegs.length > 1 ? secondLegLength * 0.25 : 0;
           const score = (totalWalkDist / 8) + totalTime - secondLegBonus;
 
-          if (finalWalkDist > 400) return;
+          if (finalWalkDist > 400) {
+            console.log('⛔ Ecje finale shumë e madhe:', finalWalkDist);
+            return;
+          }
           const finalLegs = !exactFromStop ? [
             { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
             ...legs
@@ -926,6 +933,7 @@ const useStore = create<any>()(
         };
 
         // 1. DIRECT ROUTES (prefer direct routes when destination is within 300m)
+        console.log('🚀 Kërkojnë rugë të drejtpërdrejtë:', possibleFromStops.length, 'nga', possibleFromStops.map(p => p.stop.name));
         for (const pfs of possibleFromStops) {
           for (const pts of directToStops.length ? directToStops : toStopsForEvaluation) {
             for (const route of BUS_ROUTES) {
@@ -936,6 +944,7 @@ const useStore = create<any>()(
                 if (fi !== -1 && ti !== -1 && fi < ti) {
                   const stopIds = arr.slice(fi, ti + 1);
                   const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
+                  console.log('✅ Gjendet e drejtpërdrejtë:', pfs.stop.name, '→', pts.stop.name, 'me rugën', route.name);
                   evaluateTrip([{
                     route, stops, stopIds,
                     boardAt: pfs.stop.name, alightAt: pts.stop.name,
@@ -1001,8 +1010,12 @@ const useStore = create<any>()(
           .filter(c => !!c)
           .sort((a, b) => a.score - b.score);
 
+        console.log('✅ Kandidatë të gjetura:', sortedCandidates.length, sortedCandidates.slice(0, 2));
+
         const topOptions = sortedCandidates.slice(0, 4).map((option, index) => ({ ...option, optionIndex: index + 1 }));
         const selected = topOptions[0] || null;
+
+        console.log('🎯 Ruga e zgjedhur:', selected);
 
         set({
           tripResult: selected,

@@ -266,69 +266,6 @@ export default function MapView() {
       return;
     }
 
-    const fetchShapes = async () => {
-      const newShapes: Record<string, [number, number][]> = {};
-
-      // Helper: merr rrugën pedestrian nga OSRM foot (trotuare, jo rrugë makinash)
-      const fetchFootRoute = async (fromLng: number, fromLat: number, toLng: number, toLat: number): Promise<[number, number][] | null> => {
-        try {
-          // /foot/ profili ne OSRM ndjek trotuaret dhe shtigjet pedestrian, jo rruget e makinave
-          const res = await fetch(
-            `https://router.project-osrm.org/route/v1/foot/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`
-          );
-          const data = await res.json();
-          if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-            return data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
-          }
-        } catch (err) {
-          console.error('OSRM foot routing error:', err);
-        }
-        return null;
-      };
-
-      // Ecja për çdo leg pedestrian (nisje, transferime, ose mbërritje)
-      if (activeTrip.legs) {
-        for (let i = 0; i < activeTrip.legs.length; i++) {
-          const leg = activeTrip.legs[i];
-          if (leg.isWalking) {
-            const bStop = leg.boardNodeId
-              ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId)
-              : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-            const aStop = leg.alightNodeId
-              ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId)
-              : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
-
-            let startLat = bStop ? bStop.lat : null;
-            let startLng = bStop ? bStop.lng : null;
-            let destLat = aStop ? aStop.lat : null;
-            let destLng = aStop ? aStop.lng : null;
-
-            // Leg-u i parë: fillon tek tripOriginCoords nëse është ecje
-            if (i === 0 && tripOriginCoords) {
-              startLat = tripOriginCoords.lat;
-              startLng = tripOriginCoords.lng;
-            }
-
-            // Leg-u i fundit: mbaron tek tripDestCoords nëse është ecje
-            if (i === activeTrip.legs.length - 1 && tripDestCoords) {
-              destLat = tripDestCoords.lat;
-              destLng = tripDestCoords.lng;
-            }
-
-            if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
-              const coords = await fetchFootRoute(startLng, startLat, destLng, destLat);
-              if (coords) newShapes[`walk_${i}`] = coords;
-            }
-          }
-        }
-      }
-
-      setWalkingShapes(newShapes);
-    };
-
-
-    fetchShapes();
-
     // Zoom to route
     if (activeTrip && mapInstanceRef.current) {
       const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
