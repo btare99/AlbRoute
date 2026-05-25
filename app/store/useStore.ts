@@ -206,6 +206,7 @@ const useStore = create<any>()(
       selectedBus: null,
       selectedRoute: null,
       userLocation: { lat: 41.3275, lng: 19.8187 },
+      geolocationPermissionDenied: false,
       setUserLocation: (loc: { lat: number, lng: number }) => set({ userLocation: loc }),
       fetchBuses: async () => {
         try {
@@ -296,6 +297,15 @@ const useStore = create<any>()(
         return await fallbackToBrowser();
       },
       fetchUserLocation: async (notify = false) => {
+        // Skip if permission was already denied to prevent Chrome from blocking
+        if (get().geolocationPermissionDenied) {
+          const lastLocation = get().user?.lastLocation;
+          if (lastLocation) {
+            set({ userLocation: { lat: lastLocation.lat, lng: lastLocation.lng } });
+          }
+          return;
+        }
+
         try {
           const position = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
           const lat = position.coords.latitude;
@@ -318,9 +328,11 @@ const useStore = create<any>()(
           }
 
         } catch (error) {
-          // Suppress permission denied errors (code 1), log others as warnings
+          // Mark as denied if permission is rejected
           const isPermissionDenied = error instanceof GeolocationPositionError && error.code === 1;
-          if (!isPermissionDenied) {
+          if (isPermissionDenied) {
+            set({ geolocationPermissionDenied: true });
+          } else {
             console.warn('[Geolocation] primary location request failed, attempting fallback', error);
           }
           try {
@@ -341,9 +353,11 @@ const useStore = create<any>()(
               get().updateProfile({ lastLocation: { lat, lng, updatedAt: albaniaTime } });
             }
           } catch (fallbackError) {
-            // Suppress permission denied errors, log others as warnings
+            // Mark as denied if permission is rejected
             const isFallbackPermissionDenied = fallbackError instanceof GeolocationPositionError && fallbackError.code === 1;
-            if (!isFallbackPermissionDenied) {
+            if (isFallbackPermissionDenied) {
+              set({ geolocationPermissionDenied: true });
+            } else {
               console.warn('[Geolocation] fallback request failed:', fallbackError);
             }
             // Fallback final: usar última localização conhecida ou localização padrão
@@ -365,16 +379,23 @@ const useStore = create<any>()(
       },
       watchId: null as string | null,
       startTracking: async () => {
-        if (get().watchId) return;
+        // Skip if permission was already denied
+        if (get().geolocationPermissionDenied || get().watchId) return;
+
         const fallbackWatch = () => {
           if (typeof navigator !== 'undefined' && navigator.geolocation) {
             const id = navigator.geolocation.watchPosition(
               (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
               (err) => {
-                // Suppress permission denied (code 1) and timeout (code 3) errors
+                // Mark as denied if permission is rejected
+                if (err.code === 1) {
+                  set({ geolocationPermissionDenied: true });
+                  return;
+                }
+                // Suppress timeout (code 3) errors
                 const message = String(err?.message || '').toLowerCase();
                 const isTimeout = err.code === 3 || message.includes('timeout') || message.includes('could not obtain location');
-                if (!isTimeout && err.code !== 1) {
+                if (!isTimeout) {
                   console.warn('Browser geolocation watch error:', err);
                 }
               },
@@ -392,9 +413,14 @@ const useStore = create<any>()(
           try {
             const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (position, err) => {
               if (err) {
-                // Suppress timeout errors silently
+                // Check if permission was denied
                 const message = String(err?.message || '').toLowerCase();
                 const errorCode = String(err?.code || '').toLowerCase();
+                if (message.includes('permission') || errorCode.includes('permission')) {
+                  set({ geolocationPermissionDenied: true });
+                  return;
+                }
+                // Suppress timeout errors silently
                 const isTimeout = message.includes('timeout') || message.includes('could not obtain location') || errorCode.includes('timeout') || errorCode.includes('gloc-0010');
                 if (!isTimeout) {
                   console.warn('Capacitor geolocation watch error:', err);
