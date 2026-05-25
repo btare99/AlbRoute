@@ -12,49 +12,9 @@ const TIRANA_CENTER: [number, number] = [41.3275, 19.8187];
 const DEFAULT_ZOOM = 14;
 const STOP_NAMES = Array.from(new Set(BUS_STOPS.map((s: any) => s.name))).sort() as string[];
 
-// ─── UTILITY FUNCTION FOR CURVED WALKING PATHS ───────────────────────────────
-const generateCurvedPath = (
-  start: [number, number],
-  end: [number, number],
-  points: number = 50
-): [number, number][] => {
-  const [lat1, lng1] = start;
-  const [lat2, lng2] = end;
-  
-  const midLat = (lat1 + lat2) / 2;
-  const midLng = (lng1 + lng2) / 2;
-  
-  // Perpendicular offset for arc height
-  const dx = lng2 - lng1;
-  const dy = lat2 - lat1;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  const offsetDistance = distance * 0.25; // Arc height: 25% of distance
-  
-  // Perpendicular vector
-  const perpX = -dy;
-  const perpY = dx;
-  const perpLen = Math.sqrt(perpX * perpX + perpY * perpY);
-  const normPerpX = perpX / perpLen;
-  const normPerpY = perpY / perpLen;
-  
-  // Control point for quadratic Bezier curve
-  const controlLat = midLat + normPerpX * offsetDistance;
-  const controlLng = midLng + normPerpY * offsetDistance;
-  
-  const curvePoints: [number, number][] = [];
-  
-  for (let i = 0; i <= points; i++) {
-    const t = i / points;
-    const t1 = 1 - t;
-    
-    // Quadratic Bezier formula
-    const lat = t1 * t1 * lat1 + 2 * t1 * t * controlLat + t * t * lat2;
-    const lng = t1 * t1 * lng1 + 2 * t1 * t * controlLng + t * t * lng2;
-    
-    curvePoints.push([lat, lng]);
-  }
-  
-  return curvePoints;
+// Helper to validate coordinates
+const isValidCoords = (coords: any): boolean => {
+  return coords && typeof coords.lat === 'number' && typeof coords.lng === 'number' && !isNaN(coords.lat) && !isNaN(coords.lng);
 };
 
 export default function MapView() {
@@ -864,54 +824,31 @@ export default function MapView() {
           }
 
           if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
-            // Generate smooth curved walking path
-            const walkCoords = generateCurvedPath([startLat, startLng], [destLat, destLng], 80);
+            const walkCoords = walkingShapes[`walk_${idx}`] || [
+              [startLat, startLng],
+              [destLat, destLng]
+            ];
 
-            // 1. Premium glowing background track (glow effect)
+            // 1. Premium glowing background track
             const walkLineGlow = L.polyline(walkCoords, {
-              color: '#06b6d4',
-              weight: 14,
-              opacity: 0.18,
+              color: '#10b981',
+              weight: 10,
+              opacity: 0.22,
               lineCap: 'round',
-              lineJoin: 'round',
-              className: 'walking-glow'
+              lineJoin: 'round'
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLineGlow, routeId: `walk_glow_${idx}` });
 
-            // 2. Main smooth curved walking line with animated dashes
+            // 2. High-fidelity circular dots representing pedestrian footsteps
             const walkLine = L.polyline(walkCoords, {
-              color: '#06b6d4',
-              weight: 4,
-              dashArray: '2, 8',
+              color: '#10b981',
+              weight: 5,
+              dashArray: '1, 12',
               lineCap: 'round',
               lineJoin: 'round',
-              opacity: 0.98,
-              className: 'walking-path'
+              opacity: 0.95
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLine, routeId: `walk_${idx}` });
-
-            // 3. Add direction arrows to indicate walking path direction
-            const arrowCount = 6;
-            for (let i = 1; i < arrowCount; i++) {
-              const coordIdx = Math.floor((walkCoords.length - 1) * (i / arrowCount));
-              const coord = walkCoords[coordIdx];
-              const nextCoord = walkCoords[Math.min(coordIdx + 2, walkCoords.length - 1)];
-              
-              const angle = Math.atan2(
-                nextCoord[1] - coord[1],
-                nextCoord[0] - coord[0]
-              ) * (180 / Math.PI) + 90;
-
-              const arrowMarker = L.marker(coord, {
-                icon: L.divIcon({
-                  className: 'walking-arrow',
-                  html: `<div style="width: 20px; height: 20px; background: #06b6d4; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold; transform: rotate(${angle}deg); box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);">↓</div>`,
-                  iconSize: [20, 20],
-                  iconAnchor: [10, 10]
-                })
-              }).addTo(map);
-              routeLinesRef.current.push({ line: arrowMarker, routeId: `walk_arrow_${idx}_${i}` });
-            }
           }
           return;
         }
@@ -1231,7 +1168,7 @@ export default function MapView() {
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
-    if (!selectedStop || !map || !L) return;
+    if (!selectedStop || !map || !L || !isValidCoords(selectedStop)) return;
 
     map.flyTo([selectedStop.lat, selectedStop.lng], 17, { duration: 1.2, easeLinearity: 0.35 });
 
@@ -1364,7 +1301,7 @@ export default function MapView() {
                 await fetchUserLocation(true);
                 // Update trip origin coords whenever user location is requested for planning
                 const currentUserLocation = userLocation;
-                if (currentUserLocation) {
+                if (currentUserLocation && isValidCoords(currentUserLocation)) {
                   const myLocStr = language === 'al' ? 'Vendndodhja Ime' : 'My Location';
                   setTripOriginCoords(currentUserLocation, myLocStr);
                   if (isSearching) {
@@ -1639,6 +1576,7 @@ export default function MapView() {
                     <button
                       key={idx}
                       onClick={() => {
+                        if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
                         const fullText = item.name + (item.address ? ', ' + item.address : '');
                         useStore.getState().setTripOriginCoords({ lat: item.lat, lng: item.lng }, fullText);
                         setTripFrom(fullText);
@@ -1867,6 +1805,7 @@ export default function MapView() {
                     <button
                       key={idx}
                       onClick={() => {
+                        if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
                         const fullText = item.name + (item.address ? ', ' + item.address : '');
                         useStore.getState().setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
                         setTripTo(fullText);
@@ -1953,7 +1892,7 @@ export default function MapView() {
               requestCompassPermission();
               await fetchUserLocation(true);
               const currentUserLocation = useStore.getState().userLocation;
-              if (currentUserLocation) {
+              if (currentUserLocation && isValidCoords(currentUserLocation)) {
                 mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
               }
             }}

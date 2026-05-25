@@ -705,40 +705,6 @@ input::placeholder {
   border-radius: var(--radius-sm);
 }
 
-/* ─── WALKING PATH ANIMATIONS ─── */
-@keyframes walking-dash {
-  0% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: -10;
-  }
-}
-
-.walking-path {
-  animation: walking-dash 1.5s linear infinite !important;
-}
-
-.walking-glow {
-  filter: drop-shadow(0 0 3px rgba(6, 182, 212, 0.6));
-}
-
-.walking-arrow {
-  filter: drop-shadow(0 2px 8px rgba(6, 182, 212, 0.4)) !important;
-  animation: arrow-bounce 1.2s ease-in-out infinite !important;
-}
-
-@keyframes arrow-bounce {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(0.9) rotate(-90deg);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.1) rotate(-90deg);
-  }
-}
-
 /* ═══════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════ */
