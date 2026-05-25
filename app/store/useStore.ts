@@ -1,7 +1,3 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { BUS_STOPS, BUS_ROUTES } from '../constants/busData';
-import { BUS_SHAPES } from './busShapes';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { Device } from '@capacitor/device';
@@ -9,7 +5,11 @@ import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Network } from '@capacitor/network';
 import { Preferences } from '@capacitor/preferences';
-export { BUS_STOPS, BUS_ROUTES };
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { BUS_ROUTES, BUS_STOPS } from '../constants/busData';
+import { BUS_SHAPES } from './busShapes';
+export { BUS_ROUTES, BUS_STOPS };
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export interface StaffAccount {
