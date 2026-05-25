@@ -72,11 +72,17 @@ export default function ProfileView() {
             addNotification(t.prof_link_copied, 'success');
           }
         } catch (error: any) {
-          // Ignoro share canceled errors
-          if (error?.message?.includes('canceled') || error?.message?.includes('Canceled')) {
+          const errorMessage = error?.message || String(error) || '';
+          // Ignore share canceled errors
+          if (errorMessage.toLowerCase().includes('canceled') || errorMessage.toLowerCase().includes('abort')) {
             return;
           }
-          console.error('Share error:', error);
+          // Safely log error
+          if (error instanceof Error) {
+            console.error('Share error:', error.message);
+          } else {
+            console.warn('Share action dismissed or unavailable');
+          }
           addNotification(language === 'al' ? 'Gabim në ndarje të aplikacionit' : 'Error sharing app', 'danger');
         }
       }

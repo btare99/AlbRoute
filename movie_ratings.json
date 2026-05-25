@@ -1,0 +1,13 @@
+{
+  "media": {
+    "Nuk": {
+      "type": "Movie",
+      "year": 1999,
+      "ratings": {
+        "Bjorni": [
+          10.0
+        ]
+      }
+    }
+  }
+}

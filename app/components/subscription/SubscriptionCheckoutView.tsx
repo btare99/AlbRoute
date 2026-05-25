@@ -151,7 +151,7 @@ export default function SubscriptionCheckoutView() {
   // If no package is selected, go back to packages view
   useEffect(() => {
     if (!pkg) setView('packages');
-  }, [pkg, setView]);
+  }, [pkg]);
 
   if (!pkg) return null;
 
@@ -289,8 +289,14 @@ export default function SubscriptionCheckoutView() {
                       }}
                       className={`payment-method-card method-${method.id}`}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', zIndex: 1 }}>
-                        {method.icon}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', zIndex: 1, gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                          {method.icon}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                            <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: -0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{method.name}</div>
+                            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{method.desc}</div>
+                          </div>
+                        </div>
                         <div className="arrow-indicator" style={{
                           width: 32,
                           height: 32,
@@ -303,12 +309,7 @@ export default function SubscriptionCheckoutView() {
                           <IonIcon icon={chevronForwardOutline} style={{ fontSize: 16, opacity: 0.6 }} />
                         </div>
                       </div>
-                      
-                      <div style={{ zIndex: 1 }}>
-                        <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4, letterSpacing: -0.3 }}>{method.name}</div>
-                        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{method.desc}</div>
-                      </div>
-                      
+
                       <div className="hover-glow" style={{
                         position: 'absolute',
                         inset: 0,
@@ -563,7 +564,6 @@ export default function SubscriptionCheckoutView() {
                           </div>
                         </div>
                       </div>
-                      <h3 style={{ margin: '0 0 12px 0', fontSize: 22, fontWeight: 800, color: '#fff' }}>PayPal Express</h3>
                       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.6, margin: '0 0 32px 0', padding: '0 20px' }}>
                         Paguani në mënyrë të shpejtë dhe të sigurt duke përdorur llogarinë tuaj PayPal.
                       </p>
@@ -630,7 +630,6 @@ export default function SubscriptionCheckoutView() {
                           <span style={{ fontSize: 42, color: '#fff' }}></span>
                         </div>
                       </div>
-                      <h3 style={{ margin: '0 0 12px 0', fontSize: 22, fontWeight: 800, color: '#fff' }}>Apple Pay</h3>
                       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.6, margin: '0 0 32px 0', padding: '0 20px' }}>
                         Përdorni Touch ID ose Face ID për të kryer pagesën menjëherë në pajisjen tuaj Apple.
                       </p>

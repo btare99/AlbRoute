@@ -104,11 +104,13 @@ const useStore = create<any>()(
         }
       },
       currentView: 'map',
+      checkoutPackage: null,
       isSidebarOpen: false,
       showStops: true,
       showRoutes: true,
       showBuses: true,
       setView: (v: any) => set({ currentView: v, isSidebarOpen: false }),
+      setCheckoutPackage: (pkg: any) => set({ checkoutPackage: pkg }),
       setShowStops: (val: boolean) => set({ showStops: val }),
       setShowRoutes: (val: boolean) => set({ showRoutes: val }),
       setShowBuses: (val: boolean) => set({ showBuses: val }),
@@ -245,23 +247,46 @@ const useStore = create<any>()(
         }
       },
       getCurrentPosition: async (options: any = {}) => {
+        const defaultOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+        const mergedOptions = { ...defaultOptions, ...options };
+
         const fallbackToBrowser = async () => {
           if (typeof navigator !== 'undefined' && navigator.geolocation) {
             return new Promise<any>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, options);
+              // Browser geolocation precisa de timeout maior
+              const browserOptions = {
+                enableHighAccuracy: true,
+                timeout: 45000,  // 45 segundos para navegador (sinal fraco é comum)
+                maximumAge: 300000  // 5 minutos de cache é aceitável
+              };
+              navigator.geolocation.getCurrentPosition(resolve, reject, browserOptions);
             });
           }
           throw new Error('Geolocation not supported');
         };
 
-        if (Capacitor.isNativePlatform()) {
+        const tryNativePosition = async (attemptTimeout: number) => {
           try {
             try {
               await Geolocation.requestPermissions();
             } catch (permissionError) {
               console.warn('Geolocation permission request failed:', permissionError);
             }
-            return await Geolocation.getCurrentPosition(options);
+            return await Geolocation.getCurrentPosition({ ...mergedOptions, timeout: attemptTimeout });
+          } catch (nativeError: any) {
+            const message = String(nativeError?.message || '').toLowerCase();
+            const isTimeoutError = message.includes('timeout') || message.includes('could not obtain location in time');
+            if (isTimeoutError && attemptTimeout < 30000) {
+              console.warn(`Native geolocation timeout after ${attemptTimeout}ms, retrying with a longer timeout...`);
+              return await tryNativePosition(30000);
+            }
+            throw nativeError;
+          }
+        };
+
+        if (Capacitor.isNativePlatform()) {
+          try {
+            return await tryNativePosition(mergedOptions.timeout);
           } catch (nativeError) {
             console.warn('Native geolocation failed, falling back to browser', nativeError);
             return await fallbackToBrowser();
@@ -295,7 +320,12 @@ const useStore = create<any>()(
         } catch (error) {
           console.warn('[Geolocation] primary location request failed, attempting fallback', error);
           try {
-            const fallbackPosition = await get().getCurrentPosition({ enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+            // Fallback com timeout ainda maior
+            const fallbackPosition = await get().getCurrentPosition({ 
+              enableHighAccuracy: false, 
+              timeout: 45000,  // Aumentado de 12000 para 45000
+              maximumAge: 600000  // 10 minutos de cache aceitável
+            });
             const lat = fallbackPosition.coords.latitude;
             const lng = fallbackPosition.coords.longitude;
             set({ userLocation: { lat, lng } });
@@ -308,6 +338,16 @@ const useStore = create<any>()(
             }
           } catch (fallbackError) {
             console.error('[Geolocation] fallback request failed:', fallbackError);
+            // Fallback final: usar última localização conhecida ou localização padrão
+            const lastLocation = get().user?.lastLocation;
+            if (lastLocation) {
+              set({ userLocation: { lat: lastLocation.lat, lng: lastLocation.lng } });
+              console.warn('[Geolocation] using cached user location');
+            } else {
+              // Localização padrão (centro de Tirana)
+              set({ userLocation: { lat: 41.3275, lng: 19.8187 } });
+              console.warn('[Geolocation] using default location (Tirana center)');
+            }
           }
         }
       },
@@ -319,7 +359,11 @@ const useStore = create<any>()(
             const id = navigator.geolocation.watchPosition(
               (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
               (err) => console.error('Browser geolocation watch error:', err),
-              { enableHighAccuracy: true }
+              { 
+                enableHighAccuracy: true,
+                timeout: 45000,  // 45 segundos de timeout para watch
+                maximumAge: 300000  // 5 minutos de cache
+              }
             );
             set({ watchId: id });
           }
