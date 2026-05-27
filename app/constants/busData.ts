@@ -364,11 +364,16 @@ export const BUS_STOPS = [
   { id: 'ekonomiku_stop2', name: 'Ekonomiku', lat: 41.31887299306676, lng: 19.831235501511372 },
   { id: 'ekonomiku_stop1', name: 'Ekonomiku', lat: 41.31884862223631, lng: 19.831353478395595 },
   { id: 'stacioni_trenit_p', name: 'Stacioni Trenit', lat: 41.33579240948087, lng: 19.81477323137428 },
-  { id: 'burgu', name: 'Burgu', lat: 41.33699973522266, lng: 19.81199631092415 },
-  { id: 'kolegji', name: 'Kolegji', lat: 41.33914454866746, lng: 19.81085814023273 },
-  { id: 'rruga_vjosa', name: 'Rruga Vjosa', lat: 41.34091634852547, lng: 19.810385197742928 },
-  { id: 'ali_progri', name: 'Ali Progri', lat: 41.343769940699346, lng: 19.80873756533525 },
-  { id: 'rruga_sejdini', name: 'Rruga Sejdini', lat: 41.34570700023389, lng: 19.807832640534794 },
+  { id: 'burgu_stop1', name: 'Burgu', lat: 41.33699973522266, lng: 19.81199631092415 },
+  { id: 'burgu_stop2', name: 'Burgu', lat: 41.33686017136803, lng: 19.81192476784346 },
+  { id: 'kolegji_stop1', name: 'Kolegji', lat: 41.33926686882925, lng: 19.811004544024147 },
+  { id: 'kolegji_stop2', name: 'Kolegji', lat: 41.33915769635359, lng: 19.810938450467912 },
+  { id: 'rruga_vjosa_stop1', name: 'Rruga Vjosa', lat: 41.34091634852547, lng: 19.810385197742928 },
+  { id: 'rruga_vjosa_stop2', name: 'Rruga Vjosa', lat: 41.34083446079466, lng: 19.81036720152993 },
+  { id: 'ali_progri_stop1', name: 'Ali Progri', lat: 41.343769940699346, lng: 19.80873756533525 },
+  { id: 'ali_progri_stop2', name: 'Ali Progri', lat: 41.34366288857565, lng: 19.80865405651688 },
+  { id: 'rruga_sejdini_stop1', name: 'Rruga Sejdini', lat: 41.34570700023389, lng: 19.807832640534794 },
+  { id: 'rruga_sejdini_stop2', name: 'Rruga Sejdini', lat: 41.345410581384066, lng: 19.807821828671724 },
   { id: 'uzina_dinamo', name: 'Uzina Dinamo', lat: 41.347355009810556, lng: 19.80668811733669 },
 
   // ── LINJA 9B: Jordan Misja - Vilat Gjermane ─────────────────────────────
@@ -740,9 +745,8 @@ export const BUS_ROUTES = [
   {
     id: 'L9A', name: '9A', label: 'Jordan Misja – Qytet Studenti', color: '#b8c734',
     stops: [
-      'biblioteka', 'materniteti', 'stacioni_trenit_p', 'burgu', 'rruga_vjosa',
-      'ali_progri', 'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
-      'rruga_vjosa', 'kolegji', 'burgu', 'shkencat_natyres', 'dollari', 'parlamenti',
+      'uzina_dinamo', 'rruga_sejdini_stop2', 'ali_progri_stop2',
+      'rruga_vjosa_stop2', 'kolegji_stop2', 'burgu_stop2', 'shkencat_natyres', 'dollari', 'parlamenti',
       'posta_1_stop2', 'liceu_artistik_stop2', 'filologjiku_stop2', 'ekonomiku_stop1', 'godina_15_stop2',
       'godina_26_stop2', 'kompleksi_stop2', 'kristaq_capo_stop2', 'haki_gjici',
       'depo_ujit_a_stop2', 'binak_alia_stop2', 'collakut'
@@ -750,10 +754,9 @@ export const BUS_ROUTES = [
     returnStops: [
       'collakut', 'binak_alia_stop1', 'depo_ujit_a_stop1', 'naum_prifti',
       'kristaq_capo_stop1', 'kompleksi_stop1', 'godina_26_stop1', 'godina_15_stop1', 'ekonomiku_stop2',
-      'filologjiku_stop1', 'liceu_artistik_stop1', 'posta_1_stop1', 'parlamenti', 'dollari',
-      'shkencat_natyres', 'burgu', 'kolegji', 'rruga_vjosa', 'ali_progri',
-      'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
-      'rruga_vjosa', 'burgu', 'stacioni_trenit_p', 'materniteti', 'biblioteka'
+      'filologjiku_stop1', 'liceu_artistik_stop1', 'posta_1_stop1', 'biblioteka',
+      'materniteti', 'stacioni_trenit_p', 'burgu_stop1', 'rruga_vjosa_stop1', 'ali_progri_stop2',
+      'rruga_sejdini_stop1', 'uzina_dinamo'
     ]
   },
 
@@ -761,19 +764,17 @@ export const BUS_ROUTES = [
   {
     id: 'L9B', name: '9B', label: 'Jordan Misja – Vilat Gjermane', color: '#9b59b6',
     stops: [
-      'biblioteka', 'materniteti', 'stacioni_trenit_p', 'burgu', 'rruga_vjosa',
-      'ali_progri', 'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
-      'rruga_vjosa', 'kolegji', 'burgu', 'shkencat_natyres', 'dollari', 'parlamenti',
+      'uzina_dinamo', 'rruga_sejdini_stop2', 'ali_progri_stop2',
+      'rruga_vjosa_stop2', 'kolegji_stop2', 'burgu_stop2', 'shkencat_natyres', 'dollari', 'parlamenti',
       'posta_1_stop2', 'liceu_artistik_stop2', 'filologjiku_stop2', 'vellezerit_kondi_stop1', 'ambasada_palestines_stop1',
       'jup_kastrati_stop1', 'bicaket_stop1', 'irfan_tershana_stop1', 'depo_ujit_a_stop2', 'binak_alia_stop2', 'collakut'
     ],
     returnStops: [
       'collakut', 'depo_ujit_a_stop1', 'binak_alia_stop1', 'irfan_tershana_stop2', 'bicaket_stop2',
       'jup_kastrati_stop2', 'ambasada_palestines_stop2', 'vellezerit_kondi_stop2',
-      'filologjiku_stop1', 'liceu_artistik_stop1', 'posta_1_stop1', 'parlamenti', 'dollari',
-      'shkencat_natyres', 'burgu', 'kolegji', 'rruga_vjosa', 'ali_progri',
-      'rruga_sejdini', 'uzina_dinamo', 'rruga_sejdini', 'ali_progri',
-      'rruga_vjosa', 'burgu', 'stacioni_trenit_p', 'materniteti', 'biblioteka'
+      'filologjiku_stop1', 'liceu_artistik_stop1', 'posta_1_stop1', 'biblioteka',
+      'materniteti', 'stacioni_trenit_p', 'burgu_stop1', 'rruga_vjosa_stop1', 'ali_progri_stop2',
+      'rruga_sejdini_stop1', 'uzina_dinamo'
     ]
   },
 
@@ -905,7 +906,7 @@ export const BUS_ROUTES = [
     id: 'L15B', name: '15B', label: 'Kombinat – Tufinë', color: '#f39c12',
     stops: [
       'rruga_arberit', 'xhamia_stop1', 'varrezat_tufine_stop1', 'instituti_ndertimit_stop1',
-      'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1', 
+      'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1',
       'shkolla_bashkuar_stop2', 'mjekesia_stop2', 'qsut_stop2',
       'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',

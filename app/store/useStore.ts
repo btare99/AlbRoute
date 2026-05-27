@@ -11,6 +11,158 @@ import { BUS_ROUTES, BUS_STOPS } from '../constants/busData';
 import { BUS_SHAPES } from './busShapes';
 export { BUS_ROUTES, BUS_STOPS };
 
+// Snaps a [lat, lng] point to the closest point along a polyline's segments
+const findClosestPointOnPolyline = (point: [number, number], polyline: [number, number][]): [number, number] => {
+  if (polyline.length === 0) return point;
+  if (polyline.length === 1) return polyline[0];
+
+  let minD2 = Infinity;
+  let closestPoint: [number, number] = polyline[0];
+  const [px, py] = point;
+
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const [ax, ay] = polyline[i];
+    const [bx, by] = polyline[i + 1];
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+
+    let t = 0;
+    if (len2 > 0) {
+      t = ((px - ax) * dx + (py - ay) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+    }
+
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+
+    const dist2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+    if (dist2 < minD2) {
+      minD2 = dist2;
+      closestPoint = [cx, cy];
+    }
+  }
+
+  return closestPoint;
+};
+
+// Calculates the accumulated distance (progress) of a projected point along the polyline
+const getProgressOnPolyline = (point: [number, number], polyline: [number, number][]): number => {
+  if (polyline.length < 2) return 0;
+
+  let minD2 = Infinity;
+  let bestProgress = 0;
+  let accumulatedDist = 0;
+  const [px, py] = point;
+
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const [ax, ay] = polyline[i];
+    const [bx, by] = polyline[i + 1];
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+    let t = 0;
+    if (segmentLength > 0) {
+      t = ((px - ax) * dx + (py - ay) * dy) / (segmentLength * segmentLength);
+      t = Math.max(0, Math.min(1, t));
+    }
+
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+
+    const dist2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+    if (dist2 < minD2) {
+      minD2 = dist2;
+      bestProgress = accumulatedDist + t * segmentLength;
+    }
+    accumulatedDist += segmentLength;
+  }
+
+  return bestProgress;
+};
+
+// Retrieves the detailed coordinates of a route leg
+const getLegCoords = (leg: any): [number, number][] => {
+  if (leg.isWalking) return [];
+
+  const route = leg.route;
+  if (!route) return [];
+
+  let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
+  let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
+
+  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+
+  let legCoords: [number, number][] = [];
+  let sliced = false;
+
+  // Try to slice the shape from the start stop to end stop
+  if (boardStop && alightStop) {
+    const dirs = ['0', '1'];
+    for (const dir of dirs) {
+      const shapeKey = `${route.id}_${dir}`;
+      let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+      if (shapeCoords.length === 0 && dir === '0') shapeCoords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+
+      if (shapeCoords.length > 0) {
+        let boardIdx = 0, alightIdx = 0;
+        let minDistBoard = Infinity, minDistAlight = Infinity;
+
+        shapeCoords.forEach((pt, idx) => {
+          const db = Math.pow(pt[0] - boardStop.lat, 2) + Math.pow(pt[1] - boardStop.lng, 2);
+          if (db < minDistBoard) { minDistBoard = db; boardIdx = idx; }
+
+          const da = Math.pow(pt[0] - alightStop.lat, 2) + Math.pow(pt[1] - alightStop.lng, 2);
+          if (da < minDistAlight) { minDistAlight = da; alightIdx = idx; }
+        });
+
+        // If direction makes sense
+        if (boardIdx <= alightIdx) {
+          legCoords = shapeCoords.slice(boardIdx, alightIdx + 1);
+          sliced = true;
+          break;
+        } else if (Math.abs(boardIdx - alightIdx) > 0) {
+          // If it's reverse on this shape but we don't have the reverse shape, slice and reverse
+          legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse();
+          sliced = true;
+        }
+      }
+    }
+  }
+
+  // Fallback to direct lines between stops using exact IDs
+  if (!sliced || legCoords.length < 2) {
+    if (leg.stopIds) {
+      legCoords = leg.stopIds.map((id: string) => {
+        const st = BUS_STOPS.find((s: any) => s.id === id);
+        return st ? [st.lat, st.lng] : null;
+      }).filter(Boolean) as [number, number][];
+    } else {
+      legCoords = leg.stops.map((name: string) => {
+        const st = BUS_STOPS.find((s: any) => s.name === name);
+        return st ? [st.lat, st.lng] : null;
+      }).filter(Boolean) as [number, number][];
+    }
+  }
+
+  return legCoords;
+};
+
+// Retrieves the full shape coordinates of a route and direction
+const getFullShapeCoords = (routeId: string, direction: 'forward' | 'return'): [number, number][] => {
+  const shapeKey = direction === 'forward' ? `${routeId}_0` : `${routeId}_1`;
+  let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+  if (shapeCoords.length === 0 && direction === 'forward') {
+    shapeCoords = (BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+  }
+  return shapeCoords;
+};
+
+
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 export interface StaffAccount {
   id: string;
@@ -872,7 +1024,16 @@ const useStore = create<any>()(
           possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
         }
 
-        const evaluateTrip = (legs: any[], initialWalkDist: number, initialWalkTime: number, actualFromStopName: string, finalWalkDist: number = 0, finalWalkTime: number = 0, actualToStopName: string = '', secondLegLength = 0) => {
+        const evaluateTrip = (
+          legs: any[],
+          initialWalkDist: number,
+          initialWalkTime: number,
+          actualFromStopName: string,
+          finalWalkDist: number = 0,
+          finalWalkTime: number = 0,
+          actualToStopName: string = '',
+          secondLegLength = 0
+        ) => {
           const busLegs = legs.filter(l => l.route);
           const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
           const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
@@ -886,12 +1047,62 @@ const useStore = create<any>()(
           const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
           const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
           const secondLegBonus = busLegs.length > 1 ? secondLegLength * 0.25 : 0;
-          const score = (totalWalkDist / 8) + totalTime - secondLegBonus;
+
+          // ── Real-Time Vehicle direction and progress check ──
+          let liveBusScoreAdjustment = 0;
+          let firstBusLeg = busLegs[0];
+
+          if (firstBusLeg) {
+            const route = firstBusLeg.route;
+            const boardStop = BUS_STOPS.find(s => s.name === firstBusLeg.boardAt);
+            const expectedDir = firstBusLeg.direction; // 'forward' or 'return'
+            const fullShape = getFullShapeCoords(route.id, expectedDir);
+
+            let bestEta = Infinity;
+            let bestBus = null;
+
+            if (boardStop && fullShape.length >= 2) {
+              const boardProgress = getProgressOnPolyline([boardStop.lat, boardStop.lng], fullShape);
+              const liveBuses = get().buses;
+
+              liveBuses.forEach((bus: any) => {
+                if (bus.routeId === route.id && bus.direction === expectedDir) {
+                  const busProgress = getProgressOnPolyline([bus.lat, bus.lng], fullShape);
+                  const distToBoard = boardProgress - busProgress;
+
+                  // Check if the bus is approaching the boarding stop or currently at it (tolerance = 0.0003 coords)
+                  if (distToBoard >= -0.0003) {
+                    const speedKmh = bus.speed > 5 ? bus.speed : 30; // fallback to 30 km/h
+                    const distMeters = distToBoard * 111320;
+                    const eta = Math.max(0, distMeters / (speedKmh * 1000 / 60)); // ETA in minutes
+
+                    if (eta < bestEta) {
+                      bestEta = eta;
+                      bestBus = bus;
+                    }
+                  }
+                }
+              });
+            }
+
+            if (bestBus) {
+              firstBusLeg.liveBus = bestBus;
+              firstBusLeg.etaMinutes = Math.round(bestEta);
+              // Provide bonus for close, active live bus
+              liveBusScoreAdjustment = -10 + Math.min(10, bestEta * 0.5); // bonus between -10 and -5
+            } else {
+              // Penalty for no live bus currently serving this stop / direction
+              liveBusScoreAdjustment = 15;
+            }
+          }
+
+          const score = (totalWalkDist / 8) + totalTime - secondLegBonus + liveBusScoreAdjustment;
 
           if (finalWalkDist > 400) {
             console.log('⛔ Ecje finale shumë e madhe:', finalWalkDist);
             return;
           }
+
           const finalLegs = !exactFromStop ? [
             { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
             ...legs
@@ -932,24 +1143,60 @@ const useStore = create<any>()(
           }
         };
 
-        // 1. DIRECT ROUTES (prefer direct routes when destination is within 300m)
-        console.log('🚀 Kërkojnë rugë të drejtpërdrejtë:', possibleFromStops.length, 'nga', possibleFromStops.map(p => p.stop.name));
+        // 1. DIRECT ROUTES
+        console.log('🚀 Kërkojnë rrugë të drejtpërdrejtë:', possibleFromStops.length, 'nga', possibleFromStops.map(p => p.stop.name));
         for (const pfs of possibleFromStops) {
           for (const pts of directToStops.length ? directToStops : toStopsForEvaluation) {
             for (const route of BUS_ROUTES) {
-              const paths = [route.stops, route.returnStops].filter(Boolean) as string[][];
-              for (const arr of paths) {
-                const fi = arr.indexOf(pfs.stop.id);
-                const ti = arr.indexOf(pts.stop.id);
-                if (fi !== -1 && ti !== -1 && fi < ti) {
-                  const stopIds = arr.slice(fi, ti + 1);
-                  const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
-                  console.log('✅ Gjendet e drejtpërdrejtë:', pfs.stop.name, '→', pts.stop.name, 'me rugën', route.name);
-                  evaluateTrip([{
-                    route, stops, stopIds,
-                    boardAt: pfs.stop.name, alightAt: pts.stop.name,
-                    numStops: ti - fi
-                  }], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
+              const directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
+                { arr: route.stops, dirName: 'forward' as const },
+                { arr: route.returnStops || [], dirName: 'return' as const }
+              ].filter(d => d.arr.length > 0);
+
+              for (const { arr, dirName } of directions) {
+                // Find all occurrences of origin and destination stops in the sequence (resolves loops/circles)
+                const startIndices: number[] = [];
+                const endIndices: number[] = [];
+
+                arr.forEach((stopId, idx) => {
+                  if (stopId === pfs.stop.id) startIndices.push(idx);
+                  if (stopId === pts.stop.id) endIndices.push(idx);
+                });
+
+                // Find valid stop pairs where boarding is before alight
+                for (const i of startIndices) {
+                  for (const j of endIndices) {
+                    if (i < j) {
+                      const stopIds = arr.slice(i, j + 1);
+                      const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
+
+                      // Build candidate leg for validation
+                      const leg = {
+                        route,
+                        stops,
+                        stopIds,
+                        boardAt: pfs.stop.name,
+                        alightAt: pts.stop.name,
+                        numStops: j - i,
+                        direction: dirName
+                      };
+
+                      // Polyline-based progress validation
+                      const legCoords = getLegCoords(leg);
+                      if (legCoords.length >= 2) {
+                        const progressBoard = getProgressOnPolyline([pfs.stop.lat, pfs.stop.lng], legCoords);
+                        const progressAlight = getProgressOnPolyline([pts.stop.lat, pts.stop.lng], legCoords);
+
+                        // Ensure boarding stop appears before destination stop along road geometry
+                        if (progressBoard < progressAlight) {
+                          console.log('✅ Gjetur rrugë e drejtpërdrejtë e vlefshme:', pfs.stop.name, '→', pts.stop.name, 'me linjën', route.name, `(${dirName})`);
+                          evaluateTrip([leg], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
+                        } else {
+                          console.log('⛔ Refuzuar drejtimi (dështoi progresi në polyline):', route.name, pfs.stop.name, '→', pts.stop.name);
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -959,44 +1206,101 @@ const useStore = create<any>()(
         // 2. TRANSFER ROUTES
         for (const pfs of possibleFromStops) {
           for (const route1 of BUS_ROUTES) {
-            const r1Paths = [route1.stops, route1.returnStops].filter(Boolean) as string[][];
-            for (const r1Arr of r1Paths) {
-              const fi = r1Arr.indexOf(pfs.stop.id);
-              if (fi === -1) continue;
+            const r1Directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
+              { arr: route1.stops, dirName: 'forward' as const },
+              { arr: route1.returnStops || [], dirName: 'return' as const }
+            ].filter(d => d.arr.length > 0);
+
+            for (const { arr: r1Arr, dirName: r1DirName } of r1Directions) {
+              const startIndices1: number[] = [];
+              r1Arr.forEach((stopId, idx) => {
+                if (stopId === pfs.stop.id) startIndices1.push(idx);
+              });
+
+              if (startIndices1.length === 0) continue;
 
               for (const pts of toStopsForEvaluation) {
                 for (const route2 of BUS_ROUTES) {
                   if (route1.id === route2.id) continue;
-                  const r2Paths = [route2.stops, route2.returnStops].filter(Boolean) as string[][];
-                  for (const r2Arr of r2Paths) {
-                    const ti = r2Arr.indexOf(pts.stop.id);
-                    if (ti === -1) continue;
 
-                    const startI = fi + 1;
-                    const endI = r1Arr.length;
-                    const endJ = ti;
+                  const r2Directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
+                    { arr: route2.stops, dirName: 'forward' as const },
+                    { arr: route2.returnStops || [], dirName: 'return' as const }
+                  ].filter(d => d.arr.length > 0);
 
-                    for (let i = startI; i < endI; i++) {
-                      const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
-                      if (!s1) continue;
+                  for (const { arr: r2Arr, dirName: r2DirName } of r2Directions) {
+                    const endIndices2: number[] = [];
+                    r2Arr.forEach((stopId, idx) => {
+                      if (stopId === pts.stop.id) endIndices2.push(idx);
+                    });
 
-                      for (let j = 0; j < endJ; j++) {
-                        const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
-                        if (!s2) continue;
+                    if (endIndices2.length === 0) continue;
 
-                        const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                        if (d > 300) continue;
+                    // Evaluate possible transfer points
+                    for (const idx1_start of startIndices1) {
+                      for (const idx2_end of endIndices2) {
+                        
+                        // Look for a transfer stop on route1 (after boarding) and route2 (before alighting)
+                        for (let i = idx1_start + 1; i < r1Arr.length; i++) {
+                          const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
+                          if (!s1) continue;
 
-                        const dist = Math.round(d);
-                        const walkTime = Math.ceil(dist / 80);
-                        const stopIds1 = r1Arr.slice(fi, i + 1);
-                        const stopIds2 = r2Arr.slice(j, ti + 1);
+                          for (let j = 0; j < idx2_end; j++) {
+                            const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
+                            if (!s2) continue;
 
-                        evaluateTrip([
-                          { route: route1, stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds1, boardAt: pfs.stop.name, alightAt: s1.name, numStops: i - fi },
-                          dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
-                          { route: route2, stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name), stopIds: stopIds2, boardAt: s2.name, alightAt: pts.stop.name, numStops: ti - j }
-                        ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name, stopIds2.length - 1);
+                            // Walk distance between transfer stops must be <= 300m
+                            const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
+                            if (d > 300) continue;
+
+                            const dist = Math.round(d);
+                            const walkTime = Math.ceil(dist / 80);
+
+                            const stopIds1 = r1Arr.slice(idx1_start, i + 1);
+                            const stopIds2 = r2Arr.slice(j, idx2_end + 1);
+
+                            const leg1 = {
+                              route: route1,
+                              stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean),
+                              stopIds: stopIds1,
+                              boardAt: pfs.stop.name,
+                              alightAt: s1.name,
+                              numStops: i - idx1_start,
+                              direction: r1DirName
+                            };
+
+                            const leg2 = {
+                              route: route2,
+                              stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean),
+                              stopIds: stopIds2,
+                              boardAt: s2.name,
+                              alightAt: pts.stop.name,
+                              numStops: idx2_end - j,
+                              direction: r2DirName
+                            };
+
+                            // Validate leg 1 polyline progress
+                            const legCoords1 = getLegCoords(leg1);
+                            if (legCoords1.length < 2) continue;
+                            const progressBoard1 = getProgressOnPolyline([pfs.stop.lat, pfs.stop.lng], legCoords1);
+                            const progressAlight1 = getProgressOnPolyline([s1.lat, s1.lng], legCoords1);
+                            if (progressBoard1 >= progressAlight1) continue;
+
+                            // Validate leg 2 polyline progress
+                            const legCoords2 = getLegCoords(leg2);
+                            if (legCoords2.length < 2) continue;
+                            const progressBoard2 = getProgressOnPolyline([s2.lat, s2.lng], legCoords2);
+                            const progressAlight2 = getProgressOnPolyline([pts.stop.lat, pts.stop.lng], legCoords2);
+                            if (progressBoard2 >= progressAlight2) continue;
+
+                            // If both legs are valid, add the trip
+                            evaluateTrip([
+                              leg1,
+                              dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
+                              leg2
+                            ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name, stopIds2.length - 1);
+                          }
+                        }
                       }
                     }
                   }
@@ -1027,9 +1331,6 @@ const useStore = create<any>()(
         });
       },
 
-
-
-      // ── UI States ──
       isSplashFinished: false,
       setSplashFinished: (val: boolean) => set({ isSplashFinished: val }),
 

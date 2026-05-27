@@ -1,5 +1,5 @@
 'use client';
-import { ArrowRight, Banknote, Briefcase, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowRight, Banknote, Briefcase, Bug, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
@@ -17,6 +17,236 @@ const isValidCoords = (coords: any): boolean => {
   return coords && typeof coords.lat === 'number' && typeof coords.lng === 'number' && !isNaN(coords.lat) && !isNaN(coords.lng);
 };
 
+// Snaps a [lat, lng] point to the closest point along a polyline's segments
+const findClosestPointOnPolyline = (point: [number, number], polyline: [number, number][]): [number, number] => {
+  if (polyline.length === 0) return point;
+  if (polyline.length === 1) return polyline[0];
+
+  let minD2 = Infinity;
+  let closestPoint: [number, number] = polyline[0];
+  const [px, py] = point;
+
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const [ax, ay] = polyline[i];
+    const [bx, by] = polyline[i + 1];
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+
+    let t = 0;
+    if (len2 > 0) {
+      t = ((px - ax) * dx + (py - ay) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+    }
+
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+
+    const dist2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+    if (dist2 < minD2) {
+      minD2 = dist2;
+      closestPoint = [cx, cy];
+    }
+  }
+
+  return closestPoint;
+};
+
+// ─── DIRECTION ARROW GEOMETRY HELPERS ──────────────────────────────────────────
+
+/** Haversine distance in meters between two [lat, lng] points */
+const haversineDistance = (a: [number, number], b: [number, number]): number => {
+  const R = 6371000;
+  const dLat = (b[0] - a[0]) * Math.PI / 180;
+  const dLng = (b[1] - a[1]) * Math.PI / 180;
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLng = Math.sin(dLng / 2);
+  const h = sinDLat * sinDLat + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * sinDLng * sinDLng;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+};
+
+/** Bearing in degrees from point A to point B (0=N, 90=E, etc.) */
+const getSegmentBearing = (a: [number, number], b: [number, number]): number => {
+  const lat1 = a[0] * Math.PI / 180;
+  const lat2 = b[0] * Math.PI / 180;
+  const dLng = (b[1] - a[1]) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+};
+
+/** Returns absolute angle difference in degrees (0-180) */
+const getAngleDifference = (a: number, b: number): number => {
+  let diff = Math.abs(a - b) % 360;
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+};
+
+/** Generate interpolated points along a polyline at the given spacing (meters).
+ *  Returns [{lat, lng, bearing}] for each arrow placement. */
+const getPointsAlongPolyline = (
+  coords: [number, number][],
+  spacingMeters: number = 150
+): { lat: number; lng: number; bearing: number }[] => {
+  if (coords.length < 2) return [];
+
+  const points: { lat: number; lng: number; bearing: number }[] = [];
+  let accumulated = spacingMeters; // start with spacing so first arrow is offset
+
+  for (let i = 0; i < coords.length - 1; i++) {
+    const segStart = coords[i];
+    const segEnd = coords[i + 1];
+    const segLen = haversineDistance(segStart, segEnd);
+    if (segLen < 0.1) continue; // skip degenerate segments
+
+    const bearing = getSegmentBearing(segStart, segEnd);
+    let remaining = segLen;
+    let along = 0;
+
+    // Walk along this segment placing arrows
+    while (accumulated <= along + remaining) {
+      const frac = (accumulated - along) / segLen;
+      const lat = segStart[0] + frac * (segEnd[0] - segStart[0]);
+      const lng = segStart[1] + frac * (segEnd[1] - segStart[1]);
+      points.push({ lat, lng, bearing });
+      remaining -= (accumulated - along);
+      along = accumulated;
+      accumulated += spacingMeters;
+    }
+
+    accumulated -= (along + remaining);
+    // carry over the remainder for the next segment
+    accumulated = spacingMeters - remaining;
+    if (accumulated < 0) accumulated = 0;
+  }
+
+  return points;
+};
+
+/** Validate route direction: checks that stops progress along the polyline correctly */
+const validateRouteDirection = (
+  routeId: string,
+  direction: string,
+  shapeCoords: [number, number][],
+  stopCoords: { lat: number; lng: number; name: string }[]
+): { isValid: boolean; message: string } => {
+  if (shapeCoords.length < 2 || stopCoords.length < 2) {
+    return { isValid: true, message: 'Insufficient data to validate' };
+  }
+
+  // Project each stop onto the polyline and get its cumulative progress
+  const progresses: number[] = [];
+  for (const stop of stopCoords) {
+    let bestDist = Infinity;
+    let bestProgress = 0;
+    let cumDist = 0;
+
+    for (let i = 0; i < shapeCoords.length - 1; i++) {
+      const segLen = haversineDistance(shapeCoords[i], shapeCoords[i + 1]);
+      const [ax, ay] = shapeCoords[i];
+      const [bx, by] = shapeCoords[i + 1];
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      let t = 0;
+      if (len2 > 0) {
+        t = ((stop.lat - ax) * dx + (stop.lng - ay) * dy) / len2;
+        t = Math.max(0, Math.min(1, t));
+      }
+      const cx = ax + t * dx, cy = ay + t * dy;
+      const d = Math.sqrt((stop.lat - cx) ** 2 + (stop.lng - cy) ** 2);
+      if (d < bestDist) {
+        bestDist = d;
+        bestProgress = cumDist + t * segLen;
+      }
+      cumDist += segLen;
+    }
+    progresses.push(bestProgress);
+  }
+
+  // Check monotonically increasing
+  let violations = 0;
+  for (let i = 1; i < progresses.length; i++) {
+    if (progresses[i] <= progresses[i - 1]) {
+      violations++;
+    }
+  }
+
+  if (violations === 0) {
+    return { isValid: true, message: `Route ${routeId} dir=${direction}: ✅ All ${stopCoords.length} stops in correct order` };
+  } else {
+    return { isValid: false, message: `Route ${routeId} dir=${direction}: ❌ ${violations} stop order violations out of ${stopCoords.length} stops` };
+  }
+};
+
+// Retrieves the detailed coordinates of a route leg
+const getLegCoords = (leg: any): [number, number][] => {
+  if (leg.isWalking) return [];
+
+  const route = leg.route;
+  if (!route) return [];
+
+  let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
+  let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
+
+  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
+  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+
+  let legCoords: [number, number][] = [];
+  let sliced = false;
+
+  // Try to slice the shape from the start stop to end stop
+  if (boardStop && alightStop) {
+    const dirs = ['0', '1'];
+    for (const dir of dirs) {
+      const shapeKey = `${route.id}_${dir}`;
+      let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+      if (shapeCoords.length === 0 && dir === '0') shapeCoords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+
+      if (shapeCoords.length > 0) {
+        let boardIdx = 0, alightIdx = 0;
+        let minDistBoard = Infinity, minDistAlight = Infinity;
+
+        shapeCoords.forEach((pt, idx) => {
+          const db = Math.pow(pt[0] - boardStop.lat, 2) + Math.pow(pt[1] - boardStop.lng, 2);
+          if (db < minDistBoard) { minDistBoard = db; boardIdx = idx; }
+
+          const da = Math.pow(pt[0] - alightStop.lat, 2) + Math.pow(pt[1] - alightStop.lng, 2);
+          if (da < minDistAlight) { minDistAlight = da; alightIdx = idx; }
+        });
+
+        // If direction makes sense
+        if (boardIdx <= alightIdx) {
+          legCoords = shapeCoords.slice(boardIdx, alightIdx + 1);
+          sliced = true;
+          break;
+        } else if (Math.abs(boardIdx - alightIdx) > 0) {
+          // If it's reverse on this shape but we don't have the reverse shape, slice and reverse
+          legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse();
+          sliced = true;
+        }
+      }
+    }
+  }
+
+  // Fallback to direct lines between stops using exact IDs
+  if (!sliced || legCoords.length < 2) {
+    if (leg.stopIds) {
+      legCoords = leg.stopIds.map((id: string) => {
+        const st = BUS_STOPS.find((s: any) => s.id === id);
+        return st ? [st.lat, st.lng] : null;
+      }).filter(Boolean) as [number, number][];
+    } else {
+      legCoords = leg.stops.map((name: string) => {
+        const st = BUS_STOPS.find((s: any) => s.name === name);
+        return st ? [st.lat, st.lng] : null;
+      }).filter(Boolean) as [number, number][];
+    }
+  }
+
+  return legCoords;
+};
+
 export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -30,6 +260,7 @@ export default function MapView() {
   const routeScrollerRef = useRef<HTMLDivElement>(null);
   const originPinMarkerRef = useRef<any>(null);
   const destPinMarkerRef = useRef<any>(null);
+  const prevActiveTripRef = useRef<any>(null);
 
   const language = useStore((s: any) => s.language);
   const t = translations[language] || translations.al;
@@ -355,7 +586,9 @@ export default function MapView() {
   const setSelectedStop = useStore((s: any) => s.setSelectedStop);
   const highlightMarkerRef = useRef<any>(null);
   const clusterGroupRef = useRef<any>(null);
+  const debugLayersRef = useRef<any[]>([]);
 
+  const [debugMode, setDebugMode] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
@@ -601,8 +834,17 @@ export default function MapView() {
 
     const activeTripStopIds = activeTrip ? activeTrip.legs.flatMap((l: any) => l.stopIds || []) : [];
 
-    // Wipe all other stops from Leaflet layers when planning/active trip is set
-    if (activeTrip) {
+    // Wipe all stops from Leaflet layers when transitioning activeTrip state
+    const activeTripChanged = prevActiveTripRef.current !== activeTrip;
+    prevActiveTripRef.current = activeTrip;
+
+    if (activeTripChanged) {
+      renderedStopIdsRef.current.forEach(id => {
+        const marker = stopMarkersMapRef.current[id];
+        if (marker) {
+          map.removeLayer(marker);
+        }
+      });
       clusterGroupRef.current.clearLayers();
       renderedStopIdsRef.current.clear();
       stopMarkersMapRef.current = {};
@@ -620,11 +862,15 @@ export default function MapView() {
 
     const nextIds = new Set(displayedStops.map((s: any) => s.id as string));
 
-    // 1. Remove stops that left the viewport
+    // 1. Remove stops that left the viewport or are no longer displayed
     renderedStopIdsRef.current.forEach(id => {
       if (!nextIds.has(id)) {
-        clusterGroupRef.current.removeLayer(stopMarkersMapRef.current[id]);
-        delete stopMarkersMapRef.current[id];
+        const marker = stopMarkersMapRef.current[id];
+        if (marker) {
+          map.removeLayer(marker);
+          clusterGroupRef.current.removeLayer(marker);
+          delete stopMarkersMapRef.current[id];
+        }
       }
     });
 
@@ -632,7 +878,32 @@ export default function MapView() {
     displayedStops.forEach((stop: any) => {
       if (renderedStopIdsRef.current.has(stop.id)) return; // already rendered
 
-      const stopHtml = `
+      // Find route color and coordinates for this stop in the active trip
+      let borderClr = '#1e293b';
+      let stopCoords: [number, number] = [stop.lat, stop.lng];
+      const isTripStop = !!activeTrip;
+      if (isTripStop) {
+        const leg = activeTrip.legs.find((l: any) => l.stopIds?.includes(stop.id) || l.stops?.includes(stop.name));
+        if (leg && leg.route) {
+          borderClr = leg.route.color;
+          const legCoords = getLegCoords(leg);
+          if (legCoords.length >= 2) {
+            stopCoords = findClosestPointOnPolyline([stop.lat, stop.lng], legCoords);
+          }
+        }
+      }
+
+      const stopHtml = isTripStop ? `
+        <div class="marker-enter" style="display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.4)'" onmouseout="this.style.transform='scale(1)'">
+          <div style="
+            background: #ffffff;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            border: 2px solid ${borderClr};
+            box-shadow: 0 0 0 1px #ffffff, 0 1px 3px rgba(0,0,0,0.4);
+            cursor: pointer;
+          "></div>
+        </div>` : `
         <div class="marker-enter" style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
             background: #1e293b;
@@ -657,9 +928,12 @@ export default function MapView() {
           "></div>
         </div>`;
 
-      const marker = L.marker([stop.lat, stop.lng], {
-        icon: L.divIcon({ html: stopHtml, className: '', iconSize: [28, 34], iconAnchor: [14, 34] }),
-        zIndexOffset: 100
+      const iconSize: [number, number] = isTripStop ? [12, 12] : [28, 34];
+      const iconAnchor: [number, number] = isTripStop ? [6, 6] : [14, 34];
+
+      const marker = L.marker(stopCoords, {
+        icon: L.divIcon({ html: stopHtml, className: '', iconSize, iconAnchor }),
+        zIndexOffset: isTripStop ? 1100 : 100
       });
 
       const stoppingLines = BUS_ROUTES.filter((r: any) => r.stops.includes(stop.id) || (r.returnStops && r.returnStops.includes(stop.id)));
@@ -675,7 +949,11 @@ export default function MapView() {
       }
 
       marker.on('click', () => setSelectedStop(stop));
-      clusterGroupRef.current.addLayer(marker);
+      if (isTripStop) {
+        marker.addTo(map);
+      } else {
+        clusterGroupRef.current.addLayer(marker);
+      }
       stopMarkersMapRef.current[stop.id] = marker;
     });
 
@@ -852,12 +1130,43 @@ export default function MapView() {
         }
 
         if (legCoords.length >= 2) {
+          // Glow background
+          const glow = L.polyline(legCoords, {
+            color: route.color,
+            weight: 12,
+            opacity: 0.2,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(map);
+          routeLinesRef.current.push({ line: glow, routeId: `${route.id}_glow` });
+
           const line = L.polyline(legCoords, {
             color: route.color,
             weight: 6,
             opacity: 1
           }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
+
+          // Draw direction arrows along the leg
+          const arrowPoints = getPointsAlongPolyline(legCoords, 150);
+          arrowPoints.forEach((pt) => {
+            const arrowHtml = `<div style="
+              width: 14px; height: 14px;
+              display: flex; align-items: center; justify-content: center;
+              transform: rotate(${pt.bearing}deg);
+              pointer-events: none;
+            "><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${route.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg></div>`;
+            const arrow = L.marker([pt.lat, pt.lng], {
+              icon: L.divIcon({
+                html: arrowHtml,
+                className: '',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+              }),
+              interactive: false
+            }).addTo(map);
+            routeLinesRef.current.push({ line: arrow, routeId: `${route.id}_arrow` });
+          });
         }
       });
 
@@ -873,6 +1182,30 @@ export default function MapView() {
           const isActive = !activeRouteFilter || route.id === activeRouteFilter;
           const line = L.polyline(coords, { color: route.color, weight: isActive ? 4 : 2, opacity: isActive ? 0.9 : 0.2 }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
+
+          // Draw directional arrows only for active/filtered routes
+          if (isActive) {
+            const arrowPoints = getPointsAlongPolyline(coords, 200);
+            arrowPoints.forEach((pt) => {
+              const arrowHtml = `<div style="
+                width: 12px; height: 12px;
+                display: flex; align-items: center; justify-content: center;
+                transform: rotate(${pt.bearing}deg);
+                opacity: 0.85;
+                pointer-events: none;
+              "><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${route.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg></div>`;
+              const arrow = L.marker([pt.lat, pt.lng], {
+                icon: L.divIcon({
+                  html: arrowHtml,
+                  className: '',
+                  iconSize: [12, 12],
+                  iconAnchor: [6, 6]
+                }),
+                interactive: false
+              }).addTo(map);
+              routeLinesRef.current.push({ line: arrow, routeId: `${route.id}_arrow` });
+            });
+          }
         });
       });
     }
