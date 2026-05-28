@@ -32,13 +32,13 @@ export default function ProfileView() {
   const activePackage = hasSubscription ? activeUser.subscriptions[activeUser.subscriptions.length - 1] : null;
   const subscriptionValue = activePackage
     ? activePackage.name
-    : (language === 'al' ? 'Nuk ka abonim' : language === 'it' ? 'Nessun abbonamento' : 'No subscription');
+    : t.no_subscription;
 
   const menuItems = [
     { icon: bookmarkOutline, label: t.prof_saved_stops, action: () => setView('favorites') },
     { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
     { icon: ticketOutline, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
-    { icon: globeOutline, label: t.prof_language, value: language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano', action: () => setActiveModal('language') },
+    { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
     { icon: helpCircleOutline, label: t.prof_help_center, action: async () => {
         if (Capacitor.isNativePlatform()) {
           try {
@@ -51,24 +51,24 @@ export default function ProfileView() {
         setActiveModal('help');
       } },
     {
-      icon: shareOutline, label: 'Share Urbani Im', action: async () => {
+      icon: shareOutline, label: t.share_app_label, action: async () => {
         try {
           if (Capacitor.isNativePlatform()) {
             // Përdor Capacitor Share për mobilet
             await Share.share({
-              title: 'Urbani Im',
-              text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
+              title: t.share_app_title,
+              text: t.share_app_text,
               url: 'https://urbanim.app'
             });
-            addNotification(language === 'al' ? 'Aplikacioni u ndaq me sukses!' : 'App shared successfully!', 'success');
+            addNotification(t.share_success, 'success');
           } else if (navigator.share) {
             // Përdor Web Share API për browserët
             await navigator.share({
-              title: 'Urbani Im',
-              text: 'Shkarko aplikacionin më të mirë për transportin urban në Tiranë!',
+              title: t.share_app_title,
+              text: t.share_app_text,
               url: window.location.origin
             });
-            addNotification(language === 'al' ? 'Aplikacioni u ndaq me sukses!' : 'App shared successfully!', 'success');
+            addNotification(t.share_success, 'success');
           } else {
             addNotification(t.prof_link_copied, 'success');
           }
@@ -89,7 +89,7 @@ export default function ProfileView() {
           }
           // Only show notification for actual failures
           if (!errorMessage.toLowerCase().includes('user')) {
-            addNotification(language === 'al' ? 'Gabim në ndarje të aplikacionit' : 'Error sharing app', 'danger');
+            addNotification(t.share_error, 'danger');
           }
         }
       }

@@ -122,7 +122,7 @@ export default function Sidebar() {
               ))
             ) : (
               <div className="s-no-results">
-                {language === 'al' ? 'Asnjë stacion nuk u gjet' : language === 'en' ? 'No station found' : 'Nessuna stazione trovata'}
+                {t.no_station_found}
               </div>
             )}
           </div>
@@ -130,7 +130,7 @@ export default function Sidebar() {
       </div>
 
       {/* ── Nav ── */}
-      <div className="s-nav-label">{language === 'al' ? 'Menu' : language === 'en' ? 'Menu' : 'Menu'}</div>
+      <div className="s-nav-label">{t.menu}</div>
       <nav className="s-nav">
         {MENU.map(({ id, label, icon: Icon }, idx) => (
           <Fragment key={id}>
@@ -161,7 +161,7 @@ export default function Sidebar() {
               src={`https://flagcdn.com/w40/${language === 'al' ? 'al' : language === 'en' ? 'us' : 'it'}.png`}
               alt={language}
             />
-            <span>{language === 'al' ? 'Shqip' : language === 'en' ? 'English' : 'Italiano'}</span>
+            <span>{language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano}</span>
             <IonIcon icon={globeOutline} style={{ fontSize: 13 }} className="s-globe" />
           </button>
 

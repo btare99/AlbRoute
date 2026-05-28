@@ -218,7 +218,7 @@ export default function TripPlanner() {
       return;
     }
     if (tripFrom.trim() === tripTo.trim()) {
-      addNotification(language === 'al' ? 'Stacionet e nisjes dhe destinacionit duhet të jenë të ndryshme.' : language === 'en' ? 'Departure and destination stations must be different.' : 'Le stazioni di partenza e destinazione devono essere diverse.', 'warning');
+      addNotification(t.trip_different_stations, 'warning');
       return;
     }
     setLoading(true);
@@ -226,7 +226,7 @@ export default function TripPlanner() {
     try {
       await planTrip(tripFrom, tripTo);
     } catch (err) {
-      addNotification(language === 'al' ? 'Gabim gjatë planifikimit.' : 'Error during planning.', 'danger');
+      addNotification(t.trip_planning_error, 'danger');
     } finally {
       setLoading(false);
     }
@@ -272,11 +272,11 @@ export default function TripPlanner() {
       const position = await getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
       const { latitude, longitude } = position.coords;
       useStore.getState().setTripOriginCoords({ lat: latitude, lng: longitude });
-      setTripFrom(language === 'al' ? 'Vendndodhja Ime' : language === 'en' ? 'My Location' : 'La Mia Posizione');
-      addNotification(language === 'al' ? 'U mor vendndodhja juaj!' : language === 'en' ? 'Location acquired!' : 'Posizione acquisita!', 'info');
+      setTripFrom(t.my_location);
+      addNotification(t.location_acquired, 'info');
     } catch (error) {
       console.error('TripPlanner location error:', error);
-      addNotification(language === 'al' ? 'Dështoi marrja e vendndodhjes.' : language === 'en' ? 'Failed to get location.' : 'Impossibile ottenere la posizione.', 'danger');
+      addNotification(t.location_failed, 'danger');
     }
   };
 

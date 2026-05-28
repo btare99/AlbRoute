@@ -357,30 +357,30 @@ export default function MapView() {
     const placeType = item.type;
 
     if (placeClass === 'amenity') {
-      if (placeType === 'restaurant') typeLabel = language === 'al' ? 'Restorant' : 'Restaurant';
-      else if (placeType === 'cafe') typeLabel = language === 'al' ? 'Kafe' : 'Cafe';
-      else if (placeType === 'bar' || placeType === 'pub') typeLabel = 'Bar / Pub';
-      else if (placeType === 'fast_food') typeLabel = 'Fast Food';
-      else if (placeType === 'bank' || placeType === 'atm') typeLabel = language === 'al' ? 'Bankë' : 'Bank';
-      else if (placeType === 'hospital' || placeType === 'clinic' || placeType === 'pharmacy') typeLabel = language === 'al' ? 'Shëndetësi' : 'Medical';
-      else if (placeType === 'school' || placeType === 'university' || placeType === 'college' || placeType === 'kindergarten') typeLabel = language === 'al' ? 'Arsim / Shkollë' : 'Education';
-      else if (placeType === 'place_of_worship') typeLabel = language === 'al' ? 'Kult / Katedralë / Xhami' : 'Worship';
-      else if (placeType === 'fuel') typeLabel = language === 'al' ? 'Karburant' : 'Gas Station';
-      else typeLabel = language === 'al' ? 'Vendi' : 'Place';
+      if (placeType === 'restaurant') typeLabel = t.place_type_restaurant;
+      else if (placeType === 'cafe') typeLabel = t.place_type_cafe;
+      else if (placeType === 'bar' || placeType === 'pub') typeLabel = t.place_type_bar_pub;
+      else if (placeType === 'fast_food') typeLabel = t.place_type_fast_food;
+      else if (placeType === 'bank' || placeType === 'atm') typeLabel = t.place_type_bank;
+      else if (placeType === 'hospital' || placeType === 'clinic' || placeType === 'pharmacy') typeLabel = t.place_type_medical;
+      else if (placeType === 'school' || placeType === 'university' || placeType === 'college' || placeType === 'kindergarten') typeLabel = t.place_type_education;
+      else if (placeType === 'place_of_worship') typeLabel = t.place_type_worship;
+      else if (placeType === 'fuel') typeLabel = t.place_type_fuel;
+      else typeLabel = t.place_type_place;
     } else if (placeClass === 'shop') {
-      typeLabel = language === 'al' ? 'Dyqan / Qendër Tregtare' : 'Shop / Mall';
+      typeLabel = t.place_type_shop;
     } else if (placeClass === 'tourism') {
-      if (placeType === 'hotel' || placeType === 'hostel' || placeType === 'motel' || placeType === 'guest_house') typeLabel = 'Hotel';
-      else typeLabel = language === 'al' ? 'Turizëm' : 'Tourism';
+      if (placeType === 'hotel' || placeType === 'hostel' || placeType === 'motel' || placeType === 'guest_house') typeLabel = t.place_type_hotel;
+      else typeLabel = t.place_type_tourism;
     } else if (placeClass === 'historic') {
-      typeLabel = language === 'al' ? 'Atraksion Historik' : 'Historical';
+      typeLabel = t.place_type_historic;
     } else if (placeClass === 'leisure') {
-      if (placeType === 'park' || placeType === 'playground' || placeType === 'garden') typeLabel = language === 'al' ? 'Park / Çlodhje' : 'Park';
-      else typeLabel = language === 'al' ? 'Argëtim / Sport' : 'Recreation';
+      if (placeType === 'park' || placeType === 'playground' || placeType === 'garden') typeLabel = t.place_type_park;
+      else typeLabel = t.place_type_recreation;
     } else if (placeClass === 'highway') {
-      typeLabel = language === 'al' ? 'Rrugë' : 'Street';
+      typeLabel = t.place_type_street;
     } else {
-      typeLabel = language === 'al' ? 'Adresë' : 'Address';
+      typeLabel = t.place_type_address;
     }
 
     return {
@@ -569,7 +569,7 @@ export default function MapView() {
       try {
         const permission = await (DeviceOrientationEvent as any).requestPermission();
         if (permission === 'granted') {
-          addNotification(language === 'al' ? 'Busulla u aktivizua!' : language === 'en' ? 'Compass activated!' : 'Bussola attivata!', 'success');
+          addNotification(t.compass_activated, 'success');
         }
       } catch (err) {
         console.error('Compass permission error:', err);
@@ -1374,7 +1374,7 @@ export default function MapView() {
               width:10px;height:10px;border-radius:50%;
               background:${bus.routeColor};flex-shrink:0
             "></div>
-            <span style="font-size:13px;font-weight:700;color:#0f172a">${language === 'it' ? 'Linea' : language === 'en' ? 'Route' : 'Linja'} ${bus.routeName}</span>
+            <span style="font-size:13px;font-weight:700;color:#0f172a">${t.route_label} ${bus.routeName}</span>
           </div>
           <span style="
             font-size:9px;font-weight:700;letter-spacing:0.08em;
@@ -1572,7 +1572,7 @@ export default function MapView() {
                 // Update trip origin coords whenever user location is requested for planning
                 const currentUserLocation = userLocation;
                 if (currentUserLocation && isValidCoords(currentUserLocation)) {
-                  const myLocStr = language === 'al' ? 'Vendndodhja Ime' : 'My Location';
+                  const myLocStr = t.my_location;
                   setTripOriginCoords(currentUserLocation, myLocStr);
                   if (isSearching) {
                     setTripFrom(myLocStr);
@@ -1681,7 +1681,7 @@ export default function MapView() {
             padding: '10px'
           }} className="station-dropdown-map">
             <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {language === 'al' ? 'Sugjerimet e Nisjes' : 'Departure Suggestions'}
+              {t.departure_suggestions}
             </div>
 
 
@@ -1711,7 +1711,7 @@ export default function MapView() {
                 <MapPin size={18} style={{ color: '#f59e0b' }} />
               </div>
               <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {language === 'al' ? 'Zgjidh në hartë' : 'Choose on map'}
+                {t.choose_on_map}
               </span>
             </button>
 
@@ -1770,7 +1770,7 @@ export default function MapView() {
             {tripFrom.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
               <>
                 <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
+                  {t.bus_stations}
                 </div>
                 {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).slice(0, 5).map(name => (
                   <button
@@ -1808,7 +1808,7 @@ export default function MapView() {
             {tripFrom.trim().length > 0 && fromSuggestions.length > 0 && (
               <>
                 <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
-                  {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
+                  {t.addresses_attractions}
                 </div>
                 {fromSuggestions.map((item, idx) => {
                   let badgeBg = 'rgba(100, 116, 139, 0.1)';
@@ -1886,7 +1886,7 @@ export default function MapView() {
 
             {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length === 0 && fromSuggestions.length === 0 && (
               <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                {language === 'al' ? 'Po kërkohet për adresa...' : 'Searching for addresses...'}
+                {t.searching_addresses}
               </div>
             )}
           </div>
@@ -1910,7 +1910,7 @@ export default function MapView() {
             padding: '10px'
           }} className="station-dropdown-map">
             <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {language === 'al' ? 'Sugjerimet e Destinacionit' : 'Destination Suggestions'}
+              {t.destination_suggestions}
             </div>
 
 
@@ -1940,7 +1940,7 @@ export default function MapView() {
                 <MapPin size={18} style={{ color: '#f59e0b' }} />
               </div>
               <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {language === 'al' ? 'Zgjidh në hartë' : 'Choose on map'}
+                {t.choose_on_map}
               </span>
             </button>
 
@@ -1999,7 +1999,7 @@ export default function MapView() {
             {tripTo.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
               <>
                 <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  {language === 'al' ? 'Stacionet e Autobusit' : 'Bus Stations'}
+                  {t.bus_stations}
                 </div>
                 {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).slice(0, 5).map(name => (
                   <button
@@ -2037,7 +2037,7 @@ export default function MapView() {
             {tripTo.trim().length > 0 && toSuggestions.length > 0 && (
               <>
                 <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
-                  {language === 'al' ? 'Adresat & Atraksionet (Google)' : 'Addresses & Attractions (Google)'}
+                  {t.addresses_attractions}
                 </div>
                 {toSuggestions.map((item, idx) => {
                   let badgeBg = 'rgba(100, 116, 139, 0.1)';
@@ -2115,7 +2115,7 @@ export default function MapView() {
 
             {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length === 0 && toSuggestions.length === 0 && (
               <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                {language === 'al' ? 'Po kërkohet për adresa...' : 'Searching for addresses...'}
+                {t.searching_addresses}
               </div>
             )}
           </div>
@@ -2313,12 +2313,12 @@ export default function MapView() {
                   </span>
                   <div className="route-texts">
                     <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
-                      {isPlanning ? (language === 'al' ? 'Duke përpunuar...' : 'Calculating...') : (t.step_by_step || 'Step by Step')}
+                      {isPlanning ? t.calculating : t.step_by_step}
                     </h3>
                     {!isPlanning && activeTrip ? (
                       <p style={{ margin: 0 }}>{activeTrip.from} → {activeTrip.to}</p>
                     ) : (
-                      <p style={{ margin: 0 }}>{language === 'al' ? 'Gjetja e rrugës optimale' : 'Finding optimal route'}</p>
+                      <p style={{ margin: 0 }}>{t.finding_optimal_route}</p>
                     )}
                   </div>
                 </div>
@@ -2490,7 +2490,7 @@ export default function MapView() {
                                 style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
                               >
                                 <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                                {allShown ? (language === 'al' ? 'Fshih stacionet' : 'Hide stations') : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${language === 'al' ? 'të tjera' : 'others'}`}
+                                {allShown ? t.hide_stations : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${t.other_stations}`}
                               </button>
                             </div>
                           )}
@@ -2621,7 +2621,7 @@ export default function MapView() {
                 </span>
                 <div className="route-texts">
                   <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{language === 'al' ? 'Stacioni' : language === 'en' ? 'Station' : 'Stazione'} • ID {selectedStop.id}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{t.station} • ID {selectedStop.id}</p>
                 </div>
               </div>
               <button
@@ -2650,7 +2650,7 @@ export default function MapView() {
             <div className="card-body" style={{ overflowY: 'auto', paddingBottom: 100 }}>
               {/* Peek Content: Lines */}
               <label style={{ display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '12px', fontWeight: 800 }}>
-                {language === 'al' ? 'Linjat që kalojnë këtu' : 'Passing routes'}
+                {t.passing_routes}
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: 24 }}>
                 {BUS_ROUTES.filter((r: any) => r.stops.includes(selectedStop.id) || (r.returnStops && r.returnStops.includes(selectedStop.id))).map((line: any) => (
@@ -2666,7 +2666,7 @@ export default function MapView() {
                 <div style={{ animation: 'fadeIn 0.4s ease' }}>
                   <div style={{ background: 'rgba(56, 189, 248, 0.05)', borderRadius: 20, padding: 20, border: '1px solid rgba(56, 189, 248, 0.1)', marginBottom: 24 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>{language === 'al' ? 'Autobusi më i afërt' : 'Closest Bus'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>{t.closest_bus}</span>
                       <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
                     </div>
                     {closestBus ? (
@@ -2677,13 +2677,13 @@ export default function MapView() {
                         <div>
                           <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{(closestBus as any).routeName || (closestBus as any).routeId}</div>
                           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                            {language === 'al' ? `Mbërrin për ~${Math.max(2, Math.round(Math.random() * 5 + 2))} minuta` : `Arrives in ~${Math.max(2, Math.round(Math.random() * 5 + 2))} mins`}
+                            {t.arrival_time.replace('{count}', Math.max(2, Math.round(Math.random() * 5 + 2)).toString())}
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '10px 0' }}>
-                        {language === 'al' ? 'Nuk ka autobusë aktivë për këtë stacion.' : 'No active buses for this station.'}
+                        {t.no_active_buses_for_station}
                       </div>
                     )}
                   </div>
@@ -2761,7 +2761,7 @@ export default function MapView() {
                     }, 100);
                   }}
                 >
-                  {language === 'al' ? 'Nisu nga këtu' : 'Depart from here'} <ChevronRight size={18} />
+                  {t.depart_from_here} <ChevronRight size={18} />
                 </button>
               )}
             </div>
@@ -2819,12 +2819,10 @@ export default function MapView() {
             {/* Center Info Text */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: 1 }}>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>
-                {selectingOnMap === 'from' 
-                  ? (language === 'al' ? 'Zgjidh pikën e nisjes' : 'Choose departure point') 
-                  : (language === 'al' ? 'Zgjidh destinacionin' : 'Choose destination')}
+                {selectingOnMap === 'from' ? t.choose_departure_point : t.choose_destination}
               </span>
               <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.45)', fontWeight: 600, marginTop: '2px' }}>
-                {language === 'al' ? 'Lëviz dhe zmadho për ta rregulluar' : 'Pan and zoom to adjust'}
+                {t.pan_zoom_adjust}
               </span>
             </div>
 
@@ -2899,7 +2897,7 @@ export default function MapView() {
                 const lat = center.lat;
                 const lng = center.lng;
                 
-const tempName = language === 'al' ? 'Pikë në Hartë' : 'Point on Map';
+const tempName = t.point_on_map;
                 if (selectingOnMap === 'from') {
                   useStore.getState().setTripOriginCoords({ lat, lng }, tempName);
                   setTripFrom(tempName);
@@ -2913,7 +2911,7 @@ const tempName = language === 'al' ? 'Pikë në Hartë' : 'Point on Map';
                 setIsSearching(true);
 
                 try {
-                  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language === 'al' ? 'sq' : 'en'}`, {
+                  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language === 'al' ? 'sq' : language === 'it' ? 'it' : 'en'}`, {
                     headers: { 'User-Agent': 'UrbaniIm/1.0' }
                   });
                   const data = await res.json();

@@ -250,15 +250,15 @@ export default function EditProfileView() {
 
           setForm(prev => ({ ...prev, [type]: addressText }));
         } else {
-          alert(language === 'al' ? 'Nuk u gjet asnjë adresë për këtë vendndodhje.' : 'No address found for this location.');
+          alert(t.no_address_found);
         }
       } catch (err) {
         console.error('Error reverse geocoding current location:', err);
-        alert(language === 'al' ? 'Gabim gjatë marrjes së adresës.' : 'Error fetching address for current location.');
+        alert(t.error_fetching_address);
       }
     } catch (error) {
       console.error('Geolocation error:', error);
-      alert(language === 'al' ? 'U refuzua leja ose dështoi marrja e vendndodhjes.' : 'Permission denied or failed to retrieve location.');
+      alert(t.location_permission_error);
     } finally {
       setIsSearchingHome(false);
       setIsSearchingWork(false);
@@ -363,7 +363,7 @@ export default function EditProfileView() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setForm({ ...form, avatar: reader.result as string });
-        addNotification(language === 'al' ? 'Fotoja u ngarkua! Mos harroni të ruani ndryshimet.' : 'Photo uploaded! Don\'t forget to save changes.', 'info');
+        addNotification(t.photo_upload_success, 'info');
       };
       reader.readAsDataURL(file);
     }
@@ -556,7 +556,7 @@ export default function EditProfileView() {
             </div>
 
             <div>
-              <label style={labelStyle}>{language === 'al' ? 'Numri i Telefonit' : 'Phone Number'}</label>
+              <label style={labelStyle}>{t.phone_number}</label>
               <PhoneInput 
                 country={selectedCountry} 
                 setCountry={setSelectedCountry} 
@@ -653,7 +653,7 @@ export default function EditProfileView() {
                           </div>
                         </div>
                         <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                          {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                          {t.use_current_location}
                         </span>
                       </button>
                       {homeSuggestions.map((item, idx) => {
@@ -754,7 +754,7 @@ export default function EditProfileView() {
                           </div>
                         </div>
                         <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                          {language === 'al' ? 'Përdor vendndodhjen aktuale' : 'Use current location'}
+                          {t.use_current_location}
                         </span>
                       </button>
                       {workSuggestions.map((item, idx) => {

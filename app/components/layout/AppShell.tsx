@@ -64,9 +64,11 @@ export default function AppShell() {
             await Preferences.remove({ key: 'google_login_pending' });
             setTimeout(() => {
               addNotification(
-                language === 'al'
-                  ? `Mirë se erdhe, ${u.name?.split(' ')[0] || ''}!`
-                  : `Welcome, ${u.name?.split(' ')[0] || ''}!`,
+                    (() => {
+                      const username = u.name?.split(' ')[0] || '';
+                      const base = t.auth_welcome.replace(/!$/, '');
+                      return username ? `${base}, ${username}!` : t.auth_welcome;
+                    })(),
                 'success'
               );
             }, 500);

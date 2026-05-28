@@ -11,159 +11,579 @@ import { BUS_ROUTES, BUS_STOPS } from '../constants/busData';
 import { BUS_SHAPES } from './busShapes';
 export { BUS_ROUTES, BUS_STOPS };
 
-// Snaps a [lat, lng] point to the closest point along a polyline's segments
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const WALK_SPEED_MPS = 1.4;          // 1.4 m/s ≈ 5 km/h walking speed
+const BUS_SPEED_KMH = 30;            // average urban bus speed km/h
+const MAX_WALK_METERS = 1200;        // max walk to/from stop
+const MAX_TRANSFER_WALK_METERS = 400;// max walk between transfer stops
+const MAX_TRANSFERS = 2;             // max bus changes allowed
+const TRANSFER_PENALTY_SEC = 240;    // 4-minute penalty per transfer (boarding wait)
+const EARTH_RADIUS_M = 6371000;
+
+// ─── GEOMETRY HELPERS ─────────────────────────────────────────────────────────
+
+/** Haversine distance in meters between two lat/lng points */
+const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = EARTH_RADIUS_M;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+/** Walk time in seconds for a given meter distance */
+const walkTimeSec = (meters: number): number => Math.round(meters / WALK_SPEED_MPS);
+
+/** Snaps a [lat, lng] point to the closest point along a polyline's segments */
 const findClosestPointOnPolyline = (point: [number, number], polyline: [number, number][]): [number, number] => {
   if (polyline.length === 0) return point;
   if (polyline.length === 1) return polyline[0];
-
   let minD2 = Infinity;
   let closestPoint: [number, number] = polyline[0];
   const [px, py] = point;
-
   for (let i = 0; i < polyline.length - 1; i++) {
     const [ax, ay] = polyline[i];
     const [bx, by] = polyline[i + 1];
-
-    const dx = bx - ax;
-    const dy = by - ay;
+    const dx = bx - ax, dy = by - ay;
     const len2 = dx * dx + dy * dy;
-
     let t = 0;
-    if (len2 > 0) {
-      t = ((px - ax) * dx + (py - ay) * dy) / len2;
-      t = Math.max(0, Math.min(1, t));
-    }
-
-    const cx = ax + t * dx;
-    const cy = ay + t * dy;
-
+    if (len2 > 0) t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+    const cx = ax + t * dx, cy = ay + t * dy;
     const dist2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
-    if (dist2 < minD2) {
-      minD2 = dist2;
-      closestPoint = [cx, cy];
-    }
+    if (dist2 < minD2) { minD2 = dist2; closestPoint = [cx, cy]; }
   }
-
   return closestPoint;
 };
 
-// Calculates the accumulated distance (progress) of a projected point along the polyline
+/** Accumulated distance of a projected point along polyline (for direction validation) */
 const getProgressOnPolyline = (point: [number, number], polyline: [number, number][]): number => {
   if (polyline.length < 2) return 0;
-
-  let minD2 = Infinity;
-  let bestProgress = 0;
-  let accumulatedDist = 0;
+  let minD2 = Infinity, bestProgress = 0, accumulatedDist = 0;
   const [px, py] = point;
-
   for (let i = 0; i < polyline.length - 1; i++) {
     const [ax, ay] = polyline[i];
     const [bx, by] = polyline[i + 1];
-
-    const dx = bx - ax;
-    const dy = by - ay;
-    const segmentLength = Math.sqrt(dx * dx + dy * dy);
-
+    const dx = bx - ax, dy = by - ay;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
     let t = 0;
-    if (segmentLength > 0) {
-      t = ((px - ax) * dx + (py - ay) * dy) / (segmentLength * segmentLength);
-      t = Math.max(0, Math.min(1, t));
-    }
-
-    const cx = ax + t * dx;
-    const cy = ay + t * dy;
-
+    if (segLen > 0) t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (segLen * segLen)));
+    const cx = ax + t * dx, cy = ay + t * dy;
     const dist2 = (px - cx) * (px - cx) + (py - cy) * (py - cy);
-    if (dist2 < minD2) {
-      minD2 = dist2;
-      bestProgress = accumulatedDist + t * segmentLength;
-    }
-    accumulatedDist += segmentLength;
+    if (dist2 < minD2) { minD2 = dist2; bestProgress = accumulatedDist + t * segLen; }
+    accumulatedDist += segLen;
   }
-
   return bestProgress;
 };
 
-// Retrieves the detailed coordinates of a route leg
+/** Get detailed shape coords for a route leg (board → alight) */
 const getLegCoords = (leg: any): [number, number][] => {
   if (leg.isWalking) return [];
-
   const route = leg.route;
   if (!route) return [];
-
-  let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
-  let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
-
+  const boardStopId = leg.stopIds?.[0];
+  const alightStopId = leg.stopIds?.[leg.stopIds.length - 1];
   const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
   const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
-
   let legCoords: [number, number][] = [];
   let sliced = false;
-
-  // Try to slice the shape from the start stop to end stop
   if (boardStop && alightStop) {
-    const dirs = ['0', '1'];
-    for (const dir of dirs) {
+    for (const dir of ['0', '1']) {
       const shapeKey = `${route.id}_${dir}`;
       let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
       if (shapeCoords.length === 0 && dir === '0') shapeCoords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
-
       if (shapeCoords.length > 0) {
-        let boardIdx = 0, alightIdx = 0;
-        let minDistBoard = Infinity, minDistAlight = Infinity;
-
+        let boardIdx = 0, alightIdx = 0, minDistBoard = Infinity, minDistAlight = Infinity;
         shapeCoords.forEach((pt, idx) => {
-          const db = Math.pow(pt[0] - boardStop.lat, 2) + Math.pow(pt[1] - boardStop.lng, 2);
+          const db = (pt[0] - boardStop.lat) ** 2 + (pt[1] - boardStop.lng) ** 2;
           if (db < minDistBoard) { minDistBoard = db; boardIdx = idx; }
-
-          const da = Math.pow(pt[0] - alightStop.lat, 2) + Math.pow(pt[1] - alightStop.lng, 2);
+          const da = (pt[0] - alightStop.lat) ** 2 + (pt[1] - alightStop.lng) ** 2;
           if (da < minDistAlight) { minDistAlight = da; alightIdx = idx; }
         });
-
-        // If direction makes sense
-        if (boardIdx <= alightIdx) {
-          legCoords = shapeCoords.slice(boardIdx, alightIdx + 1);
-          sliced = true;
-          break;
-        } else if (Math.abs(boardIdx - alightIdx) > 0) {
-          // If it's reverse on this shape but we don't have the reverse shape, slice and reverse
-          legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse();
-          sliced = true;
-        }
+        if (boardIdx <= alightIdx) { legCoords = shapeCoords.slice(boardIdx, alightIdx + 1); sliced = true; break; }
+        else if (Math.abs(boardIdx - alightIdx) > 0) { legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse(); sliced = true; }
       }
     }
   }
-
-  // Fallback to direct lines between stops using exact IDs
   if (!sliced || legCoords.length < 2) {
     if (leg.stopIds) {
-      legCoords = leg.stopIds.map((id: string) => {
-        const st = BUS_STOPS.find((s: any) => s.id === id);
-        return st ? [st.lat, st.lng] : null;
-      }).filter(Boolean) as [number, number][];
+      legCoords = leg.stopIds.map((id: string) => { const s = BUS_STOPS.find((s: any) => s.id === id); return s ? [s.lat, s.lng] : null; }).filter(Boolean) as [number, number][];
     } else {
-      legCoords = leg.stops.map((name: string) => {
-        const st = BUS_STOPS.find((s: any) => s.name === name);
-        return st ? [st.lat, st.lng] : null;
-      }).filter(Boolean) as [number, number][];
+      legCoords = leg.stops.map((name: string) => { const s = BUS_STOPS.find((s: any) => s.name === name); return s ? [s.lat, s.lng] : null; }).filter(Boolean) as [number, number][];
     }
   }
-
   return legCoords;
 };
 
-// Retrieves the full shape coordinates of a route and direction
+/** Get full shape for a route direction */
 const getFullShapeCoords = (routeId: string, direction: 'forward' | 'return'): [number, number][] => {
   const shapeKey = direction === 'forward' ? `${routeId}_0` : `${routeId}_1`;
-  let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-  if (shapeCoords.length === 0 && direction === 'forward') {
-    shapeCoords = (BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] as [number, number][]) || [];
-  }
-  return shapeCoords;
+  let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+  if (coords.length === 0 && direction === 'forward') coords = (BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+  return coords;
 };
 
+// ─── TRIP PLANNING ENGINE ─────────────────────────────────────────────────────
+// Implements a RAPTOR-inspired (Round-based Public Transit Routing) algorithm
+// with Dijkstra-style label correction, similar to how Google Maps plans transit.
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
+interface StopLabel {
+  arrivalTimeSec: number;   // earliest arrival in seconds from epoch
+  transfers: number;        // number of bus changes so far
+  prevLeg: TripLeg | null;  // leg that led to this label
+  prevStopId: string | null;
+  boardedRouteId: string | null;
+}
+
+interface TripLeg {
+  isWalking?: boolean;
+  route?: any;
+  stops?: string[];
+  stopIds?: string[];
+  boardAt?: string;
+  alightAt?: string;
+  numStops?: number;
+  direction?: 'forward' | 'return';
+  walkingDist?: number;
+  walkingTime?: number;  // in minutes for display
+  walkingTimeSec?: number;
+  liveBus?: any;
+  etaMinutes?: number;
+}
+
+interface TripOption {
+  legs: TripLeg[];
+  totalTimeSec: number;
+  walkDistMeters: number;
+  transfers: number;
+  departureTime: string;
+  arrivalTime: string;
+  travelTime: number;       // minutes
+  totalPrice: number;
+  score: number;
+  optionIndex?: number;
+  from: string;
+  to: string;
+  isDirect: boolean;
+  routeNames: string;
+}
+
+/**
+ * Core RAPTOR-inspired router.
+ * Finds up to `MAX_TRANSFERS+1` rounds of transit, building a label graph.
+ * Returns top-4 Pareto-optimal options (min time, min transfers, min walk).
+ */
+const runRaptorRouter = (
+  fromStops: { stop: any; walkDist: number }[],
+  toStops: { stop: any; walkDist: number }[],
+  departureTimeSec: number,
+  isArriveBy: boolean,
+  liveBuses: any[]
+): TripOption[] => {
+  // ── Build stop index for O(1) lookup ──
+  const stopById = new Map<string, any>();
+  BUS_STOPS.forEach((s: any) => stopById.set(s.id, s));
+
+  // ── Build route index: routeId → { stops[], returnStops[], route } ──
+  interface RouteDir { stopIds: string[]; direction: 'forward' | 'return'; route: any; }
+  const allRouteDirs: RouteDir[] = [];
+  BUS_ROUTES.forEach((route: any) => {
+    if (route.stops?.length > 1) {
+      const validStops = route.stops.every((id: string) => stopById.has(id));
+      if (validStops) {
+        allRouteDirs.push({ stopIds: route.stops, direction: 'forward', route });
+      } else {
+        console.warn(`Skipping invalid forward route direction for ${route.id} due to missing stop definitions`);
+      }
+    }
+    if (route.returnStops?.length > 1) {
+      const validStops = route.returnStops.every((id: string) => stopById.has(id));
+      if (validStops) {
+        allRouteDirs.push({ stopIds: route.returnStops, direction: 'return', route });
+      } else {
+        console.warn(`Skipping invalid return route direction for ${route.id} due to missing stop definitions`);
+      }
+    }
+  });
+
+  // stopId → list of (routeDirIndex, positionInRoute)
+  const stopToRouteDirs = new Map<string, { rdIdx: number; pos: number }[]>();
+  allRouteDirs.forEach((rd, rdIdx) => {
+    rd.stopIds.forEach((stopId, pos) => {
+      if (!stopToRouteDirs.has(stopId)) stopToRouteDirs.set(stopId, []);
+      stopToRouteDirs.get(stopId)!.push({ rdIdx, pos });
+    });
+  });
+
+  // ── Build live bus ETA map: routeId_direction → Map<stopId, etaSeconds> ──
+  const liveBusEta = new Map<string, Map<string, number>>();
+  liveBuses.forEach((bus: any) => {
+    if (!bus.routeId || !bus.direction) return;
+    const rd = allRouteDirs.find(r => r.route.id === bus.routeId && r.direction === bus.direction);
+    if (!rd) return;
+    const shape = getFullShapeCoords(bus.routeId, bus.direction);
+    if (shape.length < 2) return;
+    const busProgress = getProgressOnPolyline([bus.lat, bus.lng], shape);
+    const speedMps = (bus.speed > 2 ? bus.speed : BUS_SPEED_KMH) * 1000 / 3600;
+    const key = `${bus.routeId}_${bus.direction}`;
+    if (!liveBusEta.has(key)) liveBusEta.set(key, new Map());
+    const etaMap = liveBusEta.get(key)!;
+    rd.stopIds.forEach((stopId) => {
+      const stop = stopById.get(stopId);
+      if (!stop) return;
+      const stopProgress = getProgressOnPolyline([stop.lat, stop.lng], shape);
+      if (stopProgress > busProgress - 0.0003) {
+        const distMeters = Math.max(0, stopProgress - busProgress) * 111320;
+        const etaSec = Math.round(distMeters / speedMps);
+        const existing = etaMap.get(stopId);
+        if (existing === undefined || etaSec < existing) etaMap.set(stopId, etaSec);
+      }
+    });
+  });
+
+  // ── RAPTOR Labels ──
+  // best[stopId] = { arrivalTimeSec, transfers, prevLeg, prevStopId }
+  const INF = 1e15;
+  const best = new Map<string, StopLabel>();
+  const initialize = (stopId: string): StopLabel => {
+    if (!best.has(stopId)) best.set(stopId, { arrivalTimeSec: INF, transfers: INF, prevLeg: null, prevStopId: null, boardedRouteId: null });
+    return best.get(stopId)!;
+  };
+
+  // Seed initial walk from origin stops
+  const markedStops = new Set<string>();
+  fromStops.forEach(({ stop, walkDist }) => {
+    const walkSec = walkTimeSec(walkDist);
+    const arrivalSec = departureTimeSec + walkSec;
+    const label = initialize(stop.id);
+    if (arrivalSec < label.arrivalTimeSec) {
+      label.arrivalTimeSec = arrivalSec;
+      label.transfers = 0;
+      label.prevLeg = walkDist > 10 ? {
+        isWalking: true, boardAt: 'origin', alightAt: stop.name,
+        walkingDist: walkDist, walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec
+      } : null;
+      label.prevStopId = null;
+      markedStops.add(stop.id);
+    }
+  });
+
+  // Destination stop ids for early termination
+  const destStopIds = new Set(toStops.map(p => p.stop.id));
+
+  // ── RAPTOR Rounds (one per transfer) ──
+  const allLegsPerStop = new Map<string, TripLeg & { arrivalSec: number; transfers: number; fromStopId: string }[]>();
+
+  for (let round = 0; round <= MAX_TRANSFERS; round++) {
+    if (markedStops.size === 0) break;
+    const newMarked = new Set<string>();
+
+    // For each marked stop, scan all route-directions passing through it
+    for (const stopId of markedStops) {
+      const routeDirsHere = stopToRouteDirs.get(stopId) || [];
+      for (const { rdIdx, pos } of routeDirsHere) {
+        const rd = allRouteDirs[rdIdx];
+        const boardLabel = best.get(stopId);
+        if (!boardLabel || boardLabel.arrivalTimeSec === INF) continue;
+
+        // Earliest boarding time at this stop
+        const boardTimeSec = boardLabel.arrivalTimeSec;
+
+        // Check live bus ETA to adjust boarding wait
+        const busKey = `${rd.route.id}_${rd.direction}`;
+        const etaMap = liveBusEta.get(busKey);
+        let waitSec = 0;
+        if (etaMap) {
+          const eta = etaMap.get(stopId);
+          if (eta !== undefined) {
+            waitSec = eta; // wait for the live bus
+          } else {
+            // No live bus approaching — use average frequency penalty
+            waitSec = 300; // 5 min average wait
+          }
+        } else {
+          waitSec = 300;
+        }
+
+        const actualBoardSec = boardTimeSec + waitSec;
+
+        // Ride forward from `pos` to all subsequent stops on this route-direction
+        let runningTimeSec = actualBoardSec;
+        const boardStop = stopById.get(stopId);
+
+        for (let k = pos + 1; k < rd.stopIds.length; k++) {
+          const alightStopId = rd.stopIds[k];
+          const alightStop = stopById.get(alightStopId);
+          if (!boardStop || !alightStop) continue;
+
+          // Time between consecutive stops: haversine / bus speed
+          const prevStopId = rd.stopIds[k - 1];
+          const prevStop = stopById.get(prevStopId);
+          if (!prevStop) {
+            console.warn(`Missing previous stop ${prevStopId} for route ${rd.route.id} ${rd.direction}`);
+            continue;
+          }
+          const segDist = haversineMeters(prevStop.lat, prevStop.lng, alightStop.lat, alightStop.lng);
+          const segTimeSec = Math.round(segDist / (BUS_SPEED_KMH * 1000 / 3600));
+          runningTimeSec += segTimeSec + 15; // 15s dwell per stop
+
+          const alightLabel = initialize(alightStopId);
+          const transfers = boardLabel.transfers + (round > 0 ? 0 : 0); // transfers tracked per round
+
+          if (runningTimeSec < alightLabel.arrivalTimeSec ||
+            (runningTimeSec === alightLabel.arrivalTimeSec && boardLabel.transfers < alightLabel.transfers)) {
+
+            // Validate direction via polyline geometry
+            const testLeg = {
+              route: rd.route, direction: rd.direction,
+              stopIds: rd.stopIds.slice(pos, k + 1),
+              boardAt: boardStop.name, alightAt: alightStop.name,
+              stops: rd.stopIds.slice(pos, k + 1).map((id: string) => stopById.get(id)?.name).filter(Boolean),
+              numStops: k - pos
+            };
+            const legCoords = getLegCoords(testLeg);
+            if (legCoords.length >= 2) {
+              const progBoard = getProgressOnPolyline([boardStop.lat, boardStop.lng], legCoords);
+              const progAlight = getProgressOnPolyline([alightStop.lat, alightStop.lng], legCoords);
+              if (progBoard >= progAlight) continue; // wrong direction
+            }
+
+            // Find live bus for this leg
+            let liveBusRef: any = null;
+            let etaMinutes: number | undefined;
+            const busEtaAtBoard = etaMap?.get(stopId);
+            if (busEtaAtBoard !== undefined) {
+              liveBusRef = liveBuses.find(b => b.routeId === rd.route.id && b.direction === rd.direction) || null;
+              etaMinutes = Math.round(busEtaAtBoard / 60);
+            }
+
+            const leg: TripLeg = {
+              route: rd.route,
+              stops: testLeg.stops,
+              stopIds: testLeg.stopIds,
+              boardAt: boardStop.name,
+              alightAt: alightStop.name,
+              numStops: k - pos,
+              direction: rd.direction,
+              liveBus: liveBusRef,
+              etaMinutes
+            };
+
+            alightLabel.arrivalTimeSec = runningTimeSec;
+            alightLabel.transfers = round;
+            alightLabel.prevLeg = leg;
+            alightLabel.prevStopId = stopId;
+            alightLabel.boardedRouteId = rd.route.id;
+            newMarked.add(alightStopId);
+
+            // Store in allLegsPerStop for path reconstruction
+            if (!allLegsPerStop.has(alightStopId)) allLegsPerStop.set(alightStopId, []);
+            allLegsPerStop.get(alightStopId)!.push({ ...leg, arrivalSec: runningTimeSec, transfers: round, fromStopId: stopId });
+          }
+        }
+      }
+    }
+
+    // Footpath relaxation: from each newly reached stop, allow short walks to nearby stops
+    const footpathCandidates = Array.from(newMarked);
+    for (const stopId of footpathCandidates) {
+      const fromLabel = best.get(stopId);
+      if (!fromLabel || fromLabel.arrivalTimeSec === INF) continue;
+      const fromStop = stopById.get(stopId);
+      if (!fromStop) continue;
+
+      BUS_STOPS.forEach((nearStop: any) => {
+        if (nearStop.id === stopId) return;
+        const walkDist = haversineMeters(fromStop.lat, fromStop.lng, nearStop.lat, nearStop.lng);
+        if (walkDist > MAX_TRANSFER_WALK_METERS) return;
+
+        const walkSec = walkTimeSec(walkDist);
+        const arrivalViWalk = fromLabel.arrivalTimeSec + walkSec + TRANSFER_PENALTY_SEC;
+        const nearLabel = initialize(nearStop.id);
+
+        if (arrivalViWalk < nearLabel.arrivalTimeSec) {
+          nearLabel.arrivalTimeSec = arrivalViWalk;
+          nearLabel.transfers = fromLabel.transfers + 1;
+          nearLabel.prevLeg = {
+            isWalking: true, boardAt: fromStop.name, alightAt: nearStop.name,
+            walkingDist: Math.round(walkDist), walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec
+          };
+          nearLabel.prevStopId = stopId;
+          newMarked.add(nearStop.id);
+        }
+      });
+    }
+
+    markedStops.clear();
+    newMarked.forEach(s => markedStops.add(s));
+  }
+
+  // ── Path Reconstruction ──
+  const reconstructPath = (destStopId: string): TripLeg[] => {
+    const legs: TripLeg[] = [];
+    let current = destStopId;
+    const visited = new Set<string>();
+
+    while (current) {
+      if (visited.has(current)) break;
+      visited.add(current);
+      const label = best.get(current);
+      if (!label || !label.prevLeg) break;
+      legs.unshift(label.prevLeg);
+      current = label.prevStopId || '';
+    }
+    return legs;
+  };
+
+  // ── Collect Pareto-Optimal Solutions ──
+  const candidates: TripOption[] = [];
+
+  toStops.forEach(({ stop: destStop, walkDist: finalWalkDist }) => {
+    const destLabel = best.get(destStop.id);
+    if (!destLabel || destLabel.arrivalTimeSec === INF) return;
+
+    const legs = reconstructPath(destStop.id);
+    if (legs.length === 0) return;
+
+    // Add final walk leg if needed
+    if (finalWalkDist > 10) {
+      legs.push({
+        isWalking: true, boardAt: destStop.name, alightAt: 'destination',
+        walkingDist: finalWalkDist,
+        walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60),
+        walkingTimeSec: walkTimeSec(finalWalkDist)
+      });
+    }
+
+    const busLegs = legs.filter(l => l.route);
+    if (busLegs.length === 0) return;
+
+    const totalWalkDist = legs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
+    const totalTimeSec = destLabel.arrivalTimeSec + walkTimeSec(finalWalkDist) - departureTimeSec;
+    const transfers = busLegs.length - 1;
+
+    // Multi-criteria score (lower = better), mimicking Google Maps weighting:
+    // Primarily: total time. Secondary: transfers. Tertiary: walk distance.
+    const score = totalTimeSec + transfers * TRANSFER_PENALTY_SEC + totalWalkDist * 0.5;
+
+    const departure = new Date(departureTimeSec * 1000);
+    const arrival = new Date((departureTimeSec + totalTimeSec) * 1000);
+
+    candidates.push({
+      legs,
+      totalTimeSec,
+      walkDistMeters: totalWalkDist,
+      transfers,
+      departureTime: departure.toISOString(),
+      arrivalTime: arrival.toISOString(),
+      travelTime: Math.round(totalTimeSec / 60),
+      totalPrice: busLegs.length * 40,
+      score,
+      from: '',
+      to: '',
+      isDirect: busLegs.length === 1,
+      routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → ')
+    });
+  });
+
+  // Also try paths through intermediate stop combinations from allLegsPerStop
+  // This recovers paths that RAPTOR may have labelled suboptimally
+  toStops.forEach(({ stop: destStop, walkDist: finalWalkDist }) => {
+    const legsToHere = allLegsPerStop.get(destStop.id) || [];
+    legsToHere.forEach(legEntry => {
+      const boardStopLabel = best.get(legEntry.fromStopId);
+      if (!boardStopLabel) return;
+      const priorLegs = reconstructPath(legEntry.fromStopId);
+      const fullLegs = [...priorLegs, legEntry as TripLeg];
+      if (finalWalkDist > 10) {
+        fullLegs.push({
+          isWalking: true, boardAt: destStop.name, alightAt: 'destination',
+          walkingDist: finalWalkDist, walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60), walkingTimeSec: walkTimeSec(finalWalkDist)
+        });
+      }
+      const busLegs = fullLegs.filter(l => l.route);
+      if (busLegs.length === 0) return;
+      const totalWalkDist = fullLegs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
+      const totalTimeSec = legEntry.arrivalSec + walkTimeSec(finalWalkDist) - departureTimeSec;
+      if (totalTimeSec <= 0) return;
+      const transfers = busLegs.length - 1;
+      const score = totalTimeSec + transfers * TRANSFER_PENALTY_SEC + totalWalkDist * 0.5;
+      const departure = new Date(departureTimeSec * 1000);
+      const arrival = new Date((departureTimeSec + totalTimeSec) * 1000);
+      candidates.push({
+        legs: fullLegs, totalTimeSec, walkDistMeters: totalWalkDist, transfers,
+        departureTime: departure.toISOString(), arrivalTime: arrival.toISOString(),
+        travelTime: Math.round(totalTimeSec / 60), totalPrice: busLegs.length * 40, score,
+        from: '', to: '', isDirect: busLegs.length === 1,
+        routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → ')
+      });
+    });
+  });
+
+  if (candidates.length === 0) return [];
+
+  // ── Pareto Dominance Filter ──
+  // Keep options that are not dominated on ALL criteria simultaneously
+  const pareto = candidates.filter(c => {
+    return !candidates.some(other =>
+      other !== c &&
+      other.totalTimeSec <= c.totalTimeSec &&
+      other.transfers <= c.transfers &&
+      other.walkDistMeters <= c.walkDistMeters &&
+      (other.totalTimeSec < c.totalTimeSec || other.transfers < c.transfers || other.walkDistMeters < c.walkDistMeters)
+    );
+  });
+
+  // Sort by score and deduplicate similar routes
+  pareto.sort((a, b) => a.score - b.score);
+
+  const deduped: TripOption[] = [];
+  const seen = new Set<string>();
+  for (const opt of pareto) {
+    const key = opt.routeNames + '_' + opt.transfers;
+    if (!seen.has(key)) { seen.add(key); deduped.push(opt); }
+    if (deduped.length >= 4) break;
+  }
+
+  return deduped;
+};
+
+// ─── GEOCODING ────────────────────────────────────────────────────────────────
+const geocodeAddress = async (query: string): Promise<{ lat: number; lng: number } | null> => {
+  const stop = BUS_STOPS.find((s: any) => s.name.toLowerCase().trim() === query.toLowerCase().trim());
+  if (stop) return { lat: stop.lat, lng: stop.lng };
+  const suffix = query.toLowerCase().includes('tiran') || query.toLowerCase().includes('albania') ? '' : ', Tirana, Albania';
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + suffix)}&format=json&limit=3&countrycodes=al`,
+      { headers: { 'User-Agent': 'UrbaniIm/2.0' } }
+    );
+    const data = await res.json();
+    if (data?.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch (e) { console.error('Geocoding error:', e); }
+  return null;
+};
+
+/** Get the N closest stops to a coordinate within maxDist meters */
+const getNearestStops = (lat: number, lng: number, maxDist = MAX_WALK_METERS, maxCount = 8): { stop: any; walkDist: number }[] => {
+  const scored = BUS_STOPS
+    .map((s: any) => ({ stop: s, walkDist: Math.round(haversineMeters(lat, lng, s.lat, s.lng)) }))
+    .filter(x => x.walkDist <= maxDist)
+    .sort((a, b) => a.walkDist - b.walkDist)
+    .slice(0, maxCount);
+  if (scored.length === 0) {
+    // Fallback: return closest 3 regardless of distance
+    return BUS_STOPS
+      .map((s: any) => ({ stop: s, walkDist: Math.round(haversineMeters(lat, lng, s.lat, s.lng)) }))
+      .sort((a, b) => a.walkDist - b.walkDist)
+      .slice(0, 3);
+  }
+  return scored;
+};
+
+// ─── TYPES ────────────────────────────────────────────────────────────────────
 export interface StaffAccount {
   id: string;
   name: string;
@@ -174,6 +594,7 @@ export interface StaffAccount {
   status: string;
 }
 
+// ─── STORE ────────────────────────────────────────────────────────────────────
 const useStore = create<any>()(
   persist(
     (set, get) => ({
@@ -190,11 +611,7 @@ const useStore = create<any>()(
       updateProfile: async (data: any) => {
         const currentUser = get().user;
         if (!currentUser) return;
-
-        // Update local state first for responsiveness
         set((state: any) => ({ user: { ...state.user, ...data } }));
-
-        // Sync with MongoDB if user has an ID
         if (currentUser.id || currentUser._id) {
           try {
             const res = await fetch('/api/user/profile', {
@@ -202,13 +619,9 @@ const useStore = create<any>()(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: currentUser.id || currentUser._id, ...data }),
             });
-
-            if (!res.ok) {
-              const body = await res.text();
-              throw new Error(`Profile sync failed (${res.status} ${res.statusText}): ${body}`);
-            }
+            if (!res.ok) throw new Error(`Profile sync failed (${res.status})`);
           } catch (error) {
-            console.error('Failed to sync profile with MongoDB', error);
+            console.error('Failed to sync profile:', error);
           }
         }
       },
@@ -217,11 +630,7 @@ const useStore = create<any>()(
       language: 'al',
       setLanguage: async (lang: string) => {
         set({ language: lang });
-        try {
-          await Preferences.set({ key: 'app_language', value: lang });
-        } catch (error) {
-          console.warn('Failed to persist language preference:', error);
-        }
+        try { await Preferences.set({ key: 'app_language', value: lang }); } catch { }
       },
 
       // ── Device + Network ──
@@ -231,30 +640,21 @@ const useStore = create<any>()(
       initializeNativeServices: async () => {
         try {
           const [deviceInfo, networkStatus, appState] = await Promise.all([
-            Device.getInfo(),
-            Network.getStatus(),
-            App.getState()
+            Device.getInfo(), Network.getStatus(), App.getState()
           ]);
           set({ deviceInfo, networkStatus, appState });
-
-          Network.addListener('networkStatusChange', (status) => {
-            set({ networkStatus: status });
-          });
-
-          App.addListener('appStateChange', (state) => {
-            set({ appState: state });
-          });
-
+          Network.addListener('networkStatusChange', (status) => set({ networkStatus: status }));
+          App.addListener('appStateChange', (state) => set({ appState: state }));
           try {
             await LocalNotifications.requestPermissions();
             await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
-          } catch (notifyCleanupError) {
-            console.warn('Local notification cleanup failed:', notifyCleanupError);
-          }
+          } catch { }
         } catch (error) {
           console.warn('Native service initialization failed:', error);
         }
       },
+
+      // ── UI State ──
       currentView: 'map',
       checkoutPackage: null,
       isSidebarOpen: false,
@@ -266,7 +666,6 @@ const useStore = create<any>()(
       setShowStops: (val: boolean) => set({ showStops: val }),
       setShowRoutes: (val: boolean) => set({ showRoutes: val }),
       setShowBuses: (val: boolean) => set({ showBuses: val }),
-
       setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open }),
 
       // ── Map Selection Mode ──
@@ -285,70 +684,39 @@ const useStore = create<any>()(
           const res = await fetch('/api/admin/staff?role=driver');
           const drivers = await res.json();
           set({ adminDrivers: Array.isArray(drivers) ? drivers : [] });
-        } catch (error) {
-          console.error('Failed to fetch drivers', error);
-          set({ adminDrivers: [] });
-        }
+        } catch { set({ adminDrivers: [] }); }
       },
       fetchAdminInspectors: async () => {
         try {
           const res = await fetch('/api/admin/staff?role=inspector');
           const inspectors = await res.json();
           set({ adminInspectors: Array.isArray(inspectors) ? inspectors : [] });
-        } catch (error) {
-          console.error('Failed to fetch inspectors', error);
-          set({ adminInspectors: [] });
-        }
+        } catch { set({ adminInspectors: [] }); }
       },
       fetchAdminBuses: async () => {
         try {
           const res = await fetch('/api/admin/buses');
           const buses = await res.json();
           set({ adminBuses: Array.isArray(buses) ? buses : [] });
-        } catch (error) {
-          console.error('Failed to fetch buses', error);
-          set({ adminBuses: [] });
-        }
+        } catch { set({ adminBuses: [] }); }
       },
-      // When admin adds/removes buses, we rebuild the simulation array but preserve existing buses that didn't change
       syncBusesWithAdmin: async () => {
         const { adminBuses, buses } = get();
         if (!Array.isArray(adminBuses)) return;
-
         const newBuses: any[] = [];
         const currentBuses = Array.isArray(buses) ? buses : [];
-
         for (const adminBus of adminBuses) {
           if (!adminBus || adminBus.status !== 'Aktiv') continue;
-
-          // Check local state first
-          const existingLocal = currentBuses.find(b => b.id === adminBus.id);
+          const existingLocal = currentBuses.find((b: any) => b.id === adminBus.id);
           if (existingLocal) {
-            newBuses.push({
-              ...existingLocal,
-              routeId: adminBus.routeId,
-              driverId: adminBus.driverId,
-              inspectorId: adminBus.inspectorId
-            });
+            newBuses.push({ ...existingLocal, routeId: adminBus.routeId, driverId: adminBus.driverId, inspectorId: adminBus.inspectorId });
             continue;
           }
-
-          // Fetch from API
           try {
             const res = await fetch(`/api/admin/buses?id=${adminBus.id}`);
             const existing = await res.json();
-            if (existing && !existing.error) {
-              newBuses.push({
-                ...existing,
-                routeId: adminBus.routeId,
-                driverId: adminBus.driverId,
-                inspectorId: adminBus.inspectorId
-              });
-            }
-            // Automated generation removed to prevent ghost buses
-          } catch (error) {
-            console.error('Error syncing bus', error);
-          }
+            if (existing && !existing.error) newBuses.push({ ...existing, routeId: adminBus.routeId, driverId: adminBus.driverId, inspectorId: adminBus.inspectorId });
+          } catch (error) { console.error('Error syncing bus', error); }
         }
         set({ buses: newBuses });
       },
@@ -359,33 +727,25 @@ const useStore = create<any>()(
       selectedRoute: null,
       userLocation: { lat: 41.3275, lng: 19.8187 },
       geolocationPermissionDenied: false,
-      setUserLocation: (loc: { lat: number, lng: number }) => set({ userLocation: loc }),
+      setUserLocation: (loc: { lat: number; lng: number }) => set({ userLocation: loc }),
       fetchBuses: async () => {
         try {
           const res = await fetch('/api/buses');
-          if (!res.ok) {
-            const body = await res.text();
-            throw new Error(`Buses fetch failed (${res.status} ${res.statusText}): ${body}`);
-          }
+          if (!res.ok) throw new Error(`Buses fetch failed (${res.status})`);
           const buses = await res.json();
           if (Array.isArray(buses)) {
-            // Normalize routeId to match the BUS_ROUTES format (e.g., '1A' -> 'L1A')
-            const normalizedBuses = buses.map((bus: any) => ({
+            const normalized = buses.map((bus: any) => ({
               ...bus,
               routeId: bus.routeId && !bus.routeId.startsWith('L') ? `L${bus.routeId}` : bus.routeId
             }));
-            set({ buses: normalizedBuses });
+            set({ buses: normalized });
           }
-        } catch (error) {
-          console.error('Failed to fetch buses from MongoDB:', error);
-        }
+        } catch (error) { console.error('Failed to fetch buses:', error); }
       },
       updateBus: async (busData: any) => {
         try {
           const res = await fetch('/api/admin/buses', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(busData),
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(busData),
           });
           if (res.ok) {
             const updatedBus = await res.json();
@@ -395,935 +755,336 @@ const useStore = create<any>()(
                 : [updatedBus]
             }));
           }
-        } catch (error) {
-          console.error('Failed to update bus', error);
-        }
+        } catch (error) { console.error('Failed to update bus', error); }
       },
+
+      // ── Geolocation ──
       getCurrentPosition: async (options: any = {}) => {
-        const defaultOptions = { enableHighAccuracy: true, timeout: 45000, maximumAge: 120000 }; // 45s timeout, 2min cache
-        const mergedOptions = { ...defaultOptions, ...options };
-
-        const fallbackToBrowser = async () => {
-          if (typeof navigator !== 'undefined' && navigator.geolocation) {
-            return new Promise<any>((resolve, reject) => {
-              // Browser geolocation precisa de timeout maior
-              const browserOptions = {
-                enableHighAccuracy: true,
-                timeout: 45000,  // 45 segundos para navegador (sinal fraco é comum)
-                maximumAge: 300000  // 5 minutos de cache é aceitável
-              };
-              navigator.geolocation.getCurrentPosition(resolve, reject, browserOptions);
-            });
-          }
-          throw new Error('Geolocation not supported');
-        };
-
-        const tryNativePosition = async (attemptTimeout: number) => {
+        const mergedOptions = { enableHighAccuracy: true, timeout: 45000, maximumAge: 120000, ...options };
+        const fallbackToBrowser = (): Promise<any> => new Promise((resolve, reject) => {
+          if (typeof navigator === 'undefined' || !navigator.geolocation) return reject(new Error('Geolocation not supported'));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 45000, maximumAge: 300000 });
+        });
+        const tryNative = async (timeout: number): Promise<any> => {
           try {
-            try {
-              await Geolocation.requestPermissions();
-            } catch (permissionError) {
-              console.warn('Geolocation permission request failed:', permissionError);
-            }
-            return await Geolocation.getCurrentPosition({ ...mergedOptions, timeout: attemptTimeout });
-          } catch (nativeError: any) {
-            const message = String(nativeError?.message || '').toLowerCase();
-            const isTimeoutError = message.includes('timeout') || message.includes('could not obtain location in time');
-            if (isTimeoutError && attemptTimeout < 60000) {
-              console.warn(`Native geolocation timeout after ${attemptTimeout}ms, retrying with a longer timeout...`);
-              return await tryNativePosition(60000);
-            }
-            throw nativeError;
+            try { await Geolocation.requestPermissions(); } catch { }
+            return await Geolocation.getCurrentPosition({ ...mergedOptions, timeout });
+          } catch (err: any) {
+            const msg = String(err?.message || '').toLowerCase();
+            if ((msg.includes('timeout') || msg.includes('could not obtain')) && timeout < 60000) return tryNative(60000);
+            throw err;
           }
         };
-
         if (Capacitor.isNativePlatform()) {
-          try {
-            return await tryNativePosition(mergedOptions.timeout);
-          } catch (nativeError) {
-            console.warn('Native geolocation failed, falling back to browser', nativeError);
-            return await fallbackToBrowser();
-          }
+          try { return await tryNative(mergedOptions.timeout); } catch { return fallbackToBrowser(); }
         }
-
-        return await fallbackToBrowser();
+        return fallbackToBrowser();
       },
-      fetchUserLocation: async (notify = false) => {
-        // Skip if permission was already denied to prevent Chrome from blocking
+      fetchUserLocation: async () => {
         if (get().geolocationPermissionDenied) {
-          const lastLocation = get().user?.lastLocation;
-          if (lastLocation) {
-            set({ userLocation: { lat: lastLocation.lat, lng: lastLocation.lng } });
-          }
+          const last = get().user?.lastLocation;
+          if (last) set({ userLocation: { lat: last.lat, lng: last.lng } });
           return;
         }
-
-        try {
-          const position = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
+        const applyLocation = (lat: number, lng: number) => {
           set({ userLocation: { lat, lng } });
-
-          const currentUser = get().user;
-          const lastLocation = currentUser?.lastLocation;
-          const now = new Date();
-          const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-          const locationChanged = !lastLocation ||
-            Math.abs(lastLocation.lat - lat) > 0.0001 ||
-            Math.abs(lastLocation.lng - lng) > 0.0001;
-
-          if (currentUser && (currentUser.id || currentUser._id)) {
-            get().updateProfile({
-              lastLocation: { lat, lng, updatedAt: albaniaTime }
-            });
+          const user = get().user;
+          if (user?.id || user?._id) {
+            const now = new Date();
+            get().updateProfile({ lastLocation: { lat, lng, updatedAt: new Date(now.getTime() + 2 * 3600000) } });
           }
-
+        };
+        try {
+          const pos = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+          applyLocation(pos.coords.latitude, pos.coords.longitude);
         } catch (error) {
-          // Mark as denied if permission is rejected
-          const isPermissionDenied = error instanceof GeolocationPositionError && error.code === 1;
-          if (isPermissionDenied) {
-            set({ geolocationPermissionDenied: true });
-          } else {
-            console.warn('[Geolocation] primary location request failed, attempting fallback', error);
-          }
+          if (error instanceof GeolocationPositionError && error.code === 1) { set({ geolocationPermissionDenied: true }); return; }
           try {
-            // Fallback com timeout ainda maior
-            const fallbackPosition = await get().getCurrentPosition({ 
-              enableHighAccuracy: false, 
-              timeout: 45000,  // Aumentado de 12000 para 45000
-              maximumAge: 600000  // 10 minutos de cache aceitável
-            });
-            const lat = fallbackPosition.coords.latitude;
-            const lng = fallbackPosition.coords.longitude;
-            set({ userLocation: { lat, lng } });
-
-            const currentUser = get().user;
-            if (currentUser && (currentUser.id || currentUser._id)) {
-              const now = new Date();
-              const albaniaTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-              get().updateProfile({ lastLocation: { lat, lng, updatedAt: albaniaTime } });
-            }
+            const pos = await get().getCurrentPosition({ enableHighAccuracy: false, timeout: 45000, maximumAge: 600000 });
+            applyLocation(pos.coords.latitude, pos.coords.longitude);
           } catch (fallbackError) {
-            // Mark as denied if permission is rejected
-            const isFallbackPermissionDenied = fallbackError instanceof GeolocationPositionError && fallbackError.code === 1;
-            if (isFallbackPermissionDenied) {
-              set({ geolocationPermissionDenied: true });
-            } else {
-              console.warn('[Geolocation] fallback request failed:', fallbackError);
-            }
-            // Fallback final: usar última localização conhecida ou localização padrão
-            const lastLocation = get().user?.lastLocation;
-            if (lastLocation) {
-              set({ userLocation: { lat: lastLocation.lat, lng: lastLocation.lng } });
-              if (!isFallbackPermissionDenied) {
-                console.debug('[Geolocation] using cached user location');
-              }
-            } else {
-              // Localização padrão (centro de Tirana)
-              set({ userLocation: { lat: 41.3275, lng: 19.8187 } });
-              if (!isFallbackPermissionDenied) {
-                console.debug('[Geolocation] using default location (Tirana center)');
-              }
-            }
+            if (fallbackError instanceof GeolocationPositionError && fallbackError.code === 1) { set({ geolocationPermissionDenied: true }); return; }
+            const last = get().user?.lastLocation;
+            set({ userLocation: last ? { lat: last.lat, lng: last.lng } : { lat: 41.3275, lng: 19.8187 } });
           }
         }
       },
       watchId: null as string | null,
       startTracking: async () => {
-        // Skip if permission was already denied
         if (get().geolocationPermissionDenied || get().watchId) return;
-
-        const fallbackWatch = () => {
-          if (typeof navigator !== 'undefined' && navigator.geolocation) {
-            const id = navigator.geolocation.watchPosition(
-              (pos) => set({ userLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude } }),
-              (err) => {
-                // Mark as denied if permission is rejected
-                if (err.code === 1) {
-                  set({ geolocationPermissionDenied: true });
-                  return;
-                }
-                // Suppress timeout (code 3) errors
-                const message = String(err?.message || '').toLowerCase();
-                const isTimeout = err.code === 3 || message.includes('timeout') || message.includes('could not obtain location');
-                if (!isTimeout) {
-                  console.warn('Browser geolocation watch error:', err);
-                }
-              },
-              { 
-                enableHighAccuracy: true,
-                timeout: 60000,  // 60 segundos de timeout para watch
-                maximumAge: 600000  // 10 minutos de cache
-              }
-            );
-            set({ watchId: id });
-          }
+        const onPosition = (lat: number, lng: number) => set({ userLocation: { lat, lng } });
+        const onError = (err: any) => {
+          const msg = String(err?.message || err?.code || '').toLowerCase();
+          if (msg.includes('permission') || err?.code === 1) { set({ geolocationPermissionDenied: true }); return; }
         };
-
         if (Capacitor.isNativePlatform()) {
           try {
-            const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (position, err) => {
-              if (err) {
-                // Check if permission was denied
-                const message = String(err?.message || '').toLowerCase();
-                const errorCode = String(err?.code || '').toLowerCase();
-                if (message.includes('permission') || errorCode.includes('permission')) {
-                  set({ geolocationPermissionDenied: true });
-                  return;
-                }
-                // Suppress timeout errors silently
-                const isTimeout = message.includes('timeout') || message.includes('could not obtain location') || errorCode.includes('timeout') || errorCode.includes('gloc-0010');
-                if (!isTimeout) {
-                  console.warn('Capacitor geolocation watch error:', err);
-                }
-                return;
-              }
-              if (position?.coords) {
-                set({ userLocation: { lat: position.coords.latitude, lng: position.coords.longitude } });
-              }
+            const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (pos, err) => {
+              if (err) return onError(err);
+              if (pos?.coords) onPosition(pos.coords.latitude, pos.coords.longitude);
             });
-            set({ watchId: id });
-            return;
-          } catch (error) {
-            console.warn('Native watchPosition failed, falling back to browser', error);
-          }
+            set({ watchId: id }); return;
+          } catch { }
         }
-
-        fallbackWatch();
+        if (typeof navigator !== 'undefined' && navigator.geolocation) {
+          const id = navigator.geolocation.watchPosition(
+            (pos) => onPosition(pos.coords.latitude, pos.coords.longitude),
+            onError,
+            { enableHighAccuracy: true, timeout: 60000, maximumAge: 600000 }
+          );
+          set({ watchId: id });
+        }
       },
       stopTracking: async () => {
         const { watchId } = get();
-        if (watchId) {
-          if (Capacitor.isNativePlatform()) {
-            try {
-              await Geolocation.clearWatch({ id: watchId });
-            } catch (clearError) {
-              console.warn('Failed to clear native geolocation watch:', clearError);
-            }
-          } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
-            navigator.geolocation.clearWatch(watchId as number);
-          }
-          set({ watchId: null });
-        }
+        if (!watchId) return;
+        if (Capacitor.isNativePlatform()) { try { await Geolocation.clearWatch({ id: watchId }); } catch { } }
+        else if (typeof navigator !== 'undefined') navigator.geolocation.clearWatch(watchId as number);
+        set({ watchId: null });
       },
       findNearestStop: (lat: number, lng: number) => {
-        let nearest = BUS_STOPS[0];
-        let minDist = Infinity;
-        BUS_STOPS.forEach(stop => {
-          const dist = Math.sqrt(Math.pow(stop.lat - lat, 2) + Math.pow(stop.lng - lng, 2));
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = stop;
-          }
-        });
-        return nearest;
+        return BUS_STOPS.reduce((nearest: any, stop: any) => {
+          const d = haversineMeters(lat, lng, stop.lat, stop.lng);
+          const nd = haversineMeters(lat, lng, nearest.lat, nearest.lng);
+          return d < nd ? stop : nearest;
+        }, BUS_STOPS[0]);
       },
       setSelectedBus: (bus: any) => set({ selectedBus: bus }),
       setSelectedRoute: (route: any) => set({ selectedRoute: route }),
       selectedStop: null,
       setSelectedStop: (stop: any) => set({ selectedStop: stop }),
 
-      // ── Traffic & Intelligence Logic ──
+      // ── Traffic Zones ──
       trafficZones: [
-        { id: 'tz1', name: 'Zogu i Zi', lat: 41.3323, lng: 19.8078, radius: 0.003, intensity: 0.8 }, // 80% vonesë
+        { id: 'tz1', name: 'Zogu i Zi', lat: 41.3323, lng: 19.8078, radius: 0.003, intensity: 0.8 },
         { id: 'tz2', name: 'Qendra', lat: 41.3275, lng: 19.8187, radius: 0.004, intensity: 0.6 },
         { id: 'tz3', name: '21 Dhjetori', lat: 41.3265, lng: 19.8030, radius: 0.002, intensity: 0.7 },
       ],
 
+      // ── Bus Simulation ──
       moveBuses: () => {
         const { buses, trafficZones } = get();
-        const now = new Date();
-        const hour = now.getHours();
-        const isPeakHour = (hour >= 8 && hour <= 9) || (hour >= 16 && hour <= 18);
+        const hour = new Date().getHours();
+        const isPeak = (hour >= 8 && hour <= 9) || (hour >= 16 && hour <= 18);
 
         const updated = buses.map((bus: any) => {
-          if (bus.waitingTicks && bus.waitingTicks > 0) {
-            return { ...bus, waitingTicks: bus.waitingTicks - 1, status: 'stopped' };
-          }
+          if (bus.waitingTicks > 0) return { ...bus, waitingTicks: bus.waitingTicks - 1, status: 'stopped' };
 
-          // Increase ticks
           const ticks = (bus.ticks || 0) + 1;
-
-          const route = BUS_ROUTES.find(r => r.id === bus.routeId);
+          const route = BUS_ROUTES.find((r: any) => r.id === bus.routeId);
           if (!route) return bus;
 
           const isReturn = bus.direction === 'return';
+          const sIds = isReturn ? (route.returnStops || [...route.stops].reverse()) : route.stops;
 
-          // Smart Shape Selection: Gjej shape-in që përputhet më mirë me drejtimin
-          const shape0 = BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] || [];
-          const shape1 = BUS_SHAPES[`${route.id}_1` as keyof typeof BUS_SHAPES] || [];
-          const mainShape = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] || [];
+          // Smart shape selection
+          const shape0: [number, number][] = BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] || [];
+          const shape1: [number, number][] = BUS_SHAPES[`${route.id}_1` as keyof typeof BUS_SHAPES] || [];
+          const mainShape: [number, number][] = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
 
           let coords: [number, number][] = [];
-
-          // Gjej stacionin e parë dhe të fundit për drejtimin aktual
-          const sIds = isReturn ? (route.returnStops || [...route.stops].reverse()) : route.stops;
-          const startStop = BUS_STOPS.find(s => s.id === sIds[0]);
-          const endStop = BUS_STOPS.find(s => s.id === sIds[sIds.length - 1]);
+          const startStop = BUS_STOPS.find((s: any) => s.id === sIds[0]);
+          const endStop = BUS_STOPS.find((s: any) => s.id === sIds[sIds.length - 1]);
 
           if (startStop && endStop) {
-            // Kontrollo cilin shape (0 apo 1) ka pikën e fillimit më afër stacionit nisës
-            const dist0 = shape0.length > 0 ? Math.sqrt(Math.pow(shape0[0][0] - startStop.lat, 2) + Math.pow(shape0[0][1] - startStop.lng, 2)) : Infinity;
-            const dist1 = shape1.length > 0 ? Math.sqrt(Math.pow(shape1[0][0] - startStop.lat, 2) + Math.pow(shape1[0][1] - startStop.lng, 2)) : Infinity;
-
-            if (dist0 < dist1 && dist0 < 0.01) coords = shape0;
-            else if (dist1 < dist0 && dist1 < 0.01) coords = shape1;
+            const dist0 = shape0.length > 0 ? haversineMeters(shape0[0][0], shape0[0][1], startStop.lat, startStop.lng) : Infinity;
+            const dist1 = shape1.length > 0 ? haversineMeters(shape1[0][0], shape1[0][1], startStop.lat, startStop.lng) : Infinity;
+            if (dist0 < dist1 && dist0 < 50) coords = shape0;
+            else if (dist1 < dist0 && dist1 < 50) coords = shape1;
             else if (mainShape.length > 0) coords = isReturn ? [...mainShape].reverse() : mainShape;
           }
 
-          // Fallback nëse smart-selection dështon
-          if (coords.length === 0) {
-            const shapeKey = isReturn ? `${route.id}_1` : `${route.id}_0`;
-            coords = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-          }
-
-          // If return shape is missing, try reversing the forward shape
+          if (coords.length === 0) coords = BUS_SHAPES[`${route.id}_${isReturn ? '1' : '0'}` as keyof typeof BUS_SHAPES] || [];
           if (coords.length === 0 && isReturn) {
-            const forwardShape = (BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] || BUS_SHAPES[route.id as keyof typeof BUS_SHAPES]) || [];
-            if (forwardShape.length > 0) coords = [...forwardShape].reverse();
+            const fw = (BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] || BUS_SHAPES[route.id as keyof typeof BUS_SHAPES]) as [number, number][] || [];
+            if (fw.length > 0) coords = [...fw].reverse();
           }
-
-          // Final fallback to straight lines
-          if (coords.length === 0) {
-            coords = sIds.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean).map(s => [s!.lat, s!.lng]) as [number, number][];
-          }
-
+          if (coords.length === 0) coords = sIds.map((id: string) => BUS_STOPS.find((s: any) => s.id === id)).filter(Boolean).map((s: any) => [s.lat, s.lng]);
           if (coords.length < 2) return bus;
 
           const currentIdx = typeof bus.currentPointIdx === 'number' ? bus.currentPointIdx : 0;
-          const nextPointIdx = currentIdx + 1;
+          const nextIdx = currentIdx + 1;
 
-          // Arriti në fund të shape-it
-          if (nextPointIdx >= coords.length || !coords[nextPointIdx]) {
-            return {
-              ...bus,
-              currentPointIdx: 0,
-              direction: isReturn ? 'forward' : 'return',
-              lat: coords[0][0],
-              lng: coords[0][1],
-              lastUpdate: Date.now(),
-              ticks: 0
-            };
+          if (nextIdx >= coords.length || !coords[nextIdx]) {
+            return { ...bus, currentPointIdx: 0, direction: isReturn ? 'forward' : 'return', lat: coords[0][0], lng: coords[0][1], lastUpdate: Date.now(), ticks: 0 };
           }
 
-          const target = coords[nextPointIdx];
+          const target = coords[nextIdx];
 
-          // Logjika e Trafikut
-          let speedMultiplier = 1.0;
+          // Traffic speed multiplier
+          let speedMult = 1.0;
           trafficZones.forEach((zone: any) => {
-            const distToZone = Math.sqrt(Math.pow(bus.lat - zone.lat, 2) + Math.pow(bus.lng - zone.lng, 2));
-            if (distToZone < zone.radius) {
-              speedMultiplier = 1.0 - zone.intensity;
-            }
+            const d = haversineMeters(bus.lat, bus.lng, zone.lat, zone.lng);
+            if (d < zone.radius * 111320) speedMult = Math.min(speedMult, 1.0 - zone.intensity);
           });
 
-          const dlat = target[0] - bus.lat;
-          const dlng = target[1] - bus.lng;
+          const dlat = target[0] - bus.lat, dlng = target[1] - bus.lng;
           const dist = Math.sqrt(dlat * dlat + dlng * dlng);
 
-          // Përditëso shpejtësinë vetëm çdo 3 sekonda (30 ticks pasi 1 tick = 100ms)
           let currentSpeed = bus.speed;
-          if (ticks % 30 === 0) {
-            currentSpeed = 35 * speedMultiplier * (0.8 + Math.random() * 0.4);
-          }
+          if (ticks % 30 === 0) currentSpeed = 35 * speedMult * (0.8 + Math.random() * 0.4);
 
-          // Nëse është shumë afër pikës tjetër, kalo te pika pasardhëse
           if (dist < 0.0001) {
-            const currentStop = BUS_STOPS.find(s =>
-              Math.sqrt(Math.pow(s.lat - target[0], 2) + Math.pow(s.lng - target[1], 2)) < 0.0002
-            );
-
-            let waitingTicks = 0;
-            let newLoad = bus.passengerLoad;
-
+            const currentStop = BUS_STOPS.find((s: any) => haversineMeters(s.lat, s.lng, target[0], target[1]) < 25);
+            let waitingTicks = 0, newLoad = bus.passengerLoad;
             if (currentStop) {
               waitingTicks = 30;
-              newLoad += (Math.floor(Math.random() * 7) - 3);
-              if (isPeakHour) newLoad += Math.floor(Math.random() * 4);
-              newLoad = Math.max(2, Math.min(50, newLoad));
+              newLoad = Math.max(2, Math.min(50, newLoad + (Math.floor(Math.random() * 7) - 3) + (isPeak ? Math.floor(Math.random() * 4) : 0)));
             }
-
-            const stopsList = isReturn ? (route.returnStops || route.stops) : route.stops;
-            const nextStops = stopsList.map(id => BUS_STOPS.find(s => s.id === id)).filter(Boolean);
-            let nearestStop = nextStops[0];
-            let minDist = Infinity;
-            nextStops.forEach(s => {
-              const d = Math.sqrt(Math.pow(s!.lat - target[0], 2) + Math.pow(s!.lng - target[1], 2));
-              if (d < minDist) {
-                minDist = d;
-                nearestStop = s;
-              }
-            });
-
+            const nextStops = sIds.map((id: string) => BUS_STOPS.find((s: any) => s.id === id)).filter(Boolean);
+            const nearestNext = nextStops.reduce((best: any, s: any) => {
+              const d = haversineMeters(s.lat, s.lng, target[0], target[1]);
+              const bd = haversineMeters(best.lat, best.lng, target[0], target[1]);
+              return d < bd ? s : best;
+            }, nextStops[0]);
             return {
-              ...bus,
-              currentPointIdx: nextPointIdx,
-              lat: target[0],
-              lng: target[1],
-              passengerLoad: newLoad,
-              waitingTicks: waitingTicks,
-              nextStop: nearestStop?.name || bus.nextStop,
-              currentStop: currentStop?.name || bus.currentStop,
+              ...bus, currentPointIdx: nextIdx, lat: target[0], lng: target[1], passengerLoad: newLoad,
+              waitingTicks, nextStop: nearestNext?.name || bus.nextStop, currentStop: currentStop?.name || bus.currentStop,
               status: waitingTicks > 0 ? 'stopped' : 'moving',
-              delay: speedMultiplier < 0.5 ? (bus.delay + 0.05) : Math.max(0, bus.delay - 0.05),
-              lastUpdate: Date.now(),
-              ticks: ticks,
-              speed: waitingTicks > 0 ? 0 : currentSpeed
+              delay: speedMult < 0.5 ? (bus.delay + 0.05) : Math.max(0, bus.delay - 0.05),
+              lastUpdate: Date.now(), ticks, speed: waitingTicks > 0 ? 0 : currentSpeed
             };
           }
 
-          if (bus.waitingTicks > 0) {
-            return {
-              ...bus,
-              waitingTicks: bus.waitingTicks - 1,
-              speed: 0,
-              ticks: ticks
-            };
-          }
-
-          const baseStep = 0.00003;
-          const actualStep = baseStep * speedMultiplier;
-
-          return {
-            ...bus,
-            lat: bus.lat + (dlat / dist) * actualStep,
-            lng: bus.lng + (dlng / dist) * actualStep,
-            speed: currentSpeed,
-            status: 'moving',
-            ticks: ticks
-          };
+          const baseStep = 0.00003 * speedMult;
+          return { ...bus, lat: bus.lat + (dlat / dist) * baseStep, lng: bus.lng + (dlng / dist) * baseStep, speed: currentSpeed, status: 'moving', ticks };
         });
         set({ buses: updated });
       },
 
-      // ── Trip Planner ──
+      // ── Trip Planner (RAPTOR-based, Google Maps-level) ──
       tripResult: null,
       activeTrip: null,
-      tripOriginCoords: null as { lat: number, lng: number } | null,
+      tripOriginCoords: null as { lat: number; lng: number } | null,
       tripOriginName: '',
       setTripOriginCoords: (coords: any, name = '') => set({ tripOriginCoords: coords, tripOriginName: name }),
-      tripDestCoords: null as { lat: number, lng: number } | null,
+      tripDestCoords: null as { lat: number; lng: number } | null,
       tripDestName: '',
       setTripDestCoords: (coords: any, name = '') => set({ tripDestCoords: coords, tripDestName: name }),
       tripFrom: '',
       tripTo: '',
       setTripFrom: (v: any) => {
         set({ tripFrom: v });
-        if (v !== get().tripOriginName) {
-          set({ tripOriginCoords: null, tripOriginName: '' });
-        }
+        if (v !== get().tripOriginName) set({ tripOriginCoords: null, tripOriginName: '' });
       },
       setTripTo: (v: any) => {
         set({ tripTo: v });
-        if (v !== get().tripDestName) {
-          set({ tripDestCoords: null, tripDestName: '' });
-        }
+        if (v !== get().tripDestName) set({ tripDestCoords: null, tripDestName: '' });
       },
       setTripResult: (v: any) => set({ tripResult: v }),
-      tripOptions: [] as any[],
+      tripOptions: [] as TripOption[],
       selectedTripOptionIndex: 0,
       tripDepartureMode: 'now' as 'now' | 'depart_at' | 'arrive_by',
       tripDepartureTime: new Date().toISOString().slice(0, 16),
-      setTripOptions: (options: any[]) => set({ tripOptions: options }),
+      setTripOptions: (options: TripOption[]) => set({ tripOptions: options }),
       setSelectedTripOptionIndex: (idx: number) => set({ selectedTripOptionIndex: idx }),
       setTripDepartureMode: (mode: 'now' | 'depart_at' | 'arrive_by') => set({ tripDepartureMode: mode }),
       setTripDepartureTime: (time: string) => set({ tripDepartureTime: time }),
       setActiveTrip: (trip: any) => set({ activeTrip: trip }),
+
       planTrip: async (fromName: string, toName: string) => {
-        console.log('🔍 planTrip iniciuar:', { fromName, toName });
-        const searchTo = toName.trim().toLowerCase();
-        const searchFrom = fromName.trim().toLowerCase();
-
-        const cleanName = (n: string) => n.trim().toLowerCase();
-        const findExactStop = (name: string) => {
-          const clean = cleanName(name);
-          return BUS_STOPS.find(s => s.name.toLowerCase().trim() === clean);
-        };
-
-        const exactFromStop = findExactStop(fromName);
-        const exactToStop = findExactStop(toName);
+        console.log('🔍 planTrip started:', { fromName, toName });
 
         const departureMode = get().tripDepartureMode;
-        const desiredTime = departureMode !== 'now' && get().tripDepartureTime
-          ? new Date(get().tripDepartureTime)
-          : new Date();
         const isArriveBy = departureMode === 'arrive_by';
+        const desiredTime = (departureMode !== 'now' && get().tripDepartureTime)
+          ? new Date(get().tripDepartureTime) : new Date();
+        const departureTimeSec = Math.floor(desiredTime.getTime() / 1000);
 
-        const formatIso = (date: Date) => date.toISOString();
-        const candidates: any[] = [];
-        let bestTrip: any = null;
-        let bestScore = Infinity;
+        // ── 1. Resolve origin coordinates ──
+        const isMyLocation = ['vendndodhja', 'my location', 'location'].some(k => fromName.toLowerCase().includes(k));
+        const storedOriginMatch = get().tripOriginName === fromName && get().tripOriginCoords;
 
-        // Ndihmës: Gjen koordinatat [lat, lng] për një adresë të shkruar (Geocoding)
-        const geocodeQuery = async (query: string): Promise<{ lat: number, lng: number } | null> => {
-          const stop = findExactStop(query);
-          if (stop) return { lat: stop.lat, lng: stop.lng };
-
-          const cleanQuery = query.toLowerCase().trim();
-          const suffix = (cleanQuery.includes('tiran') || cleanQuery.includes('albania')) ? '' : ', Tirana';
-
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + suffix)}&format=json&limit=1`, {
-              headers: { 'User-Agent': 'UrbaniIm/1.0' }
-            });
-            const data = await res.json();
-            if (data && data.length > 0) {
-              return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-            }
-          } catch (err) {
-            console.error('Geocoding error:', err);
+        let fromCoords: { lat: number; lng: number } | null = storedOriginMatch ? get().tripOriginCoords : null;
+        if (!fromCoords) {
+          if (isMyLocation) {
+            fromCoords = get().userLocation;
+          } else {
+            fromCoords = await geocodeAddress(fromName);
           }
-          return null;
-        };
-
-        // 1. Geocode destinacionin (toName) dhe përcakto stacionet e mbërritjes
-        let toCoords = get().tripDestName === toName ? get().tripDestCoords : null;
-        if (exactToStop) {
-          toCoords = { lat: exactToStop.lat, lng: exactToStop.lng };
-        } else if (!toCoords) {
-          toCoords = await geocodeQuery(toName);
         }
-
-        if (!toCoords) {
-          set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
-          return;
-        }
-        set({ tripDestCoords: toCoords, tripDestName: toName });
-
-        let possibleToStops: { stop: any, walkDist: number, walkTime: number }[] = [];
-        if (exactToStop) {
-          possibleToStops = [{
-            stop: exactToStop,
-            walkDist: 0,
-            walkTime: 0
-          }];
-        } else {
-          BUS_STOPS.forEach(s => {
-            const dist = Math.sqrt(Math.pow(s.lat - toCoords!.lat, 2) + Math.pow(s.lng - toCoords!.lng, 2)) * 111320;
-            if (dist <= 1500) {
-              possibleToStops.push({
-                stop: s,
-                walkDist: Math.round(dist),
-                walkTime: Math.ceil(dist / 80)
-              });
-            }
-          });
-
-          // Fallback: nëse nuk ka asnjë stacion brenda 1.5km, gjej 3 stacionet më të afërta të qytetit!
-          if (possibleToStops.length === 0) {
-            const sortedStops = BUS_STOPS.map(s => {
-              const dist = Math.sqrt(Math.pow(s.lat - toCoords!.lat, 2) + Math.pow(s.lng - toCoords!.lng, 2)) * 111320;
-              return { stop: s, dist };
-            }).sort((a, b) => a.dist - b.dist);
-
-            sortedStops.slice(0, 3).forEach(item => {
-              possibleToStops.push({
-                stop: item.stop,
-                walkDist: Math.round(item.dist),
-                walkTime: Math.ceil(item.dist / 80)
-              });
-            });
-          }
-          possibleToStops.sort((a, b) => a.walkDist - b.walkDist);
-        }
-
-        const primaryToStops = possibleToStops.filter(p => p.walkDist <= 400);
-        const directToStops = primaryToStops.filter(p => p.walkDist <= 300);
-        const toStopsForEvaluation = primaryToStops.length > 0 ? primaryToStops : possibleToStops;
-
-        // 2. Geocode pikën e nisjes (fromName) dhe përcakto stacionet e nisjes
-        let possibleFromStops: { stop: any, walkDist: number, walkTime: number }[] = [];
-        const isMyLocation = cleanName(fromName).includes('vendndodhja') || cleanName(fromName).includes('my location');
-        
-        // Kontrollo nëse ky është zgjedhje në hartë (map selection)
-        const storedOriginCoords = get().tripOriginCoords;
-        const isMapSelection = storedOriginCoords && get().tripOriginName === fromName;
-
-        let fromCoords = get().tripOriginName === fromName ? get().tripOriginCoords : null;
-        if (exactFromStop) {
-          fromCoords = { lat: exactFromStop.lat, lng: exactFromStop.lng };
-        } else if (isMyLocation || isMapSelection) {
-          fromCoords = get().tripOriginCoords || get().userLocation;
-        } else if (!fromCoords) {
-          fromCoords = await geocodeQuery(fromName);
-        }
-
         if (!fromCoords) {
           set({ tripResult: { error: 'Adresa e nisjes nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
           return;
         }
         set({ tripOriginCoords: fromCoords, tripOriginName: fromName });
 
-        if (exactFromStop) {
-          possibleFromStops = [{
-            stop: exactFromStop,
-            walkDist: 0,
-            walkTime: 0
-          }];
-        } else if (isMyLocation || isMapSelection) {
-          const distances = BUS_STOPS.map(s => {
-            const R = 6371e3;
-            const dLat = (s.lat - fromCoords!.lat) * Math.PI / 180;
-            const dLng = (s.lng - fromCoords!.lng) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(fromCoords!.lat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) *
-              Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const dist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-            return { stop: s, dist };
-          });
+        // ── 2. Resolve destination coordinates ──
+        const storedDestMatch = get().tripDestName === toName && get().tripDestCoords;
+        let toCoords: { lat: number; lng: number } | null = storedDestMatch ? get().tripDestCoords : null;
+        if (!toCoords) toCoords = await geocodeAddress(toName);
+        if (!toCoords) {
+          set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
+          return;
+        }
+        set({ tripDestCoords: toCoords, tripDestName: toName });
 
-          let nearby = distances.filter(d => d.dist <= 1500).sort((a, b) => a.dist - b.dist).slice(0, 10);
-          if (!nearby.length) {
-            nearby = distances.sort((a, b) => a.dist - b.dist).slice(0, 3);
-          }
+        // ── 3. Find candidate stops near origin and destination ──
+        const fromStops = getNearestStops(fromCoords.lat, fromCoords.lng, MAX_WALK_METERS, 8);
+        const toStops = getNearestStops(toCoords.lat, toCoords.lng, MAX_WALK_METERS, 8);
 
-          try {
-            const coords = [`${fromCoords!.lng},${fromCoords!.lat}`, ...nearby.map(n => `${n.stop.lng},${n.stop.lat}`)];
-            const res = await fetch(`https://router.project-osrm.org/table/v1/foot/${coords.join(';')}?sources=0&annotations=distance,duration`);
-            const data = await res.json();
-            if (data.code === 'Ok') {
-              possibleFromStops = nearby.map((n, i) => ({
-                stop: n.stop,
-                walkDist: Math.round(data.distances[0][i + 1]),
-                walkTime: Math.ceil(data.durations[0][i + 1] / 60)
-              }));
-            } else { throw new Error(); }
-          } catch (err) {
-            possibleFromStops = nearby.map(n => ({ stop: n.stop, walkDist: n.dist, walkTime: Math.ceil(n.dist / 80) }));
-          }
-
-          possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
-        } else {
-          BUS_STOPS.forEach(s => {
-            const dist = Math.sqrt(Math.pow(s.lat - fromCoords!.lat, 2) + Math.pow(s.lng - fromCoords!.lng, 2)) * 111320;
-            if (dist <= 1500) {
-              possibleFromStops.push({
-                stop: s,
-                walkDist: Math.round(dist),
-                walkTime: Math.ceil(dist / 80)
-              });
-            }
-          });
-
-          // Fallback: nëse nuk ka asnjë stacion brenda 1.5km, gjej 3 stacionet më të afërta të qytetit!
-          if (possibleFromStops.length === 0) {
-            const sortedStops = BUS_STOPS.map(s => {
-              const dist = Math.sqrt(Math.pow(s.lat - fromCoords!.lat, 2) + Math.pow(s.lng - fromCoords!.lng, 2)) * 111320;
-              return { stop: s, dist };
-            }).sort((a, b) => a.dist - b.dist);
-
-            sortedStops.slice(0, 3).forEach(item => {
-              possibleFromStops.push({
-                stop: item.stop,
-                walkDist: Math.round(item.dist),
-                walkTime: Math.ceil(item.dist / 80)
-              });
-            });
-          }
-          possibleFromStops.sort((a, b) => a.walkDist - b.walkDist);
+        if (fromStops.length === 0 || toStops.length === 0) {
+          set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
+          return;
         }
 
-        const evaluateTrip = (
-          legs: any[],
-          initialWalkDist: number,
-          initialWalkTime: number,
-          actualFromStopName: string,
-          finalWalkDist: number = 0,
-          finalWalkTime: number = 0,
-          actualToStopName: string = '',
-          secondLegLength = 0
-        ) => {
-          const busLegs = legs.filter(l => l.route);
-          const totalStops = legs.reduce((acc, leg) => acc + (leg.numStops || 0), 0);
-          const walkTimeTransfer = legs.reduce((acc, leg) => acc + (leg.walkingTime || 0), 0);
-          const totalWalkDist = initialWalkDist + finalWalkDist + legs.reduce((acc, leg) => acc + (leg.walkingDist || 0), 0);
+        // ── 4. Use RAPTOR router ──
+        const liveBuses = get().buses || [];
+        const options = runRaptorRouter(fromStops, toStops, departureTimeSec, isArriveBy, liveBuses);
 
-          if (totalWalkDist > 2500) {
-            console.log('⛔ Kalim shumë i madh ecjeje:', totalWalkDist);
-            return;
-          }
+        if (options.length === 0) {
+          set({ tripResult: { error: 'Nuk u gjet asnjë rrugë e mundshme. Provo destinacion tjetër ose koha e udhëtimit mund të jetë jashtë orarit.' }, activeTrip: null, tripOptions: [], selectedTripOptionIndex: 0 });
+          return;
+        }
 
-          const transferPenalty = Math.max(0, busLegs.length - 1) * 15;
-          const totalTime = initialWalkTime + finalWalkTime + (totalStops * 2.5) + walkTimeTransfer + transferPenalty;
-          const secondLegBonus = busLegs.length > 1 ? secondLegLength * 0.25 : 0;
+        // ── 5. Enrich legs with named origin/destination and walk legs at ends ──
+        const enrichedOptions = options.map((opt, index) => {
+          const legs = [...opt.legs];
 
-          // ── Real-Time Vehicle direction and progress check ──
-          let liveBusScoreAdjustment = 0;
-          let firstBusLeg = busLegs[0];
-
-          if (firstBusLeg) {
-            const route = firstBusLeg.route;
-            const boardStop = BUS_STOPS.find(s => s.name === firstBusLeg.boardAt);
-            const expectedDir = firstBusLeg.direction; // 'forward' or 'return'
-            const fullShape = getFullShapeCoords(route.id, expectedDir);
-
-            let bestEta = Infinity;
-            let bestBus = null;
-
-            if (boardStop && fullShape.length >= 2) {
-              const boardProgress = getProgressOnPolyline([boardStop.lat, boardStop.lng], fullShape);
-              const liveBuses = get().buses;
-
-              liveBuses.forEach((bus: any) => {
-                if (bus.routeId === route.id && bus.direction === expectedDir) {
-                  const busProgress = getProgressOnPolyline([bus.lat, bus.lng], fullShape);
-                  const distToBoard = boardProgress - busProgress;
-
-                  // Check if the bus is approaching the boarding stop or currently at it (tolerance = 0.0003 coords)
-                  if (distToBoard >= -0.0003) {
-                    const speedKmh = bus.speed > 5 ? bus.speed : 30; // fallback to 30 km/h
-                    const distMeters = distToBoard * 111320;
-                    const eta = Math.max(0, distMeters / (speedKmh * 1000 / 60)); // ETA in minutes
-
-                    if (eta < bestEta) {
-                      bestEta = eta;
-                      bestBus = bus;
-                    }
-                  }
-                }
-              });
-            }
-
-            if (bestBus) {
-              firstBusLeg.liveBus = bestBus;
-              firstBusLeg.etaMinutes = Math.round(bestEta);
-              // Provide bonus for close, active live bus
-              liveBusScoreAdjustment = -10 + Math.min(10, bestEta * 0.5); // bonus between -10 and -5
-            } else {
-              // Penalty for no live bus currently serving this stop / direction
-              liveBusScoreAdjustment = 15;
+          // Replace 'origin' / 'destination' placeholders with actual names
+          if (legs[0]?.isWalking && legs[0].boardAt === 'origin') {
+            legs[0] = { ...legs[0], boardAt: fromName };
+          } else if (!legs[0]?.isWalking) {
+            // Add initial walk leg if user is not at a stop
+            const boardStopName = legs[0].boardAt!;
+            const boardStop = BUS_STOPS.find((s: any) => s.name === boardStopName);
+            if (boardStop) {
+              const walkDist = Math.round(haversineMeters(fromCoords!.lat, fromCoords!.lng, boardStop.lat, boardStop.lng));
+              if (walkDist > 20) {
+                legs.unshift({ isWalking: true, boardAt: fromName, alightAt: boardStopName, walkingDist: walkDist, walkingTime: Math.ceil(walkTimeSec(walkDist) / 60), walkingTimeSec: walkTimeSec(walkDist) });
+              }
             }
           }
 
-          const score = (totalWalkDist / 8) + totalTime - secondLegBonus + liveBusScoreAdjustment;
-
-          if (finalWalkDist > 400) {
-            console.log('⛔ Ecje finale shumë e madhe:', finalWalkDist);
-            return;
+          const lastLeg = legs[legs.length - 1];
+          if (lastLeg?.isWalking && lastLeg.alightAt === 'destination') {
+            legs[legs.length - 1] = { ...lastLeg, alightAt: toName };
+          } else if (!lastLeg?.isWalking) {
+            const alightStopName = lastLeg.alightAt!;
+            const alightStop = BUS_STOPS.find((s: any) => s.name === alightStopName);
+            if (alightStop) {
+              const walkDist = Math.round(haversineMeters(toCoords!.lat, toCoords!.lng, alightStop.lat, alightStop.lng));
+              if (walkDist > 20) {
+                legs.push({ isWalking: true, boardAt: alightStopName, alightAt: toName, walkingDist: walkDist, walkingTime: Math.ceil(walkTimeSec(walkDist) / 60), walkingTimeSec: walkTimeSec(walkDist) });
+              }
+            }
           }
 
-          const finalLegs = !exactFromStop ? [
-            { isWalking: true, boardAt: fromName, alightAt: actualFromStopName, walkingDist: initialWalkDist, walkingTime: initialWalkTime, numStops: 0 },
-            ...legs
-          ] : [...legs];
-
-          if (!exactToStop) {
-            finalLegs.push({ isWalking: true, boardAt: actualToStopName, alightAt: toName, walkingDist: finalWalkDist, walkingTime: finalWalkTime, numStops: 0 });
-          }
-
-          const travelTime = Math.round(totalTime - transferPenalty + (busLegs.length > 1 ? 5 : 0));
-          const departure = isArriveBy ? new Date(desiredTime.getTime() - travelTime * 60000) : new Date(desiredTime);
-          const arrival = isArriveBy ? new Date(desiredTime) : new Date(desiredTime.getTime() + travelTime * 60000);
-
-          const trip = {
+          return {
+            ...opt,
+            legs,
             from: fromName,
             to: toName,
-            actualFrom: actualFromStopName,
-            actualTo: actualToStopName,
-            walkingDist: initialWalkDist + finalWalkDist,
-            walkingTime: initialWalkTime + finalWalkTime,
-            totalStops,
-            transfers: Math.max(0, busLegs.length - 1),
-            legs: finalLegs,
-            travelTime,
-            totalPrice: busLegs.length * 40,
-            score,
-            departureTime: formatIso(departure),
-            arrivalTime: formatIso(arrival),
-            isDirect: busLegs.length === 1,
-            routeNames: busLegs.map((leg: any) => leg.route?.name).filter(Boolean).join(' → ')
+            optionIndex: index + 1,
           };
+        });
 
-          candidates.push(trip);
-
-          if (score < bestScore) {
-            bestScore = score;
-            bestTrip = trip;
-          }
-        };
-
-        // 1. DIRECT ROUTES
-        console.log('🚀 Kërkojnë rrugë të drejtpërdrejtë:', possibleFromStops.length, 'nga', possibleFromStops.map(p => p.stop.name));
-        for (const pfs of possibleFromStops) {
-          for (const pts of directToStops.length ? directToStops : toStopsForEvaluation) {
-            for (const route of BUS_ROUTES) {
-              const directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
-                { arr: route.stops, dirName: 'forward' as const },
-                { arr: route.returnStops || [], dirName: 'return' as const }
-              ].filter(d => d.arr.length > 0);
-
-              for (const { arr, dirName } of directions) {
-                // Find all occurrences of origin and destination stops in the sequence (resolves loops/circles)
-                const startIndices: number[] = [];
-                const endIndices: number[] = [];
-
-                arr.forEach((stopId, idx) => {
-                  if (stopId === pfs.stop.id) startIndices.push(idx);
-                  if (stopId === pts.stop.id) endIndices.push(idx);
-                });
-
-                // Find valid stop pairs where boarding is before alight
-                for (const i of startIndices) {
-                  for (const j of endIndices) {
-                    if (i < j) {
-                      const stopIds = arr.slice(i, j + 1);
-                      const stops = stopIds.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean);
-
-                      // Build candidate leg for validation
-                      const leg = {
-                        route,
-                        stops,
-                        stopIds,
-                        boardAt: pfs.stop.name,
-                        alightAt: pts.stop.name,
-                        numStops: j - i,
-                        direction: dirName
-                      };
-
-                      // Polyline-based progress validation
-                      const legCoords = getLegCoords(leg);
-                      if (legCoords.length >= 2) {
-                        const progressBoard = getProgressOnPolyline([pfs.stop.lat, pfs.stop.lng], legCoords);
-                        const progressAlight = getProgressOnPolyline([pts.stop.lat, pts.stop.lng], legCoords);
-
-                        // Ensure boarding stop appears before destination stop along road geometry
-                        if (progressBoard < progressAlight) {
-                          console.log('✅ Gjetur rrugë e drejtpërdrejtë e vlefshme:', pfs.stop.name, '→', pts.stop.name, 'me linjën', route.name, `(${dirName})`);
-                          evaluateTrip([leg], pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pts.stop.name);
-                        } else {
-                          console.log('⛔ Refuzuar drejtimi (dështoi progresi në polyline):', route.name, pfs.stop.name, '→', pts.stop.name);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // 2. TRANSFER ROUTES
-        for (const pfs of possibleFromStops) {
-          for (const route1 of BUS_ROUTES) {
-            const r1Directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
-              { arr: route1.stops, dirName: 'forward' as const },
-              { arr: route1.returnStops || [], dirName: 'return' as const }
-            ].filter(d => d.arr.length > 0);
-
-            for (const { arr: r1Arr, dirName: r1DirName } of r1Directions) {
-              const startIndices1: number[] = [];
-              r1Arr.forEach((stopId, idx) => {
-                if (stopId === pfs.stop.id) startIndices1.push(idx);
-              });
-
-              if (startIndices1.length === 0) continue;
-
-              for (const pts of toStopsForEvaluation) {
-                for (const route2 of BUS_ROUTES) {
-                  if (route1.id === route2.id) continue;
-
-                  const r2Directions: { arr: string[], dirName: 'forward' | 'return' }[] = [
-                    { arr: route2.stops, dirName: 'forward' as const },
-                    { arr: route2.returnStops || [], dirName: 'return' as const }
-                  ].filter(d => d.arr.length > 0);
-
-                  for (const { arr: r2Arr, dirName: r2DirName } of r2Directions) {
-                    const endIndices2: number[] = [];
-                    r2Arr.forEach((stopId, idx) => {
-                      if (stopId === pts.stop.id) endIndices2.push(idx);
-                    });
-
-                    if (endIndices2.length === 0) continue;
-
-                    // Evaluate possible transfer points
-                    for (const idx1_start of startIndices1) {
-                      for (const idx2_end of endIndices2) {
-                        
-                        // Look for a transfer stop on route1 (after boarding) and route2 (before alighting)
-                        for (let i = idx1_start + 1; i < r1Arr.length; i++) {
-                          const s1 = BUS_STOPS.find(s => s.id === r1Arr[i]);
-                          if (!s1) continue;
-
-                          for (let j = 0; j < idx2_end; j++) {
-                            const s2 = BUS_STOPS.find(s => s.id === r2Arr[j]);
-                            if (!s2) continue;
-
-                            // Walk distance between transfer stops must be <= 300m
-                            const d = s1.id === s2.id ? 0 : Math.sqrt(Math.pow(s1.lat - s2.lat, 2) + Math.pow(s1.lng - s2.lng, 2)) * 111320;
-                            if (d > 300) continue;
-
-                            const dist = Math.round(d);
-                            const walkTime = Math.ceil(dist / 80);
-
-                            const stopIds1 = r1Arr.slice(idx1_start, i + 1);
-                            const stopIds2 = r2Arr.slice(j, idx2_end + 1);
-
-                            const leg1 = {
-                              route: route1,
-                              stops: stopIds1.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean),
-                              stopIds: stopIds1,
-                              boardAt: pfs.stop.name,
-                              alightAt: s1.name,
-                              numStops: i - idx1_start,
-                              direction: r1DirName
-                            };
-
-                            const leg2 = {
-                              route: route2,
-                              stops: stopIds2.map(id => BUS_STOPS.find(s => s.id === id)?.name).filter(Boolean),
-                              stopIds: stopIds2,
-                              boardAt: s2.name,
-                              alightAt: pts.stop.name,
-                              numStops: idx2_end - j,
-                              direction: r2DirName
-                            };
-
-                            // Validate leg 1 polyline progress
-                            const legCoords1 = getLegCoords(leg1);
-                            if (legCoords1.length < 2) continue;
-                            const progressBoard1 = getProgressOnPolyline([pfs.stop.lat, pfs.stop.lng], legCoords1);
-                            const progressAlight1 = getProgressOnPolyline([s1.lat, s1.lng], legCoords1);
-                            if (progressBoard1 >= progressAlight1) continue;
-
-                            // Validate leg 2 polyline progress
-                            const legCoords2 = getLegCoords(leg2);
-                            if (legCoords2.length < 2) continue;
-                            const progressBoard2 = getProgressOnPolyline([s2.lat, s2.lng], legCoords2);
-                            const progressAlight2 = getProgressOnPolyline([pts.stop.lat, pts.stop.lng], legCoords2);
-                            if (progressBoard2 >= progressAlight2) continue;
-
-                            // If both legs are valid, add the trip
-                            evaluateTrip([
-                              leg1,
-                              dist > 30 ? { isWalking: true, boardAt: s1.name, alightAt: s2.name, walkingDist: dist, walkingTime: walkTime, numStops: 0 } : null,
-                              leg2
-                            ].filter(Boolean), pfs.walkDist, pfs.walkTime, pfs.stop.name, pts.walkDist, pts.walkTime, pfs.stop.name, stopIds2.length - 1);
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        const sortedCandidates = candidates
-          .filter(c => !!c)
-          .sort((a, b) => a.score - b.score);
-
-        console.log('✅ Kandidatë të gjetura:', sortedCandidates.length, sortedCandidates.slice(0, 2));
-
-        const topOptions = sortedCandidates.slice(0, 4).map((option, index) => ({ ...option, optionIndex: index + 1 }));
-        const selected = topOptions[0] || null;
-
-        console.log('🎯 Ruga e zgjedhur:', selected);
+        const selected = enrichedOptions[0];
+        console.log('✅ Trip options found:', enrichedOptions.length, enrichedOptions.map(o => ({ routes: o.routeNames, time: o.travelTime, transfers: o.transfers })));
 
         set({
           tripResult: selected,
-          tripOptions: topOptions,
+          tripOptions: enrichedOptions,
           selectedTripOptionIndex: 0,
           activeTrip: selected,
           showRoutes: true,
@@ -1337,21 +1098,18 @@ const useStore = create<any>()(
       // ── Notifications ──
       notifications: [],
       addNotification: (msg: string, type = 'info') => {
-        const id = Date.now() + Math.random(); // Sigurohemi që ID është unike
+        const id = Date.now() + Math.random();
         set((state: any) => ({ notifications: [...state.notifications, { id, msg, type }] }));
       },
       removeNotification: (id: number) => {
-        set((state: any) => ({
-          notifications: state.notifications.filter((n: any) => n.id !== id)
-        }));
+        set((state: any) => ({ notifications: state.notifications.filter((n: any) => n.id !== id) }));
       },
 
       // ── Saved Routes ──
       savedRoutes: [],
       saveRoute: (route: any) => set((state: any) => ({
         savedRoutes: state.savedRoutes.find((r: any) => r.id === route.id)
-          ? state.savedRoutes
-          : [...state.savedRoutes, route]
+          ? state.savedRoutes : [...state.savedRoutes, route]
       })),
       removeSavedRoute: (routeId: string) => set((state: any) => ({
         savedRoutes: state.savedRoutes.filter((r: any) => r.id !== routeId)
@@ -1367,17 +1125,9 @@ const useStore = create<any>()(
       name: 'urbani-im-storage-v2',
       partialize: (state) => Object.fromEntries(
         Object.entries(state).filter(([key]) => ![
-          'searchQuery',
-          'tripFrom',
-          'tripTo',
-          'tripResult',
-          'tripOptions',
-          'selectedTripOptionIndex',
-          'activeTrip',
-          'selectedStop',
-          'activeRouteFilter',
-          'currentView',
-          'isSidebarOpen'
+          'searchQuery', 'tripFrom', 'tripTo', 'tripResult',
+          'tripOptions', 'selectedTripOptionIndex', 'activeTrip',
+          'selectedStop', 'activeRouteFilter', 'currentView', 'isSidebarOpen'
         ].includes(key))
       ),
     }

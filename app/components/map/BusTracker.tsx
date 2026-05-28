@@ -38,10 +38,10 @@ export default function BusTracker() {
   const toggleFavorite = () => {
     if (isSaved) {
       removeSavedRoute(selectedRouteId);
-      addNotification(language === 'al' ? `Linja ${route?.name} u hoq nga të preferuarat.` : `Route ${route?.name} removed from favorites.`, 'info');
+      addNotification(t.favorites_removed.replace('{route}', route?.name || ''), 'info');
     } else {
       saveRoute(route!);
-      addNotification(language === 'al' ? `Linja ${route?.name} u shtua tek të preferuarat!` : `Route ${route?.name} added to favorites!`, 'success');
+      addNotification(t.favorites_added.replace('{route}', route?.name || ''), 'success');
     }
   };
 
@@ -327,7 +327,7 @@ export default function BusTracker() {
             {routeBuses.map((bus: any, idx: number) => {
               const load = getLoad(bus.passengerLoad);
               const isSelected = selectedBus?.id === bus.id;
-              const busLabel = bus.plate || bus.id || (language === 'al' ? 'Pa Targë' : 'No Plate');
+              const busLabel = bus.plate || bus.id || t.no_plate;
               const arrMin = Math.round(2 + Math.random() * 6);
 
               return (
