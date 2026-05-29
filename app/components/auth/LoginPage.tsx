@@ -2,12 +2,12 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from "next-auth/react";
-import { IonIcon } from '@ionic/react';
-import { busOutline, eyeOutline, eyeOffOutline, arrowForwardOutline } from 'ionicons/icons';
 import { Preferences } from '@capacitor/preferences';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 import { AsYouType } from 'libphonenumber-js';
+import { Mail, Lock, User, Phone, Eye, EyeOff, ChevronLeft, ArrowRight } from 'lucide-react';
+
 const COUNTRY_CODES = [
   { code: '+93', flag: '🇦🇫', name: 'Afghanistan' },
   { code: '+355', flag: '🇦🇱', name: 'Albania' },
@@ -137,44 +137,44 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
   );
 
   return (
-    <div style={{ display: 'flex', gap: '8px' }}>
+    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
       <div style={{ position: 'relative' }} ref={dropdownRef}>
         <button type="button" onClick={() => setOpen(!open)} style={{
-          height: '46px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
-          borderRadius: '10px', color: '#fff', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '8px',
-          cursor: 'pointer', transition: 'var(--transition)'
+          height: '52px', background: '#121214', border: '1px solid #27272a',
+          borderRadius: '14px', color: '#ffffff', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px',
+          cursor: 'pointer', transition: 'all 0.2s', minWidth: 'auto', minHeight: 'auto'
         }}>
           <span style={{ fontSize: '18px' }}>{country.flag}</span>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{country.code}</span>
+          <span style={{ fontSize: '14px', color: '#a1a1aa', fontWeight: '600' }}>{country.code}</span>
         </button>
 
         {open && (
           <div style={{
             position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100,
-            background: '#121212', border: '1px solid #222', borderRadius: '12px',
-            width: '220px', padding: '8px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+            background: '#121214', border: '1px solid #27272a', borderRadius: '14px',
+            width: '220px', padding: '8px', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)'
           }}>
             <div style={{ position: 'relative', marginBottom: '8px' }}>
               <input
                 autoFocus placeholder={t.auth_search_country}
                 value={search} onChange={e => setSearch(e.target.value)}
                 style={{
-                  width: '100%', background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px',
-                  padding: '8px 10px', color: '#fff', fontSize: '12px', outline: 'none'
+                  width: '100%', background: '#1c1c1f', border: '1px solid #27272a', borderRadius: '8px',
+                  padding: '8px 10px', color: '#ffffff', fontSize: '13px', outline: 'none'
                 }}
               />
             </div>
             <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
               {filtered.map(c => (
                 <button key={c.code} type="button" onClick={() => { setCountry(c); setOpen(false); setSearch(''); }}
+                  className="auth-dropdown-item"
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px',
-                    borderRadius: '6px', background: country.code === c.code ? '#1a1a1a' : 'transparent',
-                    border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left'
+                    background: country.code === c.code ? '#1c1c1f' : 'transparent',
+                    fontWeight: country.code === c.code ? '700' : '400'
                   }}>
                   <span style={{ fontSize: '16px' }}>{c.flag}</span>
                   <span style={{ flex: 1, fontSize: '12px' }}>{c.name}</span>
-                  <span style={{ fontSize: '11px', color: '#555' }}>{c.code}</span>
+                  <span style={{ fontSize: '11px', color: '#71717a' }}>{c.code}</span>
                 </button>
               ))}
             </div>
@@ -182,41 +182,47 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
         )}
       </div>
 
-      <input 
-        className="input-field" 
-        type="tel" 
-        placeholder="6X XXX XXXX" 
-        value={phone} 
-        onChange={e => {
-          let val = e.target.value;
-          let digits = val.replace(/\D/g, '');
-          if (!digits) {
-            setPhone('');
-            return;
-          }
-          
-          const formatter = new AsYouType();
-          const fullFormatted = formatter.input(country.code + digits) || '';
-          
-          const codeFormatter = new AsYouType();
-          const formattedCode = codeFormatter.input(country.code) || country.code;
-          
-          let localFormatted = fullFormatted;
-          if (localFormatted.startsWith(formattedCode + ' ')) {
-            localFormatted = localFormatted.substring(formattedCode.length + 1);
-          } else if (localFormatted.startsWith(formattedCode)) {
-            localFormatted = localFormatted.substring(formattedCode.length).trim();
-          } else if (localFormatted.startsWith(country.code + ' ')) {
-            localFormatted = localFormatted.substring(country.code.length + 1);
-          } else if (localFormatted.startsWith(country.code)) {
-            localFormatted = localFormatted.substring(country.code.length).trim();
-          }
-          
-          setPhone(localFormatted || digits);
-        }} 
-        style={{ flex: 1 }} 
-        required 
-      />
+      <div style={{ position: 'relative', flex: 1 }}>
+        <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+          <Phone size={18} />
+        </span>
+        <input 
+          className="premium-dark-input" 
+          type="tel" 
+          placeholder="6X XXX XXXX" 
+          value={phone} 
+          onChange={e => {
+            let val = e.target.value;
+            let digits = val.replace(/\D/g, '');
+            if (!digits) {
+              setPhone('');
+              return;
+            }
+            
+            const formatter = new AsYouType();
+            const fullFormatted = formatter.input(country.code + digits) || '';
+            
+            const codeFormatter = new AsYouType();
+            const formattedCode = codeFormatter.input(country.code) || country.code;
+            
+            let localFormatted = fullFormatted;
+            if (localFormatted.startsWith(formattedCode + ' ')) {
+              localFormatted = localFormatted.substring(formattedCode.length + 1);
+            } else if (localFormatted.startsWith(formattedCode)) {
+              localFormatted = localFormatted.substring(formattedCode.length).trim();
+            } else if (localFormatted.startsWith(country.code + ' ')) {
+              localFormatted = localFormatted.substring(country.code.length + 1);
+            } else if (localFormatted.startsWith(country.code)) {
+              localFormatted = localFormatted.substring(country.code.length).trim();
+            }
+            
+            setPhone(localFormatted || digits);
+          }} 
+          style={{ paddingLeft: '48px', width: '100%' }} 
+          required 
+          autoComplete="tel"
+        />
+      </div>
     </div>
   );
 }
@@ -235,6 +241,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
 
   const login = useStore((state: any) => state.login);
   const setGuestMode = useStore((state: any) => state.setGuestMode);
@@ -242,6 +249,7 @@ function LoginContent() {
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
   const t = translations[language] || translations.al;
+  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -321,6 +329,7 @@ function LoginContent() {
         setSuccess('');
         setEmail('');
         setCode('');
+        setOtp(['', '', '', '', '', '']);
         setNewPassword('');
       } else {
         setError(data.error || t.auth_change_failed);
@@ -398,211 +407,528 @@ function LoginContent() {
     }
   };
 
+  const handleBack = () => {
+    setError('');
+    setSuccess('');
+    if (mode === 'register' || mode === 'forgot') {
+      setMode('login');
+    } else if (mode === 'verify') {
+      setMode('forgot');
+    } else if (mode === 'new_password') {
+      setMode('verify');
+    }
+  };
+
+  const handleOtpChange = (value: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = value.substring(value.length - 1);
+    setOtp(newOtp);
+    
+    const combinedCode = newOtp.join('');
+    setCode(combinedCode);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').substring(0, 6);
+    const newOtp = [...otp];
+    
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
+    }
+    setOtp(newOtp);
+    setCode(newOtp.join(''));
+    
+    const focusIndex = Math.min(pastedData.length, 5);
+    otpRefs.current[focusIndex]?.focus();
+  };
+
+  const getTitle = () => {
+    if (language === 'al') {
+      switch (mode) {
+        case 'login': return <>Hej,<br />Mirë se<br />erdhe</>;
+        case 'register': return <>Le të<br />fillojmë</>;
+        case 'forgot': return <>Harruat<br />fjalëkalimin?</>;
+        case 'verify': return <>Verifiko<br />Email-in</>;
+        case 'new_password': return <>Krijo<br />fjalëkalim të ri</>;
+      }
+    } else if (language === 'it') {
+      switch (mode) {
+        case 'login': return <>Ehi,<br />Bentornato</>;
+        case 'register': return <>Iniziamo</>;
+        case 'forgot': return <>Password<br />dimenticata?</>;
+        case 'verify': return <>Verifica<br />la tua email</>;
+        case 'new_password': return <>Crea<br />nuova password</>;
+      }
+    } else {
+      switch (mode) {
+        case 'login': return <>Hey,<br />Welcome<br />Back</>;
+        case 'register': return <>Let`s get<br />Started</>;
+        case 'forgot': return <>Forget<br />Password?</>;
+        case 'verify': return <>Verify<br />Your Email</>;
+        case 'new_password': return <>Create<br />New password</>;
+      }
+    }
+  };
+
+  const getDescription = () => {
+    if (language === 'al') {
+      switch (mode) {
+        case 'forgot': return 'Shkruani email-in tuaj për të marrë kodin.';
+        case 'verify': return 'Ju lutem shkruani kodin 6-shifror të dërguar në email-in tuaj';
+        case 'new_password': return 'Fjalëkalimi i ri duhet të jetë i ndryshëm nga ai i mëparshmi';
+        default: return '';
+      }
+    } else if (language === 'it') {
+      switch (mode) {
+        case 'forgot': return 'Inserisci il tuo indirizzo email per ricevere il codice.';
+        case 'verify': return 'Inserisci il codice a 6 cifre inviato alla tua email';
+        case 'new_password': return 'La nuova password deve essere diversa da quella precedente';
+        default: return '';
+      }
+    } else {
+      switch (mode) {
+        case 'forgot': return 'Enter your email address';
+        case 'verify': return 'Please enter the 6 digit code Sent To your mail';
+        case 'new_password': return 'Your new password must be different from previously used password';
+        default: return '';
+      }
+    }
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'var(--bg-dark)', position: 'relative' }}>
+    <div className="auth-page-bg">
+      <style>{`
+        .auth-page-bg {
+          min-height: 100dvh;
+          width: 100%;
+          background: #000000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+        }
 
-      {/* Brand Identity - Top Left */}
-      <div style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', border: '1.5px solid var(--border)', flexShrink: 0 }}>
-          <img src="/logo.png" alt="Urban Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        .auth-phone-container {
+          width: 100%;
+          max-width: 420px;
+          min-height: 100dvh;
+          background-color: #000000;
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 24px 24px;
+          background-position: center;
+          color: #ffffff;
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          box-sizing: border-box;
+          position: relative;
+        }
+
+        @media (min-width: 420px) {
+          .auth-phone-container {
+            min-height: 850px;
+            height: auto;
+            border-radius: 40px;
+            border: 4px solid #1c1c1f;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+            margin: 20px 0;
+          }
+        }
+
+        .premium-dark-input {
+          width: 100%;
+          height: 52px;
+          background: #121214;
+          border: 1px solid #27272a;
+          border-radius: 14px;
+          color: #ffffff;
+          font-size: 16px !important;
+          padding: 12px 16px 12px 48px;
+          outline: none;
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+        }
+
+        .premium-dark-input:focus {
+          border-color: #71717a;
+          background: #18181b;
+        }
+
+        .premium-dark-input::placeholder {
+          color: #52525b;
+        }
+
+        .white-capsule-btn {
+          width: 100%;
+          height: 52px;
+          background: #ffffff;
+          color: #000000;
+          border: none;
+          border-radius: 9999px;
+          font-weight: 700;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          gap: 8px;
+        }
+
+        .white-capsule-btn:hover {
+          background: #e4e4e7;
+        }
+
+        .white-capsule-btn:active {
+          transform: scale(0.98);
+        }
+
+        .white-capsule-btn:disabled {
+          background: #71717a;
+          color: #18181b;
+          cursor: not-allowed;
+        }
+
+        .social-capsule-btn {
+          width: 100%;
+          height: 52px;
+          background: #000000;
+          border: 1px solid #27272a;
+          border-radius: 9999px;
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          min-width: auto;
+          min-height: auto;
+        }
+
+        .social-capsule-btn:hover {
+          background: #121214;
+          border-color: #3f3f46;
+        }
+
+        .social-capsule-btn:active {
+          transform: scale(0.98);
+        }
+
+        .auth-dropdown-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px;
+          border-radius: 8px;
+          border: none;
+          color: #ffffff;
+          cursor: pointer;
+          text-align: left;
+          transition: all 0.2s;
+        }
+
+        .auth-dropdown-item:hover {
+          background: #1c1c1f;
+        }
+
+        .otp-square-input {
+          width: 44px;
+          height: 48px;
+          background: #121214;
+          border: 1px solid #27272a;
+          border-radius: 12px;
+          color: #ffffff;
+          font-size: 20px;
+          font-weight: 700;
+          text-align: center;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+
+        .otp-square-input:focus {
+          border-color: #ffffff;
+          background: #18181b;
+        }
+
+        .hover-white-link {
+          color: #71717a;
+          transition: color 0.2s;
+        }
+
+        .hover-white-link:hover {
+          color: #ffffff;
+        }
+
+        @keyframes formEnter {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <div className="auth-phone-container">
+        {/* Header containing Back Navigation and Language Switcher */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '40px', width: '100%', marginBottom: '16px' }}>
+          {mode !== 'login' ? (
+            <button 
+              type="button" 
+              onClick={handleBack}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                color: '#71717a', background: 'none', border: 'none',
+                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                padding: '8px 0', minWidth: 'auto', minHeight: 'auto'
+              }}
+            >
+              <ChevronLeft size={18} /> Back
+            </button>
+          ) : <div />}
+
+          <div style={{ display: 'flex', gap: '2px', background: '#121214', padding: '3px', borderRadius: '8px', border: '1px solid #27272a' }}>
+            {['al', 'en', 'it'].map(lang => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                style={{
+                  padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '800',
+                  textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s',
+                  background: language === lang ? '#18181b' : 'transparent',
+                  color: language === lang ? '#ffffff' : '#71717a',
+                  border: 'none',
+                  minWidth: 'auto',
+                  minHeight: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
         </div>
-        <div style={{ textAlign: 'left' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: '900', lineHeight: '1.1', background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.6))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: "'Syne', sans-serif" }}>Urbani Im</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '11px', letterSpacing: '0.01em', marginTop: '1px' }}>{t.auth_subtitle}</p>
+
+        {/* Brand Tag in Emerald matching mockup look */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+          Urbani Im <span style={{ fontSize: '13px' }}>↘</span>
         </div>
-      </div>
 
-      {/* Language Switcher - Top Right */}
-      <div style={{ position: 'absolute', top: '32px', right: '32px', display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.02)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border)' }}>
-        {['al', 'en', 'it'].map(lang => (
-          <button
-            key={lang}
-            onClick={() => setLanguage(lang)}
-            style={{
-              padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: '800',
-              textTransform: 'uppercase', cursor: 'pointer', transition: 'var(--transition)',
-              background: language === lang ? '#2a2a2a' : 'transparent',
-              color: language === lang ? '#fff' : 'var(--text-dim)',
-              border: 'none'
-            }}
-          >
-            {lang}
-          </button>
-        ))}
-      </div>
+        {/* Massive Bold Left-Aligned Heading */}
+        <h1 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1.15', color: '#ffffff', margin: '0 0 8px', letterSpacing: '-0.02em', textAlign: 'left' }}>
+          {getTitle()}
+        </h1>
 
-      <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 10, padding: '0 24px' }}>
-        <div style={{ padding: '32px 0' }}>
-          {/* Tabs - Triangle Indicator Design */}
-          {(mode === 'login' || mode === 'register') && (
-            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '32px', position: 'relative' }}>
-              {(['login', 'register'] as const).map((m, idx) => (
-                <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
-                  style={{
-                    flex: 1, padding: '16px 0', fontSize: '13px', fontWeight: '700',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', background: 'none', border: 'none', cursor: 'pointer',
-                    color: mode === m ? '#fff' : 'rgba(255,255,255,0.2)',
-                    textShadow: mode === m ? '0 0 15px rgba(255,255,255,0.3)' : 'none',
-                    position: 'relative', letterSpacing: '0.06em', textTransform: 'uppercase', zIndex: 2
-                  }}>
-                  {m === 'login' ? t.auth_login : t.auth_register}
-                </button>
-              ))}
+        {/* Subtitle Description */}
+        {getDescription() && (
+          <p style={{ fontSize: '14px', color: '#71717a', margin: '0 0 32px', lineHeight: 1.4, textAlign: 'left', whiteSpace: 'pre-line' }}>
+            {getDescription()}
+          </p>
+        )}
 
-              {/* Central Divider with Rotating Triangle */}
-              <div style={{
-                position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)', zIndex: 3
-              }}>
-                <div style={{
-                  position: 'absolute', top: '50%',
-                  left: mode === 'login' ? '0px' : '1px',
-                  width: 0, height: 0,
-                  borderTop: '5px solid transparent',
-                  borderBottom: '5px solid transparent',
-                  borderRight: mode === 'login' ? '6px solid #fff' : 'none',
-                  borderLeft: mode === 'register' ? '6px solid #fff' : 'none',
-                  transform: `translate(${mode === 'login' ? '-100%' : '0%'}, -50%)`,
-                  transition: 'all 0.4s cubic-bezier(0.65, 0, 0.35, 1)',
-                  filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))'
-                }}></div>
-              </div>
-            </div>
-          )}
-
-          {/* Forms Section */}
-          <style>{`
-            @keyframes formEnter {
-              from { opacity: 0; transform: translateY(10px); filter: blur(10px); }
-              to { opacity: 1; transform: translateY(0); filter: blur(0); }
-            }
-          `}</style>
-
-          {(mode === 'login' || mode === 'register') && (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              {mode === 'register' && (
-                <div>
-                  <label className="label">{t.auth_fullname}</label>
-                  <input className="input-field" type="text" placeholder="Andi Krasniqi" value={name} onChange={e => setName(e.target.value)} required />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginTop: getDescription() ? '0px' : '24px' }}>
+          
+          {/* Form Content */}
+          <div>
+            {(mode === 'login' || mode === 'register') && (
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.3s ease-out' }}>
+                {mode === 'register' && (
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                      <User size={18} />
+                    </span>
+                    <input className="premium-dark-input" type="text" placeholder={t.auth_fullname} value={name} onChange={e => setName(e.target.value)} required autoComplete="name" />
+                  </div>
+                )}
+                
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                    <Mail size={18} />
+                  </span>
+                  <input className="premium-dark-input" type="email" placeholder={t.auth_email} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
                 </div>
-              )}
-              <div>
-                <label className="label">{t.auth_email}</label>
-                <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
-              </div>
-              {mode === 'register' && (
-                <div>
-                  <label className="label">{t.auth_phone}</label>
+                
+                {mode === 'register' && (
                   <PhoneInput country={selectedCountry} setCountry={setSelectedCountry} phone={phone} setPhone={setPhone} t={t} />
-                </div>
-              )}
-              <div>
-                <label className="label">{t.auth_password}</label>
-                <div style={{ position: 'relative' }}>
-                  <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
-                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                    {showPass ? <IonIcon icon={eyeOffOutline} style={{ fontSize: 16 }} /> : <IonIcon icon={eyeOutline} style={{ fontSize: 16 }} />}
+                )}
+                
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={18} />
+                  </span>
+                  <input 
+                    className="premium-dark-input" 
+                    type={showPass ? 'text' : 'password'} 
+                    placeholder={t.auth_password} 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    style={{ paddingLeft: '48px', paddingRight: '48px' }} 
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'} 
+                  />
+                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', background: 'none', border: 'none', cursor: 'pointer', width: '24px', height: '24px', minWidth: 'auto', minHeight: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+
                 {mode === 'login' && (
-                  <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                    <button type="button" onClick={() => setMode('forgot')} style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
+                  <div style={{ textAlign: 'center', margin: '4px 0 16px' }}>
+                    <button type="button" onClick={() => { setMode('forgot'); setError(''); }} style={{ background: 'none', border: 'none', color: '#71717a', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }} className="hover-white-link">
                       {t.auth_forgot}
                     </button>
                   </div>
                 )}
-              </div>
-              {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: 'var(--danger)' }}>{error}</div>}
-              <button type="submit" className="btn" style={{ width: '100%', padding: '13px', background: '#3b82f6', color: '#fff', boxShadow: '0 4px 14px rgba(59,130,246,0.4)', border: 'none', borderRadius: '8px', fontWeight: 'bold' }} disabled={loading}>
-                {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 16 }} />
-              </button>
-            </form>
-          )}
 
-          {mode === 'forgot' && (
-            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step1_title}</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>{t.auth_step1_desc}</p>
-              <div>
-                <label className="label">{t.auth_email}</label>
-                <input className="input-field" type="email" placeholder="example@mail.com" value={email} onChange={e => setEmail(e.target.value)} required />
-              </div>
-              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? t.auth_sending : t.auth_continue}
-              </button>
-              <button type="button" onClick={() => setMode('login')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer' }}>{t.auth_cancel}</button>
-            </form>
-          )}
+                {error && <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#ef4444', fontWeight: '500', textAlign: 'center' }}>{error}</div>}
 
-          {mode === 'verify' && (
-            <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step2_title}</h3>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>{t.auth_step2_desc}</p>
-              {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center' }}>{success}</div>}
-              <div>
-                <label className="label">{t.auth_code}</label>
-                <input className="input-field" type="text" maxLength={6} placeholder="123456" value={code} onChange={e => setCode(e.target.value)} required style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '20px' }} />
-              </div>
-              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? t.auth_verifying : t.auth_verify}
-              </button>
-            </form>
-          )}
-
-          {mode === 'new_password' && (
-            <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.4s ease-out' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>{t.auth_step3_title}</h3>
-              <div>
-                <label className="label">{t.auth_new_password}</label>
-                <input className="input-field" type="password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-              </div>
-              {error && <div style={{ color: 'var(--danger)', fontSize: '12px' }}>{error}</div>}
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '13px' }} disabled={loading}>
-                {loading ? t.auth_saving : t.auth_change_password}
-              </button>
-            </form>
-          )}
-
-
-
-          {/* Social Logins */}
-          {mode === 'login' && (
-            <>
-              <div style={{ margin: '20px 0 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase' }}>{t.auth_or_continue}</span>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" onClick={() => handleSocialLogin('Google')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', transition: 'var(--transition)' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
+                <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: mode === 'register' ? '12px' : '0px' }}>
+                  {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={18} />
                 </button>
-                <button type="button" onClick={() => handleSocialLogin('Apple')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', color: '#fff', transition: 'var(--transition)' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.88 3.5-.84 1.58.07 2.79.75 3.67 1.99-3.18 1.9-2.58 5.98.54 7.21-.71 1.83-1.6 3.65-2.79 4.83zm-3.69-14.86c-.53-2.05 1.25-4.14 3.19-4.42.74 2.3-1.69 4.38-3.19 4.42z"/>
-                  </svg>
+              </form>
+            )}
+
+            {mode === 'forgot' && (
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.3s ease-out' }}>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                    <Mail size={18} />
+                  </span>
+                  <input className="premium-dark-input" type="email" placeholder={t.auth_email} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                </div>
+                {error && <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{error}</div>}
+                <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: '12px' }}>
+                  {loading ? t.auth_sending : t.auth_continue}
                 </button>
-              </div>
-            </>
-          )}
+              </form>
+            )}
+
+            {mode === 'verify' && (
+              <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'formEnter 0.3s ease-out' }}>
+                {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>{success}</div>}
+                
+                {/* 6 Grid Squares for verification code entry */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', maxWidth: '340px', margin: '12px auto' }} onPaste={handleOtpPaste}>
+                  {otp.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={el => { otpRefs.current[idx] = el; }}
+                      type="text"
+                      className="otp-square-input"
+                      maxLength={1}
+                      value={digit}
+                      onChange={e => handleOtpChange(e.target.value, idx)}
+                      onKeyDown={e => handleOtpKeyDown(e, idx)}
+                      required
+                    />
+                  ))}
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <button type="button" onClick={handleForgotPassword} style={{ background: 'none', border: 'none', color: '#71717a', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }} className="hover-white-link">
+                    Resend Code
+                  </button>
+                </div>
+
+                {error && <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{error}</div>}
+                
+                <button type="submit" className="white-capsule-btn" disabled={loading}>
+                  {loading ? t.auth_verifying : t.auth_verify}
+                </button>
+              </form>
+            )}
+
+            {mode === 'new_password' && (
+              <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.3s ease-out' }}>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={18} />
+                  </span>
+                  <input className="premium-dark-input" type="password" placeholder={t.auth_new_password} value={newPassword} onChange={e => setNewPassword(e.target.value)} required autoComplete="new-password" />
+                </div>
+                {error && <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{error}</div>}
+                <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: '12px' }}>
+                  {loading ? t.auth_saving : t.auth_change_password}
+                </button>
+              </form>
+            )}
+
+            {/* Social Sign-in Section */}
+            {(mode === 'login' || mode === 'register') && (
+              <>
+                <div style={{ margin: '24px 0 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ flex: 1, height: '1px', background: '#27272a' }}></div>
+                  <span style={{ fontSize: '11px', color: '#52525b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>or</span>
+                  <div style={{ flex: 1, height: '1px', background: '#27272a' }}></div>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button type="button" onClick={() => handleSocialLogin('Apple')} className="social-capsule-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.88 3.5-.84 1.58.07 2.79.75 3.67 1.99-3.18 1.9-2.58 5.98.54 7.21-.71 1.83-1.6 3.65-2.79 4.83zm-3.69-14.86c-.53-2.05 1.25-4.14 3.19-4.42.74 2.3-1.69 4.38-3.19 4.42z"/>
+                    </svg>
+                    {mode === 'login' ? 'Continue with Apple' : 'Sign up with Apple'}
+                  </button>
+                  <button type="button" onClick={() => handleSocialLogin('Google')} className="social-capsule-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    {mode === 'login' ? 'Continue with Google' : 'Sign up with Google'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer Navigation */}
+          <div style={{ marginTop: '36px', textAlign: 'center' }}>
+            {mode === 'login' ? (
+              <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
+                Don`t have an account?{' '}
+                <button type="button" onClick={() => { setMode('register'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
+                  Sign up
+                </button>
+              </p>
+            ) : mode === 'register' ? (
+              <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
+                Already have an account?{' '}
+                <button type="button" onClick={() => { setMode('login'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
+                  Login
+                </button>
+              </p>
+            ) : null}
+
+            {/* Simulated app version footer */}
+            <p style={{ margin: '20px 0 0', fontSize: '10px', color: '#27272a', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Tirana, Shqipëri &nbsp;·&nbsp; 
+              <span 
+                onClick={() => setGuestMode(true)} 
+                style={{ cursor: 'pointer' }}
+              >
+                v1.0.6
+              </span>
+            </p>
+          </div>
+
         </div>
-
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--text-dim)', opacity: 0.6 }}>
-          Tirana, Shqipëri &nbsp;·&nbsp; 
-          <span 
-            onClick={() => setGuestMode(true)} 
-            style={{ cursor: 'default' }}
-          >
-            v1.0.6
-          </span>
-        </p>
       </div>
     </div>
   );
@@ -610,7 +936,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg-dark)' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#000000' }} />}>
       <LoginContent />
     </Suspense>
   );
