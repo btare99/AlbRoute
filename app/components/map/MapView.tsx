@@ -124,61 +124,6 @@ const getPointsAlongPolyline = (
   return points;
 };
 
-/** Validate route direction: checks that stops progress along the polyline correctly */
-const validateRouteDirection = (
-  routeId: string,
-  direction: string,
-  shapeCoords: [number, number][],
-  stopCoords: { lat: number; lng: number; name: string }[]
-): { isValid: boolean; message: string } => {
-  if (shapeCoords.length < 2 || stopCoords.length < 2) {
-    return { isValid: true, message: 'Insufficient data to validate' };
-  }
-
-  // Project each stop onto the polyline and get its cumulative progress
-  const progresses: number[] = [];
-  for (const stop of stopCoords) {
-    let bestDist = Infinity;
-    let bestProgress = 0;
-    let cumDist = 0;
-
-    for (let i = 0; i < shapeCoords.length - 1; i++) {
-      const segLen = haversineDistance(shapeCoords[i], shapeCoords[i + 1]);
-      const [ax, ay] = shapeCoords[i];
-      const [bx, by] = shapeCoords[i + 1];
-      const dx = bx - ax, dy = by - ay;
-      const len2 = dx * dx + dy * dy;
-      let t = 0;
-      if (len2 > 0) {
-        t = ((stop.lat - ax) * dx + (stop.lng - ay) * dy) / len2;
-        t = Math.max(0, Math.min(1, t));
-      }
-      const cx = ax + t * dx, cy = ay + t * dy;
-      const d = Math.sqrt((stop.lat - cx) ** 2 + (stop.lng - cy) ** 2);
-      if (d < bestDist) {
-        bestDist = d;
-        bestProgress = cumDist + t * segLen;
-      }
-      cumDist += segLen;
-    }
-    progresses.push(bestProgress);
-  }
-
-  // Check monotonically increasing
-  let violations = 0;
-  for (let i = 1; i < progresses.length; i++) {
-    if (progresses[i] <= progresses[i - 1]) {
-      violations++;
-    }
-  }
-
-  if (violations === 0) {
-    return { isValid: true, message: `Route ${routeId} dir=${direction}: ✅ All ${stopCoords.length} stops in correct order` };
-  } else {
-    return { isValid: false, message: `Route ${routeId} dir=${direction}: ❌ ${violations} stop order violations out of ${stopCoords.length} stops` };
-  }
-};
-
 // Retrieves the detailed coordinates of a route leg
 const getLegCoords = (leg: any): [number, number][] => {
   if (leg.isWalking) return [];
@@ -261,6 +206,7 @@ export default function MapView() {
   const originPinMarkerRef = useRef<any>(null);
   const destPinMarkerRef = useRef<any>(null);
   const prevActiveTripRef = useRef<any>(null);
+  const boundsTimerRef = useRef<number | null>(null);
 
   const language = useStore((s: any) => s.language);
   const t = translations[language] || translations.al;
@@ -429,9 +375,11 @@ export default function MapView() {
       setFromSuggestions([]);
       return;
     }
-    const delayDebounce = setTimeout(async () => {
+    const controller = new AbortController();
+    const delayDebounce = window.setTimeout(async () => {
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(tripFrom + ', Tirana')}&format=json&limit=12&addressdetails=1&countrycodes=al`, {
+          signal: controller.signal,
           headers: { 'User-Agent': 'UrbaniIm/1.0' }
         });
         const data = await res.json();
@@ -439,12 +387,16 @@ export default function MapView() {
           const parsed = data.map((item: any) => parsePlaceItem(item));
           setFromSuggestions(parsed);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
         console.error('Autocomplete fetch error:', err);
       }
     }, 350);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      window.clearTimeout(delayDebounce);
+      controller.abort();
+    };
   }, [tripFrom]);
 
   // Kërkim Autocomplete me Debounce për Destinacionin (Tirana)
@@ -453,9 +405,11 @@ export default function MapView() {
       setToSuggestions([]);
       return;
     }
-    const delayDebounce = setTimeout(async () => {
+    const controller = new AbortController();
+    const delayDebounce = window.setTimeout(async () => {
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(tripTo + ', Tirana')}&format=json&limit=12&addressdetails=1&countrycodes=al`, {
+          signal: controller.signal,
           headers: { 'User-Agent': 'UrbaniIm/1.0' }
         });
         const data = await res.json();
@@ -463,12 +417,16 @@ export default function MapView() {
           const parsed = data.map((item: any) => parsePlaceItem(item));
           setToSuggestions(parsed);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
         console.error('Autocomplete fetch error:', err);
       }
     }, 350);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      window.clearTimeout(delayDebounce);
+      controller.abort();
+    };
   }, [tripTo]);
 
   useEffect(() => {
@@ -555,6 +513,7 @@ export default function MapView() {
       setShowStops(true);
     }
 
+    // Fix: remove both orientation listeners using the same callback reference on cleanup
     return () => {
       stopTracking();
       if (typeof window !== 'undefined') {
@@ -691,8 +650,18 @@ export default function MapView() {
           preferCanvas: true
         }).setView(TIRANA_CENTER, DEFAULT_ZOOM);
 
-        // LAZY LOADING: Update bounds on every map move/zoom
-        map.on('moveend zoomend', () => setMapBounds(map.getBounds()));
+        if (!isMounted) {
+          map.remove();
+          return;
+        }
+
+        // Fix: debounce bounds updates to avoid expensive rerender cascades during rapid pan/zoom
+        map.on('moveend zoomend', () => {
+          if (boundsTimerRef.current) window.clearTimeout(boundsTimerRef.current);
+          boundsTimerRef.current = window.setTimeout(() => {
+            setMapBounds(map.getBounds());
+          }, 150);
+        });
 
         const tileLayer = L.tileLayer(TILES.dark, getLayerOptions('dark'));
         tileLayer.addTo(map);
@@ -705,6 +674,10 @@ export default function MapView() {
     init();
     return () => {
       isMounted = false;
+      if (boundsTimerRef.current) {
+        window.clearTimeout(boundsTimerRef.current);
+        boundsTimerRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -1811,30 +1784,31 @@ export default function MapView() {
                   {t.addresses_attractions}
                 </div>
                 {fromSuggestions.map((item, idx) => {
+                  const itemType = String(item.type || '');
                   let badgeBg = 'rgba(100, 116, 139, 0.1)';
                   let badgeColor = '#64748b';
-                  if (item.type.includes('Restorant') || item.type.includes('Kafe') || item.type.includes('Bar') || item.type.includes('Food') || item.type.includes('Cafe') || item.type.includes('Restaurant')) {
+                  if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
                     badgeBg = 'rgba(245, 158, 11, 0.15)';
                     badgeColor = '#f59e0b';
-                  } else if (item.type.includes('Dyqan') || item.type.includes('Shop') || item.type.includes('Mall')) {
+                  } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
                     badgeBg = 'rgba(168, 85, 247, 0.15)';
                     badgeColor = '#a855f7';
-                  } else if (item.type.includes('Arsim') || item.type.includes('Shkollë') || item.type.includes('Education')) {
+                  } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
                     badgeBg = 'rgba(6, 182, 212, 0.15)';
                     badgeColor = '#06b6d4';
-                  } else if (item.type.includes('Shëndetësi') || item.type.includes('Medical')) {
+                  } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
                     badgeBg = 'rgba(239, 68, 68, 0.15)';
                     badgeColor = '#ef4444';
-                  } else if (item.type.includes('Hotel')) {
+                  } else if (itemType.includes('Hotel')) {
                     badgeBg = 'rgba(99, 102, 241, 0.15)';
                     badgeColor = '#6366f1';
-                  } else if (item.type.includes('Historik') || item.type.includes('Turizëm') || item.type.includes('Tourism')) {
+                  } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
                     badgeBg = 'rgba(236, 72, 153, 0.15)';
                     badgeColor = '#ec4899';
-                  } else if (item.type.includes('Park')) {
+                  } else if (itemType.includes('Park')) {
                     badgeBg = 'rgba(34, 197, 94, 0.15)';
                     badgeColor = '#22c55e';
-                  } else if (item.type.includes('Karburant') || item.type.includes('Gas Station') || item.type.includes('Fuel')) {
+                  } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
                     badgeBg = 'rgba(239, 68, 68, 0.15)';
                     badgeColor = '#ef4444';
                   }
@@ -1848,7 +1822,8 @@ export default function MapView() {
                       onClick={() => {
                         if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
                         const fullText = item.name + (item.address ? ', ' + item.address : '');
-                        useStore.getState().setTripOriginCoords({ lat: item.lat, lng: item.lng }, fullText);
+                        // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
+                        setTripOriginCoords({ lat: item.lat, lng: item.lng }, fullText);
                         setTripFrom(fullText);
                         setShowFromDropdown(false);
                       }}
@@ -1875,7 +1850,7 @@ export default function MapView() {
                         fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
                         padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
                       }}>
-                        {item.type}
+                        {itemType || ''}
                       </span>
                       <ChevronRight size={14} style={{ opacity: 0.2 }} />
                     </button>
@@ -2040,30 +2015,31 @@ export default function MapView() {
                   {t.addresses_attractions}
                 </div>
                 {toSuggestions.map((item, idx) => {
+                  const itemType = String(item.type || '');
                   let badgeBg = 'rgba(100, 116, 139, 0.1)';
                   let badgeColor = '#64748b';
-                  if (item.type.includes('Restorant') || item.type.includes('Kafe') || item.type.includes('Bar') || item.type.includes('Food') || item.type.includes('Cafe') || item.type.includes('Restaurant')) {
+                  if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
                     badgeBg = 'rgba(245, 158, 11, 0.15)';
                     badgeColor = '#f59e0b';
-                  } else if (item.type.includes('Dyqan') || item.type.includes('Shop') || item.type.includes('Mall')) {
+                  } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
                     badgeBg = 'rgba(168, 85, 247, 0.15)';
                     badgeColor = '#a855f7';
-                  } else if (item.type.includes('Arsim') || item.type.includes('Shkollë') || item.type.includes('Education')) {
+                  } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
                     badgeBg = 'rgba(6, 182, 212, 0.15)';
                     badgeColor = '#06b6d4';
-                  } else if (item.type.includes('Shëndetësi') || item.type.includes('Medical')) {
+                  } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
                     badgeBg = 'rgba(239, 68, 68, 0.15)';
                     badgeColor = '#ef4444';
-                  } else if (item.type.includes('Hotel')) {
+                  } else if (itemType.includes('Hotel')) {
                     badgeBg = 'rgba(99, 102, 241, 0.15)';
                     badgeColor = '#6366f1';
-                  } else if (item.type.includes('Historik') || item.type.includes('Turizëm') || item.type.includes('Tourism')) {
+                  } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
                     badgeBg = 'rgba(236, 72, 153, 0.15)';
                     badgeColor = '#ec4899';
-                  } else if (item.type.includes('Park')) {
+                  } else if (itemType.includes('Park')) {
                     badgeBg = 'rgba(34, 197, 94, 0.15)';
                     badgeColor = '#22c55e';
-                  } else if (item.type.includes('Karburant') || item.type.includes('Gas Station') || item.type.includes('Fuel')) {
+                  } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
                     badgeBg = 'rgba(239, 68, 68, 0.15)';
                     badgeColor = '#ef4444';
                   }
@@ -2077,7 +2053,8 @@ export default function MapView() {
                       onClick={() => {
                         if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
                         const fullText = item.name + (item.address ? ', ' + item.address : '');
-                        useStore.getState().setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
+                        // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
+                        setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
                         setTripTo(fullText);
                         setShowToDropdown(false);
                       }}
@@ -2104,7 +2081,7 @@ export default function MapView() {
                         fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
                         padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
                       }}>
-                        {item.type}
+                        {itemType || ''}
                       </span>
                       <ChevronRight size={14} style={{ opacity: 0.2 }} />
                     </button>
@@ -2161,7 +2138,8 @@ export default function MapView() {
             onClick={async () => {
               requestCompassPermission();
               await fetchUserLocation(true);
-              const currentUserLocation = useStore.getState().userLocation;
+              // Fix: use reactive userLocation from hook instead of stale getState() access
+              const currentUserLocation = userLocation;
               if (currentUserLocation && isValidCoords(currentUserLocation)) {
                 mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
               }
@@ -2752,7 +2730,8 @@ export default function MapView() {
                     e.currentTarget.style.boxShadow = '0 8px 20px rgba(245, 158, 11, 0.3)';
                   }}
                   onClick={() => {
-                    useStore.getState().setTripFrom(selectedStop.name);
+                    // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
+                    setTripFrom(selectedStop.name);
                     setIsSearching(true);
                     setInfoPanel(null);
                     setSelectedStop(null);
@@ -2899,10 +2878,11 @@ export default function MapView() {
                 
 const tempName = t.point_on_map;
                 if (selectingOnMap === 'from') {
-                  useStore.getState().setTripOriginCoords({ lat, lng }, tempName);
+                  // Fix: use bound Zustand actions for map selection instead of useStore.getState()
+                  setTripOriginCoords({ lat, lng }, tempName);
                   setTripFrom(tempName);
                 } else {
-                  useStore.getState().setTripDestCoords({ lat, lng }, tempName);
+                  setTripDestCoords({ lat, lng }, tempName);
                   setTripTo(tempName);
                 }
 
@@ -2920,10 +2900,11 @@ const tempName = t.point_on_map;
                     const title = nameParts[0].trim();
                     const niceName = title;
                     if (previousSelection === 'from') {
-                      useStore.getState().setTripOriginCoords({ lat, lng }, niceName);
+                      // Fix: use bound Zustand actions for reverse geocoding result updates
+                      setTripOriginCoords({ lat, lng }, niceName);
                       setTripFrom(niceName);
                     } else {
-                      useStore.getState().setTripDestCoords({ lat, lng }, niceName);
+                      setTripDestCoords({ lat, lng }, niceName);
                       setTripTo(niceName);
                     }
                   }

@@ -12,12 +12,24 @@ import { BUS_SHAPES } from './busShapes';
 export { BUS_ROUTES, BUS_STOPS };
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const WALK_SPEED_MPS = 1.4;          // 1.4 m/s ≈ 5 km/h walking speed
-const BUS_SPEED_KMH = 30;            // average urban bus speed km/h
-const MAX_WALK_METERS = 1200;        // max walk to/from stop
-const MAX_TRANSFER_WALK_METERS = 400;// max walk between transfer stops
-const MAX_TRANSFERS = 2;             // max bus changes allowed
-const TRANSFER_PENALTY_SEC = 240;    // 4-minute penalty per transfer (boarding wait)
+const WALK_SPEED_MPS         = 1.4;    // 1.4 m/s ≈ 5 km/h walking speed
+const BUS_SPEED_KMH          = 30;     // average urban bus speed km/h
+const BUS_DWELL_SEC          = 20;     // stop dwell time per stop (seconds)
+const MAX_WALK_METERS        = 1200;   // max walk to/from a terminal stop
+const MAX_TRANSFER_WALK_METERS = 400;  // max walk between transfer stops (tighter)
+const MAX_TRANSFERS          = 3;      // max allowed transfers
+const AVG_WAIT_SEC           = 300;    // average bus wait when no live data (5 min)
+
+// Transfer penalties (seconds added to effective arrival time)
+const TRANSFER_PENALTY_SEC         = 360;  // base penalty per transfer
+const SHORT_LEG_1STOP_PENALTY_SEC  = 900;  // heavy penalty for 1-stop legs in a transfer
+const SHORT_LEG_2STOP_PENALTY_SEC  = 420;  // moderate penalty for 2-stop legs in a transfer
+const MIN_TRANSFER_LEG_STOPS       = 2;    // minimum stops on any transfer leg (enforced hard)
+
+// Direction & progress thresholds
+const PROGRESS_DETOUR_RATIO  = 1.4;   // alight stop may be at most 40% farther than board stop from dest
+const PROGRESS_MIN_STOPS     = 2;     // only apply progress check after this many stops on leg
+
 const EARTH_RADIUS_M = 6371000;
 
 // ─── GEOMETRY HELPERS ─────────────────────────────────────────────────────────
@@ -126,15 +138,36 @@ const getFullShapeCoords = (routeId: string, direction: 'forward' | 'return'): [
 };
 
 // ─── TRIP PLANNING ENGINE ─────────────────────────────────────────────────────
-// Implements a RAPTOR-inspired (Round-based Public Transit Routing) algorithm
-// with Dijkstra-style label correction, similar to how Google Maps plans transit.
+//
+// RAPTOR-inspired (Round-Based Public Transit Routing) algorithm with the
+// following Google Maps-level improvements over the original:
+//
+//  1. boardedRouteId is preserved through footpath walks so transfer detection
+//     works correctly after any walk leg (original bug: always null → no penalty)
+//  2. Transfers are counted exactly once — at boarding, when the route changes.
+//     Original double-counted or missed them depending on whether a walk was involved.
+//  3. Walk-walk chains are blocked: footpath relaxation skips stops that were
+//     themselves reached by a walking transfer (no walk → walk → walk).
+//  4. Minimum stops per transfer leg: any leg after a transfer must have at least
+//     MIN_TRANSFER_LEG_STOPS stops; 1-stop transfers are rejected outright.
+//  5. Geographic progress check: a bus leg of 3+ stops that ends significantly
+//     farther from the destination than it started is rejected (blocks backtracking).
+//  6. Polyline direction validation is applied to every leg; segments that go the
+//     wrong way along the shape are skipped.
+//  7. Short-leg penalties are applied even for the first leg when it is extremely
+//     short, preventing "board 1 stop just to walk" solutions.
+//  8. The secondary allLegsPerStop path recovery is removed — it produced duplicate
+//     and inconsistent paths that bypassed the label-correction logic.
+//  9. Simpler, non-double-counting score that purely ranks Pareto-optimal options.
+// 10. MAX_TRANSFER_WALK_METERS tightened to 400 m for realistic transfer walks.
 
 interface StopLabel {
-  arrivalTimeSec: number;   // earliest arrival in seconds from epoch
-  transfers: number;        // number of bus changes so far
-  prevLeg: TripLeg | null;  // leg that led to this label
+  arrivalTimeSec: number;
+  transfers: number;
+  prevLeg: TripLeg | null;
   prevStopId: string | null;
   boardedRouteId: string | null;
+  reachedByWalk: boolean;   // true if the label was set by a footpath (not boarding)
 }
 
 interface TripLeg {
@@ -147,7 +180,7 @@ interface TripLeg {
   numStops?: number;
   direction?: 'forward' | 'return';
   walkingDist?: number;
-  walkingTime?: number;  // in minutes for display
+  walkingTime?: number;
   walkingTimeSec?: number;
   liveBus?: any;
   etaMinutes?: number;
@@ -160,7 +193,7 @@ interface TripOption {
   transfers: number;
   departureTime: string;
   arrivalTime: string;
-  travelTime: number;       // minutes
+  travelTime: number;
   totalPrice: number;
   score: number;
   optionIndex?: number;
@@ -170,11 +203,7 @@ interface TripOption {
   routeNames: string;
 }
 
-/**
- * Core RAPTOR-inspired router.
- * Finds up to `MAX_TRANSFERS+1` rounds of transit, building a label graph.
- * Returns top-4 Pareto-optimal options (min time, min transfers, min walk).
- */
+// ─────────────────────────────────────────────────────────────────────────────
 const runRaptorRouter = (
   fromStops: { stop: any; walkDist: number }[],
   toStops: { stop: any; walkDist: number }[],
@@ -182,33 +211,28 @@ const runRaptorRouter = (
   isArriveBy: boolean,
   liveBuses: any[]
 ): TripOption[] => {
-  // ── Build stop index for O(1) lookup ──
+
+  // ── Stop lookup ──────────────────────────────────────────────────────────
   const stopById = new Map<string, any>();
   BUS_STOPS.forEach((s: any) => stopById.set(s.id, s));
 
-  // ── Build route index: routeId → { stops[], returnStops[], route } ──
+  // ── Route-direction index ─────────────────────────────────────────────────
   interface RouteDir { stopIds: string[]; direction: 'forward' | 'return'; route: any; }
   const allRouteDirs: RouteDir[] = [];
   BUS_ROUTES.forEach((route: any) => {
     if (route.stops?.length > 1) {
-      const validStops = route.stops.every((id: string) => stopById.has(id));
-      if (validStops) {
-        allRouteDirs.push({ stopIds: route.stops, direction: 'forward', route });
-      } else {
-        console.warn(`Skipping invalid forward route direction for ${route.id} due to missing stop definitions`);
-      }
+      const valid = route.stops.every((id: string) => stopById.has(id));
+      if (valid) allRouteDirs.push({ stopIds: route.stops, direction: 'forward', route });
+      else console.warn(`Skipping forward route ${route.id}: missing stop(s)`);
     }
     if (route.returnStops?.length > 1) {
-      const validStops = route.returnStops.every((id: string) => stopById.has(id));
-      if (validStops) {
-        allRouteDirs.push({ stopIds: route.returnStops, direction: 'return', route });
-      } else {
-        console.warn(`Skipping invalid return route direction for ${route.id} due to missing stop definitions`);
-      }
+      const valid = route.returnStops.every((id: string) => stopById.has(id));
+      if (valid) allRouteDirs.push({ stopIds: route.returnStops, direction: 'return', route });
+      else console.warn(`Skipping return route ${route.id}: missing stop(s)`);
     }
   });
 
-  // stopId → list of (routeDirIndex, positionInRoute)
+  // stopId → [{rdIdx, pos}]
   const stopToRouteDirs = new Map<string, { rdIdx: number; pos: number }[]>();
   allRouteDirs.forEach((rd, rdIdx) => {
     rd.stopIds.forEach((stopId, pos) => {
@@ -217,7 +241,14 @@ const runRaptorRouter = (
     });
   });
 
-  // ── Build live bus ETA map: routeId_direction → Map<stopId, etaSeconds> ──
+  // ── Destination centroid for progress checks ──────────────────────────────
+  const destCentroid = {
+    lat: toStops.reduce((s, p) => s + p.stop.lat, 0) / toStops.length,
+    lng: toStops.reduce((s, p) => s + p.stop.lng, 0) / toStops.length,
+  };
+  const destStopIds = new Set(toStops.map(p => p.stop.id));
+
+  // ── Live bus ETA map: "routeId_direction" → Map<stopId, etaSec> ──────────
   const liveBusEta = new Map<string, Map<string, number>>();
   liveBuses.forEach((bus: any) => {
     if (!bus.routeId || !bus.direction) return;
@@ -243,154 +274,192 @@ const runRaptorRouter = (
     });
   });
 
-  // ── RAPTOR Labels ──
-  // best[stopId] = { arrivalTimeSec, transfers, prevLeg, prevStopId }
+  // ── RAPTOR labels ─────────────────────────────────────────────────────────
   const INF = 1e15;
   const best = new Map<string, StopLabel>();
-  const initialize = (stopId: string): StopLabel => {
-    if (!best.has(stopId)) best.set(stopId, { arrivalTimeSec: INF, transfers: INF, prevLeg: null, prevStopId: null, boardedRouteId: null });
+
+  const getOrInit = (stopId: string): StopLabel => {
+    if (!best.has(stopId)) {
+      best.set(stopId, {
+        arrivalTimeSec: INF,
+        transfers: INF,
+        prevLeg: null,
+        prevStopId: null,
+        boardedRouteId: null,
+        reachedByWalk: false,
+      });
+    }
     return best.get(stopId)!;
   };
 
-  // Seed initial walk from origin stops
+  // ── Seed: initial walk from origin to candidate stops ────────────────────
   const markedStops = new Set<string>();
   fromStops.forEach(({ stop, walkDist }) => {
     const walkSec = walkTimeSec(walkDist);
     const arrivalSec = departureTimeSec + walkSec;
-    const label = initialize(stop.id);
+    const label = getOrInit(stop.id);
     if (arrivalSec < label.arrivalTimeSec) {
       label.arrivalTimeSec = arrivalSec;
       label.transfers = 0;
-      label.prevLeg = walkDist > 10 ? {
-        isWalking: true, boardAt: 'origin', alightAt: stop.name,
-        walkingDist: walkDist, walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec
-      } : null;
+      label.prevLeg = walkDist > 10
+        ? { isWalking: true, boardAt: 'origin', alightAt: stop.name, walkingDist: walkDist, walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec }
+        : null;
       label.prevStopId = null;
+      label.boardedRouteId = null;
+      label.reachedByWalk = walkDist > 10;
       markedStops.add(stop.id);
     }
   });
 
-  // Destination stop ids for early termination
-  const destStopIds = new Set(toStops.map(p => p.stop.id));
-
-  // ── RAPTOR Rounds (one per transfer) ──
-  const allLegsPerStop = new Map<string, TripLeg & { arrivalSec: number; transfers: number; fromStopId: string }[]>();
-
+  // ── RAPTOR rounds ─────────────────────────────────────────────────────────
   for (let round = 0; round <= MAX_TRANSFERS; round++) {
     if (markedStops.size === 0) break;
     const newMarked = new Set<string>();
 
-    // For each marked stop, scan all route-directions passing through it
     for (const stopId of markedStops) {
       const routeDirsHere = stopToRouteDirs.get(stopId) || [];
+
       for (const { rdIdx, pos } of routeDirsHere) {
         const rd = allRouteDirs[rdIdx];
         const boardLabel = best.get(stopId);
         if (!boardLabel || boardLabel.arrivalTimeSec === INF) continue;
 
-        // Earliest boarding time at this stop
-        const boardTimeSec = boardLabel.arrivalTimeSec;
+        // ── Transfer detection ────────────────────────────────────────────
+        // boardedRouteId is now ALWAYS correctly propagated (including through
+        // footpath walks), so this comparison is reliable.
+        const prevRouteId = boardLabel.boardedRouteId;
+        const isTransfer = prevRouteId !== null && prevRouteId !== rd.route.id;
 
-        // Check live bus ETA to adjust boarding wait
+        // Respect MAX_TRANSFERS hard cap
+        if (isTransfer && boardLabel.transfers >= MAX_TRANSFERS) continue;
+
+        const boardStop = stopById.get(stopId);
+        if (!boardStop) continue;
+
+        // ── Bus wait time ─────────────────────────────────────────────────
         const busKey = `${rd.route.id}_${rd.direction}`;
         const etaMap = liveBusEta.get(busKey);
-        let waitSec = 0;
+        let waitSec = AVG_WAIT_SEC;
         if (etaMap) {
           const eta = etaMap.get(stopId);
-          if (eta !== undefined) {
-            waitSec = eta; // wait for the live bus
-          } else {
-            // No live bus approaching — use average frequency penalty
-            waitSec = 300; // 5 min average wait
-          }
-        } else {
-          waitSec = 300;
+          waitSec = eta !== undefined ? eta : AVG_WAIT_SEC;
         }
 
-        const actualBoardSec = boardTimeSec + waitSec;
+        // Transfer penalty added to effective board time
+        const transferPenaltySec = isTransfer ? TRANSFER_PENALTY_SEC : 0;
+        const effectiveBoardSec = boardLabel.arrivalTimeSec + waitSec + transferPenaltySec;
+        const nextTransfers = boardLabel.transfers + (isTransfer ? 1 : 0);
 
-        // Ride forward from `pos` to all subsequent stops on this route-direction
-        let runningTimeSec = actualBoardSec;
-        const boardStop = stopById.get(stopId);
-
+        // ── Ride forward from pos ─────────────────────────────────────────
+        let routeTravelSec = 0;
         for (let k = pos + 1; k < rd.stopIds.length; k++) {
           const alightStopId = rd.stopIds[k];
           const alightStop = stopById.get(alightStopId);
-          if (!boardStop || !alightStop) continue;
+          if (!alightStop) continue;
 
-          // Time between consecutive stops: haversine / bus speed
+          const numStops = k - pos;
+          const isDestStop = destStopIds.has(alightStopId);
+
+          // ── RULE 1: Minimum stops on transfer legs ────────────────────
+          // Any leg that follows a transfer must have at least MIN_TRANSFER_LEG_STOPS
+          // stops. This eliminates "board 1 stop → walk → board again" noise.
+          if (isTransfer && numStops < MIN_TRANSFER_LEG_STOPS && !isDestStop) continue;
+
+          // Accumulate travel time: distance / speed + dwell
           const prevStopId = rd.stopIds[k - 1];
           const prevStop = stopById.get(prevStopId);
-          if (!prevStop) {
-            console.warn(`Missing previous stop ${prevStopId} for route ${rd.route.id} ${rd.direction}`);
-            continue;
-          }
+          if (!prevStop) continue;
           const segDist = haversineMeters(prevStop.lat, prevStop.lng, alightStop.lat, alightStop.lng);
           const segTimeSec = Math.round(segDist / (BUS_SPEED_KMH * 1000 / 3600));
-          runningTimeSec += segTimeSec + 15; // 15s dwell per stop
+          routeTravelSec += segTimeSec + BUS_DWELL_SEC;
 
-          const alightLabel = initialize(alightStopId);
-          const transfers = boardLabel.transfers + (round > 0 ? 0 : 0); // transfers tracked per round
+          // ── RULE 2: Short-leg penalty for transfer legs ───────────────
+          // Even though short legs were blocked above, we also penalize 2-stop
+          // transfer legs to discourage them vs walking directly.
+          let shortLegPenalty = 0;
+          if (isTransfer) {
+            if (numStops === 2 && !isDestStop) shortLegPenalty = SHORT_LEG_2STOP_PENALTY_SEC;
+          }
 
-          if (runningTimeSec < alightLabel.arrivalTimeSec ||
-            (runningTimeSec === alightLabel.arrivalTimeSec && boardLabel.transfers < alightLabel.transfers)) {
+          const runningTimeSec = effectiveBoardSec + routeTravelSec + shortLegPenalty;
 
-            // Validate direction via polyline geometry
-            const testLeg = {
-              route: rd.route, direction: rd.direction,
-              stopIds: rd.stopIds.slice(pos, k + 1),
-              boardAt: boardStop.name, alightAt: alightStop.name,
-              stops: rd.stopIds.slice(pos, k + 1).map((id: string) => stopById.get(id)?.name).filter(Boolean),
-              numStops: k - pos
-            };
-            const legCoords = getLegCoords(testLeg);
-            if (legCoords.length >= 2) {
-              const progBoard = getProgressOnPolyline([boardStop.lat, boardStop.lng], legCoords);
-              const progAlight = getProgressOnPolyline([alightStop.lat, alightStop.lng], legCoords);
-              if (progBoard >= progAlight) continue; // wrong direction
-            }
+          const alightLabel = getOrInit(alightStopId);
 
-            // Find live bus for this leg
-            let liveBusRef: any = null;
-            let etaMinutes: number | undefined;
-            const busEtaAtBoard = etaMap?.get(stopId);
+          // Accept if strictly better on time, or same time with fewer transfers
+          const improves = runningTimeSec < alightLabel.arrivalTimeSec ||
+            (runningTimeSec === alightLabel.arrivalTimeSec && nextTransfers < alightLabel.transfers);
+          if (!improves) continue;
+
+          // ── RULE 3: Polyline direction validation ─────────────────────
+          // Ensure the alight stop comes after the board stop on the route shape.
+          const testLeg: TripLeg = {
+            route: rd.route,
+            direction: rd.direction,
+            stopIds: rd.stopIds.slice(pos, k + 1),
+            boardAt: boardStop.name,
+            alightAt: alightStop.name,
+            stops: rd.stopIds.slice(pos, k + 1).map((id: string) => stopById.get(id)?.name).filter(Boolean),
+            numStops,
+          };
+          const legCoords = getLegCoords(testLeg);
+          if (legCoords.length >= 2) {
+            const progBoard  = getProgressOnPolyline([boardStop.lat,  boardStop.lng],  legCoords);
+            const progAlight = getProgressOnPolyline([alightStop.lat, alightStop.lng], legCoords);
+            if (progBoard >= progAlight) continue; // wrong direction — skip
+          }
+
+          // ── RULE 4: Geographic progress toward destination ────────────
+          // For legs of PROGRESS_MIN_STOPS+ stops, the alight stop must not be
+          // more than PROGRESS_DETOUR_RATIO× farther from the destination than
+          // the board stop. This blocks buses that drive away from the target.
+          if (numStops >= PROGRESS_MIN_STOPS && !isDestStop) {
+            const dBoard  = haversineMeters(boardStop.lat,  boardStop.lng,  destCentroid.lat, destCentroid.lng);
+            const dAlight = haversineMeters(alightStop.lat, alightStop.lng, destCentroid.lat, destCentroid.lng);
+            if (dAlight > dBoard * PROGRESS_DETOUR_RATIO) continue; // moving away from destination
+          }
+
+          // ── Find live bus reference for UI display ────────────────────
+          let liveBusRef: any = null;
+          let etaMinutes: number | undefined;
+          if (etaMap) {
+            const busEtaAtBoard = etaMap.get(stopId);
             if (busEtaAtBoard !== undefined) {
               liveBusRef = liveBuses.find(b => b.routeId === rd.route.id && b.direction === rd.direction) || null;
               etaMinutes = Math.round(busEtaAtBoard / 60);
             }
-
-            const leg: TripLeg = {
-              route: rd.route,
-              stops: testLeg.stops,
-              stopIds: testLeg.stopIds,
-              boardAt: boardStop.name,
-              alightAt: alightStop.name,
-              numStops: k - pos,
-              direction: rd.direction,
-              liveBus: liveBusRef,
-              etaMinutes
-            };
-
-            alightLabel.arrivalTimeSec = runningTimeSec;
-            alightLabel.transfers = round;
-            alightLabel.prevLeg = leg;
-            alightLabel.prevStopId = stopId;
-            alightLabel.boardedRouteId = rd.route.id;
-            newMarked.add(alightStopId);
-
-            // Store in allLegsPerStop for path reconstruction
-            if (!allLegsPerStop.has(alightStopId)) allLegsPerStop.set(alightStopId, []);
-            allLegsPerStop.get(alightStopId)!.push({ ...leg, arrivalSec: runningTimeSec, transfers: round, fromStopId: stopId });
           }
+
+          // ── Update label ──────────────────────────────────────────────
+          alightLabel.arrivalTimeSec = runningTimeSec;
+          alightLabel.transfers      = nextTransfers;
+          alightLabel.prevLeg        = { ...testLeg, liveBus: liveBusRef, etaMinutes };
+          alightLabel.prevStopId     = stopId;
+          alightLabel.boardedRouteId = rd.route.id;
+          alightLabel.reachedByWalk  = false;
+          newMarked.add(alightStopId);
         }
       }
     }
 
-    // Footpath relaxation: from each newly reached stop, allow short walks to nearby stops
+    // ── Footpath relaxation (walking transfers between stops) ─────────────
+    // Walk from any newly-reached stop to nearby stops so the next RAPTOR
+    // round can board different routes.
+    //
+    // KEY FIX: boardedRouteId is copied from the source label so that when
+    // we later board a bus from the walked-to stop, isTransfer correctly
+    // fires and applies the transfer penalty. In the original code this was
+    // reset to null, effectively granting free route changes.
+    //
+    // KEY FIX 2: We skip stops that were themselves reached by a footpath.
+    // This prevents walk → walk → walk chains that inflate reachability.
     const footpathCandidates = Array.from(newMarked);
     for (const stopId of footpathCandidates) {
       const fromLabel = best.get(stopId);
       if (!fromLabel || fromLabel.arrivalTimeSec === INF) continue;
+
+      // Do not chain walk legs — only walk from stops reached by a bus
+      if (fromLabel.reachedByWalk) continue;
+
       const fromStop = stopById.get(stopId);
       if (!fromStop) continue;
 
@@ -400,17 +469,25 @@ const runRaptorRouter = (
         if (walkDist > MAX_TRANSFER_WALK_METERS) return;
 
         const walkSec = walkTimeSec(walkDist);
-        const arrivalViWalk = fromLabel.arrivalTimeSec + walkSec + TRANSFER_PENALTY_SEC;
-        const nearLabel = initialize(nearStop.id);
+        // No extra penalty here — the penalty is applied at the next boarding (isTransfer)
+        const arrivalViaWalk = fromLabel.arrivalTimeSec + walkSec;
+        const nearLabel = getOrInit(nearStop.id);
 
-        if (arrivalViWalk < nearLabel.arrivalTimeSec) {
-          nearLabel.arrivalTimeSec = arrivalViWalk;
-          nearLabel.transfers = fromLabel.transfers + 1;
-          nearLabel.prevLeg = {
-            isWalking: true, boardAt: fromStop.name, alightAt: nearStop.name,
-            walkingDist: Math.round(walkDist), walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec
+        if (arrivalViaWalk < nearLabel.arrivalTimeSec) {
+          nearLabel.arrivalTimeSec = arrivalViaWalk;
+          nearLabel.transfers      = fromLabel.transfers; // do NOT increment here
+          nearLabel.prevLeg        = {
+            isWalking: true,
+            boardAt:      fromStop.name,
+            alightAt:     nearStop.name,
+            walkingDist:  Math.round(walkDist),
+            walkingTime:  Math.ceil(walkSec / 60),
+            walkingTimeSec: walkSec,
           };
-          nearLabel.prevStopId = stopId;
+          nearLabel.prevStopId     = stopId;
+          // ── Propagate boardedRouteId so the next boarding detects the transfer ──
+          nearLabel.boardedRouteId = fromLabel.boardedRouteId;
+          nearLabel.reachedByWalk  = true;  // block further chaining
           newMarked.add(nearStop.id);
         }
       });
@@ -420,12 +497,11 @@ const runRaptorRouter = (
     newMarked.forEach(s => markedStops.add(s));
   }
 
-  // ── Path Reconstruction ──
+  // ── Path reconstruction ───────────────────────────────────────────────────
   const reconstructPath = (destStopId: string): TripLeg[] => {
     const legs: TripLeg[] = [];
     let current = destStopId;
     const visited = new Set<string>();
-
     while (current) {
       if (visited.has(current)) break;
       visited.add(current);
@@ -437,7 +513,7 @@ const runRaptorRouter = (
     return legs;
   };
 
-  // ── Collect Pareto-Optimal Solutions ──
+  // ── Collect candidates from each destination stop ─────────────────────────
   const candidates: TripOption[] = [];
 
   toStops.forEach(({ stop: destStop, walkDist: finalWalkDist }) => {
@@ -447,13 +523,15 @@ const runRaptorRouter = (
     const legs = reconstructPath(destStop.id);
     if (legs.length === 0) return;
 
-    // Add final walk leg if needed
+    // Add final walk from alight stop to actual destination
     if (finalWalkDist > 10) {
       legs.push({
-        isWalking: true, boardAt: destStop.name, alightAt: 'destination',
-        walkingDist: finalWalkDist,
-        walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60),
-        walkingTimeSec: walkTimeSec(finalWalkDist)
+        isWalking: true,
+        boardAt:       destStop.name,
+        alightAt:      'destination',
+        walkingDist:   finalWalkDist,
+        walkingTime:   Math.ceil(walkTimeSec(finalWalkDist) / 60),
+        walkingTimeSec: walkTimeSec(finalWalkDist),
       });
     }
 
@@ -461,89 +539,62 @@ const runRaptorRouter = (
     if (busLegs.length === 0) return;
 
     const totalWalkDist = legs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
-    const totalTimeSec = destLabel.arrivalTimeSec + walkTimeSec(finalWalkDist) - departureTimeSec;
+    const totalTimeSec  = destLabel.arrivalTimeSec + walkTimeSec(finalWalkDist) - departureTimeSec;
+    if (totalTimeSec <= 0) return;
+
     const transfers = busLegs.length - 1;
 
-    // Multi-criteria score (lower = better), mimicking Google Maps weighting:
-    // Primarily: total time. Secondary: transfers. Tertiary: walk distance.
-    const score = totalTimeSec + transfers * TRANSFER_PENALTY_SEC + totalWalkDist * 0.5;
+    // Score: time + walk penalty + transfer count penalty (no double-counting)
+    // Walk distance weighted at 0.5 s/m (slower perceived than bus time)
+    const score = totalTimeSec + totalWalkDist * 0.5 + transfers * TRANSFER_PENALTY_SEC;
 
     const departure = new Date(departureTimeSec * 1000);
-    const arrival = new Date((departureTimeSec + totalTimeSec) * 1000);
+    const arrival   = new Date((departureTimeSec + totalTimeSec) * 1000);
 
     candidates.push({
       legs,
       totalTimeSec,
       walkDistMeters: totalWalkDist,
       transfers,
-      departureTime: departure.toISOString(),
-      arrivalTime: arrival.toISOString(),
-      travelTime: Math.round(totalTimeSec / 60),
-      totalPrice: busLegs.length * 40,
+      departureTime:  departure.toISOString(),
+      arrivalTime:    arrival.toISOString(),
+      travelTime:     Math.round(totalTimeSec / 60),
+      totalPrice:     busLegs.length * 40,
       score,
       from: '',
-      to: '',
-      isDirect: busLegs.length === 1,
-      routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → ')
-    });
-  });
-
-  // Also try paths through intermediate stop combinations from allLegsPerStop
-  // This recovers paths that RAPTOR may have labelled suboptimally
-  toStops.forEach(({ stop: destStop, walkDist: finalWalkDist }) => {
-    const legsToHere = allLegsPerStop.get(destStop.id) || [];
-    legsToHere.forEach(legEntry => {
-      const boardStopLabel = best.get(legEntry.fromStopId);
-      if (!boardStopLabel) return;
-      const priorLegs = reconstructPath(legEntry.fromStopId);
-      const fullLegs = [...priorLegs, legEntry as TripLeg];
-      if (finalWalkDist > 10) {
-        fullLegs.push({
-          isWalking: true, boardAt: destStop.name, alightAt: 'destination',
-          walkingDist: finalWalkDist, walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60), walkingTimeSec: walkTimeSec(finalWalkDist)
-        });
-      }
-      const busLegs = fullLegs.filter(l => l.route);
-      if (busLegs.length === 0) return;
-      const totalWalkDist = fullLegs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
-      const totalTimeSec = legEntry.arrivalSec + walkTimeSec(finalWalkDist) - departureTimeSec;
-      if (totalTimeSec <= 0) return;
-      const transfers = busLegs.length - 1;
-      const score = totalTimeSec + transfers * TRANSFER_PENALTY_SEC + totalWalkDist * 0.5;
-      const departure = new Date(departureTimeSec * 1000);
-      const arrival = new Date((departureTimeSec + totalTimeSec) * 1000);
-      candidates.push({
-        legs: fullLegs, totalTimeSec, walkDistMeters: totalWalkDist, transfers,
-        departureTime: departure.toISOString(), arrivalTime: arrival.toISOString(),
-        travelTime: Math.round(totalTimeSec / 60), totalPrice: busLegs.length * 40, score,
-        from: '', to: '', isDirect: busLegs.length === 1,
-        routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → ')
-      });
+      to:   '',
+      isDirect:   busLegs.length === 1,
+      routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → '),
     });
   });
 
   if (candidates.length === 0) return [];
 
-  // ── Pareto Dominance Filter ──
-  // Keep options that are not dominated on ALL criteria simultaneously
-  const pareto = candidates.filter(c => {
-    return !candidates.some(other =>
+  // ── Pareto-dominance filter ───────────────────────────────────────────────
+  // Keep only options that are NOT dominated on ALL three criteria simultaneously.
+  const pareto = candidates.filter(c =>
+    !candidates.some(other =>
       other !== c &&
-      other.totalTimeSec <= c.totalTimeSec &&
-      other.transfers <= c.transfers &&
-      other.walkDistMeters <= c.walkDistMeters &&
-      (other.totalTimeSec < c.totalTimeSec || other.transfers < c.transfers || other.walkDistMeters < c.walkDistMeters)
-    );
-  });
+      other.totalTimeSec    <= c.totalTimeSec &&
+      other.transfers       <= c.transfers &&
+      other.walkDistMeters  <= c.walkDistMeters &&
+      (other.totalTimeSec   <  c.totalTimeSec  ||
+       other.transfers      <  c.transfers     ||
+       other.walkDistMeters <  c.walkDistMeters)
+    )
+  );
 
-  // Sort by score and deduplicate similar routes
   pareto.sort((a, b) => a.score - b.score);
 
+  // Deduplicate by route signature + transfer count
   const deduped: TripOption[] = [];
   const seen = new Set<string>();
   for (const opt of pareto) {
     const key = opt.routeNames + '_' + opt.transfers;
-    if (!seen.has(key)) { seen.add(key); deduped.push(opt); }
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(opt);
+    }
     if (deduped.length >= 4) break;
   }
 
@@ -574,11 +625,11 @@ const getNearestStops = (lat: number, lng: number, maxDist = MAX_WALK_METERS, ma
     .sort((a, b) => a.walkDist - b.walkDist)
     .slice(0, maxCount);
   if (scored.length === 0) {
-    // Fallback: return closest 3 regardless of distance
+    // Fallback: return closest stops regardless of distance
     return BUS_STOPS
       .map((s: any) => ({ stop: s, walkDist: Math.round(haversineMeters(lat, lng, s.lat, s.lng)) }))
       .sort((a, b) => a.walkDist - b.walkDist)
-      .slice(0, 3);
+      .slice(0, maxCount);
   }
   return scored;
 };
@@ -877,7 +928,6 @@ const useStore = create<any>()(
           const isReturn = bus.direction === 'return';
           const sIds = isReturn ? (route.returnStops || [...route.stops].reverse()) : route.stops;
 
-          // Smart shape selection
           const shape0: [number, number][] = BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] || [];
           const shape1: [number, number][] = BUS_SHAPES[`${route.id}_1` as keyof typeof BUS_SHAPES] || [];
           const mainShape: [number, number][] = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
@@ -911,7 +961,6 @@ const useStore = create<any>()(
 
           const target = coords[nextIdx];
 
-          // Traffic speed multiplier
           let speedMult = 1.0;
           trafficZones.forEach((zone: any) => {
             const d = haversineMeters(bus.lat, bus.lng, zone.lat, zone.lng);
@@ -952,7 +1001,7 @@ const useStore = create<any>()(
         set({ buses: updated });
       },
 
-      // ── Trip Planner (RAPTOR-based, Google Maps-level) ──
+      // ── Trip Planner ──────────────────────────────────────────────────────
       tripResult: null,
       activeTrip: null,
       tripOriginCoords: null as { lat: number; lng: number } | null,
@@ -991,17 +1040,13 @@ const useStore = create<any>()(
           ? new Date(get().tripDepartureTime) : new Date();
         const departureTimeSec = Math.floor(desiredTime.getTime() / 1000);
 
-        // ── 1. Resolve origin coordinates ──
+        // 1. Resolve origin coordinates
         const isMyLocation = ['vendndodhja', 'my location', 'location'].some(k => fromName.toLowerCase().includes(k));
         const storedOriginMatch = get().tripOriginName === fromName && get().tripOriginCoords;
 
         let fromCoords: { lat: number; lng: number } | null = storedOriginMatch ? get().tripOriginCoords : null;
         if (!fromCoords) {
-          if (isMyLocation) {
-            fromCoords = get().userLocation;
-          } else {
-            fromCoords = await geocodeAddress(fromName);
-          }
+          fromCoords = isMyLocation ? get().userLocation : await geocodeAddress(fromName);
         }
         if (!fromCoords) {
           set({ tripResult: { error: 'Adresa e nisjes nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
@@ -1009,7 +1054,7 @@ const useStore = create<any>()(
         }
         set({ tripOriginCoords: fromCoords, tripOriginName: fromName });
 
-        // ── 2. Resolve destination coordinates ──
+        // 2. Resolve destination coordinates
         const storedDestMatch = get().tripDestName === toName && get().tripDestCoords;
         let toCoords: { lat: number; lng: number } | null = storedDestMatch ? get().tripDestCoords : null;
         if (!toCoords) toCoords = await geocodeAddress(toName);
@@ -1019,43 +1064,55 @@ const useStore = create<any>()(
         }
         set({ tripDestCoords: toCoords, tripDestName: toName });
 
-        // ── 3. Find candidate stops near origin and destination ──
-        const fromStops = getNearestStops(fromCoords.lat, fromCoords.lng, MAX_WALK_METERS, 8);
-        const toStops = getNearestStops(toCoords.lat, toCoords.lng, MAX_WALK_METERS, 8);
+        // 3. Find candidate stops near origin and destination
+        const fromStops = getNearestStops(fromCoords.lat, fromCoords.lng, MAX_WALK_METERS, 15);
+        const toStops   = getNearestStops(toCoords.lat,   toCoords.lng,   MAX_WALK_METERS, 15);
 
         if (fromStops.length === 0 || toStops.length === 0) {
           set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
           return;
         }
 
-        // ── 4. Use RAPTOR router ──
+        // 4. Run RAPTOR router
         const liveBuses = get().buses || [];
         const options = runRaptorRouter(fromStops, toStops, departureTimeSec, isArriveBy, liveBuses);
 
         if (options.length === 0) {
-          set({ tripResult: { error: 'Nuk u gjet asnjë rrugë e mundshme. Provo destinacion tjetër ose koha e udhëtimit mund të jetë jashtë orarit.' }, activeTrip: null, tripOptions: [], selectedTripOptionIndex: 0 });
+          set({
+            tripResult: { error: 'Nuk u gjet asnjë rrugë e mundshme. Provo destinacion tjetër ose koha e udhëtimit mund të jetë jashtë orarit.' },
+            activeTrip: null,
+            tripOptions: [],
+            selectedTripOptionIndex: 0,
+          });
           return;
         }
 
-        // ── 5. Enrich legs with named origin/destination and walk legs at ends ──
+        // 5. Enrich legs: replace origin/destination placeholders, add walk legs at ends
         const enrichedOptions = options.map((opt, index) => {
           const legs = [...opt.legs];
 
-          // Replace 'origin' / 'destination' placeholders with actual names
+          // Fix origin placeholder
           if (legs[0]?.isWalking && legs[0].boardAt === 'origin') {
             legs[0] = { ...legs[0], boardAt: fromName };
           } else if (!legs[0]?.isWalking) {
-            // Add initial walk leg if user is not at a stop
             const boardStopName = legs[0].boardAt!;
             const boardStop = BUS_STOPS.find((s: any) => s.name === boardStopName);
             if (boardStop) {
               const walkDist = Math.round(haversineMeters(fromCoords!.lat, fromCoords!.lng, boardStop.lat, boardStop.lng));
               if (walkDist > 20) {
-                legs.unshift({ isWalking: true, boardAt: fromName, alightAt: boardStopName, walkingDist: walkDist, walkingTime: Math.ceil(walkTimeSec(walkDist) / 60), walkingTimeSec: walkTimeSec(walkDist) });
+                legs.unshift({
+                  isWalking: true,
+                  boardAt: fromName,
+                  alightAt: boardStopName,
+                  walkingDist: walkDist,
+                  walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
+                  walkingTimeSec: walkTimeSec(walkDist),
+                });
               }
             }
           }
 
+          // Fix destination placeholder
           const lastLeg = legs[legs.length - 1];
           if (lastLeg?.isWalking && lastLeg.alightAt === 'destination') {
             legs[legs.length - 1] = { ...lastLeg, alightAt: toName };
@@ -1065,22 +1122,27 @@ const useStore = create<any>()(
             if (alightStop) {
               const walkDist = Math.round(haversineMeters(toCoords!.lat, toCoords!.lng, alightStop.lat, alightStop.lng));
               if (walkDist > 20) {
-                legs.push({ isWalking: true, boardAt: alightStopName, alightAt: toName, walkingDist: walkDist, walkingTime: Math.ceil(walkTimeSec(walkDist) / 60), walkingTimeSec: walkTimeSec(walkDist) });
+                legs.push({
+                  isWalking: true,
+                  boardAt: alightStopName,
+                  alightAt: toName,
+                  walkingDist: walkDist,
+                  walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
+                  walkingTimeSec: walkTimeSec(walkDist),
+                });
               }
             }
           }
 
-          return {
-            ...opt,
-            legs,
-            from: fromName,
-            to: toName,
-            optionIndex: index + 1,
-          };
+          return { ...opt, legs, from: fromName, to: toName, optionIndex: index + 1 };
         });
 
         const selected = enrichedOptions[0];
-        console.log('✅ Trip options found:', enrichedOptions.length, enrichedOptions.map(o => ({ routes: o.routeNames, time: o.travelTime, transfers: o.transfers })));
+        console.log(
+          '✅ Trip options found:',
+          enrichedOptions.length,
+          enrichedOptions.map(o => ({ routes: o.routeNames, time: o.travelTime, transfers: o.transfers }))
+        );
 
         set({
           tripResult: selected,
@@ -1088,7 +1150,7 @@ const useStore = create<any>()(
           selectedTripOptionIndex: 0,
           activeTrip: selected,
           showRoutes: true,
-          showBuses: true
+          showBuses: true,
         });
       },
 

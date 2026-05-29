@@ -173,8 +173,8 @@ export const BUS_STOPS = [
   { id: 'pasqyra_stop2', name: 'Pasqyra', lat: 41.34614323092765, lng: 19.753213905674382 },
   { id: 'rruga_demokracia_stop1', name: 'Rruga Demokracia', lat: 41.34951375839497, lng: 19.747797401650853 },
   { id: 'rruga_demokracia_stop2', name: 'Rruga Demokracia', lat: 41.34923015586798, lng: 19.7481561285584 },
-  { id: 'xhamia_stop1', name: 'Xhamia', lat: 41.3509243423924, lng: 19.745291647356844 },
-  { id: 'xhamia_stop2', name: 'Xhamia', lat: 41.351152811444734, lng: 19.744803039274053 },
+  { id: 'xhamia_yrshek_stop1', name: 'Xhamia', lat: 41.3509243423924, lng: 19.745291647356844 },
+  { id: 'xhamia_yrshek_stop2', name: 'Xhamia', lat: 41.351152811444734, lng: 19.744803039274053 },
   { id: 'fusha_sportit_stop1', name: 'Fusha Sportit', lat: 41.3526422908893, lng: 19.741807701716255 },
   { id: 'fusha_sportit_stop2', name: 'Fusha Sportit', lat: 41.35248168554631, lng: 19.74202427075276 },
   { id: '100_vjetori', name: '100 Vjetori', lat: 41.35308466650584, lng: 19.73797763024168 },
@@ -616,10 +616,10 @@ export const BUS_ROUTES = [
       'poliklinika_9_a', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
       'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
       'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel_stop1',
-      'radio_planet_stop1', 'pasqyra_stop1', 'rruga_demokracia_stop1', 'xhamia_stop1', 'fusha_sportit_stop1', '100_vjetori'
+      'radio_planet_stop1', 'pasqyra_stop1', 'rruga_demokracia_stop1', 'xhamia_yrshek_stop1', 'fusha_sportit_stop1', '100_vjetori'
     ],
     returnStops: [
-      '100_vjetori', 'fusha_sportit_stop2', 'xhamia_stop2', 'rruga_demokracia_stop2', 'pasqyra_stop2',
+      '100_vjetori', 'fusha_sportit_stop2', 'xhamia_yrshek_stop2', 'rruga_demokracia_stop2', 'pasqyra_stop2',
       'radio_planet_stop2', 'top_channel_stop2', 'mezez', 'ish_xhenio', 'pallati_minierave',
       'yzberisht', 'besim_alla', 'bego_hoxha', 'joklin_persi', 'kombinati_mishit', 'kthesa_yzberisht_stop1', 'tregu', 'ura_teknologjike',
       'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'biblioteka'
