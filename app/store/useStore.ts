@@ -16,7 +16,7 @@ const WALK_SPEED_MPS         = 1.4;    // 1.4 m/s ≈ 5 km/h walking speed
 const BUS_SPEED_KMH          = 30;     // average urban bus speed km/h
 const BUS_DWELL_SEC          = 20;     // stop dwell time per stop (seconds)
 const MAX_WALK_METERS        = 1200;   // max walk to/from a terminal stop
-const MAX_TRANSFER_WALK_METERS = 400;  // max walk between transfer stops (tighter)
+const MAX_TRANSFER_WALK_METERS = 700;  // max walk between transfer stops (tighter)
 const MAX_TRANSFERS          = 3;      // max allowed transfers
 const AVG_WAIT_SEC           = 300;    // average bus wait when no live data (5 min)
 

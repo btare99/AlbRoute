@@ -190,12 +190,12 @@ export const BUS_STOPS = [
   { id: 'tregu_ushqimor_stop2', name: 'Tregu Ushqimor', lat: 41.34522526851044, lng: 19.77002951433535 },
   { id: 'shkolla_stop1', name: 'Shkolla', lat: 41.34698094868577, lng: 19.765233797800686 },
   { id: 'shkolla_stop2', name: 'Shkolla', lat: 41.346853161032904, lng: 19.765404720735443 },
-  { id: 'at_zef_pellumbi_stop1', name: 'At Zef Pellumbi', lat: 41.3479661225831, lng: 19.762124019362172 },
-  { id: 'at_zef_pellumbi_stop2', name: 'At Zef Pellumbi', lat: 41.34797822406788, lng: 19.762149390095075 },
+  { id: 'at_zef_pellumbi_stop1', name: 'At Zef Pellumbi', lat: 41.347887768039875, lng: 19.7626647448026 },
+  { id: 'at_zef_pellumbi_stop2', name: 'At Zef Pellumbi', lat: 41.34797258668231, lng: 19.76214593934057 },
   { id: 'gryka_kacanikut_stop1', name: 'Gryka Kacanikut', lat: 41.35166235998139, lng: 19.751791116422606 },
   { id: 'gryka_kacanikut_stop2', name: 'Gryka Kacanikut', lat: 41.35162936326551, lng: 19.751635692050307 },
-  { id: 'qtu_stop1', name: 'QTU ', lat: 41.352618784265594, lng: 19.748807017300958 },
-  { id: 'qtu_stop2', name: 'QTU ', lat: 41.35261595807264, lng: 19.748822612338884 },
+  { id: 'qtu_stop1', name: 'QTU ', lat: 41.352826888598145, lng: 19.748451348183657 },
+  { id: 'qtu_stop2', name: 'QTU ', lat: 41.35261257197401, lng: 19.748826660678183 },
   { id: 'yrshek_stop1', name: 'Yrshek ', lat: 41.354747153946875, lng: 19.74294536329907 },
   { id: 'yrshek_stop2', name: 'Yrshek ', lat: 41.35480280406983, lng: 19.742443759036707 },
   { id: 'domje_stop1', name: 'Domje ', lat: 41.35840683316045, lng: 19.73236957710019 },
@@ -208,8 +208,8 @@ export const BUS_STOPS = [
   { id: 'dpm_stop2', name: 'DPM', lat: 41.36264129425564, lng: 19.717928669135794 },
   { id: 'radio_stacioni_stop1', name: 'Radio Stacioni', lat: 41.36349431034081, lng: 19.714964577011862 },
   { id: 'radio_stacioni_stop2', name: 'Radio Stacioni', lat: 41.36353542934425, lng: 19.714360170403566 },
-  { id: 'megatek_stop1', name: 'Megatek', lat: 41.369376930864235, lng: 19.70660316414813 },
-  { id: 'megatek_stop2', name: 'Megatek', lat: 41.36937035063857, lng: 19.706611376574116 },
+  { id: 'megatek_stop1', name: 'Megatek', lat: 41.36954297819546, lng: 19.7064675866568 },
+  { id: 'megatek_stop2', name: 'Megatek', lat: 41.36937110758168, lng: 19.70660638622458 },
   { id: 'qafe_kashar_stop1', name: 'Qafe Kashar', lat: 41.36947098323661, lng: 19.699399897238823 },
   { id: 'qafe_kashar_stop2', name: 'Qafe Kashar', lat: 41.369606533877466, lng: 19.69810849051397 },
   { id: 'ura_limuthit_stop1', name: 'Ura Limuthit', lat: 41.37093913153896, lng: 19.69154791760511 },
@@ -608,7 +608,8 @@ export const BUS_ROUTES = [
       'kryqezimi_kashar', 'tom_plezhra', 'njesia_kashar', 'loni_ligori', 'erzen_lita',
       'serat', 'mezez', 'ish_xhenio', 'pallati_minierave', 'yzberisht', 'besim_alla',
       'bego_hoxha', 'joklin_persi', 'kombinati_mishit', 'kthesa_yzberisht_stop1', 'tregu',
-      'ura_teknologjike', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise', 'biblioteka'
+      'ura_teknologjike', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike',
+      'banka_e_shqiperise', 'biblioteka'
     ]
   },
 
@@ -635,13 +636,16 @@ export const BUS_ROUTES = [
     id: 'L4', name: '4', label: 'Qendër – City Park', color: '#a62639',
     stops: [
       'muzeu_kombetar', 'mine_peza', 'asllan_rusi_r', 'pandi_dardha', 'pallatet_arabe',
-      'blloku_gintash', 'kthesa_kamzes', 'tregu_ushqimor_stop1', 'shkolla_stop1', 'at_zef_pellumbi_stop1', 'gryka_kacanikut_stop1',
-      'qtu_stop1', 'yrshek_stop1', 'domje_stop1', 'dpshtrr_stop1', 'mbikalimi_stop1', 'dpm_stop1', 'radio_stacioni_stop1',
+      'blloku_gintash', 'kthesa_kamzes', 'tregu_ushqimor_stop1', 'shkolla_stop1',
+      'at_zef_pellumbi_stop1', 'gryka_kacanikut_stop1',
+      'qtu_stop1', 'yrshek_stop1', 'domje_stop1', 'dpshtrr_stop1', 'mbikalimi_stop1',
+      'dpm_stop1', 'radio_stacioni_stop1',
       'megatek_stop1', 'qafe_kashar_stop1', 'ura_limuthit_stop1', 'city_park'
     ],
     returnStops: [
       'city_park', 'ura_limuthit_stop2', 'qafe_kashar_stop2', 'megatek_stop2', 'radio_stacioni_stop2',
-      'dpm_stop2', 'mbikalimi_stop2', 'dpshtrr_stop2', 'domje_stop2', 'yrshek_stop2', 'qtu_stop2', 'gryka_kacanikut_stop2',
+      'dpm_stop2', 'mbikalimi_stop2', 'dpshtrr_stop2', 'domje_stop2', 'yrshek_stop2', 'qtu_stop2',
+      'gryka_kacanikut_stop2',
       'at_zef_pellumbi_stop2', 'shkolla_stop2', 'tregu_ushqimor_stop2', 'terminali_b', 'blloku_gintash_a',
       'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'qemal_stafa',
       'dollari', 'muzeu_kombetar'
