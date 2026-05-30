@@ -2,6 +2,10 @@
 // Bazuar në hartën zyrtare të Bashkisë Tiranë (25.07.2024)
 
 export const BUS_STOPS = [
+  { id: 'ndre_mjeda', name: 'Ndre Mjeda', lat: 41.32381392093657, lng: 19.796618272968402 },
+  { id: 'bryli_orar', name: 'Brryli', lat: 41.33049805997018, lng: 19.83376871938563 },
+  { id: 'ish_ekspozita_orar', name: 'Ish Ekspozita', lat: 41.3255, lng: 19.8145 },
+  { id: 'vasil_shanto_antiorar', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
   // Porcelani
   { id: 'biblioteka', name: 'Biblioteka Kombetare', lat: 41.328380772224, lng: 19.82098880092712 },
   { id: 'pazari_ri_stop1', name: 'Pazari i Ri', lat: 41.329073643100294, lng: 19.824475672613367 },
@@ -535,7 +539,7 @@ export const BUS_ROUTES = [
     id: 'L1A', name: '1A', label: 'Allias – Selitë', color: '#e63946',
     stops: [
       'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 'shkolla_bashkuar_stop2',
-      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres_stop2',
+      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres',
       'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
       'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1', 'selite'
     ],
@@ -553,7 +557,7 @@ export const BUS_ROUTES = [
     id: 'L1B', name: '1B', label: 'Allias – Kodra e Diellit', color: '#f3797b',
     stops: [
       'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 'shkolla_bashkuar_stop2',
-      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres_stop2',
+      'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres',
       'muzeu_kombetar', 'shallvaret', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
       'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1',
       'mentor_xhemali_stop2', 'rexhep_pinari_stop2', 'kodra_diellit_2'
@@ -586,7 +590,7 @@ export const BUS_ROUTES = [
   {
     id: 'L3A', name: '3A', label: 'Kashar Orar', color: '#7ecce4',
     stops: [
-      'banka_shqiperise_a', 'kisha_katolike_a', 'poliklinika_9_a', 'ura_teknologjike_a',
+      'banka_shqiperise_a', 'kisha_katolike_a', 'poliklinika_9_a', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kombinati_mishit_a', 'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a',
       'yzberisht_a', 'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'serat_a',
       'erzen_lita_a', 'loni_ligori_a', 'njesia_kashar_a', 'nexho_konomi', 'kristaq_mone',
@@ -613,7 +617,7 @@ export const BUS_ROUTES = [
     id: 'L3C', name: '3C', label: 'Qendër – Yrshek', color: '#749bc2',
     stops: [
       'biblioteka', 'pesembedhjete_kateshet', 'banka_shqiperise_a', 'kisha_katolike_a',
-      'poliklinika_9_a', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
+      'poliklinika_9_a', 'ndre_mjeda', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
       'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
       'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel_stop1',
       'radio_planet_stop1', 'pasqyra_stop1', 'rruga_demokracia_stop1', 'xhamia_yrshek_stop1', 'fusha_sportit_stop1', '100_vjetori'
@@ -639,7 +643,7 @@ export const BUS_ROUTES = [
       'city_park', 'ura_limuthit_stop2', 'qafe_kashar_stop2', 'megatek_stop2', 'radio_stacioni_stop2',
       'dpm_stop2', 'mbikalimi_stop2', 'dpshtrr_stop2', 'domje_stop2', 'yrshek_stop2', 'qtu_stop2', 'gryka_kacanikut_stop2',
       'at_zef_pellumbi_stop2', 'shkolla_stop2', 'tregu_ushqimor_stop2', 'terminali_b', 'blloku_gintash_a',
-      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_a', 'qemal_stafa',
+      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'qemal_stafa',
       'dollari', 'muzeu_kombetar'
     ]
   },
@@ -853,7 +857,7 @@ export const BUS_ROUTES = [
     returnStops: [
       'karburanti', 'fabrika_tullave_stop1', 'prush_stop1', 'kthesa_sharre_stop1', 'varrezat_sharre_stop1', 'komisariati_6_stop1',
       'kombinat_stop1', 'mapo_stop1', 'ukt_stop1', 'misto_mame', 'kthesa_yzberisht_stop1',
-      'ura_teknologjike', 'ndre_mjeda', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'ura_teknologjike', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
       'shkencat_natyres', 'siri_kodra_stop2', 'frigoriferi', 'rruga_besa', 'nenstacioni_elektrik',
       'filip_jano', 'uzina_dinamo'
     ]
@@ -863,7 +867,7 @@ export const BUS_ROUTES = [
   {
     id: 'L13A', name: '13A', label: 'Tirana e Re Orar', color: '#ba68c8',
     stops: [
-      'muzeu_kombetar', 'parku_rinia', 'piramida1', 'libri_universitar', 'stadiumi_dinamo_stop2',
+      'muzeu_kombetar', 'parku_rinia', 'piramida1', 'libri_universitar_stop1', 'stadiumi_dinamo_stop2',
       'vasil_shanto_stop1', 'pallati_me_shigjeta_stop1', 'teodor_keko_stop1', 'kristaq_dollaku_stop1',
       'nexho_konomi', 'kristaq_mone', 'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a',
       'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz', 'shkencat_natyres', 'muzeu_kombetar'
@@ -878,7 +882,7 @@ export const BUS_ROUTES = [
       'asllan_rusi_r', 'pandi_dardha', 'pallatet_arabe', 'blloku_gintash', 'kthesa_kamzes', 'sheshi_shqiponja', 'lumi_lane',
       'aleksandri_madh', 'kryqezimi_kashar',
       'kristaq_dollaku_stop2', 'teodor_keko_stop2', 'pallati_me_shigjeta_stop2', 'vasil_shanto_stop2',
-      'komuna_e_parisit_stop2', 'posta_8', 'libri_universitar', 'rektorati', 'piramida2', 'pesembedhjete_kateshet'
+      'komuna_parisit_stop2', 'posta_8_stop1', 'libri_universitar_stop2', 'rektorati', 'piramida2', 'pesembedhjete_kateshet'
     ]
   },
 
@@ -887,13 +891,13 @@ export const BUS_ROUTES = [
     id: 'L15A', name: '15A', label: 'Kombinat – Kinostudio', color: '#d35400',
     stops: [
       'kinostudio_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar_stop2', 'mjekesia_stop2', 'qsut_stop2',
-      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
-      'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
+      'medreseja_stop1', 'selvia_stop1', 'banka_shqiperise_a', 'kisha_katolike_a',
+      'poliklinika_9_a', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht_stop2', 'misto_mame', 'ukt_stop2', 'mapo_stop2', 'kombinat_stop2'
     ],
     returnStops: [
       'kombinat_stop1', 'mapo_stop1', 'ukt_stop1', 'misto_mame', 'kthesa_yzberisht_stop1', 'tregu', 'ura_teknologjike',
-      'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
       'kateshet_a',
       'selvia_stop2', 'medreseja_stop2', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
       'rruga_ura_stop2', 'kinostudio_stop2', 'aleksander_moisiu'
@@ -908,13 +912,13 @@ export const BUS_ROUTES = [
       'rruga_arberit', 'xhamia_stop1', 'varrezat_tufine_stop1', 'instituti_ndertimit_stop1',
       'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1',
       'shkolla_bashkuar_stop2', 'mjekesia_stop2', 'qsut_stop2',
-      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
-      'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
+      'medreseja_stop1', 'selvia_stop1', 'banka_shqiperise_a', 'kisha_katolike_a',
+      'poliklinika_9_a', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht_stop2', 'misto_mame', 'ukt_stop2', 'mapo_stop2', 'kombinat_stop2'
     ],
     returnStops: [
       'kombinat_stop1', 'mapo_stop1', 'ukt_stop1', 'misto_mame', 'kthesa_yzberisht_stop1', 'tregu', 'ura_teknologjike',
-      'ndre_mjeda', 'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
+      'myhedin_llagami', 'poliklinika_9', 'kisha_katolike', 'banka_e_shqiperise',
       'kateshet_a',
       'selvia_stop2', 'medreseja_stop2', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
       'rruga_ura_stop2', 'ura_gjorices_stop2', 'shefqet_kuka_stop2', 'profarma_stop2',

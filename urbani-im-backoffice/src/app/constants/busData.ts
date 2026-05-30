@@ -2,6 +2,10 @@
 // Bazuar në hartën zyrtare të Bashkisë Tiranë (25.07.2024)
 
 export const BUS_STOPS = [
+  { id: 'ndre_mjeda', name: 'Ndre Mjeda', lat: 41.32472, lng: 19.79653 },
+  { id: 'bryli_orar', name: 'Brryli', lat: 41.33049805997018, lng: 19.83376871938563 },
+  { id: 'ish_ekspozita_orar', name: 'Ish Ekspozita', lat: 41.3255, lng: 19.8145 },
+  { id: 'vasil_shanto_antiorar', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
   // Porcelani
   { id: 'biblioteka', name: 'Biblioteka Kombetare', lat: 41.328380772224, lng: 19.82098880092712 },
   { id: 'pazari_ri', name: 'Pazari i Ri', lat: 41.329073643100294, lng: 19.824475672613367 },
@@ -337,7 +341,7 @@ export const BUS_STOPS = [
   { id: 'filip_jano', name: 'Filip Jano', lat: 41.345013852832125, lng: 19.808752845785687 },
 
   // ── LINJA 13A: Tirana e Re Orar ─────────────────────────────────────────────
-  { id: 'komuna_e_parisit_stop2', name: 'Komuna Parisit', lat: 41.31877300236136, lng: 19.808346342666322 },
+  { id: 'komuna_parisit_stop2', name: 'Komuna Parisit', lat: 41.31877300236136, lng: 19.808346342666322 },
   { id: 'stadiumi_dinamo_stop2', name: 'Stadiumi Dinamo', lat: 41.31888283303763, lng: 19.808570920477415 },
   { id: 'vasil_shanto_stop1', name: 'Vasil Shanto', lat: 41.32170310174288, lng: 19.80461203048531 },
   { id: 'vasil_shanto_stop2', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
@@ -491,7 +495,7 @@ export const BUS_ROUTES = [
       'city_park', 'ura_limuthit', 'qafe_kashar', 'megatek', 'radio_stacioni',
       'dpm', 'mbikalimi', 'dpshtrr', 'domje', 'yrshek', 'qtu', 'gryka_kacanikut',
       'at_zef_pellumbi', 'shkolla', 'blloku_gintash_a',
-      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_a', 'qemal_stafa',
+      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'qemal_stafa',
       'dollari', 'muzeu_kombetar'
     ]
   },
@@ -716,7 +720,7 @@ export const BUS_ROUTES = [
   {
     id: 'L13A', name: '13A', label: 'Tirana e Re Orar', color: '#ba68c8',
     stops: [
-      'muzeu_kombetar', 'parku_rinia', 'piramida1', 'libri_universitar', 'stadiumi_dinamo_stop2',
+      'muzeu_kombetar', 'parku_rinia', 'piramida1', 'libri_universitar_stop1', 'stadiumi_dinamo_stop2',
       'vasil_shanto_stop1', 'pallati_me_shigjeta_stop1', 'teodor_keko_stop1', 'kristaq_dollaku_stop1',
       'nexho_konomi', 'kristaq_mone', 'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a',
       'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz', 'shkencat_natyres', 'muzeu_kombetar'
@@ -731,7 +735,7 @@ export const BUS_ROUTES = [
       'asllan_rusi_r', 'pandi_dardha', 'pallatet_arabe', 'blloku_gintash', 'kthesa_kamzes', 'sheshi_shqiponja', 'lumi_lane',
       'aleksandri_madh', 'kryqezimi_kashar',
       'kristaq_dollaku_stop2', 'teodor_keko_stop2', 'pallati_me_shigjeta_stop2', 'vasil_shanto_stop2',
-      'komuna_e_parisit_stop2', 'posta_8', 'libri_universitar', 'rektorati', 'piramida2', 'pesembedhjete_kateshet'
+      'komuna_parisit_stop2', 'posta_8_stop1', 'libri_universitar_stop2', 'rektorati', 'piramida2', 'pesembedhjete_kateshet'
     ]
   },
 
@@ -740,7 +744,7 @@ export const BUS_ROUTES = [
     id: 'L15A', name: '15A', label: 'Kombinat – Kinostudio', color: '#d35400',
     stops: [
       'kinostudio_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
-      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
+      'medreseja_stop1', 'selvia_stop1', 'banka_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht', 'misto_mame', 'ukt', 'mapo', 'kombinat'
     ],
@@ -759,7 +763,7 @@ export const BUS_ROUTES = [
     stops: [
       'rruga_arberit', 'xhamia_stop1', 'varrezat_tufine_stop1', 'instituti_ndertimit_stop1',
       'elez_isufi_stop1', 'profarma_stop1', 'shefqet_kuka_stop1', 'ura_gjorices_stop1', 'rruga_ura_stop1', 'shkolla_bashkuar', 'mjekesia', 'qsut',
-      'medreseja_stop1', 'selvia_stop1', 'banka_e_shqiperise_a', 'kisha_katolike_a',
+      'medreseja_stop1', 'selvia_stop1', 'banka_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'myhedin_llagami', 'ndre_mjeda', 'ura_teknologjike_a',
       'tregu_a', 'kthesa_yzberisht', 'misto_mame', 'ukt', 'mapo', 'kombinat'
     ],

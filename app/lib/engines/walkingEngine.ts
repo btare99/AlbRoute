@@ -1,3 +1,10 @@
+// ── Konstantet ────────────────────────────────────────────────────────────────
+const DEFAULT_WALKING_SPEED_KMH = 5.0;
+const PEDESTRIAN_CURVATURE_FACTOR = 1.414;
+const EARTH_RADIUS_METERS = 6_371_000;
+const FETCH_TIMEOUT_MS = 8_000;
+
+// ── Tipet ─────────────────────────────────────────────────────────────────────
 export interface LatLng {
   lat: number;
   lng: number;
@@ -11,74 +18,126 @@ export interface WalkingRouteResult {
   waypoints: [number, number][];
 }
 
-export class WalkingEngine {
-  private googleApiKey = process.env.GOOGLE_MAPS_API_KEY || '';
-  private mapboxAccessToken = process.env.MAPBOX_ACCESS_TOKEN || '';
-  private osrmBaseUrl = 'https://router.project-osrm.org';
-  private defaultWalkingSpeedKmh = 5.0; // 1.39 m/s
+export interface WalkingEngineConfig {
+  googleApiKey?: string;
+  mapboxAccessToken?: string;
+  osrmBaseUrl?: string;
+}
 
-  /**
-   * Main entry point to calculate the absolute shortest walking path.
-   */
+type ProviderKey = 'GOOGLE' | 'MAPBOX' | 'OSRM';
+
+interface ProviderConfig {
+  key: ProviderKey;
+  enabled: boolean;
+  fetch: (origin: LatLng, destination: LatLng) => Promise<WalkingRouteResult>;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Fetch me timeout — parandalon varje pafundësisht */
+async function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isValidLatLng(point: LatLng): boolean {
+  return (
+    typeof point.lat === 'number' && point.lat >= -90 && point.lat <= 90 &&
+    typeof point.lng === 'number' && point.lng >= -180 && point.lng <= 180
+  );
+}
+
+// ── Engine ────────────────────────────────────────────────────────────────────
+export class WalkingEngine {
+  private readonly providers: ProviderConfig[];
+
+  constructor(config: WalkingEngineConfig = {}) {
+    const googleApiKey = config.googleApiKey ?? process.env.GOOGLE_MAPS_API_KEY ?? '';
+    const mapboxAccessToken = config.mapboxAccessToken ?? process.env.MAPBOX_ACCESS_TOKEN ?? '';
+    const osrmBaseUrl = config.osrmBaseUrl ?? 'https://router.project-osrm.org';
+
+    // Providers si tabelë — shto/hiq pa prekur logjikën kryesore
+    this.providers = [
+      {
+        key: 'GOOGLE',
+        enabled: Boolean(googleApiKey),
+        fetch: (o, d) => this.fetchGoogle(o, d, googleApiKey),
+      },
+      {
+        key: 'MAPBOX',
+        enabled: Boolean(mapboxAccessToken),
+        fetch: (o, d) => this.fetchMapbox(o, d, mapboxAccessToken),
+      },
+      {
+        key: 'OSRM',
+        enabled: true,
+        fetch: (o, d) => this.fetchOsrm(o, d, osrmBaseUrl),
+      },
+    ];
+  }
+
   async calculateWalkingRoute(
     origin: LatLng,
     destination: LatLng,
-    providerPriority: ('GOOGLE' | 'MAPBOX' | 'OSRM')[] = ['GOOGLE', 'MAPBOX', 'OSRM']
+    providerPriority: ProviderKey[] = ['GOOGLE', 'MAPBOX', 'OSRM']
   ): Promise<WalkingRouteResult> {
-    for (const provider of providerPriority) {
+    if (!isValidLatLng(origin) || !isValidLatLng(destination)) {
+      throw new Error('Koordinatat e origjinës ose destinacionit janë të pavlefshme.');
+    }
+
+    const ordered = providerPriority
+      .map(key => this.providers.find(p => p.key === key))
+      .filter((p): p is ProviderConfig => Boolean(p?.enabled));
+
+    for (const provider of ordered) {
       try {
-        switch (provider) {
-          case 'GOOGLE':
-            if (this.googleApiKey) return await this.fetchGoogleWalking(origin, destination);
-            break;
-          case 'MAPBOX':
-            if (this.mapboxAccessToken) return await this.fetchMapboxWalking(origin, destination);
-            break;
-          case 'OSRM':
-            return await this.fetchOsrmWalking(origin, destination);
-        }
-      } catch (err: any) {
-        console.warn(`Pedestrian Engine: ${provider} routing failed. Swapping to fallback... Error:`, err.message);
+        return await provider.fetch(origin, destination);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`WalkingEngine: ${provider.key} dështoi — ${message}. Duke provuar fallback...`);
       }
     }
 
-    return this.calculateHaversineFallback(origin, destination);
+    return this.haversineFallback(origin, destination);
   }
 
-  private async fetchGoogleWalking(origin: LatLng, destination: LatLng): Promise<WalkingRouteResult> {
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=walking&key=${this.googleApiKey}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Google API fetch failed with status: ${response.status}`);
+  // ── Provider fetchers ──────────────────────────────────────────────────────
+
+  private async fetchGoogle(
+    origin: LatLng, destination: LatLng, apiKey: string
+  ): Promise<WalkingRouteResult> {
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=walking&key=${apiKey}`;
+    const data = await fetchWithTimeout(url).then(r => r.json());
+
+    if (data.status !== 'OK' || !data.routes?.length) {
+      throw new Error(`Google Directions: ${data.status}`);
     }
-    const data = await response.json();
 
-    if (data.status !== 'OK' || !data.routes.length) {
-      throw new Error(`Google API returned status: ${data.status}`);
-    }
-
-    const route = data.routes[0];
-    const leg = route.legs[0];
-
+    const leg = data.routes[0].legs[0];
     return {
       provider: 'GOOGLE_DIRECTIONS',
       distanceMeters: leg.distance.value,
       durationSeconds: leg.duration.value,
-      polyline: route.overview_polyline.points,
-      waypoints: this.decodePolyline(route.overview_polyline.points)
+      polyline: data.routes[0].overview_polyline.points,
+      waypoints: this.decodePolyline(data.routes[0].overview_polyline.points),
     };
   }
 
-  private async fetchMapboxWalking(origin: LatLng, destination: LatLng): Promise<WalkingRouteResult> {
-    const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?geometries=polyline&overview=full&access_token=${this.mapboxAccessToken}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Mapbox API fetch failed with status: ${response.status}`);
-    }
-    const data = await response.json();
+  private async fetchMapbox(
+    origin: LatLng, destination: LatLng, token: string
+  ): Promise<WalkingRouteResult> {
+    const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?geometries=polyline&overview=full&access_token=${token}`;
+    const data = await fetchWithTimeout(url).then(r => r.json());
 
-    if (data.code !== 'Ok' || !data.routes.length) {
-      throw new Error(`Mapbox API returned code: ${data.code}`);
+    if (data.code !== 'Ok' || !data.routes?.length) {
+      throw new Error(`Mapbox Directions: ${data.code}`);
     }
 
     const route = data.routes[0];
@@ -87,20 +146,18 @@ export class WalkingEngine {
       distanceMeters: Math.round(route.distance),
       durationSeconds: Math.round(route.duration),
       polyline: route.geometry,
-      waypoints: this.decodePolyline(route.geometry)
+      waypoints: this.decodePolyline(route.geometry),
     };
   }
 
-  private async fetchOsrmWalking(origin: LatLng, destination: LatLng): Promise<WalkingRouteResult> {
-    const url = `${this.osrmBaseUrl}/route/v1/foot/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=polyline`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`OSRM API fetch failed with status: ${response.status}`);
-    }
-    const data = await response.json();
+  private async fetchOsrm(
+    origin: LatLng, destination: LatLng, baseUrl: string
+  ): Promise<WalkingRouteResult> {
+    const url = `${baseUrl}/route/v1/foot/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=polyline`;
+    const data = await fetchWithTimeout(url).then(r => r.json());
 
-    if (data.code !== 'Ok' || !data.routes.length) {
-      throw new Error(`OSRM Engine returned code: ${data.code}`);
+    if (data.code !== 'Ok' || !data.routes?.length) {
+      throw new Error(`OSRM: ${data.code}`);
     }
 
     const route = data.routes[0];
@@ -109,72 +166,70 @@ export class WalkingEngine {
       distanceMeters: Math.round(route.distance),
       durationSeconds: Math.round(route.duration),
       polyline: route.geometry,
-      waypoints: this.decodePolyline(route.geometry)
+      waypoints: this.decodePolyline(route.geometry),
     };
   }
 
-  private calculateHaversineFallback(origin: LatLng, destination: LatLng): WalkingRouteResult {
-    const R = 6371e3; // meters
-    const phi1 = (origin.lat * Math.PI) / 180;
-    const phi2 = (destination.lat * Math.PI) / 180;
-    const deltaPhi = ((destination.lat - origin.lat) * Math.PI) / 180;
-    const deltaLambda = ((destination.lng - origin.lng) * Math.PI) / 180;
+  // ── Fallback ───────────────────────────────────────────────────────────────
 
-    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-              Math.cos(phi1) * Math.cos(phi2) *
-              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const airDistance = R * c;
+  private haversineFallback(origin: LatLng, destination: LatLng): WalkingRouteResult {
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
 
-    // Apply pedestrian curvature buffer factor (1.41)
-    const streetDistanceMeters = Math.round(airDistance * 1.414);
-    const walkingSpeedMetersPerSecond = this.defaultWalkingSpeedKmh / 3.6;
-    const durationSeconds = Math.round(streetDistanceMeters / walkingSpeedMetersPerSecond);
+    const phi1 = toRad(origin.lat);
+    const phi2 = toRad(destination.lat);
+    const deltaPhi = toRad(destination.lat - origin.lat);
+    const deltaLambda = toRad(destination.lng - origin.lng);
+
+    const a = Math.sin(deltaPhi / 2) ** 2 +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+
+    const airMeters = EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const streetMeters = Math.round(airMeters * PEDESTRIAN_CURVATURE_FACTOR);
+    const speedMPS = DEFAULT_WALKING_SPEED_KMH / 3.6;
+    const durationSeconds = Math.round(streetMeters / speedMPS);
 
     return {
-      provider: 'HAVERSINE_FALLBACK_STREET_ESTIMATE',
-      distanceMeters: streetDistanceMeters,
+      provider: 'HAVERSINE_FALLBACK',
+      distanceMeters: streetMeters,
       durationSeconds,
       polyline: '',
-      waypoints: [
-        [origin.lat, origin.lng],
-        [destination.lat, destination.lng]
-      ]
+      waypoints: [[origin.lat, origin.lng], [destination.lat, destination.lng]],
     };
   }
 
-  private decodePolyline(str: string): [number, number][] {
+  // ── Polyline decoder ───────────────────────────────────────────────────────
+
+  private decodePolyline(encoded: string): [number, number][] {
+    const coords: [number, number][] = [];
     let index = 0;
-    const len = str.length;
     let lat = 0;
     let lng = 0;
-    const coordinates: [number, number][] = [];
 
-    while (index < len) {
-      let b;
+    while (index < encoded.length) {
       let shift = 0;
       let result = 0;
+      let b: number;
+
       do {
-        b = str.charCodeAt(index++) - 63;
+        b = encoded.charCodeAt(index++) - 63;
         result |= (b & 0x1f) << shift;
         shift += 5;
       } while (b >= 0x20);
-      const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
+      lat += result & 1 ? ~(result >> 1) : result >> 1;
 
       shift = 0;
       result = 0;
+
       do {
-        b = str.charCodeAt(index++) - 63;
+        b = encoded.charCodeAt(index++) - 63;
         result |= (b & 0x1f) << shift;
         shift += 5;
       } while (b >= 0x20);
-      const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
+      lng += result & 1 ? ~(result >> 1) : result >> 1;
 
-      coordinates.push([lat / 1e5, lng / 1e5]);
+      coords.push([lat / 1e5, lng / 1e5]);
     }
-    return coordinates;
+
+    return coords;
   }
 }

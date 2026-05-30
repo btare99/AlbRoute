@@ -245,11 +245,11 @@ export default function MapView() {
   const isUserLocation = useCallback((name: string, coords: any) => {
     if (!coords || !userLocation) return false;
     const cleanName = name ? name.toLowerCase() : '';
-    const isNameMatch = cleanName.includes('vendndodhja') || 
-                        cleanName.includes('location') || 
-                        cleanName.includes('posizione');
-    const isCoordsMatch = Math.abs(coords.lat - userLocation.lat) < 0.0002 && 
-                          Math.abs(coords.lng - userLocation.lng) < 0.0002;
+    const isNameMatch = cleanName.includes('vendndodhja') ||
+      cleanName.includes('location') ||
+      cleanName.includes('posizione');
+    const isCoordsMatch = Math.abs(coords.lat - userLocation.lat) < 0.0002 &&
+      Math.abs(coords.lng - userLocation.lng) < 0.0002;
     return isNameMatch || isCoordsMatch;
   }, [userLocation]);
 
@@ -730,19 +730,15 @@ export default function MapView() {
     const isFromUserLoc = isUserLocation(tripFrom || tripOriginName, tripOriginCoords);
     if (tripOriginCoords && !activeTrip && !isFromUserLoc) {
       const fromHtml = `
-        <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
-          <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <mask id="pin-mask-from-temp">
-                <rect width="24" height="36" fill="white" />
-                <circle cx="12" cy="12" r="5" fill="black" />
-              </mask>
-            </defs>
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#f97316" mask="url(#pin-mask-from-temp)"/>
+        <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(249,115,22,0.35));">
+          <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#f97316"/>
+            <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
+            <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
           </svg>
         </div>`;
       originPinMarkerRef.current = L.marker([tripOriginCoords.lat, tripOriginCoords.lng], {
-        icon: L.divIcon({ html: fromHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+        icon: L.divIcon({ html: fromHtml, className: '', iconSize: [22, 32], iconAnchor: [11, 32] }),
         zIndexOffset: 1000
       }).addTo(map);
     }
@@ -755,19 +751,15 @@ export default function MapView() {
     const isToUserLoc = isUserLocation(tripTo || tripDestName, tripDestCoords);
     if (tripDestCoords && !activeTrip && !isToUserLoc) {
       const toHtml = `
-        <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
-          <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <mask id="pin-mask-to-temp">
-                <rect width="24" height="36" fill="white" />
-                <circle cx="12" cy="12" r="5" fill="black" />
-              </mask>
-            </defs>
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#EA4335" mask="url(#pin-mask-to-temp)"/>
+        <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(234,67,53,0.35));">
+          <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#EA4335"/>
+            <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
+            <circle cx="12" cy="12" r="2.5" fill="#EA4335"/>
           </svg>
         </div>`;
       destPinMarkerRef.current = L.marker([tripDestCoords.lat, tripDestCoords.lng], {
-        icon: L.divIcon({ html: toHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+        icon: L.divIcon({ html: toHtml, className: '', iconSize: [22, 32], iconAnchor: [11, 32] }),
         zIndexOffset: 1000
       }).addTo(map);
     }
@@ -948,19 +940,15 @@ export default function MapView() {
       const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
       if (isCustomFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
-          <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(249,115,22,0.5)); display: flex;">
-            <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <mask id="pin-mask-from">
-                  <rect width="24" height="36" fill="white" />
-                  <circle cx="12" cy="12" r="5" fill="black" />
-                </mask>
-              </defs>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#f97316" mask="url(#pin-mask-from)"/>
+          <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(249,115,22,0.35));">
+            <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#f97316"/>
+              <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
+              <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
             </svg>
           </div>`;
         const fromMarker = L.marker([tripOriginCoords.lat, tripOriginCoords.lng], {
-          icon: L.divIcon({ html: fromHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+          icon: L.divIcon({ html: fromHtml, className: '', iconSize: [22, 32], iconAnchor: [11, 32] }),
           zIndexOffset: 1000
         }).addTo(map);
         routeLinesRef.current.push({ line: fromMarker, routeId: 'custom_origin_pin' });
@@ -970,19 +958,15 @@ export default function MapView() {
       const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
       if (isCustomTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
-          <div class="marker-enter" style="filter: drop-shadow(0 4px 8px rgba(234,67,53,0.5)); display: flex;">
-            <svg viewBox="0 0 24 36" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <mask id="pin-mask-to">
-                  <rect width="24" height="36" fill="white" />
-                  <circle cx="12" cy="12" r="5" fill="black" />
-                </mask>
-              </defs>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24C24 5.373 18.627 0 12 0z" fill="#EA4335" mask="url(#pin-mask-to)"/>
+          <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(234,67,53,0.35));">
+            <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#EA4335"/>
+              <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
+              <circle cx="12" cy="12" r="2.5" fill="#EA4335"/>
             </svg>
           </div>`;
         const toMarker = L.marker([tripDestCoords.lat, tripDestCoords.lng], {
-          icon: L.divIcon({ html: toHtml, className: '', iconSize: [28, 42], iconAnchor: [14, 42] }),
+          icon: L.divIcon({ html: toHtml, className: '', iconSize: [22, 32], iconAnchor: [11, 32] }),
           zIndexOffset: 1000
         }).addTo(map);
         routeLinesRef.current.push({ line: toMarker, routeId: 'custom_dest_pin' });
@@ -1474,357 +1458,282 @@ export default function MapView() {
             display: 'flex', flexDirection: 'column', overflow: 'visible'
           }}
         >
-        {/* Main Bar */}
-        <div className="glass-panel" style={{
-          display: 'flex', alignItems: 'center', padding: '6px',
-          borderRadius: isSearching ? '22px 22px 0 0' : '22px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(10, 14, 24, 0.82)',
-          backdropFilter: 'blur(20px) saturate(160%)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          height: '62px',
-          zIndex: 10, transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-        }}>
-          <button
-            onClick={() => setIsSearching(!isSearching)}
-            style={{
-              flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px',
-              background: 'transparent', border: 'none', color: '#fff',
-              textAlign: 'left', cursor: 'pointer', height: '100%'
-            }}
-          >
-            <Navigation size={20} style={{ color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
-            <input
-              ref={tripFromInputRef}
-              value={tripFrom}
-              onChange={(e) => {
-                setTripFrom(e.target.value);
-                setShowFromDropdown(true);
-              }}
-              placeholder={t.select_departure}
-              onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
-              onFocus={() => { setShowFromDropdown(true); setShowToDropdown(false); }}
-              onBlur={() => setTimeout(() => setShowFromDropdown(false), 200)}
-              style={{
-                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
-                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
-              }}
-              readOnly={!isSearching}
-            />
-          </button>
-
-          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px', opacity: 1, transition: 'opacity 0.3s' }} />
-
-          {activeTrip ? (
+          {/* Main Bar */}
+          <div className="glass-panel" style={{
+            display: 'flex', alignItems: 'center', padding: '6px',
+            borderRadius: isSearching ? '22px 22px 0 0' : '22px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(10, 14, 24, 0.82)',
+            backdropFilter: 'blur(20px) saturate(160%)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            height: '62px',
+            zIndex: 10, transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+          }}>
             <button
-              onClick={() => {
-                setActiveTrip(null);
-                setWalkingShapes({});
-                setShowTripDetails(false);
-                setTripFrom('');
-                setTripTo('');
-                setShowRoutes(false);
-                setShowStops(true);
-                setActiveRouteFilter(null);
-                mapInstanceRef.current?.flyTo(TIRANA_CENTER, DEFAULT_ZOOM);
-              }}
+              onClick={() => setIsSearching(!isSearching)}
               style={{
-                width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
-                background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.4s'
+                flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px',
+                background: 'transparent', border: 'none', color: '#fff',
+                textAlign: 'left', cursor: 'pointer', height: '100%'
               }}
-              title={t.close}
             >
-              <X size={22} />
+              <Navigation size={20} style={{ color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
+              <input
+                ref={tripFromInputRef}
+                value={tripFrom}
+                onChange={(e) => {
+                  setTripFrom(e.target.value);
+                  setShowFromDropdown(true);
+                }}
+                placeholder={t.select_departure}
+                onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
+                onFocus={() => { setShowFromDropdown(true); setShowToDropdown(false); }}
+                onBlur={() => setTimeout(() => setShowFromDropdown(false), 200)}
+                style={{
+                  background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
+                  fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
+                }}
+                readOnly={!isSearching}
+              />
             </button>
-          ) : (
+
+            <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px', opacity: 1, transition: 'opacity 0.3s' }} />
+
+            {activeTrip ? (
+              <button
+                onClick={() => {
+                  setActiveTrip(null);
+                  setWalkingShapes({});
+                  setShowTripDetails(false);
+                  setTripFrom('');
+                  setTripTo('');
+                  setShowRoutes(false);
+                  setShowStops(true);
+                  setActiveRouteFilter(null);
+                  mapInstanceRef.current?.flyTo(TIRANA_CENTER, DEFAULT_ZOOM);
+                }}
+                style={{
+                  width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
+                  background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.4s'
+                }}
+                title={t.close}
+              >
+                <X size={22} />
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  requestCompassPermission();
+                  await fetchUserLocation(true);
+                  // Update trip origin coords whenever user location is requested for planning
+                  const currentUserLocation = userLocation;
+                  if (currentUserLocation && isValidCoords(currentUserLocation)) {
+                    const myLocStr = t.my_location;
+                    setTripOriginCoords(currentUserLocation, myLocStr);
+                    if (isSearching) {
+                      setTripFrom(myLocStr);
+                    }
+                    mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
+                  }
+                }}
+                style={{
+                  width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
+                  background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+              >
+                <Locate size={22} />
+              </button>
+            )}
+          </div>
+
+          {/* Second Bar (Joined with Transition) */}
+          <div className="glass-panel" style={{
+            display: 'flex', alignItems: 'center', padding: '6px',
+            borderRadius: '0 0 22px 22px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderTop: 'none',
+            background: 'rgba(10, 14, 24, 0.82)',
+            backdropFilter: 'blur(20px) saturate(160%)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            height: isSearching ? '62px' : '0px',
+            opacity: isSearching ? 1 : 0,
+            transform: isSearching ? 'translateY(0)' : 'translateY(-10px)',
+            overflow: 'hidden',
+            pointerEvents: isSearching ? 'auto' : 'none',
+            zIndex: 5,
+            transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+          }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px', height: '100%' }}>
+              <MapPin size={20} style={{ color: '#94a3b8' }} />
+              <input
+                id="trip-to-input"
+                value={tripTo}
+                onChange={(e) => {
+                  setTripTo(e.target.value);
+                  setShowToDropdown(true);
+                }}
+                placeholder={t.select_destination}
+                onFocus={() => { setShowToDropdown(true); setShowFromDropdown(false); }}
+                onBlur={() => setTimeout(() => setShowToDropdown(false), 200)}
+                style={{
+                  background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
+                  fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
+                }}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    await planTrip(tripFrom, tripTo);
+                    setIsSearching(false);
+                  }
+                }}
+              />
+            </div>
+
+            <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
             <button
               onClick={async () => {
-                requestCompassPermission();
-                await fetchUserLocation(true);
-                // Update trip origin coords whenever user location is requested for planning
-                const currentUserLocation = userLocation;
-                if (currentUserLocation && isValidCoords(currentUserLocation)) {
-                  const myLocStr = t.my_location;
-                  setTripOriginCoords(currentUserLocation, myLocStr);
-                  if (isSearching) {
-                    setTripFrom(myLocStr);
-                  }
-                  mapInstanceRef.current?.flyTo([currentUserLocation.lat, currentUserLocation.lng], 17);
-                }
-              }}
-              style={{
-                width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: isSearching ? '18px 18px 0 0' : '18px', border: 'none',
-                background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-              }}
-            >
-              <Locate size={22} />
-            </button>
-          )}
-        </div>
-
-        {/* Second Bar (Joined with Transition) */}
-        <div className="glass-panel" style={{
-          display: 'flex', alignItems: 'center', padding: '6px',
-          borderRadius: '0 0 22px 22px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderTop: 'none',
-          background: 'rgba(10, 14, 24, 0.82)',
-          backdropFilter: 'blur(20px) saturate(160%)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          height: isSearching ? '62px' : '0px',
-          opacity: isSearching ? 1 : 0,
-          transform: isSearching ? 'translateY(0)' : 'translateY(-10px)',
-          overflow: 'hidden',
-          pointerEvents: isSearching ? 'auto' : 'none',
-          zIndex: 5,
-          transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-        }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px', height: '100%' }}>
-            <MapPin size={20} style={{ color: '#94a3b8' }} />
-            <input
-              id="trip-to-input"
-              value={tripTo}
-              onChange={(e) => {
-                setTripTo(e.target.value);
-                setShowToDropdown(true);
-              }}
-              placeholder={t.select_destination}
-              onFocus={() => { setShowToDropdown(true); setShowFromDropdown(false); }}
-              onBlur={() => setTimeout(() => setShowToDropdown(false), 200)}
-              style={{
-                background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
-                fontWeight: '700', width: '100%', outline: 'none', boxShadow: 'none'
-              }}
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
+                if (tripFrom && tripTo) {
+                  setIsPlanning(true);
+                  setShowTripDetails(true);
+                  setTripSheetHeight('peek');
                   await planTrip(tripFrom, tripTo);
+                  setIsPlanning(false);
                   setIsSearching(false);
                 }
               }}
-            />
+
+              style={{
+                width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '0 0 18px 0', border: 'none',
+                background: 'transparent', color: '#f59e0b', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <ArrowRight
+                size={22}
+                style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }}
+              />
+            </button>
           </div>
 
-          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-
-          <button
-            onClick={async () => {
-              if (tripFrom && tripTo) {
-                setIsPlanning(true);
-                setShowTripDetails(true);
-                setTripSheetHeight('peek');
-                await planTrip(tripFrom, tripTo);
-                setIsPlanning(false);
-                setIsSearching(false);
-              }
-            }}
-
-            style={{
-              width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: '0 0 18px 0', border: 'none',
-              background: 'transparent', color: '#f59e0b', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <ArrowRight
-              size={22}
-              style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }}
-            />
-          </button>
-        </div>
-
-        {/* ── AUTOCOMPLETE DROPDOWNS ── */}
-        {showFromDropdown && (
-          <div style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            left: '0',
-            right: '0',
-            zIndex: 3000,
-            background: 'rgba(10, 14, 24, 0.98)',
-            backdropFilter: 'blur(30px) saturate(180%)',
-            borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.12)',
-            boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
-            maxHeight: '320px',
-            overflowY: 'auto',
-            animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            padding: '10px'
-          }} className="station-dropdown-map">
-            <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {t.departure_suggestions}
-            </div>
-
-
-            {/* Choose on Map Option */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectingOnMap('from');
-                setShowFromDropdown(false);
-                setIsSearching(false);
-              }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 14px 14px 14px', borderRadius: '0px',
-                background: 'none', border: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
-                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-            >
-              <div style={{
-                width: '24px', height: '24px', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <MapPin size={18} style={{ color: '#f59e0b' }} />
+          {/* ── AUTOCOMPLETE DROPDOWNS ── */}
+          {showFromDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              left: '0',
+              right: '0',
+              zIndex: 3000,
+              background: 'rgba(10, 14, 24, 0.98)',
+              backdropFilter: 'blur(30px) saturate(180%)',
+              borderRadius: '24px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
+              maxHeight: '320px',
+              overflowY: 'auto',
+              animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              padding: '10px'
+            }} className="station-dropdown-map">
+              <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+                {t.departure_suggestions}
               </div>
-              <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {t.choose_on_map}
-              </span>
-            </button>
 
-            {/* Saved Places (Home & Work) Shortcuts inside the dropdown */}
-            {(mapShowHomeOrig || mapShowWorkOrig) && (
-              <div style={{
-                display: 'flex', gap: '8px', padding: '6px 14px 10px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px'
-              }}>
-                {mapShowHomeOrig && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTripFrom(homeLocation);
-                      setShowFromDropdown(false);
-                    }}
-                    style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      padding: '8px 12px', borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
-                      color: '#fff', fontSize: '12px', cursor: 'pointer',
-                      transition: 'all 0.2s', overflow: 'hidden'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                  >
-                    <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
-                    <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
-                  </button>
-                )}
-                {mapShowWorkOrig && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTripFrom(workLocation);
-                      setShowFromDropdown(false);
-                    }}
-                    style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      padding: '8px 12px', borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
-                      color: '#fff', fontSize: '12px', cursor: 'pointer',
-                      transition: 'all 0.2s', overflow: 'hidden'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                  >
-                    <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
-                    <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
-                  </button>
-                )}
-              </div>
-            )}
 
-            {/* A. STACIONET E AUTOBUSIT */}
-            {tripFrom.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
-              <>
-                <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  {t.bus_stations}
+              {/* Choose on Map Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectingOnMap('from');
+                  setShowFromDropdown(false);
+                  setIsSearching(false);
+                }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 14px 14px 14px', borderRadius: '0px',
+                  background: 'none', border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
+                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+              >
+                <div style={{
+                  width: '24px', height: '24px', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <MapPin size={18} style={{ color: '#f59e0b' }} />
                 </div>
-                {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).slice(0, 5).map(name => (
-                  <button
-                    key={name}
-                    onClick={() => {
-                      setTripFrom(name);
-                      setShowFromDropdown(false);
-                    }}
-                    style={{
-                      width: '100%', padding: '10px 16px', background: 'none', border: 'none',
-                      color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
-                      borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
-                  >
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
-                      display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
-                      justifyContent: 'center'
-                    }}>
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
-                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-                      </svg>
-                    </div>
-                    <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                    <ChevronRight size={14} style={{ opacity: 0.2 }} />
-                  </button>
-                ))}
-              </>
-            )}
+                <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                  {t.choose_on_map}
+                </span>
+              </button>
 
-            {/* B. ADRESAT DHE ATRAKSIONET */}
-            {tripFrom.trim().length > 0 && fromSuggestions.length > 0 && (
-              <>
-                <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
-                  {t.addresses_attractions}
-                </div>
-                {fromSuggestions.map((item, idx) => {
-                  const itemType = String(item.type || '');
-                  let badgeBg = 'rgba(100, 116, 139, 0.1)';
-                  let badgeColor = '#64748b';
-                  if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
-                    badgeBg = 'rgba(245, 158, 11, 0.15)';
-                    badgeColor = '#f59e0b';
-                  } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
-                    badgeBg = 'rgba(168, 85, 247, 0.15)';
-                    badgeColor = '#a855f7';
-                  } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
-                    badgeBg = 'rgba(6, 182, 212, 0.15)';
-                    badgeColor = '#06b6d4';
-                  } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
-                    badgeBg = 'rgba(239, 68, 68, 0.15)';
-                    badgeColor = '#ef4444';
-                  } else if (itemType.includes('Hotel')) {
-                    badgeBg = 'rgba(99, 102, 241, 0.15)';
-                    badgeColor = '#6366f1';
-                  } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
-                    badgeBg = 'rgba(236, 72, 153, 0.15)';
-                    badgeColor = '#ec4899';
-                  } else if (itemType.includes('Park')) {
-                    badgeBg = 'rgba(34, 197, 94, 0.15)';
-                    badgeColor = '#22c55e';
-                  } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
-                    badgeBg = 'rgba(239, 68, 68, 0.15)';
-                    badgeColor = '#ef4444';
-                  }
-
-                  const placeIcon = getPlaceIcon(item);
-                  const IconComp = placeIcon.icon;
-
-                  return (
+              {/* Saved Places (Home & Work) Shortcuts inside the dropdown */}
+              {(mapShowHomeOrig || mapShowWorkOrig) && (
+                <div style={{
+                  display: 'flex', gap: '8px', padding: '6px 14px 10px 14px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px'
+                }}>
+                  {mapShowHomeOrig && (
                     <button
-                      key={idx}
+                      type="button"
                       onClick={() => {
-                        if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
-                        const fullText = item.name + (item.address ? ', ' + item.address : '');
-                        // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
-                        setTripOriginCoords({ lat: item.lat, lng: item.lng }, fullText);
-                        setTripFrom(fullText);
+                        setTripFrom(homeLocation);
+                        setShowFromDropdown(false);
+                      }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        padding: '8px 12px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
+                        color: '#fff', fontSize: '12px', cursor: 'pointer',
+                        transition: 'all 0.2s', overflow: 'hidden'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                    >
+                      <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
+                    </button>
+                  )}
+                  {mapShowWorkOrig && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTripFrom(workLocation);
+                        setShowFromDropdown(false);
+                      }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        padding: '8px 12px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
+                        color: '#fff', fontSize: '12px', cursor: 'pointer',
+                        transition: 'all 0.2s', overflow: 'hidden'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                    >
+                      <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                      <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* A. STACIONET E AUTOBUSIT */}
+              {tripFrom.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length > 0 && (
+                <>
+                  <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {t.bus_stations}
+                  </div>
+                  {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).slice(0, 5).map(name => (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        setTripFrom(name);
                         setShowFromDropdown(false);
                       }}
                       style={{
@@ -1837,225 +1746,225 @@ export default function MapView() {
                       onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
                     >
                       <div style={{
-                        width: '24px', height: '24px', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
+                        display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
+                        justifyContent: 'center'
                       }}>
-                        <IconComp size={16} style={{ color: placeIcon.color }} />
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
+                          <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                        </svg>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
-                        {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
-                      </div>
-                      <span style={{
-                        fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
-                        padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
-                      }}>
-                        {itemType || ''}
-                      </span>
+                      <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
                       <ChevronRight size={14} style={{ opacity: 0.2 }} />
                     </button>
-                  );
-                })}
-              </>
-            )}
+                  ))}
+                </>
+              )}
 
-            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length === 0 && fromSuggestions.length === 0 && (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                {t.searching_addresses}
-              </div>
-            )}
-          </div>
-        )}
+              {/* B. ADRESAT DHE ATRAKSIONET */}
+              {tripFrom.trim().length > 0 && fromSuggestions.length > 0 && (
+                <>
+                  <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
+                    {t.addresses_attractions}
+                  </div>
+                  {fromSuggestions.map((item, idx) => {
+                    const itemType = String(item.type || '');
+                    let badgeBg = 'rgba(100, 116, 139, 0.1)';
+                    let badgeColor = '#64748b';
+                    if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
+                      badgeBg = 'rgba(245, 158, 11, 0.15)';
+                      badgeColor = '#f59e0b';
+                    } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
+                      badgeBg = 'rgba(168, 85, 247, 0.15)';
+                      badgeColor = '#a855f7';
+                    } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
+                      badgeBg = 'rgba(6, 182, 212, 0.15)';
+                      badgeColor = '#06b6d4';
+                    } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
+                      badgeBg = 'rgba(239, 68, 68, 0.15)';
+                      badgeColor = '#ef4444';
+                    } else if (itemType.includes('Hotel')) {
+                      badgeBg = 'rgba(99, 102, 241, 0.15)';
+                      badgeColor = '#6366f1';
+                    } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
+                      badgeBg = 'rgba(236, 72, 153, 0.15)';
+                      badgeColor = '#ec4899';
+                    } else if (itemType.includes('Park')) {
+                      badgeBg = 'rgba(34, 197, 94, 0.15)';
+                      badgeColor = '#22c55e';
+                    } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
+                      badgeBg = 'rgba(239, 68, 68, 0.15)';
+                      badgeColor = '#ef4444';
+                    }
 
-        {showToDropdown && (
-          <div style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            left: '0',
-            right: '0',
-            zIndex: 3000,
-            background: 'rgba(10, 14, 24, 0.98)',
-            backdropFilter: 'blur(30px) saturate(180%)',
-            borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.12)',
-            boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
-            maxHeight: '320px',
-            overflowY: 'auto',
-            animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            padding: '10px'
-          }} className="station-dropdown-map">
-            <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
-              {t.destination_suggestions}
+                    const placeIcon = getPlaceIcon(item);
+                    const IconComp = placeIcon.icon;
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
+                          const fullText = item.name + (item.address ? ', ' + item.address : '');
+                          // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
+                          setTripOriginCoords({ lat: item.lat, lng: item.lng }, fullText);
+                          setTripFrom(fullText);
+                          setShowFromDropdown(false);
+                        }}
+                        style={{
+                          width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                          color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                          borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                      >
+                        <div style={{
+                          width: '24px', height: '24px', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}>
+                          <IconComp size={16} style={{ color: placeIcon.color }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                          {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
+                        </div>
+                        <span style={{
+                          fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
+                          padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
+                        }}>
+                          {itemType || ''}
+                        </span>
+                        <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {STOP_NAMES.filter(name => name.toLowerCase().includes(tripFrom.toLowerCase())).length === 0 && fromSuggestions.length === 0 && (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+                  {t.searching_addresses}
+                </div>
+              )}
             </div>
+          )}
 
-
-            {/* Choose on Map Option */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectingOnMap('to');
-                setShowToDropdown(false);
-                setIsSearching(false);
-              }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 14px 14px 14px', borderRadius: '0px',
-                background: 'none', border: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
-                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-            >
-              <div style={{
-                width: '24px', height: '24px', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <MapPin size={18} style={{ color: '#f59e0b' }} />
+          {showToDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              left: '0',
+              right: '0',
+              zIndex: 3000,
+              background: 'rgba(10, 14, 24, 0.98)',
+              backdropFilter: 'blur(30px) saturate(180%)',
+              borderRadius: '24px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 30px 70px rgba(0,0,0,0.8)',
+              maxHeight: '320px',
+              overflowY: 'auto',
+              animation: 'slideDown 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+              padding: '10px'
+            }} className="station-dropdown-map">
+              <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '6px' }}>
+                {t.destination_suggestions}
               </div>
-              <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                {t.choose_on_map}
-              </span>
-            </button>
 
-            {/* Saved Places (Home & Work) Shortcuts inside the dropdown */}
-            {(mapShowHomeDest || mapShowWorkDest) && (
-              <div style={{
-                display: 'flex', gap: '8px', padding: '6px 14px 10px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px'
-              }}>
-                {mapShowHomeDest && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTripTo(homeLocation);
-                      setShowToDropdown(false);
-                    }}
-                    style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      padding: '8px 12px', borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
-                      color: '#fff', fontSize: '12px', cursor: 'pointer',
-                      transition: 'all 0.2s', overflow: 'hidden'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                  >
-                    <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
-                    <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
-                  </button>
-                )}
-                {mapShowWorkDest && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTripTo(workLocation);
-                      setShowToDropdown(false);
-                    }}
-                    style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      padding: '8px 12px', borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
-                      color: '#fff', fontSize: '12px', cursor: 'pointer',
-                      transition: 'all 0.2s', overflow: 'hidden'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                  >
-                    <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
-                    <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
-                  </button>
-                )}
-              </div>
-            )}
 
-            {/* A. STACIONET E AUTOBUSIT */}
-            {tripTo.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
-              <>
-                <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  {t.bus_stations}
+              {/* Choose on Map Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectingOnMap('to');
+                  setShowToDropdown(false);
+                  setIsSearching(false);
+                }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 14px 14px 14px', borderRadius: '0px',
+                  background: 'none', border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#f59e0b',
+                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+              >
+                <div style={{
+                  width: '24px', height: '24px', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <MapPin size={18} style={{ color: '#f59e0b' }} />
                 </div>
-                {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).slice(0, 5).map(name => (
-                  <button
-                    key={name}
-                    onClick={() => {
-                      setTripTo(name);
-                      setShowToDropdown(false);
-                    }}
-                    style={{
-                      width: '100%', padding: '10px 16px', background: 'none', border: 'none',
-                      color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
-                      borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
-                  >
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
-                      display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
-                      justifyContent: 'center'
-                    }}>
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
-                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
-                      </svg>
-                    </div>
-                    <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                    <ChevronRight size={14} style={{ opacity: 0.2 }} />
-                  </button>
-                ))}
-              </>
-            )}
+                <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                  {t.choose_on_map}
+                </span>
+              </button>
 
-            {/* B. ADRESAT DHE ATRAKSIONET */}
-            {tripTo.trim().length > 0 && toSuggestions.length > 0 && (
-              <>
-                <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
-                  {t.addresses_attractions}
-                </div>
-                {toSuggestions.map((item, idx) => {
-                  const itemType = String(item.type || '');
-                  let badgeBg = 'rgba(100, 116, 139, 0.1)';
-                  let badgeColor = '#64748b';
-                  if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
-                    badgeBg = 'rgba(245, 158, 11, 0.15)';
-                    badgeColor = '#f59e0b';
-                  } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
-                    badgeBg = 'rgba(168, 85, 247, 0.15)';
-                    badgeColor = '#a855f7';
-                  } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
-                    badgeBg = 'rgba(6, 182, 212, 0.15)';
-                    badgeColor = '#06b6d4';
-                  } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
-                    badgeBg = 'rgba(239, 68, 68, 0.15)';
-                    badgeColor = '#ef4444';
-                  } else if (itemType.includes('Hotel')) {
-                    badgeBg = 'rgba(99, 102, 241, 0.15)';
-                    badgeColor = '#6366f1';
-                  } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
-                    badgeBg = 'rgba(236, 72, 153, 0.15)';
-                    badgeColor = '#ec4899';
-                  } else if (itemType.includes('Park')) {
-                    badgeBg = 'rgba(34, 197, 94, 0.15)';
-                    badgeColor = '#22c55e';
-                  } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
-                    badgeBg = 'rgba(239, 68, 68, 0.15)';
-                    badgeColor = '#ef4444';
-                  }
-
-                  const placeIcon = getPlaceIcon(item);
-                  const IconComp = placeIcon.icon;
-
-                  return (
+              {/* Saved Places (Home & Work) Shortcuts inside the dropdown */}
+              {(mapShowHomeDest || mapShowWorkDest) && (
+                <div style={{
+                  display: 'flex', gap: '8px', padding: '6px 14px 10px 14px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '8px'
+                }}>
+                  {mapShowHomeDest && (
                     <button
-                      key={idx}
+                      type="button"
                       onClick={() => {
-                        if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
-                        const fullText = item.name + (item.address ? ', ' + item.address : '');
-                        // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
-                        setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
-                        setTripTo(fullText);
+                        setTripTo(homeLocation);
+                        setShowToDropdown(false);
+                      }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        padding: '8px 12px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
+                        color: '#fff', fontSize: '12px', cursor: 'pointer',
+                        transition: 'all 0.2s', overflow: 'hidden'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                    >
+                      <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
+                    </button>
+                  )}
+                  {mapShowWorkDest && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTripTo(workLocation);
+                        setShowToDropdown(false);
+                      }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        padding: '8px 12px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
+                        color: '#fff', fontSize: '12px', cursor: 'pointer',
+                        transition: 'all 0.2s', overflow: 'hidden'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                    >
+                      <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                      <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* A. STACIONET E AUTOBUSIT */}
+              {tripTo.trim().length > 0 && STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length > 0 && (
+                <>
+                  <div style={{ padding: '6px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {t.bus_stations}
+                  </div>
+                  {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).slice(0, 5).map(name => (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        setTripTo(name);
                         setShowToDropdown(false);
                       }}
                       style={{
@@ -2068,35 +1977,110 @@ export default function MapView() {
                       onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
                     >
                       <div style={{
-                        width: '24px', height: '24px', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)',
+                        display: 'flex', alignItems: 'center', color: '#3b82f6', flexShrink: 0,
+                        justifyContent: 'center'
                       }}>
-                        <IconComp size={16} style={{ color: placeIcon.color }} />
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ alignSelf: 'center' }}>
+                          <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z" />
+                        </svg>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
-                        {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
-                      </div>
-                      <span style={{
-                        fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
-                        padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
-                      }}>
-                        {itemType || ''}
-                      </span>
+                      <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
                       <ChevronRight size={14} style={{ opacity: 0.2 }} />
                     </button>
-                  );
-                })}
-              </>
-            )}
+                  ))}
+                </>
+              )}
 
-            {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length === 0 && toSuggestions.length === 0 && (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                {t.searching_addresses}
-              </div>
-            )}
-          </div>
-        )}
+              {/* B. ADRESAT DHE ATRAKSIONET */}
+              {tripTo.trim().length > 0 && toSuggestions.length > 0 && (
+                <>
+                  <div style={{ padding: '10px 14px 2px', fontSize: '10px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
+                    {t.addresses_attractions}
+                  </div>
+                  {toSuggestions.map((item, idx) => {
+                    const itemType = String(item.type || '');
+                    let badgeBg = 'rgba(100, 116, 139, 0.1)';
+                    let badgeColor = '#64748b';
+                    if (itemType.includes('Restorant') || itemType.includes('Kafe') || itemType.includes('Bar') || itemType.includes('Food') || itemType.includes('Cafe') || itemType.includes('Restaurant')) {
+                      badgeBg = 'rgba(245, 158, 11, 0.15)';
+                      badgeColor = '#f59e0b';
+                    } else if (itemType.includes('Dyqan') || itemType.includes('Shop') || itemType.includes('Mall')) {
+                      badgeBg = 'rgba(168, 85, 247, 0.15)';
+                      badgeColor = '#a855f7';
+                    } else if (itemType.includes('Arsim') || itemType.includes('Shkollë') || itemType.includes('Education')) {
+                      badgeBg = 'rgba(6, 182, 212, 0.15)';
+                      badgeColor = '#06b6d4';
+                    } else if (itemType.includes('Shëndetësi') || itemType.includes('Medical')) {
+                      badgeBg = 'rgba(239, 68, 68, 0.15)';
+                      badgeColor = '#ef4444';
+                    } else if (itemType.includes('Hotel')) {
+                      badgeBg = 'rgba(99, 102, 241, 0.15)';
+                      badgeColor = '#6366f1';
+                    } else if (itemType.includes('Historik') || itemType.includes('Turizëm') || itemType.includes('Tourism')) {
+                      badgeBg = 'rgba(236, 72, 153, 0.15)';
+                      badgeColor = '#ec4899';
+                    } else if (itemType.includes('Park')) {
+                      badgeBg = 'rgba(34, 197, 94, 0.15)';
+                      badgeColor = '#22c55e';
+                    } else if (itemType.includes('Karburant') || itemType.includes('Gas Station') || itemType.includes('Fuel')) {
+                      badgeBg = 'rgba(239, 68, 68, 0.15)';
+                      badgeColor = '#ef4444';
+                    }
+
+                    const placeIcon = getPlaceIcon(item);
+                    const IconComp = placeIcon.icon;
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
+                          const fullText = item.name + (item.address ? ', ' + item.address : '');
+                          // Fix: use a bound action instead of useStore.getState() inside JSX event handlers
+                          setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
+                          setTripTo(fullText);
+                          setShowToDropdown(false);
+                        }}
+                        style={{
+                          width: '100%', padding: '10px 16px', background: 'none', border: 'none',
+                          color: 'rgba(255,255,255,0.85)', textAlign: 'left', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px',
+                          borderRadius: '16px', transition: 'all 0.2s', marginBottom: '2px'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                      >
+                        <div style={{
+                          width: '24px', height: '24px', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}>
+                          <IconComp size={16} style={{ color: placeIcon.color }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                          {item.address && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{item.address}</span>}
+                        </div>
+                        <span style={{
+                          fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
+                          padding: '4px 8px', borderRadius: '8px', background: badgeBg, color: badgeColor, flexShrink: 0
+                        }}>
+                          {itemType || ''}
+                        </span>
+                        <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {STOP_NAMES.filter(name => name.toLowerCase().includes(tripTo.toLowerCase())).length === 0 && toSuggestions.length === 0 && (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+                  {t.searching_addresses}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -2875,8 +2859,8 @@ export default function MapView() {
                 const center = map.getCenter();
                 const lat = center.lat;
                 const lng = center.lng;
-                
-const tempName = t.point_on_map;
+
+                const tempName = t.point_on_map;
                 if (selectingOnMap === 'from') {
                   // Fix: use bound Zustand actions for map selection instead of useStore.getState()
                   setTripOriginCoords({ lat, lng }, tempName);
@@ -2929,13 +2913,13 @@ const tempName = t.point_on_map;
                 boxShadow: '0 4px 15px rgba(0, 0, 0, 0.25)',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={(e) => { 
+              onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-                e.currentTarget.style.transform = 'scale(1.01)'; 
+                e.currentTarget.style.transform = 'scale(1.01)';
               }}
-              onMouseLeave={(e) => { 
+              onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'rgba(10, 14, 24, 0.82)';
-                e.currentTarget.style.transform = 'scale(1)'; 
+                e.currentTarget.style.transform = 'scale(1)';
               }}
             >
               OK
@@ -3078,6 +3062,11 @@ const tempName = t.point_on_map;
         @keyframes pulse-ring {
           0% { transform: scale(0.33); opacity: 1; }
           80%, 100% { opacity: 0; }
+        }
+        @keyframes pin-pulse-ring {
+          0%   { transform: translateX(-50%) scale(1); opacity: 0.6; }
+          70%  { transform: translateX(-50%) scale(3); opacity: 0; }
+          100% { transform: translateX(-50%) scale(3); opacity: 0; }
         }
         @keyframes slide-up { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 

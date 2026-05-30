@@ -645,6 +645,300 @@ export interface StaffAccount {
   status: string;
 }
 
+// ── Konstantet e planifikimit te rruges ─────────────────────────────────────────
+const MAX_WALK_METERS_BASE     = 800;
+const MAX_WALK_METERS_LONG     = 1600;
+const LONG_TRIP_THRESHOLD_M    = 5000;
+const MAX_CANDIDATE_STOPS      = 20;
+const BEARING_TOLERANCE_DEG    = 110;
+const WALK_PENALTY_THRESHOLD_M = 800;
+const BOARD_BUFFER_SEC         = 45;
+const AVG_BUS_SPEED_MPS        = 8.3;
+
+const SCORE_WEIGHTS = {
+  travelTime:   1.0,
+  walkPenalty:  1.8,
+  transferCost: 300,
+  reliability:  0.5,
+} as const;
+
+const CONGESTION_WINDOWS = [
+  { start: 7,  end: 9,  factor: 1.4  },
+  { start: 17, end: 19, factor: 1.35 },
+  { start: 22, end: 5,  factor: 0.9  },
+] as const;
+
+// ── Tipet e planifikimit te rruges ─────────────────────────────────────────────
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+interface BusStop {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  [key: string]: any;
+}
+
+interface LiveBus {
+  id: string;
+  routeId: string;
+  direction: 'forward' | 'return';
+  lat: number;
+  lng: number;
+  speed: number;
+  lastUpdate?: number;
+  lastGpsUpdate?: string | number | Date;
+  [key: string]: any;
+}
+
+type TripInput =
+  | { type: 'MY_LOCATION' }
+  | { type: 'STOP';     stopId: string }
+  | { type: 'ADDRESS';  value: string }
+  | { type: 'MAP_PICK'; coords: LatLng; displayName?: string };
+
+interface ResolvedInput {
+  coords:      LatLng;
+  displayName: string;
+  type:        TripInput['type'];
+  stopId?:     string;
+}
+
+type CoordCache = Record<string, LatLng>;
+
+// ── Helpers e planifikimit te rruges ────────────────────────────────────────────
+function bearingDeg(from: LatLng, to: LatLng): number {
+  const dLng = (to.lng - from.lng) * Math.PI / 180;
+  const lat1 = from.lat * Math.PI / 180;
+  const lat2 = to.lat   * Math.PI / 180;
+  const y    = Math.sin(dLng) * Math.cos(lat2);
+  const x    = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function angleDiff(a: number, b: number): number {
+  return Math.abs(((a - b + 180 + 360) % 360) - 180);
+}
+
+function getCongestionFactor(hour: number): number {
+  for (const w of CONGESTION_WINDOWS) {
+    const wraps    = w.start > w.end;
+    const inWindow = wraps
+      ? hour >= w.start || hour <= w.end
+      : hour >= w.start && hour <= w.end;
+    if (inWindow) return w.factor;
+  }
+  return 1.0;
+}
+
+// ── Shtresa 1: Input resolution ───────────────────────────────────────────────
+async function resolveInputToCoords(
+  input:        TripInput,
+  cache:        CoordCache,
+  userLocation: LatLng | null,
+): Promise<ResolvedInput | null> {
+  switch (input.type) {
+    case 'MY_LOCATION': {
+      if (!userLocation) return null;
+      return { coords: userLocation, displayName: 'Vendndodhja ime', type: 'MY_LOCATION' };
+    }
+    case 'STOP': {
+      const stop = BUS_STOPS.find(s => s.id === input.stopId);
+      if (!stop) return null;
+      return { coords: { lat: stop.lat, lng: stop.lng }, displayName: stop.name, type: 'STOP', stopId: stop.id };
+    }
+    case 'ADDRESS': {
+      const cached = cache[input.value];
+      if (cached) return { coords: cached, displayName: input.value, type: 'ADDRESS' };
+      const coords = await geocodeAddress(input.value);
+      if (!coords) return null;
+      cache[input.value] = coords;
+      return { coords, displayName: input.value, type: 'ADDRESS' };
+    }
+    case 'MAP_PICK': {
+      return {
+        coords:      input.coords,
+        displayName: input.displayName ?? `${input.coords.lat.toFixed(4)}, ${input.coords.lng.toFixed(4)}`,
+        type:        'MAP_PICK',
+      };
+    }
+  }
+}
+
+// ── Shtresa 2: Kandidatë stacionesh ──────────────────────────────────────────
+function getCandidateStops(
+  coords:        LatLng,
+  destination:   LatLng,
+  tripDistanceM: number,
+  isOrigin:      boolean,
+): { stop: any; walkDist: number }[] {
+  const radius        = tripDistanceM > LONG_TRIP_THRESHOLD_M ? MAX_WALK_METERS_LONG : MAX_WALK_METERS_BASE;
+  const targetBearing = bearingDeg(coords, destination);
+  const allNearby     = getNearestStops(coords.lat, coords.lng, radius, MAX_CANDIDATE_STOPS * 2);
+
+  const filtered = allNearby.filter(item => {
+    const diff = angleDiff(bearingDeg(coords, { lat: item.stop.lat, lng: item.stop.lng }), targetBearing);
+    return isOrigin ? diff <= BEARING_TOLERANCE_DEG : diff >= (180 - BEARING_TOLERANCE_DEG);
+  });
+
+  return filtered
+    .reduce<{ stop: any; walkDist: number }[]>((acc, item) => {
+      const tooClose = acc.some(s => haversineMeters(s.stop.lat, s.stop.lng, item.stop.lat, item.stop.lng) < 50);
+      return tooClose ? acc : [...acc, item];
+    }, [])
+    .slice(0, MAX_CANDIDATE_STOPS);
+}
+
+// ── Shtresa 3: Scoring ────────────────────────────────────────────────────────
+function scoreRoute(opt: TripOption, liveBuses: LiveBus[]): number {
+  const walkSec         = (opt.walkDistMeters ?? 0) / 1.39;
+  const walkPenaltySec  = opt.walkDistMeters > WALK_PENALTY_THRESHOLD_M
+    ? walkSec * (SCORE_WEIGHTS.walkPenalty - 1) : 0;
+
+  const reliabilityPenalty = opt.legs
+    .filter(l => !l.isWalking)
+    .reduce((sum, leg) => {
+      const bus        = liveBuses.find(b => b.routeId === leg.route?.id);
+      const gpsTime    = bus ? (bus.lastUpdate || (bus.lastGpsUpdate ? new Date(bus.lastGpsUpdate).getTime() : Date.now())) : Date.now();
+      const gpsAgeSec  = bus
+        ? (Date.now() - gpsTime) / 1000
+        : 120;
+      return sum + (gpsAgeSec > 120 ? SCORE_WEIGHTS.reliability * 60 : 0);
+    }, 0);
+
+  return opt.totalTimeSec
+    + walkPenaltySec
+    + (opt.transfers ?? 0) * SCORE_WEIGHTS.transferCost
+    + reliabilityPenalty;
+}
+
+// ── Shtresa 4: Live bus correction ───────────────────────────────────────────
+function canCatchBus(params: {
+  walkDistanceM: number;
+  busGpsLat:     number;
+  busGpsLng:     number;
+  stopLat:       number;
+  stopLng:       number;
+}): { catchable: boolean; marginSeconds: number } {
+  const congestion  = getCongestionFactor(new Date().getHours());
+  const walkSec     = (params.walkDistanceM / 1.39) * congestion;
+  const realBusEta  = haversineMeters(params.busGpsLat, params.busGpsLng, params.stopLat, params.stopLng) / AVG_BUS_SPEED_MPS;
+  const margin      = realBusEta - walkSec - BOARD_BUFFER_SEC;
+  return { catchable: margin >= 0, marginSeconds: Math.round(margin) };
+}
+
+function applyLiveCorrections(
+  options:      TripOption[],
+  liveBuses:    LiveBus[],
+  originCoords: LatLng,
+): TripOption[] {
+  return options
+    .map(opt => {
+      const firstTransit = opt.legs.find(l => !l.isWalking);
+      if (!firstTransit) return opt;
+
+      const boardStop = BUS_STOPS.find(s => s.name === firstTransit.boardAt);
+      const bus       = liveBuses.find(b => b.routeId === firstTransit.route?.id);
+      if (!boardStop || !bus) return opt;
+
+      const walkDist              = haversineMeters(originCoords.lat, originCoords.lng, boardStop.lat, boardStop.lng);
+      const { catchable, marginSeconds } = canCatchBus({
+        walkDistanceM: walkDist,
+        busGpsLat:     bus.lat,
+        busGpsLng:     bus.lng,
+        stopLat:       boardStop.lat,
+        stopLng:       boardStop.lng,
+      });
+
+      return {
+        ...opt,
+        catchable,
+        marginSeconds,
+        warning: catchable && marginSeconds < 90 ? `Vetëm ${marginSeconds}s kohë rezervë — nxito!` : undefined,
+      } as any;
+    })
+    .filter(opt => (opt as any).catchable !== false);
+}
+
+// ── Shtresa 5: Dedup + enrich ─────────────────────────────────────────────────
+function deduplicateOptions(options: TripOption[]): TripOption[] {
+  const seen = new Set<string>();
+  return options.filter(opt => {
+    const key = opt.legs.filter(l => !l.isWalking).map(l => l.route?.id).join('→')
+      + '|' + Math.floor(opt.totalTimeSec / 180);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function enrichTripLegs(
+  opt: TripOption,
+  origin: ResolvedInput,
+  destination: ResolvedInput,
+  index: number
+): TripOption {
+  const legs = [...opt.legs];
+  const fromName = origin.displayName;
+  const toName = destination.displayName;
+
+  // Fix origin placeholder
+  if (legs[0]?.isWalking && legs[0].boardAt === 'origin') {
+    legs[0] = { ...legs[0], boardAt: fromName };
+  } else if (legs[0] && !legs[0].isWalking) {
+    const boardStopName = legs[0].boardAt!;
+    const boardStop = BUS_STOPS.find((s: any) => s.name === boardStopName);
+    if (boardStop) {
+      const walkDist = Math.round(haversineMeters(origin.coords.lat, origin.coords.lng, boardStop.lat, boardStop.lng));
+      if (walkDist > 20) {
+        legs.unshift({
+          isWalking: true,
+          boardAt: fromName,
+          alightAt: boardStopName,
+          walkingDist: walkDist,
+          walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
+          walkingTimeSec: walkTimeSec(walkDist),
+        });
+      }
+    }
+  }
+
+  // Fix destination placeholder
+  const lastLeg = legs[legs.length - 1];
+  if (lastLeg?.isWalking && lastLeg.alightAt === 'destination') {
+    legs[legs.length - 1] = { ...lastLeg, alightAt: toName };
+  } else if (lastLeg && !lastLeg.isWalking) {
+    const alightStopName = lastLeg.alightAt!;
+    const alightStop = BUS_STOPS.find((s: any) => s.name === alightStopName);
+    if (alightStop) {
+      const walkDist = Math.round(haversineMeters(destination.coords.lat, destination.coords.lng, alightStop.lat, alightStop.lng));
+      if (walkDist > 20) {
+        legs.push({
+          isWalking: true,
+          boardAt: alightStopName,
+          alightAt: toName,
+          walkingDist: walkDist,
+          walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
+          walkingTimeSec: walkTimeSec(walkDist),
+        });
+      }
+    }
+  }
+
+  return { 
+    ...opt, 
+    legs, 
+    from: fromName, 
+    to: toName, 
+    optionIndex: index + 1,
+    travelTime: opt.travelTime ?? Math.round(opt.totalTimeSec / 60),
+    totalPrice: opt.totalPrice ?? (legs.filter(l => !l.isWalking).length * 40)
+  };
+}
+
 // ─── STORE ────────────────────────────────────────────────────────────────────
 const useStore = create<any>()(
   persist(
@@ -1031,126 +1325,87 @@ const useStore = create<any>()(
       setTripDepartureTime: (time: string) => set({ tripDepartureTime: time }),
       setActiveTrip: (trip: any) => set({ activeTrip: trip }),
 
-      planTrip: async (fromName: string, toName: string) => {
-        console.log('🔍 planTrip started:', { fromName, toName });
+      planTrip: async (from: TripInput | string, to: TripInput | string) => {
+        console.log('🔍 planTrip started:', { from, to });
+        const state = get();
 
-        const departureMode = get().tripDepartureMode;
+        const normalizeInput = (input: TripInput | string): TripInput => {
+          if (typeof input === 'string') {
+            const isMyLocation = ['vendndodhja', 'my location', 'location'].some(k => input.toLowerCase().includes(k));
+            if (isMyLocation) return { type: 'MY_LOCATION' };
+            const stop = BUS_STOPS.find(s => s.name.toLowerCase().trim() === input.toLowerCase().trim());
+            if (stop) return { type: 'STOP', stopId: stop.id };
+            return { type: 'ADDRESS', value: input };
+          }
+          return input;
+        };
+
+        const normFrom = normalizeInput(from);
+        const normTo = normalizeInput(to);
+
+        const [origin, destination] = await Promise.all([
+          resolveInputToCoords(normFrom, state.coordCache ?? {}, state.userLocation),
+          resolveInputToCoords(normTo,   state.coordCache ?? {}, state.userLocation),
+        ]);
+
+        if (!origin)      return set({ tripResult: { error: 'Adresa e nisjes nuk u gjet.' },      activeTrip: null });
+        if (!destination) return set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet.' }, activeTrip: null });
+
+        const directDistM = haversineMeters(origin.coords.lat, origin.coords.lng, destination.coords.lat, destination.coords.lng);
+
+        let fromStops = getCandidateStops(origin.coords,      destination.coords, directDistM, true);
+        let toStops   = getCandidateStops(destination.coords, origin.coords,      directDistM, false);
+
+        if (normFrom.type === 'STOP') {
+          const matched = BUS_STOPS.find(s => s.id === normFrom.stopId);
+          if (matched && !fromStops.some(item => item.stop.id === matched.id)) {
+            fromStops.unshift({ stop: matched, walkDist: 0 });
+          }
+        }
+        if (normTo.type === 'STOP') {
+          const matched = BUS_STOPS.find(s => s.id === normTo.stopId);
+          if (matched && !toStops.some(item => item.stop.id === matched.id)) {
+            toStops.unshift({ stop: matched, walkDist: 0 });
+          }
+        }
+
+        if (!fromStops.length || !toStops.length) {
+          return set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
+        }
+
+        const liveBuses  = state.buses ?? [];
+        const departureMode = state.tripDepartureMode;
         const isArriveBy = departureMode === 'arrive_by';
-        const desiredTime = (departureMode !== 'now' && get().tripDepartureTime)
-          ? new Date(get().tripDepartureTime) : new Date();
-        const departureTimeSec = Math.floor(desiredTime.getTime() / 1000);
+        const desiredTime = (departureMode !== 'now' && state.tripDepartureTime)
+          ? new Date(state.tripDepartureTime) : new Date();
+        const depTimeSec = Math.floor(desiredTime.getTime() / 1000);
 
-        // 1. Resolve origin coordinates
-        const isMyLocation = ['vendndodhja', 'my location', 'location'].some(k => fromName.toLowerCase().includes(k));
-        const storedOriginMatch = get().tripOriginName === fromName && get().tripOriginCoords;
+        const rawOptions = runRaptorRouter(fromStops, toStops, depTimeSec, isArriveBy, liveBuses);
 
-        let fromCoords: { lat: number; lng: number } | null = storedOriginMatch ? get().tripOriginCoords : null;
-        if (!fromCoords) {
-          fromCoords = isMyLocation ? get().userLocation : await geocodeAddress(fromName);
-        }
-        if (!fromCoords) {
-          set({ tripResult: { error: 'Adresa e nisjes nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
-          return;
-        }
-        set({ tripOriginCoords: fromCoords, tripOriginName: fromName });
-
-        // 2. Resolve destination coordinates
-        const storedDestMatch = get().tripDestName === toName && get().tripDestCoords;
-        let toCoords: { lat: number; lng: number } | null = storedDestMatch ? get().tripDestCoords : null;
-        if (!toCoords) toCoords = await geocodeAddress(toName);
-        if (!toCoords) {
-          set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet. Provo një adresë tjetër ose emër stacioni.' }, activeTrip: null });
-          return;
-        }
-        set({ tripDestCoords: toCoords, tripDestName: toName });
-
-        // 3. Find candidate stops near origin and destination
-        const fromStops = getNearestStops(fromCoords.lat, fromCoords.lng, MAX_WALK_METERS, 15);
-        const toStops   = getNearestStops(toCoords.lat,   toCoords.lng,   MAX_WALK_METERS, 15);
-
-        if (fromStops.length === 0 || toStops.length === 0) {
-          set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
-          return;
+        if (!rawOptions.length) {
+          return set({ tripResult: { error: 'Nuk u gjet asnjë rrugë. Provo destinacion tjetër.' }, tripOptions: [], activeTrip: null });
         }
 
-        // 4. Run RAPTOR router
-        const liveBuses = get().buses || [];
-        const options = runRaptorRouter(fromStops, toStops, departureTimeSec, isArriveBy, liveBuses);
+        const enriched = deduplicateOptions(
+          applyLiveCorrections(
+            rawOptions.sort((a, b) => scoreRoute(a, liveBuses) - scoreRoute(b, liveBuses)),
+            liveBuses,
+            origin.coords,
+          )
+        ).map((opt, i) => enrichTripLegs(opt, origin, destination, i));
 
-        if (options.length === 0) {
-          set({
-            tripResult: { error: 'Nuk u gjet asnjë rrugë e mundshme. Provo destinacion tjetër ose koha e udhëtimit mund të jetë jashtë orarit.' },
-            activeTrip: null,
-            tripOptions: [],
-            selectedTripOptionIndex: 0,
-          });
-          return;
+        if (!enriched.length) {
+          return set({ tripResult: { error: 'Të gjitha autobuset kanë nisur. Provo orë tjetër.' }, tripOptions: [], activeTrip: null });
         }
-
-        // 5. Enrich legs: replace origin/destination placeholders, add walk legs at ends
-        const enrichedOptions = options.map((opt, index) => {
-          const legs = [...opt.legs];
-
-          // Fix origin placeholder
-          if (legs[0]?.isWalking && legs[0].boardAt === 'origin') {
-            legs[0] = { ...legs[0], boardAt: fromName };
-          } else if (!legs[0]?.isWalking) {
-            const boardStopName = legs[0].boardAt!;
-            const boardStop = BUS_STOPS.find((s: any) => s.name === boardStopName);
-            if (boardStop) {
-              const walkDist = Math.round(haversineMeters(fromCoords!.lat, fromCoords!.lng, boardStop.lat, boardStop.lng));
-              if (walkDist > 20) {
-                legs.unshift({
-                  isWalking: true,
-                  boardAt: fromName,
-                  alightAt: boardStopName,
-                  walkingDist: walkDist,
-                  walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
-                  walkingTimeSec: walkTimeSec(walkDist),
-                });
-              }
-            }
-          }
-
-          // Fix destination placeholder
-          const lastLeg = legs[legs.length - 1];
-          if (lastLeg?.isWalking && lastLeg.alightAt === 'destination') {
-            legs[legs.length - 1] = { ...lastLeg, alightAt: toName };
-          } else if (!lastLeg?.isWalking) {
-            const alightStopName = lastLeg.alightAt!;
-            const alightStop = BUS_STOPS.find((s: any) => s.name === alightStopName);
-            if (alightStop) {
-              const walkDist = Math.round(haversineMeters(toCoords!.lat, toCoords!.lng, alightStop.lat, alightStop.lng));
-              if (walkDist > 20) {
-                legs.push({
-                  isWalking: true,
-                  boardAt: alightStopName,
-                  alightAt: toName,
-                  walkingDist: walkDist,
-                  walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
-                  walkingTimeSec: walkTimeSec(walkDist),
-                });
-              }
-            }
-          }
-
-          return { ...opt, legs, from: fromName, to: toName, optionIndex: index + 1 };
-        });
-
-        const selected = enrichedOptions[0];
-        console.log(
-          '✅ Trip options found:',
-          enrichedOptions.length,
-          enrichedOptions.map(o => ({ routes: o.routeNames, time: o.travelTime, transfers: o.transfers }))
-        );
 
         set({
-          tripResult: selected,
-          tripOptions: enrichedOptions,
+          tripResult:              enriched[0],
+          tripOptions:             enriched,
           selectedTripOptionIndex: 0,
-          activeTrip: selected,
-          showRoutes: true,
-          showBuses: true,
+          activeTrip:              enriched[0],
+          showRoutes:              true,
+          showBuses:               true,
+          coordCache:              state.coordCache ?? {},
         });
       },
 

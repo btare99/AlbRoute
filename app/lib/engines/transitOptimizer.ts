@@ -1,5 +1,10 @@
 import { LatLng, WalkingEngine, WalkingRouteResult } from './walkingEngine';
 
+// ── Konstantet ────────────────────────────────────────────────────────────────
+const TRANSFER_BUFFER_SECONDS = 60;   // Buffer sigurie për ngjitje
+const MISSED_BUS_PENALTY_SECONDS = 900; // 15 min penalti për autobus të humbur
+
+// ── Tipet ─────────────────────────────────────────────────────────────────────
 export interface TransitStopCandidate {
   id: string;
   name: string;
@@ -23,6 +28,7 @@ export interface StopWalkAnalysis {
   walkingDurationSeconds: number;
 }
 
+// ── Optimizer ─────────────────────────────────────────────────────────────────
 export class TransitOptimizer {
   static async selectBestBoardingStop(
     passengerGps: LatLng,
@@ -30,55 +36,66 @@ export class TransitOptimizer {
     activeBuses: TransitBusCandidate[],
     walkingEngine: WalkingEngine
   ): Promise<StopWalkAnalysis | null> {
-    const candidatesAnalysis: StopWalkAnalysis[] = [];
+    if (!candidateStops.length || !activeBuses.length) return null;
 
-    for (const stop of candidateStops) {
-      try {
-        // 1. Calculate actual walkable path
-        const walkInfo = await walkingEngine.calculateWalkingRoute(passengerGps, stop);
-        
-        // 2. Find approaching bus
-        const approachingBus = this.findNextApproachingBus(stop, activeBuses);
-        if (!approachingBus) continue;
-
-        const busArrivalSeconds = approachingBus.etaToStopSeconds;
-        const walkDurationSeconds = walkInfo.durationSeconds;
-        const transferBufferSeconds = 60; // 1-minute safety padding
-        
-        const canCatchBus = (walkDurationSeconds + transferBufferSeconds) <= busArrivalSeconds;
-
-        // Optimized total journey index (includes missed bus penalty)
-        const totalJourneySeconds = walkDurationSeconds + (canCatchBus ? busArrivalSeconds : (busArrivalSeconds + 900));
-
-        candidatesAnalysis.push({
+    // Të gjitha walking routes paralele — jo sekuenciale
+    const walkResults = await Promise.allSettled(
+      candidateStops.map(stop =>
+        walkingEngine.calculateWalkingRoute(passengerGps, stop).then(walkInfo => ({
           stop,
-          walkInfo,
-          approachingBus,
-          canCatchBus,
-          totalJourneySeconds,
-          walkingDurationSeconds: walkDurationSeconds
-        });
-      } catch (err) {
-        console.warn(`Stop optimization skipped for stop ${stop.id}:`, err);
+          walkInfo
+        }))
+      )
+    );
+
+    const candidates: StopWalkAnalysis[] = [];
+
+    for (const result of walkResults) {
+      if (result.status === 'rejected') {
+        console.warn('Walking route calculation failed:', result.reason);
+        continue;
       }
+
+      const { stop, walkInfo } = result.value;
+
+      const approachingBus = TransitOptimizer.findNextApproachingBus(stop, activeBuses);
+      if (!approachingBus) continue;
+
+      const walkDurationSeconds = walkInfo.durationSeconds;
+      const canCatchBus = (walkDurationSeconds + TRANSFER_BUFFER_SECONDS) <= approachingBus.etaToStopSeconds;
+      const penalty = canCatchBus ? 0 : MISSED_BUS_PENALTY_SECONDS;
+
+      candidates.push({
+        stop,
+        walkInfo,
+        approachingBus,
+        canCatchBus,
+        walkingDurationSeconds: walkDurationSeconds,
+        totalJourneySeconds: walkDurationSeconds + approachingBus.etaToStopSeconds + penalty,
+      });
     }
 
-    if (!candidatesAnalysis.length) return null;
+    if (!candidates.length) return null;
 
-    candidatesAnalysis.sort((a, b) => a.totalJourneySeconds - b.totalJourneySeconds);
-    return candidatesAnalysis[0];
+    return candidates.reduce((best, current) =>
+      current.totalJourneySeconds < best.totalJourneySeconds ? current : best
+    );
   }
 
   private static findNextApproachingBus(
     stop: TransitStopCandidate,
     activeBuses: TransitBusCandidate[]
   ): TransitBusCandidate | null {
-    const stopBuses = activeBuses.filter(
-      bus => bus.nextStopId === stop.id || bus.routeStops.includes(stop.id)
-    );
-    if (!stopBuses.length) return null;
-    
-    stopBuses.sort((a, b) => a.etaToStopSeconds - b.etaToStopSeconds);
-    return stopBuses[0];
+    let earliest: TransitBusCandidate | null = null;
+
+    for (const bus of activeBuses) {
+      const servicesStop = bus.nextStopId === stop.id || bus.routeStops.includes(stop.id);
+      if (!servicesStop) continue;
+      if (!earliest || bus.etaToStopSeconds < earliest.etaToStopSeconds) {
+        earliest = bus;
+      }
+    }
+
+    return earliest;
   }
 }

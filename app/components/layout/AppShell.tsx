@@ -5,7 +5,7 @@ import { Preferences } from '@capacitor/preferences';
 import Sidebar from './Sidebar';
 import MapView from '../map/MapView';
 import BusTracker from '../map/BusTracker';
-import TripPlanner from '../map/TripPlanner';
+
 import ProfileView from '../profile/ProfileView';
 import UserFavorites from '../profile/UserFavorites';
 import EditProfileView from '../profile/EditProfileView';
@@ -64,11 +64,11 @@ export default function AppShell() {
             await Preferences.remove({ key: 'google_login_pending' });
             setTimeout(() => {
               addNotification(
-                    (() => {
-                      const username = u.name?.split(' ')[0] || '';
-                      const base = t.auth_welcome.replace(/!$/, '');
-                      return username ? `${base}, ${username}!` : t.auth_welcome;
-                    })(),
+                (() => {
+                  const username = u.name?.split(' ')[0] || '';
+                  const base = t.auth_welcome.replace(/!$/, '');
+                  return username ? `${base}, ${username}!` : t.auth_welcome;
+                })(),
                 'success'
               );
             }, 500);
@@ -130,7 +130,7 @@ export default function AppShell() {
     switch (currentView) {
       case 'map': return <MapView />;
       case 'tracker': return <BusTracker />;
-      case 'planner': return <TripPlanner />;
+
       case 'profile': return <ProfileView />;
       case 'favorites': return (
         <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
