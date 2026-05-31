@@ -233,7 +233,9 @@ function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[1]); // Default Albania
@@ -262,6 +264,13 @@ function LoginContent() {
         setError(`Gabim gjatë autentikimit: ${errorParam}`);
       }
     }
+
+    const token = searchParams.get('resetToken');
+    if (token) {
+      setResetToken(token);
+      setMode('new_password');
+      setSuccess('Klikoni butonin për të vendosur fjalëkalimin e ri.');
+    }
   }, [searchParams]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -276,10 +285,10 @@ function LoginContent() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(t.auth_code_sent);
-        setMode('verify');
+        setSuccess(t.auth_reset_link_sent);
+        setMode('forgot');
       } else {
-        setError(data.error || t.auth_code_failed);
+        setError(data.error || t.auth_change_failed);
       }
     } catch (err) {
       setError(t.auth_server_error);
@@ -316,11 +325,25 @@ function LoginContent() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    // Client-side confirm-password validation
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
     try {
+      const payload: any = { newPassword };
+      if (resetToken) {
+        payload.resetToken = resetToken;
+      } else {
+        payload.email = email;
+        payload.code = code;
+      }
+
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, newPassword }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -331,6 +354,8 @@ function LoginContent() {
         setCode('');
         setOtp(['', '', '', '', '', '']);
         setNewPassword('');
+        setConfirmPassword('');
+        setResetToken('');
       } else {
         setError(data.error || t.auth_change_failed);
       }
@@ -415,7 +440,12 @@ function LoginContent() {
     } else if (mode === 'verify') {
       setMode('forgot');
     } else if (mode === 'new_password') {
-      setMode('verify');
+      if (resetToken) {
+        setResetToken('');
+        setMode('login');
+      } else {
+        setMode('verify');
+      }
     }
   };
 
@@ -498,9 +528,9 @@ function LoginContent() {
       }
     } else {
       switch (mode) {
-        case 'forgot': return 'Enter your email address';
-        case 'verify': return 'Please enter the 6 digit code Sent To your mail';
-        case 'new_password': return 'Your new password must be different from previously used password';
+        case 'forgot': return 'Enter your email address to receive a reset link.';
+        case 'verify': return 'Please enter the 6 digit code sent to your email.';
+        case 'new_password': return 'Use the link from your email to set a new password.';
         default: return '';
       }
     }
@@ -811,6 +841,7 @@ function LoginContent() {
                   </span>
                   <input className="premium-dark-input" type="email" placeholder={t.auth_email} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
                 </div>
+                {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>{success}</div>}
                 {error && <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{error}</div>}
                 <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: '12px' }}>
                   {loading ? t.auth_sending : t.auth_continue}
@@ -860,6 +891,12 @@ function LoginContent() {
                     <Lock size={18} />
                   </span>
                   <input className="premium-dark-input" type="password" placeholder={t.auth_new_password} value={newPassword} onChange={e => setNewPassword(e.target.value)} required autoComplete="new-password" />
+                </div>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={18} />
+                  </span>
+                  <input className="premium-dark-input" type="password" placeholder={t.edit_confirm_new_password || 'Confirm New Password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
                 </div>
                 {error && <div style={{ color: '#ef4444', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{error}</div>}
                 <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: '12px' }}>

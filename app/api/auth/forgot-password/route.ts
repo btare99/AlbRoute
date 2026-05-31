@@ -35,34 +35,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: SECURITY_MESSAGE });
     }
 
-    // Gjenero kod të sigurt
-    const resetCode = crypto.randomInt(100000, 999999).toString(); // ✅ crypto
-    const resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+    // Gjenero token të sigurt për lidhjen e rivendosjes
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+    const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+    const resetLink = `${origin}/?resetToken=${encodeURIComponent(resetToken)}`;
 
     // Përditëso në mënyrë konsistente
     const model = isOperator ? Operator : User;
     await model.updateOne(
       { _id: user._id },
-      { $set: { resetCode, resetCodeExpires } }
+      {
+        $set: { resetToken, resetTokenExpires },
+        $unset: { resetCode: '' }
+      }
     );
 
     // Dërgo email
-    const { sendResetCodeEmail } = await import('@/app/lib/mail');
-    const emailSent = await sendResetCodeEmail(user.email, user.name, resetCode);
+    const { sendResetLinkEmail } = await import('@/app/lib/mail');
+    const emailSent = await sendResetLinkEmail(user.email, user.name, resetToken, resetLink);
 
     if (!emailSent) {
-      // Pastro kodin nëse emaili dështoi
-      await model.updateOne(
-        { _id: user._id },
-        { $unset: { resetCode: '', resetCodeExpires: '' } }
-      );
-      return NextResponse.json(
-        { error: 'Ndodhi një gabim gjatë dërgimit të email-it.' },
-        { status: 500 }
-      );
+      // Log failure but do not reveal to client; return generic success for security
+      console.error('[Forgot Password] Failed to send reset link for', user.email);
+      // Keep the token in DB so admins can inspect, but do not expose failure to client
+      return NextResponse.json({ message: SECURITY_MESSAGE });
     }
 
-    return NextResponse.json({ message: 'Kodi u dërgua me sukses!' });
+    return NextResponse.json({ message: 'Nëse kjo llogari ekziston, një email me lidhjen për rivendosje u dërgua.' });
 
   } catch (error: any) {
     console.error('Forgot Password Error:', error);

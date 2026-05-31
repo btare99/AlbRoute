@@ -97,8 +97,8 @@ const getLegCoords = (leg: any): [number, number][] => {
   if (!route) return [];
   const boardStopId = leg.stopIds?.[0];
   const alightStopId = leg.stopIds?.[leg.stopIds.length - 1];
-  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
   let legCoords: [number, number][] = [];
   let sliced = false;
   if (boardStop && alightStop) {
@@ -123,7 +123,7 @@ const getLegCoords = (leg: any): [number, number][] => {
     if (leg.stopIds) {
       legCoords = leg.stopIds.map((id: string) => { const s = BUS_STOPS.find((s: any) => s.id === id); return s ? [s.lat, s.lng] : null; }).filter(Boolean) as [number, number][];
     } else {
-      legCoords = leg.stops.map((name: string) => { const s = BUS_STOPS.find((s: any) => s.name === name); return s ? [s.lat, s.lng] : null; }).filter(Boolean) as [number, number][];
+      legCoords = leg.stops.map((name: string) => { const s = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === name?.toLowerCase().trim()); return s ? [s.lat, s.lng] : null; }).filter(Boolean) as [number, number][];
     }
   }
   return legCoords;
@@ -840,7 +840,7 @@ function applyLiveCorrections(
       const firstTransit = opt.legs.find(l => !l.isWalking);
       if (!firstTransit) return opt;
 
-      const boardStop = BUS_STOPS.find(s => s.name === firstTransit.boardAt);
+      const boardStop = BUS_STOPS.find(s => s.name?.toLowerCase().trim() === firstTransit.boardAt?.toLowerCase().trim());
       const bus       = liveBuses.find(b => b.routeId === firstTransit.route?.id);
       if (!boardStop || !bus) return opt;
 
@@ -890,7 +890,7 @@ function enrichTripLegs(
     legs[0] = { ...legs[0], boardAt: fromName };
   } else if (legs[0] && !legs[0].isWalking) {
     const boardStopName = legs[0].boardAt!;
-    const boardStop = BUS_STOPS.find((s: any) => s.name === boardStopName);
+    const boardStop = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === boardStopName?.toLowerCase().trim());
     if (boardStop) {
       const walkDist = Math.round(haversineMeters(origin.coords.lat, origin.coords.lng, boardStop.lat, boardStop.lng));
       if (walkDist > 20) {
@@ -912,7 +912,7 @@ function enrichTripLegs(
     legs[legs.length - 1] = { ...lastLeg, alightAt: toName };
   } else if (lastLeg && !lastLeg.isWalking) {
     const alightStopName = lastLeg.alightAt!;
-    const alightStop = BUS_STOPS.find((s: any) => s.name === alightStopName);
+    const alightStop = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === alightStopName?.toLowerCase().trim());
     if (alightStop) {
       const walkDist = Math.round(haversineMeters(destination.coords.lat, destination.coords.lng, alightStop.lat, alightStop.lng));
       if (walkDist > 20) {

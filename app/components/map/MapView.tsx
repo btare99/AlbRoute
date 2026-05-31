@@ -134,8 +134,8 @@ const getLegCoords = (leg: any): [number, number][] => {
   let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
   let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
 
-  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+  const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+  const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
 
   let legCoords: [number, number][] = [];
   let sliced = false;
@@ -183,7 +183,7 @@ const getLegCoords = (leg: any): [number, number][] => {
       }).filter(Boolean) as [number, number][];
     } else {
       legCoords = leg.stops.map((name: string) => {
-        const st = BUS_STOPS.find((s: any) => s.name === name);
+        const st = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === name?.toLowerCase().trim());
         return st ? [st.lat, st.lng] : null;
       }).filter(Boolean) as [number, number][];
     }
@@ -459,7 +459,7 @@ export default function MapView() {
     if (activeTrip && mapInstanceRef.current) {
       const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
       const coords = allStops.map((name: string) => {
-        const s = BUS_STOPS.find((st: any) => st.name === name);
+        const s = BUS_STOPS.find((st: any) => st.name?.toLowerCase().trim() === name?.toLowerCase().trim());
         return s ? [s.lat, s.lng] : null;
       }).filter(Boolean) as [number, number][];
 
@@ -936,7 +936,7 @@ export default function MapView() {
 
     if (activeTrip) {
       // 1. Draw Custom Address/Street Pin Markers (Nisja & Destinacioni)
-      const isCustomFrom = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.from.toLowerCase());
+      const isCustomFrom = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.from?.toLowerCase().trim());
       const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
       if (isCustomFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
@@ -954,7 +954,7 @@ export default function MapView() {
         routeLinesRef.current.push({ line: fromMarker, routeId: 'custom_origin_pin' });
       }
 
-      const isCustomTo = !BUS_STOPS.some((s: any) => s.name.toLowerCase() === activeTrip.to.toLowerCase());
+      const isCustomTo = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.to?.toLowerCase().trim());
       const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
       if (isCustomTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
@@ -975,8 +975,8 @@ export default function MapView() {
       // Draw Legs
       activeTrip.legs.forEach((leg: any, idx: number) => {
         if (leg.isWalking) {
-          const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-          const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+          const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+          const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
 
           let startLat = bStop ? bStop.lat : null;
           let startLng = bStop ? bStop.lng : null;
@@ -1031,8 +1031,8 @@ export default function MapView() {
         let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
         let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
 
-        const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name === leg.boardAt);
-        const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name === leg.alightAt);
+        const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+        const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
 
         let legCoords: [number, number][] = [];
         let sliced = false;
@@ -1080,7 +1080,7 @@ export default function MapView() {
             }).filter(Boolean) as [number, number][];
           } else {
             legCoords = leg.stops.map((name: string) => {
-              const st = BUS_STOPS.find((s: any) => s.name === name);
+              const st = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === name?.toLowerCase().trim());
               return st ? [st.lat, st.lng] : null;
             }).filter(Boolean) as [number, number][];
           }

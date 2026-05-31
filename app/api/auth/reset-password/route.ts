@@ -6,52 +6,70 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const { email, code, newPassword } = await request.json();
+    const { email, code, resetToken, newPassword } = await request.json();
 
-    if (!email || !code || !newPassword) {
+    if (!newPassword || (!resetToken && !code)) {
       return NextResponse.json({ error: 'Të gjitha fushat janë të detyrueshme.' }, { status: 400 });
     }
 
     const User = getUserModel();
     const Operator = getOperatorModel();
-    
-    let user = await User.findOne({ 
-      email: email.toLowerCase(),
-      resetCode: code,
-      resetCodeExpires: { $gt: new Date() }
-    });
-    
+    let user = null;
     let isOperator = false;
 
-    if (!user) {
-      user = await Operator.findOne({ 
+    if (resetToken) {
+      user = await User.findOne({
+        resetToken,
+        resetTokenExpires: { $gt: new Date() }
+      });
+
+      if (!user) {
+        user = await Operator.findOne({
+          resetToken,
+          resetTokenExpires: { $gt: new Date() }
+        });
+        isOperator = !!user;
+      }
+    } else {
+      if (!email) {
+        return NextResponse.json({ error: 'Email është i detyrueshëm për rivendosjen me kod.' }, { status: 400 });
+      }
+
+      user = await User.findOne({
         email: email.toLowerCase(),
         resetCode: code,
         resetCodeExpires: { $gt: new Date() }
       });
-      isOperator = true;
+
+      if (!user) {
+        user = await Operator.findOne({
+          email: email.toLowerCase(),
+          resetCode: code,
+          resetCodeExpires: { $gt: new Date() }
+        });
+        isOperator = !!user;
+      }
     }
 
     if (!user) {
-      return NextResponse.json({ error: 'Kodi është i pasaktë ose ka skaduar.' }, { status: 400 });
+      return NextResponse.json({ error: 'Lidhja ose kodi është i pasaktë ose ka skaduar.' }, { status: 400 });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password and clear reset code
     if (isOperator) {
       await Operator.updateOne(
         { _id: user._id },
-        { 
+        {
           $set: { password: hashedPassword },
-          $unset: { resetCode: "", resetCodeExpires: "" }
+          $unset: { resetCode: '', resetCodeExpires: '', resetToken: '' }
         }
       );
     } else {
       user.password = hashedPassword;
       user.resetCode = undefined;
       user.resetCodeExpires = undefined;
+      user.resetToken = undefined;
       await user.save();
     }
 
