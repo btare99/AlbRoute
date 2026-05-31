@@ -10,7 +10,7 @@ export type RouteCollectionType =
 
 // ─── RouteDataSchema ─────────────────────────────────────────────────────────
 //
-// strict: false përdoret me qëllim: koleksionet si Autobusat, Shoferet etj.
+// strict: false përdoret me qëllim: koleksionet si Autogitbusat, Shoferet etj.
 // kanë strukturë dinamike dhe ndryshojnë sipas linjës. Të dhënat vijnë
 // vetëm nga burime të besuara (sistemi i brendshëm), jo nga input i jashtëm.
 // FIX #1: dokumentuar qartë arsyeja e strict: false

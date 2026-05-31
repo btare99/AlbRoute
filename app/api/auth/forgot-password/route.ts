@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     // Dërgo email
     const { sendResetLinkEmail } = await import('@/app/lib/mail');
-    const emailSent = await sendResetLinkEmail(user.email, user.name, resetToken, resetLink);
+    const emailSent = await sendResetLinkEmail(user.email, user.name || '', resetLink);
 
     if (!emailSent) {
       // Log failure but do not reveal to client; return generic success for security
