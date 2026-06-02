@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '../../../../lib/mongodb';
-import { sendEmail } from '../../../../lib/mail';
+import connectDB from '../../../lib/mongodb';
+import { sendEmail } from '../../../lib/mail';
 
 export async function GET(req: NextRequest) {
   try {

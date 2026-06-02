@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/mongodb';
-import { getRouteModel, getOperatorModel, ALL_ROUTES } from '../../../../lib/dynamicDb';
+import dbConnect from '@/lib/mongodb';
+import { getRouteModel, getOperatorModel, ALL_ROUTES } from '@/lib/dynamicDb';
 
 const COLLECTION_TO_ROLE: Record<string, string> = {
   Shoferet: 'driver',

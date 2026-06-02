@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import dbConnect from '../../../../lib/mongodb';
-import { getBusModel, getRouteModel } from '../../../../lib/dynamicDb';
+import dbConnect from '@/lib/mongodb';
+import { getBusModel, getRouteModel } from '@/lib/dynamicDb';
 
 function normalizeRouteId(raw: string | null | undefined): string {
   const r = (raw || '').toString().trim();
