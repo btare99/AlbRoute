@@ -64,12 +64,12 @@ export default function HelpView() {
         {
           icon: shieldOutline,
           label: 'Privacy Policy',
-          onClick: () => window.open('http://localhost:3003/privacy-policy', '_blank', 'noreferrer'),
+          onClick: () => window.open('https://alb-route-1aim.vercel.app/privacy-policy', '_blank', 'noreferrer'),
         },
         {
           icon: documentTextOutline,
           label: 'Terms and Conditions',
-          onClick: () => window.open('http://localhost:3003/terms-and-conditions', '_blank', 'noreferrer'),
+          onClick: () => window.open('https://alb-route-1aim.vercel.app/terms-and-conditions', '_blank', 'noreferrer'),
         },
       ],
     },
