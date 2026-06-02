@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../../lib/mongodb';
+import connectDB from '../../../../lib/mongodb';
 import { sendEmail } from '../../../../lib/mail';
 
 export async function GET(req: NextRequest) {
@@ -14,13 +14,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    await connectDB();
+    const mongoose = require('mongoose');
+    const db = mongoose.connection;
 
     // Find deletion request
     const deletionRequest = await db.collection('deletion_requests').findOne({
       token,
       status: 'pending',
-    });
+    }) as any;
 
     if (!deletionRequest) {
       return NextResponse.json(

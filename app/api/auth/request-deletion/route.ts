@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/mongodb';
+import connectDB from '../../../lib/mongodb';
 import { sendEmail } from '../../../lib/mail';
+import { auth } from '../../../auth';
 import crypto from 'crypto';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './[...nextauth]/route';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth() as any;
     
     if (!session?.user) {
       return NextResponse.json(
@@ -34,7 +33,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    await connectDB();
+    const mongoose = require('mongoose');
+    const db = mongoose.connection;
 
     // Create a deletion token (valid for 24 hours)
     const token = crypto.randomBytes(32).toString('hex');
