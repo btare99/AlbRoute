@@ -1,18 +1,35 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useStore from '../../store/useStore';
 import { IonIcon } from '@ionic/react';
-import { chevronBackOutline, alertOutline, mailOutline } from 'ionicons/icons';
+import { chevronBackOutline, alertOutline, mailOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 
 export default function DeleteAccountView() {
+  const searchParams = useSearchParams();
   const { setView, user, addNotification } = useStore((state: any) => state);
   const t = translations['en'];
 
-  const [step, setStep] = useState<'email' | 'sent'>('email');
+  const [step, setStep] = useState<'email' | 'sent' | 'confirmed'>('email');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if user came from email confirmation link
+    const deleteConfirmed = searchParams?.get('deleteConfirmed');
+    const confirmedEmail = searchParams?.get('email');
+    
+    if (deleteConfirmed === 'true' && confirmedEmail) {
+      setStep('confirmed');
+      setEmail(decodeURIComponent(confirmedEmail));
+      addNotification('Account deletion confirmed! It will be deleted in 30 days.', 'success');
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [searchParams, addNotification]);
 
   const handleRequestDeletion = async () => {
     setError(null);
@@ -217,9 +234,9 @@ export default function DeleteAccountView() {
 
 
           </>
-        ) : (
+        ) : step === 'sent' ? (
           <>
-            {/* Success State */}
+            {/* Success State - Waiting for email confirmation */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', textAlign: 'center', padding: '40px 20px'
@@ -255,6 +272,66 @@ export default function DeleteAccountView() {
                   fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: '1.6'
                 }}>
                   The confirmation link will expire in <strong>24 hours</strong>. After confirmation, your account will be deleted within 30 days.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setView('edit_profile')}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff', fontWeight: '600', fontSize: '14px',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                }}
+              >
+                Go back
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Confirmed State - Account deletion confirmed */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', textAlign: 'center', padding: '40px 20px'
+            }}>
+              <div style={{
+                width: '80px', height: '80px', borderRadius: '50%',
+                background: 'rgba(34, 197, 94, 0.1)', border: '2px solid rgba(34, 197, 94, 0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '24px'
+              }}>
+                <IonIcon icon={checkmarkCircleOutline} style={{
+                  fontSize: 40, color: '#22c55e'
+                }} />
+              </div>
+
+              <h3 style={{
+                fontSize: '18px', fontWeight: '700', color: '#fff', margin: '0 0 8px 0'
+              }}>
+                Account Deletion Confirmed
+              </h3>
+              <p style={{
+                fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0',
+                lineHeight: '1.5'
+              }}>
+                Your account deletion request has been confirmed. Your account will be permanently deleted in <strong style={{ color: '#fff' }}>30 days</strong>.
+              </p>
+
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '12px', padding: '16px', marginBottom: '24px', width: '100%'
+              }}>
+                <p style={{
+                  fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: '1.6'
+                }}>
+                  <strong style={{ color: '#fff' }}>Note:</strong> You can still log in during this 30-day period. To cancel the deletion, contact our support team.
                 </p>
               </div>
 
