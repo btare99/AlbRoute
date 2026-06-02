@@ -132,14 +132,6 @@ export default function EditProfileView() {
   const activeUser = staffUser || user;
   const isStaff = !!staffUser;
 
-  const [activeModal, setActiveModal] = useState<'delete' | null>(null);
-
-  const handleDeleteAccount = () => {
-    setActiveModal(null);
-    logout();
-    addNotification(t.edit_account_deleted, 'success');
-  };
-
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -445,7 +437,7 @@ export default function EditProfileView() {
 
   return (
     <>
-      <div className="page-content">
+      <div className="page-content" style={{ paddingBottom: '120px' }}>
         
         {/* ── Header ── */}
         <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -464,6 +456,8 @@ export default function EditProfileView() {
             <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>{t.edit_update_details}</p>
           </div>
         </div>
+
+        {/* Footer links removed from Edit Profile per request */}
 
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -826,51 +820,29 @@ export default function EditProfileView() {
               </p>
             </div>
 
-            {/* Delete Account */}
-            <button 
-              onClick={() => setActiveModal('delete')}
+            {/* Delete Account Button */}
+            <button
+              onClick={() => setView('delete_account')}
               style={{
                 width: '100%', padding: '14px', borderRadius: '14px',
-                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)',
+                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)',
                 color: '#ef4444', fontWeight: '600', fontSize: '14px', marginTop: '12px',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                 transition: 'all 0.2s'
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+              }}
             >
-              <IonIcon icon={trashOutline} style={{ fontSize: 16 }} /> {t.edit_delete_account}
+              <IonIcon icon={trashOutline} style={{ fontSize: 16 }} /> Delete Account
             </button>
           </div>
         </div>
-
-        {/* MODAL */}
-        {activeModal === 'delete' && (
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
-            zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', animation: 'fadeIn 0.2s ease'
-          }}>
-            <div style={{
-              background: '#1a1d24', borderRadius: '16px', width: '100%', maxWidth: '300px',
-              padding: '24px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-            }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#fff' }}>
-                {t.edit_delete_account}
-              </h3>
-              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
-                {t.edit_delete_confirm}
-              </p>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => setActiveModal(null)} style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-                  {t.edit_cancel}
-                </button>
-                <button onClick={handleDeleteAccount} style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
-                  {t.edit_delete}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <style jsx>{`
           @keyframes spin { to { transform: rotate(360deg); } }

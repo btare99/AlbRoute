@@ -32,7 +32,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sq">
       <body>
         <Providers>
-          {children}
+          <main className="min-h-screen bg-white text-gray-700">{children}</main>
+          <footer className="w-full border-t border-gray-100 bg-white">
+            <div className="max-w-7xl mx-auto px-6 py-6 flex justify-center">
+              {/* Footer links removed per request */}
+            </div>
+          </footer>
         </Providers>
       </body>
     </html>

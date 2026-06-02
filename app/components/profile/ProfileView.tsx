@@ -11,6 +11,7 @@ import {
 } from 'ionicons/icons';
 import { IonIcon } from '@ionic/react';
 import { translations } from '../../store/translations';
+import { useRouter } from 'next/navigation';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
@@ -26,7 +27,8 @@ export default function ProfileView() {
 
   const activeUser = staffUser || user;
 
-  const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | null>(null);
+  const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | 'about' | null>(null);
+  const router = useRouter();
 
   const hasSubscription = activeUser?.subscriptions && activeUser.subscriptions.length > 0;
   const activePackage = hasSubscription ? activeUser.subscriptions[activeUser.subscriptions.length - 1] : null;
@@ -39,17 +41,7 @@ export default function ProfileView() {
     { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
     { icon: ticketOutline, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
     { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
-    { icon: helpCircleOutline, label: t.prof_help_center, action: async () => {
-        if (Capacitor.isNativePlatform()) {
-          try {
-            await Browser.open({ url: 'https://urbanim.app/help', windowName: '_blank' });
-            return;
-          } catch (error) {
-            console.warn('Browser plugin failed to open help page:', error);
-          }
-        }
-        setActiveModal('help');
-      } },
+    { icon: helpCircleOutline, label: t.prof_help_center, action: () => setView('help') },
     {
       icon: shareOutline, label: t.share_app_label, action: async () => {
         try {
@@ -211,11 +203,11 @@ export default function ProfileView() {
                 borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
-                  {activeModal === 'logout' ? t.logout :
-                    activeModal === 'language' ? t.prof_language :
-                      activeModal === 'delete' ? 'Fshij Llogarinë' : 'Informacion'}
-                </h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                    {activeModal === 'logout' ? t.logout :
+                      activeModal === 'language' ? t.prof_language :
+                        activeModal === 'delete' ? 'Fshij Llogarinë' : (activeModal === 'about' ? 'Rreth Urbani Im' : 'Informacion')}
+                  </h3>
                 <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                   <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
                 </button>
@@ -278,10 +270,13 @@ export default function ProfileView() {
                   </button>
                 </div>
               </div>
+            ) : activeModal === 'about' ? (
+              <div>
+                <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>Urbani Im — Ndjekja e Autobuzëve në Shqipëri. Version 1.0.6. Për pyetje ose sugjerime, na kontaktoni në support@albroute.al.</p>
+              </div>
             ) : (
               <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
                 {activeModal === 'notifications' && t.prof_no_new_notifications}
-                {activeModal === 'help' && t.prof_help_contact}
               </p>
             )}
 

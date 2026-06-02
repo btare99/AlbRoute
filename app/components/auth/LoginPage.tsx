@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { signIn } from "next-auth/react";
 import { Preferences } from '@capacitor/preferences';
 import useStore from '../../store/useStore';
@@ -953,15 +954,15 @@ function LoginContent() {
               </p>
             ) : null}
 
-            {/* Simulated app version footer */}
-            <p style={{ margin: '20px 0 0', fontSize: '10px', color: '#27272a', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Tirana, Shqipëri &nbsp;·&nbsp; 
-              <span 
-                onClick={() => setGuestMode(true)} 
-                style={{ cursor: 'pointer' }}
-              >
-                v1.0.6
-              </span>
+            {/* Compact footer: location, version + links */}
+            <p style={{ margin: '14px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.28)', display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+              <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Tirana, Shqipëri</span>
+              <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
+              <button onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', cursor: 'pointer', padding: 0 }}>v1.0.6</button>
+              <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
+              <Link href="/privacy" className="hover-white-link" style={{ color: 'rgba(255,255,255,0.28)', textDecoration: 'underline' }}>Privacy</Link>
+              <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
+              <Link href="/terms" className="hover-white-link" style={{ color: 'rgba(255,255,255,0.28)', textDecoration: 'underline' }}>Terms</Link>
             </p>
           </div>
 
