@@ -75,10 +75,60 @@ export default function DeleteAccountView() {
         >
           <IonIcon icon={chevronBackOutline} style={{ fontSize: 20 }} />
         </button>
-        <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff' }}>
+        <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#fff', flex: 1 }}>
           Delete Account
         </h2>
       </div>
+
+      {/* Action Buttons - Fixed at Top */}
+      {step === 'email' && (
+        <div style={{
+          padding: '16px 24px', display: 'flex', gap: '12px',
+          borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+          background: 'rgba(0, 0, 0, 0.5)'
+        }}>
+          <button
+            onClick={() => setView('edit_profile')}
+            style={{
+              flex: 1, padding: '12px', borderRadius: '12px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              color: '#fff', fontWeight: '600', fontSize: '14px',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleRequestDeletion}
+            disabled={loading || !email}
+            style={{
+              flex: 1, padding: '12px', borderRadius: '12px',
+              background: loading || !email ? 'rgba(239, 68, 68, 0.3)' : '#ef4444',
+              color: '#fff', fontWeight: '600', fontSize: '14px',
+              border: 'none', cursor: loading || !email ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s', opacity: loading || !email ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (!loading && email) {
+                e.currentTarget.style.background = '#dc2626';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading && email) {
+                e.currentTarget.style.background = '#ef4444';
+              }
+            }}
+          >
+            {loading ? 'Sending...' : 'Request Deletion'}
+          </button>
+        </div>
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column' }}>
@@ -165,49 +215,7 @@ export default function DeleteAccountView() {
               </div>
             )}
 
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-              <button
-                onClick={() => setView('edit_profile')}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#fff', fontWeight: '600', fontSize: '14px',
-                  cursor: 'pointer', transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRequestDeletion}
-                disabled={loading || !email}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: '12px',
-                  background: loading || !email ? 'rgba(239, 68, 68, 0.3)' : '#ef4444',
-                  color: '#fff', fontWeight: '600', fontSize: '14px',
-                  border: 'none', cursor: loading || !email ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s', opacity: loading || !email ? 0.6 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading && email) {
-                    e.currentTarget.style.background = '#dc2626';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading && email) {
-                    e.currentTarget.style.background = '#ef4444';
-                  }
-                }}
-              >
-                {loading ? 'Sending...' : 'Request Deletion'}
-              </button>
-            </div>
+
           </>
         ) : (
           <>
