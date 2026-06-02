@@ -64,12 +64,12 @@ export default function HelpView() {
         {
           icon: shieldOutline,
           label: 'Privacy Policy',
-          onClick: () => setView('privacy'),
+          onClick: () => window.open('http://localhost:3003/privacy-policy', '_blank', 'noreferrer'),
         },
         {
           icon: documentTextOutline,
           label: 'Terms and Conditions',
-          onClick: () => setView('terms'),
+          onClick: () => window.open('http://localhost:3003/terms-and-conditions', '_blank', 'noreferrer'),
         },
       ],
     },
