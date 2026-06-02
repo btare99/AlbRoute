@@ -187,3 +187,33 @@ export async function sendResetLinkEmail(
   }
   return success;
 }
+
+// ─── Generic Email Function ──────────────────────────────────────────────────
+
+export async function sendEmail(options: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}): Promise<boolean> {
+  // FIX #6: validim pre-send
+  if (!isValidEmail(options.to)) {
+    console.error(`[Mail] Invalid email address: ${options.to}`);
+    return false;
+  }
+
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: '"Urbani Im" <btare99@gmail.com>',
+    replyTo: 'support@albroute.al',
+    to: options.to,
+    subject: options.subject,
+    text: options.text || options.html.replace(/<[^>]*>/g, ''),
+    html: options.html,
+  };
+
+  const success = await sendWithRetry(mailOptions);
+  if (success) {
+    console.log(`[Mail] Email sent to: ${options.to}`);
+  }
+  return success;
+}
