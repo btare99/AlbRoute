@@ -1,8 +1,8 @@
 'use client';
 import { IonIcon } from '@ionic/react';
 import useStore from '../../store/useStore';
+import { ChevronLeft } from 'lucide-react';
 import {
-  chevronBackOutline,
   helpCircleOutline,
   shieldOutline,
   documentTextOutline,
@@ -87,87 +87,42 @@ export default function HelpView() {
   ];
 
   return (
-    <div className="page-content" style={{ padding: `28px ${PX} 48px` }}>
+    <div className="page-content" style={{ padding: `24px ${PX} 32px` }}>
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <div style={{
-        marginBottom: '36px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '15px',
-      }}>
-        <button
-          type="button"
-          onClick={() => setView('profile')}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '12px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '0.5px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            flexShrink: 0,
-            padding: 0,
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-        >
-          <IonIcon icon={chevronBackOutline} style={{ fontSize: 20 }} />
-        </button>
-
-        <div style={{ flex: 1 }}>
-          <h1 style={{
-            fontSize: '16px',
-            fontWeight: '600',
-            margin: 0,
-            color: '#fff',
-          }}>
-            Help &amp; Support
-          </h1>
-          <p style={{
-            color: 'rgba(255,255,255,0.3)',
-            fontSize: '12px',
-            margin: '2px 0 0 0',
-          }}>
-            Resources, legal info and account settings
-          </p>
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => setView('profile')}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '4px',
+          color: '#71717a', background: 'none', border: 'none',
+          fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+          padding: '8px 0', minWidth: 'auto', minHeight: 'auto',
+          marginBottom: '24px',
+        }}
+      >
+        <ChevronLeft size={18} /> Back
+      </button>
 
       {/* ── Title block ───────────────────────────────────────────────────── */}
       <div style={{
         padding: `0 ${ROW_PX}`,
-        marginBottom: '36px',
+        marginBottom: '28px',
       }}>
-        <p style={{
-          fontSize: '11px',
-          fontWeight: '600',
-          color: 'rgba(255,255,255,0.2)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          margin: '0 0 14px 0',
-        }}>
-          Overview
-        </p>
         <h2 style={{
-          fontSize: '30px',
+          fontSize: '28px',
           fontWeight: '700',
           color: '#fff',
           lineHeight: 1.12,
           letterSpacing: '-0.7px',
-          margin: '0 0 10px 0',
+          margin: '0 0 8px 0',
         }}>
           Help &amp;<br />Support
         </h2>
         <p style={{
-          fontSize: '14px',
+          fontSize: '13px',
           color: 'rgba(255,255,255,0.3)',
-          lineHeight: 1.55,
+          lineHeight: 1.5,
           margin: 0,
         }}>
           Resources, legal info and account settings
@@ -178,12 +133,10 @@ export default function HelpView() {
       {sections.map((section) => (
         <div key={section.title}>
           <p style={{
-            fontSize: '11px',
-            fontWeight: '600',
-            color: 'rgba(255,255,255,0.2)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            margin: '24px 0 6px',
+            fontSize: '13px',
+            fontWeight: '700',
+            color: '#ffffff',
+            margin: '24px 0 12px',
             padding: `0 ${ROW_PX}`,
           }}>
             {section.title}
@@ -219,7 +172,7 @@ function HelpRow({ item, rowPx }: { item: HelpItem; rowPx: string }) {
         display: 'flex',
         alignItems: 'center',
         gap: '14px',
-        padding: `12px ${rowPx}`,
+        padding: `10px ${rowPx}`,
         borderRadius: '14px',
         background: 'transparent',
         border: 'none',
@@ -231,8 +184,8 @@ function HelpRow({ item, rowPx }: { item: HelpItem; rowPx: string }) {
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
       <div style={{
-        width: '40px',
-        height: '40px',
+        width: '38px',
+        height: '38px',
         borderRadius: '11px',
         background: 'rgba(255,255,255,0.07)',
         border: '0.5px solid rgba(255,255,255,0.08)',
@@ -243,7 +196,7 @@ function HelpRow({ item, rowPx }: { item: HelpItem; rowPx: string }) {
       }}>
         <IonIcon
           icon={item.icon}
-          style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)' }}
+          style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)' }}
         />
       </div>
 

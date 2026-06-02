@@ -882,7 +882,7 @@ const useStore = create(
                       const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
                       const dist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 
-                      if (dist < 800) { // Zgjerojmë rrezen e ecjes në 800m (~10 min) për të gjetur më shumë rrugë
+                      if (dist < 700) { // Align with main app MAX_TRANSFER_WALK_METERS (700m)
                         const stopIds1 = r1Arr.slice(fi, i + 1);
                         const stopIds2 = r2Arr.slice(j, ti + 1);
                         const stops1 = stopIds1.map(x => BUS_STOPS.find(s => s.id === x)?.name).filter(Boolean);
