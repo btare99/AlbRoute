@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
     //   message: message.trim(),
     //   createdAt: new Date(),
     //   userAgent: request.headers.get('user-agent'),
-    //   ipAddress: request.ip,
+    //   ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
     // });
 
     console.log('Feedback mori:', {
       message: message.trim(),
       timestamp: new Date().toISOString(),
       userAgent: request.headers.get('user-agent'),
-      ip: request.ip,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
     });
 
     // Këtu mund të dërgoni një email ose të bëni diçka tjetër
