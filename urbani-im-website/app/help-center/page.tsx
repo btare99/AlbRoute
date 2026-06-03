@@ -6,7 +6,7 @@ import {
   MapPin, Bus, Bell, User, WifiOff, Zap,
   MessageSquare, Mail, Bug, HelpCircle, BookOpen,
   Shield, Smartphone, Clock, Star, ArrowUpRight,
-  X, CheckCircle2, Wifi,
+  X, CheckCircle2,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ interface Category {
 const CATEGORIES: Category[] = [
   {
     id: 'fillimi',
-    icon: <Zap size={20} strokeWidth={2} />,
+    icon: <Zap size={18} strokeWidth={2} />,
     label: 'Fillimi i shpejtë',
     description: 'Konfigurimi i parë i aplikacionit',
     color: '#f59e0b',
@@ -58,7 +58,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'udhetimi',
-    icon: <MapPin size={20} strokeWidth={2} />,
+    icon: <MapPin size={18} strokeWidth={2} />,
     label: 'Planifikimi i udhëtimit',
     description: 'Harta, linjat dhe oraret',
     color: '#10b981',
@@ -83,7 +83,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'autobusi',
-    icon: <Bus size={20} strokeWidth={2} />,
+    icon: <Bus size={18} strokeWidth={2} />,
     label: 'Linjat & oraret',
     description: 'Informacione për transportin publik',
     color: '#6366f1',
@@ -104,7 +104,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'njoftimet',
-    icon: <Bell size={20} strokeWidth={2} />,
+    icon: <Bell size={18} strokeWidth={2} />,
     label: 'Njoftimet',
     description: 'Alarme dhe rikujtues',
     color: '#ec4899',
@@ -121,7 +121,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'llogaria',
-    icon: <User size={20} strokeWidth={2} />,
+    icon: <User size={18} strokeWidth={2} />,
     label: 'Llogaria & profili',
     description: 'Email, fjalëkalim, privatësia',
     color: '#14b8a6',
@@ -142,7 +142,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'teknik',
-    icon: <Smartphone size={20} strokeWidth={2} />,
+    icon: <Smartphone size={18} strokeWidth={2} />,
     label: 'Probleme teknike',
     description: 'GPS, ngarkimi, bug-e',
     color: '#f97316',
@@ -163,7 +163,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'offline',
-    icon: <WifiOff size={20} strokeWidth={2} />,
+    icon: <WifiOff size={18} strokeWidth={2} />,
     label: 'Offline & bateria',
     description: 'Pa internet dhe kursim energjie',
     color: '#8b5cf6',
@@ -180,14 +180,14 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'aksesibiliteti',
-    icon: <Shield size={20} strokeWidth={2} />,
+    icon: <Shield size={18} strokeWidth={2} />,
     label: 'Aksesibiliteti',
     description: 'Lexues ekrani, kontrast, tekst',
     color: '#06b6d4',
     articles: [
       {
         id: 'ak1', title: 'Mbështetja për VoiceOver dhe TalkBack', tags: ['aksesibiliteti', 'voiceover', 'talkback'],
-        body: 'Aplikacioni mbështet plotësisht VoiceOver (iOS) dhe TalkBack (Android). Të gjitha elementet janë të etiketuara për lexues ekrani. Nëse hasni probleme, na raportoni dhe do të rregullojmë me prioritet.',
+        body: 'Aplikacioni mbështet plotësisht VoiceOver (iOS) and TalkBack (Android). Të gjitha elementet janë të etiketuara për lexues ekrani. Nëse hasni probleme, na raportoni dhe do të rregullojmë me prioritet.',
       },
       {
         id: 'ak2', title: 'Madhësia e tekstit dhe kontrasti', tags: ['tekst', 'madhësi', 'kontrast'],
@@ -202,7 +202,7 @@ const FAQ: FAQItem[] = [
   { q: 'Sa shpesh përditësohen të dhënat live?', a: 'Pozicioni i autobuseve përditësohet çdo 10 sekonda. Oraret verifikohen çdo natë nga sistemi ynë.' },
   { q: 'Pse aplikacioni kërkon vendndodhjen gjatë gjithë kohës?', a: 'Ju mund të zgjidhni "Vetëm gjatë përdorimit" — kjo është opsioni i rekomanduar. "Gjithmonë" nevojitet vetëm nëse doni njoftimet proaktive kur kaloni pranë stacioneve.' },
   { q: 'A mbështetet transporti ndërkombëtar?', a: 'Aktualisht mbulojmë vetëm qytetet shqiptare. Mbulimi ndërkombëtar është në planin tonë për vitin e ardhshëm.' },
-  { q: 'Si mund të kontribuoj me të dhëna?', a: 'Mund të raportoni ndryshime të linjave, stacione të reja ose të dhëna të pasakta direkt nga aplikacioni. Komunitet aktiv kontribuesish na ndihmon të mbajmë gjithçka të përditësuar.' },
+  { q: 'Si mund të kontribuoj me të dhëna?', a: 'Mund të raportoni ndryshime të linjave, stacione të reja ose të dhëna të pasakta direkt nga aplikacioni. Komuniteti aktiv i kontribuesve na ndihmon të mbajmë gjithçka të përditësuar.' },
   { q: 'Çfarë bëj nëse humbas autobusin?', a: 'Harta live do t\'ju tregojë autobusin e ardhshëm. Trokitni mbi stacionin tuaj për të parë të gjitha linjat dhe kohët e ardhjes. Mund të caktoni alarm për herën tjetër.' },
 ];
 
@@ -232,23 +232,22 @@ function ArticleView({
   article, category, onBack,
 }: { article: Article; category: Category; onBack: () => void }) {
   return (
-    <article className="animate-fade-up" style={{ padding: '0 0 40px' }}>
+    <article className="animate-fade-up" style={{ padding: '8px 0 40px' }}>
       <button type="button" onClick={onBack} className="back-button" id="btn-back-to-category">
         <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu te kategoritë
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: category.color }} />
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '600', letterSpacing: '.05em', textTransform: 'uppercase' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+        <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', letterSpacing: '.05em', textTransform: 'uppercase' }}>
           {category.label}
         </span>
       </div>
 
-      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#f0ede8', letterSpacing: '-0.5px', lineHeight: 1.25, margin: '0 0 20px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', letterSpacing: '-0.5px', lineHeight: 1.25, margin: '0 0 20px' }}>
         {article.title}
       </h2>
 
-      <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, margin: '0 0 32px', whiteSpace: 'pre-line' }}>
+      <p style={{ fontSize: '15px', color: '#374151', lineHeight: 1.8, margin: '0 0 32px', whiteSpace: 'pre-line' }}>
         {article.body}
       </p>
 
@@ -259,11 +258,11 @@ function ArticleView({
       </div>
 
       <div className="helpful-card">
-        <p style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', margin: '0 0 14px' }}>
+        <p style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563', margin: '0 0 14px' }}>
           A ju ndihmoi ky artikull?
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-          {['👍  Po, faleminderit', '👎  Jo, ende kam pyetje'].map((label, index) => (
+          {['👍  Po, faleminderit', '👎  Jo, kam pyetje'].map((label, index) => (
             <button key={label} type="button" className="helpful-btn" id={`btn-helpful-${index}`}>
               {label}
             </button>
@@ -278,48 +277,48 @@ function CategoryView({
   category, onBack, onArticle,
 }: { category: Category; onBack: () => void; onArticle: (a: Article) => void }) {
   return (
-    <div className="animate-fade-up" style={{ padding: '0 0 40px' }}>
+    <div className="animate-fade-up" style={{ padding: '8px 0 40px' }}>
       <button type="button" onClick={onBack} className="back-button" id="btn-back-to-main">
         <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu në faqen kryesore
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-        <div className="cat-icon-container" style={{ background: `${category.color}15`, color: category.color, border: `1px solid ${category.color}25` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
+        <div className="cat-icon-container">
           {category.icon}
         </div>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#f0ede8', letterSpacing: '-0.5px', margin: 0 }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', letterSpacing: '-0.5px', margin: 0 }}>
             {category.label}
           </h2>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>{category.description}</p>
+          <p style={{ fontSize: '13px', color: '#6b7280', margin: '2px 0 0' }}>{category.description}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {category.articles.map((art) => (
           <button
             key={art.id}
             type="button"
             onClick={() => onArticle(art)}
-            className="glass-card"
+            className="monochrome-card"
             style={{
               width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '16px',
-              padding: '18px 20px',
+              padding: '16px 20px',
               cursor: 'pointer',
               textAlign: 'left',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-              <BookOpen size={16} color={category.color} style={{ flexShrink: 0, opacity: 0.8 }} />
-              <span style={{ fontSize: '14.5px', fontWeight: '500', color: '#f0ede8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <BookOpen size={15} color="#4b5563" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {art.title}
               </span>
             </div>
-            <ChevronRight size={16} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
+            <ChevronRight size={15} color="#9ca3af" style={{ flexShrink: 0 }} />
           </button>
         ))}
       </div>
@@ -391,9 +390,9 @@ export default function HelpCenterView() {
     return (
       <div className="animate-fade-up">
         {/* ── Search ──────────────────────────────────────────────────────── */}
-        <div style={{ position: 'relative', marginBottom: '32px' }}>
+        <div style={{ position: 'relative', marginBottom: '28px' }}>
           <div className="search-box">
-            <Search size={18} className="search-icon-left" />
+            <Search size={16} className="search-icon-left" />
             <input
               ref={searchRef}
               id="input-search-help"
@@ -402,7 +401,7 @@ export default function HelpCenterView() {
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-              placeholder="Kërkoni artikuj, tema ose orare..."
+              placeholder="Kërkoni artikuj, tema ose pyetje..."
               className="search-input"
             />
             {search && (
@@ -412,7 +411,7 @@ export default function HelpCenterView() {
                 id="btn-clear-search"
                 style={{
                   position: 'absolute',
-                  right: '16px',
+                  right: '14px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
@@ -423,7 +422,7 @@ export default function HelpCenterView() {
                   alignItems: 'center',
                 }}
               >
-                <X size={16} color="rgba(255,255,255,0.4)" />
+                <X size={15} color="#9ca3af" />
               </button>
             )}
           </div>
@@ -433,22 +432,20 @@ export default function HelpCenterView() {
             <div
               style={{
                 position: 'absolute',
-                top: 'calc(100% + 8px)',
+                top: 'calc(100% + 6px)',
                 left: 0,
                 right: 0,
-                background: 'rgba(20, 20, 19, 0.95)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '14px',
+                background: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: '10px',
                 overflow: 'hidden',
                 zIndex: 100,
-                boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
               {searchResults.length === 0 ? (
-                <div style={{ padding: '24px 20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>
-                  Nuk u gjet asnjë rezultat për "<span style={{ color: '#FF6B35', fontWeight: '500' }}>{search}</span>"
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280', fontSize: '13.5px' }}>
+                  Nuk u gjet asnjë rezultat për "<span style={{ color: '#111827', fontWeight: '600' }}>{search}</span>"
                 </div>
               ) : (
                 searchResults.slice(0, 5).map(({ category, article }) => (
@@ -460,28 +457,28 @@ export default function HelpCenterView() {
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '14px',
-                      padding: '14px 20px',
+                      gap: '12px',
+                      padding: '12px 18px',
                       background: 'transparent',
                       border: 'none',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      transition: 'background 0.2s ease',
+                      borderBottom: '1px solid #e5e7eb',
+                      transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <BookOpen size={16} color={category.color} style={{ flexShrink: 0, opacity: 0.8 }} />
+                    <BookOpen size={15} color="#4b5563" style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13.5px', fontWeight: '500', color: '#f0ede8', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <p style={{ fontSize: '13.5px', fontWeight: '500', color: '#111827', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {article.title}
                       </p>
-                      <p style={{ fontSize: '11px', color: category.color, margin: '2px 0 0', opacity: 0.8, fontWeight: '500' }}>
+                      <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0', fontWeight: '500' }}>
                         {category.label}
                       </p>
                     </div>
-                    <ArrowUpRight size={14} color="rgba(255,255,255,0.25)" />
+                    <ArrowUpRight size={13} color="#9ca3af" />
                   </button>
                 ))
               )}
@@ -492,28 +489,27 @@ export default function HelpCenterView() {
         {/* ── Quick actions ────────────────────────────────────────────────── */}
         <div className="actions-grid">
           {[
-            { icon: <MessageSquare size={16} />, label: 'Feedback', color: '#6366f1', action: () => window.location.href = 'mailto:support@urbani-im.al' },
-            { icon: <Bug size={16} />, label: 'Raporto Bug', color: '#f97316', action: () => window.location.href = 'mailto:support@urbani-im.al' },
-            { icon: <Clock size={16} />, label: 'Oraret', color: '#10b981', action: () => { setActiveCategory(CATEGORIES[2]); } },
-            { icon: <Star size={16} />, label: 'Vlerëso', color: '#f59e0b', action: () => { } },
+            { icon: <MessageSquare size={16} />, label: 'Feedback', action: () => window.location.href = 'mailto:support@urbani-im.al' },
+            { icon: <Bug size={16} />, label: 'Raporto Bug', action: () => window.location.href = 'mailto:support@urbani-im.al' },
+            { icon: <Clock size={16} />, label: 'Oraret', action: () => { setActiveCategory(CATEGORIES[2]); } },
+            { icon: <Star size={16} />, label: 'Vlerëso', action: () => { } },
           ].map((item, idx) => (
             <button
               key={item.label}
               type="button"
               onClick={item.action}
               id={`btn-quick-action-${idx}`}
-              className="glass-card action-btn"
-              style={{ color: item.color }}
+              className="action-btn"
             >
-              <span style={{ display: 'flex', padding: '8px', borderRadius: '50%', background: `${item.color}12` }}>{item.icon}</span>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#f0ede8' }}>{item.label}</span>
+              <span style={{ display: 'flex', padding: '6px', borderRadius: '50%' }}>{item.icon}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600' }}>{item.label}</span>
             </button>
           ))}
         </div>
 
         {/* ── Categories ───────────────────────────────────────────────────── */}
-        <section style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '.12em', textTransform: 'uppercase', margin: '0 0 12px 4px' }}>
+        <section style={{ marginBottom: '36px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', letterSpacing: '.1em', textTransform: 'uppercase', margin: '0 0 10px 2px' }}>
             Kategoritë e ndihmës
           </h2>
           <div className="category-list">
@@ -522,31 +518,31 @@ export default function HelpCenterView() {
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat)}
-                className="glass-card category-card-item"
+                className="monochrome-card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '16px',
-                  padding: '16px 20px',
+                  gap: '14px',
+                  padding: '14px 18px',
                   cursor: 'pointer',
                   textAlign: 'left',
                   width: '100%',
                 }}
               >
-                <div className="cat-icon-container" style={{ background: `${cat.color}15`, color: cat.color, border: `1px solid ${cat.color}25` }}>
+                <div className="cat-icon-container">
                   {cat.icon}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '14.5px', fontWeight: '600', color: '#f0ede8', margin: 0, letterSpacing: '-0.1px' }}>{cat.label}</p>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0, letterSpacing: '-0.1px' }}>{cat.label}</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {cat.description}
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontWeight: '600', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: '600', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
                     {cat.articles.length}
                   </span>
-                  <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  <ChevronRight size={15} color="#9ca3af" />
                 </div>
               </button>
             ))}
@@ -554,29 +550,29 @@ export default function HelpCenterView() {
         </section>
 
         {/* ── FAQ ─────────────────────────────────────────────────────────── */}
-        <section style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '.12em', textTransform: 'uppercase', margin: '0 0 12px 4px' }}>
+        <section style={{ marginBottom: '36px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', letterSpacing: '.1em', textTransform: 'uppercase', margin: '0 0 10px 2px' }}>
             Pyetjet më të shpeshta (FAQ)
           </h2>
           <div className="faq-list">
             {FAQ.map((item, i) => {
               const isOpen = openFAQ === i;
               return (
-                <div key={i} className="glass-card" style={{ overflow: 'hidden' }}>
+                <div key={i} className="monochrome-card" style={{ overflow: 'hidden' }}>
                   <button
                     type="button"
                     onClick={() => setOpenFAQ(isOpen ? null : i)}
                     id={`btn-faq-trigger-${i}`}
                     className="faq-header-btn"
                   >
-                    <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#f0ede8', lineHeight: 1.4 }}>{item.q}</span>
+                    <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#111827', lineHeight: 1.4 }}>{item.q}</span>
                     <ChevronDown
-                      size={16}
-                      color="rgba(255,255,255,0.4)"
-                      style={{ flexShrink: 0, transition: 'transform 0.25s ease', transform: isOpen ? 'rotate(180deg)' : 'none' }}
+                      size={15}
+                      color="#6b7280"
+                      style={{ flexShrink: 0, transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(180deg)' : 'none' }}
                     />
                   </button>
-                  <div className={`faq-answer-container ${isOpen ? 'open' : ''}`} style={{ borderTop: isOpen ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  <div className={`faq-answer-container ${isOpen ? 'open' : ''}`} style={{ borderTop: isOpen ? '1px solid #e5e7eb' : 'none' }}>
                     <div className="faq-answer-content">
                       {item.a}
                     </div>
@@ -588,31 +584,31 @@ export default function HelpCenterView() {
         </section>
 
         {/* ── Contact form ─────────────────────────────────────────────────── */}
-        <section style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '.12em', textTransform: 'uppercase', margin: '0 0 12px 4px' }}>
+        <section style={{ marginBottom: '36px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', letterSpacing: '.1em', textTransform: 'uppercase', margin: '0 0 10px 2px' }}>
             Na kontaktoni
           </h2>
-          <div className="glass-card" style={{ padding: '24px' }}>
+          <div className="monochrome-card" style={{ padding: '20px' }}>
             {contactSent ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '20px 0', textAlign: 'center' }}>
-                <div style={{ display: 'flex', padding: '12px', borderRadius: '50%', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', animation: 'checkmark 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
-                  <CheckCircle2 size={32} color="#22c55e" strokeWidth={1.5} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px 0', textAlign: 'center' }}>
+                <div style={{ display: 'flex', padding: '10px', borderRadius: '50%', background: '#f3f4f6', border: '1px solid #d1d5db' }}>
+                  <CheckCircle2 size={28} color="#111827" strokeWidth={2} />
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: '700', color: '#f0ede8', margin: 0 }}>Mesazhi u dërgua me sukses!</p>
-                <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.4)', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
-                  Ekipi ynë i mbështetjes do t'ju përgjigjet brenda 24 orëve në adresën tuaj.
+                <p style={{ fontSize: '14.5px', fontWeight: '700', color: '#111827', margin: 0 }}>Mesazhi u dërgua me sukses!</p>
+                <p style={{ fontSize: '12.5px', color: '#6b7280', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
+                  Ekipi ynë do t'ju kthejë përgjigje brenda 24 orëve.
                 </p>
               </div>
             ) : (
               <>
-                <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.5)', margin: '0 0 16px', lineHeight: 1.6 }}>
-                  Nuk e gjetët përgjigjen që kërkonit? Shkruani drejtpërdrejt te ne.
+                <p style={{ fontSize: '13px', color: '#4b5563', margin: '0 0 14px', lineHeight: 1.5 }}>
+                  Nuk gjetët përgjigje? Na shkruani drejtpërdrejt.
                 </p>
                 <textarea
                   id="textarea-feedback"
                   value={contactText}
                   onChange={(e) => setContactText(e.target.value)}
-                  placeholder="Përshkruani pyetjen ose problematikën tuaj në detaje..."
+                  placeholder="Përshkruani pyetjen ose problematikën tuaj këtu..."
                   rows={4}
                   disabled={contactLoading}
                   className="contact-textarea"
@@ -633,24 +629,24 @@ export default function HelpCenterView() {
 
         {/* ── Support Info Grid ────────────────────────────────────────────── */}
         <section style={{ marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: '.12em', textTransform: 'uppercase', margin: '0 0 12px 4px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', letterSpacing: '.1em', textTransform: 'uppercase', margin: '0 0 10px 2px' }}>
             Informacioni i kontaktit
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
-              { icon: <Mail size={16} />, label: 'Email zyrtar i mbështetjes', value: 'support@urbani-im.al', color: '#6366f1' },
-              { icon: <Clock size={16} />, label: 'Orari i shërbimit', value: 'E Hënë – E Premte, 09:00–17:00', color: '#10b981' },
-              { icon: <HelpCircle size={16} />, label: 'Koha e parashikuar e përgjigjes', value: 'Zakonisht brenda 24 orëve', color: '#f59e0b' },
+              { icon: <Mail size={15} />, label: 'Email mbështetës', value: 'support@urbani-im.al' },
+              { icon: <Clock size={15} />, label: 'Orari i punës', value: 'E Hënë – E Premte, 09:00–17:00' },
+              { icon: <HelpCircle size={15} />, label: 'Koha mesatare', value: 'Brenda 24 orëve' },
             ].map((item, idx) => (
               <div key={idx} className="support-item">
-                <span style={{ display: 'flex', padding: '10px', borderRadius: '10px', background: `${item.color}12`, color: item.color, flexShrink: 0 }}>
+                <span style={{ display: 'flex', padding: '8px', borderRadius: '8px', background: '#f3f4f6', color: '#111827', flexShrink: 0 }}>
                   {item.icon}
                 </span>
                 <div>
-                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', margin: 0, fontWeight: '700', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  <p style={{ fontSize: '9px', color: '#6b7280', margin: 0, fontWeight: '700', letterSpacing: '.04em', textTransform: 'uppercase' }}>
                     {item.label}
                   </p>
-                  <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.75)', margin: '2px 0 0', fontWeight: '500' }}>
+                  <p style={{ fontSize: '13px', color: '#374151', margin: '1px 0 0', fontWeight: '500' }}>
                     {item.value}
                   </p>
                 </div>
@@ -665,14 +661,14 @@ export default function HelpCenterView() {
   return (
     <div className="help-wrapper">
       <style>{`
-        /* Import font family and setup reset for standard look inside custom wrapper */
+        /* Global Reset and Styles for Help Center Monochrome Theme */
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         
         .help-wrapper {
-          background: #111110;
+          background: #ffffff;
           min-height: 100vh;
-          color: #f0ede8;
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          color: #111827;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           width: 100%;
           padding: 48px 20px 80px;
           box-sizing: border-box;
@@ -684,84 +680,69 @@ export default function HelpCenterView() {
           margin: 0 auto;
         }
 
-        /* Custom scrollbar matching styling theme */
+        /* Scrollbar styling */
         .help-wrapper::-webkit-scrollbar {
           width: 6px;
         }
         .help-wrapper::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.01);
+          background: #ffffff;
         }
         .help-wrapper::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
+          background: #e5e7eb;
           border-radius: 9999px;
         }
         .help-wrapper::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: #d1d5db;
         }
 
         /* Animations */
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
+          from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes pulse {
-          0% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-          70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-          100% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        @keyframes checkmark {
-          0% { transform: scale(0); opacity: 0; }
-          50% { transform: scale(1.15); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
         .animate-fade-up {
-          animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Glassmorphism Cards styling */
-        .glass-card {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 16px;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* Clean Monochrome Cards */
+        .monochrome-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .glass-card:hover {
-          background: rgba(255, 255, 255, 0.04);
-          border-color: rgba(255, 255, 255, 0.12);
-          transform: translateY(-2px);
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        .monochrome-card:hover {
+          border-color: #9ca3af;
+          background: #f9fafb;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
         }
         
-        .glass-card:active {
-          transform: translateY(0) scale(0.995);
+        .monochrome-card:active {
+          transform: translateY(0);
         }
 
         /* Header status badge */
-        .header-badge {
+        .status-badge {
           display: flex;
           align-items: center;
-          gap: 8px;
-          background: rgba(16, 185, 129, 0.08);
-          border: 1px solid rgba(16, 185, 129, 0.15);
+          gap: 6px;
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
           border-radius: 9999px;
-          padding: 5px 12px;
+          padding: 4px 10px;
         }
 
-        .pulse-dot {
-          width: 7px;
-          height: 7px;
+        .status-dot {
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: #10b981;
-          animation: pulse 2.2s infinite;
+          background: #111827;
         }
 
-        /* Search styling layout rules */
+        /* Search styling rules */
         .search-box {
           position: relative;
           width: 100%;
@@ -769,44 +750,43 @@ export default function HelpCenterView() {
 
         .search-input {
           width: 100%;
-          padding: 16px 48px 16px 48px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: #f0ede8;
+          padding: 14px 44px;
+          border-radius: 10px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          color: #111827;
           font-size: 14.5px;
           outline: none;
-          transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          transition: all 0.2s ease;
           box-sizing: border-box;
           font-family: inherit;
         }
 
         .search-input:focus {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: #FF6B35;
-          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+          border-color: #111827;
+          box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
         }
 
         .search-icon-left {
           position: absolute;
-          left: 18px;
+          left: 16px;
           top: 50%;
           transform: translateY(-50%);
           pointer-events: none;
-          color: rgba(255, 255, 255, 0.35);
-          transition: all 0.25s ease;
+          color: #6b7280;
+          transition: color 0.2s ease;
         }
 
         .search-input:focus ~ .search-icon-left {
-          color: #FF6B35;
+          color: #111827;
         }
 
         /* Quick actions layout */
         .actions-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
-          margin-bottom: 32px;
+          gap: 8px;
+          margin-bottom: 28px;
         }
 
         @media (min-width: 480px) {
@@ -821,53 +801,53 @@ export default function HelpCenterView() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 16px 12px;
-          border-radius: 14px;
+          padding: 14px 10px;
+          border-radius: 10px;
           cursor: pointer;
           text-align: center;
-          background: rgba(255, 255, 255, 0.015);
-          transition: all 0.22s ease;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          transition: all 0.2s ease;
+          color: #374151;
+          font-family: inherit;
         }
 
         .action-btn:hover {
-          transform: translateY(-3px);
+          background: #f9fafb;
+          border-color: #9ca3af;
+          color: #111827;
+          transform: translateY(-1px);
         }
         
-        .action-btn svg {
-          transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .action-btn:hover svg {
-          transform: scale(1.1) rotate(5deg);
+        .action-btn:active {
+          transform: translateY(0);
         }
 
         /* Category layouts */
         .category-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
         }
 
         .cat-icon-container {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          color: #111827;
           flex-shrink: 0;
-          transition: all 0.22s ease;
-        }
-
-        .category-card-item:hover .cat-icon-container {
-          transform: scale(1.08);
         }
 
         /* FAQ Accordion mechanics */
         .faq-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
         }
 
         .faq-header-btn {
@@ -876,12 +856,12 @@ export default function HelpCenterView() {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          padding: 16px 20px;
+          padding: 14px 18px;
           background: transparent;
           border: none;
           cursor: pointer;
           text-align: left;
-          color: #f0ede8;
+          color: #111827;
           font-family: inherit;
         }
 
@@ -889,71 +869,68 @@ export default function HelpCenterView() {
           overflow: hidden;
           max-height: 0;
           opacity: 0;
-          transition: max-height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.22s ease;
+          transition: max-height 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease;
         }
 
         .faq-answer-container.open {
-          max-height: 300px;
+          max-height: 250px;
           opacity: 1;
         }
 
         .faq-answer-content {
-          padding: 0 20px 18px;
-          color: rgba(255, 255, 255, 0.55);
+          padding: 0 18px 14px;
+          color: #4b5563;
           font-size: 13.5px;
-          line-height: 1.65;
+          line-height: 1.6;
         }
 
         /* Forms styling */
         .contact-textarea {
           width: 100%;
-          padding: 16px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: #f0ede8;
+          padding: 12px;
+          border-radius: 8px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          color: #111827;
           font-size: 14px;
           font-family: inherit;
           line-height: 1.6;
           resize: none;
           outline: none;
-          transition: all 0.25s ease;
+          transition: all 0.2s ease;
           box-sizing: border-box;
         }
 
         .contact-textarea:focus {
-          background: rgba(255, 255, 255, 0.03);
-          border-color: #FF6B35;
-          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+          border-color: #111827;
+          box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.05);
         }
 
         .contact-submit-btn {
           width: 100%;
-          margin-top: 12px;
-          padding: 14px;
-          border-radius: 12px;
+          margin-top: 10px;
+          padding: 12px;
+          border-radius: 8px;
           font-size: 14px;
           font-weight: 600;
-          transition: all 0.25s ease;
+          transition: all 0.2s ease;
           border: none;
           font-family: inherit;
         }
 
         .contact-submit-btn.active {
-          background: #FF6B35;
+          background: #111827;
           color: #ffffff;
           cursor: pointer;
-          box-shadow: 0 4px 16px rgba(255, 107, 53, 0.25);
         }
 
         .contact-submit-btn.active:hover {
-          background: #ff7e50;
-          box-shadow: 0 6px 20px rgba(255, 107, 53, 0.35);
+          background: #1f2937;
         }
 
         .contact-submit-btn.inactive {
-          background: rgba(255, 255, 255, 0.04);
-          color: rgba(255, 255, 255, 0.2);
+          background: #f3f4f6;
+          color: #9ca3af;
           cursor: not-allowed;
         }
 
@@ -961,67 +938,67 @@ export default function HelpCenterView() {
         .back-button {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
           background: none;
           border: none;
-          padding: 8px 0;
-          margin-bottom: 24px;
-          color: rgba(255, 255, 255, 0.45);
-          font-size: 14px;
+          padding: 6px 0;
+          margin-bottom: 20px;
+          color: #6b7280;
+          font-size: 13.5px;
           font-weight: 500;
           cursor: pointer;
-          transition: color 0.2s ease;
+          transition: color 0.15s ease;
           font-family: inherit;
         }
 
         .back-button:hover {
-          color: #FF6B35;
+          color: #111827;
         }
 
         .tag-badge {
-          padding: 4px 12px;
+          padding: 3px 10px;
           border-radius: 9999px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          font-size: 11.5px;
-          color: rgba(255, 255, 255, 0.45);
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          font-size: 11px;
+          color: #4b5563;
         }
 
         .helpful-card {
-          padding: 24px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          padding: 20px;
+          border-radius: 12px;
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
           text-align: center;
         }
 
         .helpful-btn {
-          padding: 10px 20px;
-          border-radius: 10px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          color: rgba(255, 255, 255, 0.7);
+          padding: 8px 16px;
+          border-radius: 8px;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
+          color: #374151;
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.15s ease;
           font-family: inherit;
         }
 
         .helpful-btn:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.12);
-          color: #ffffff;
+          background: #f9fafb;
+          border-color: #9ca3af;
+          color: #111827;
         }
 
         .support-item {
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 14px 20px;
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 14px;
+          gap: 12px;
+          padding: 12px 16px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
         }
         
         /* Input overrides */
@@ -1032,18 +1009,18 @@ export default function HelpCenterView() {
 
       <div className="help-container">
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header style={{ marginBottom: '32px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}>
+        <header style={{ marginBottom: '28px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}>
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#f0ede8', letterSpacing: '-0.8px', margin: 0 }}>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#111827', letterSpacing: '-0.6px', margin: 0 }}>
               Qendra e Ndihmës
             </h1>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '6px 0 0', lineHeight: 1.5 }}>
-              Gjeni përgjigje të shpejta ose na shkruani për mbështetje teknike.
+            <p style={{ fontSize: '13.5px', color: '#6b7280', margin: '4px 0 0', lineHeight: 1.5 }}>
+              Gjeni përgjigje të shpejta ose na shkruani direkt për çdo pyetje.
             </p>
           </div>
-          <div className="header-badge" style={{ flexShrink: 0 }}>
-            <span className="pulse-dot" />
-            <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#10b981', letterSpacing: '0.02em' }}>Suporti Online</span>
+          <div className="status-badge" style={{ flexShrink: 0 }}>
+            <span className="status-dot" />
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#374151' }}>Suporti Aktiv</span>
           </div>
         </header>
 
@@ -1053,8 +1030,8 @@ export default function HelpCenterView() {
         </main>
 
         {/* ── Version & Copyright footer ───────────────────────────────────── */}
-        <footer style={{ marginTop: '48px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+        <footer style={{ marginTop: '40px', borderTop: '1px solid #e5e7eb', paddingTop: '20px', textAlign: 'center' }}>
+          <p style={{ fontSize: '11.5px', color: '#9ca3af', margin: 0 }}>
             Urbani IM · versioni v2.5.0 · © {new Date().getFullYear()}
           </p>
         </footer>
