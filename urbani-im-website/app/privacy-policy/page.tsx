@@ -1,14 +1,14 @@
 import React from "react";
 
-// ─── FIX #9: metadata e plotë me robots noindex ───────────────────────────────
+// ─── Metadata ───────────────────────────────────────────────────────────────
 export const metadata = {
-  title: "Privacy Policy - Clothing E‑commerce",
+  title: "Privacy Policy - Urbani IM",
   description:
-    "Learn how Clothing E‑commerce collects, uses, and protects your personal data in accordance with GDPR.",
+    "Mësoni se si Urbani IM mbledh, përdor dhe mbron të dhënat tuaja personale në përputhje me rregulloren GDPR.",
   robots: "noindex, nofollow",
 };
 
-// ─── Komponent ndihmës për seksionet ─────────────────────────────────────────
+// ─── Helper Components ───────────────────────────────────────────────────────
 function Section({
   title,
   children,
@@ -17,8 +17,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-10">
-      <h2 className="text-xl font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">
+    <section style={{ marginBottom: '32px' }}>
+      <h2 className="section-title">
         {title}
       </h2>
       {children}
@@ -28,329 +28,418 @@ function Section({
 
 function BulletList({ items }: { items: React.ReactNode[] }) {
   return (
-    <ul className="list-disc ml-6 space-y-1 text-gray-700">
+    <ul className="bullet-list">
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <li key={i} className="bullet-item">{item}</li>
       ))}
     </ul>
   );
 }
 
-// ─── Faqja kryesore ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function PrivacyPolicyPage() {
   return (
-    // FIX #2 (strukturor): mbështjellë me <article> semantik
-    <main className="bg-white min-h-screen">
-      <article className="mx-auto max-w-3xl px-6 py-12">
+    <div className="help-wrapper">
+      <style>{`
+        /* Global CSS layout declarations matching reference image style */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        .help-wrapper {
+          background: #fcfdfd;
+          min-height: 100vh;
+          color: #1e293b;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          width: 100%;
+          box-sizing: border-box;
+          overflow-y: auto;
+        }
 
-        {/* Titulli */}
-        <header className="mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Privacy Policy
-          </h1>
-          <p className="text-gray-600 text-base leading-relaxed">
-            This Privacy Policy explains how Clothing E‑commerce ("we", "us",
-            or "the Service") collects, uses, and protects your personal
-            information when you use our website or services. By using our site
-            you agree to the practices described here.
-          </p>
-        </header>
+        /* Nav Bar rules */
+        .nav-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 40px;
+          background: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
+        }
 
-        {/* 1 — Informacioni që mbledhim */}
-        <Section title="1. Information We Collect">
-          <BulletList
-            items={[
-              "Account information: name, email address, password (stored as a secure hash), delivery address.",
-              "Order information: purchased items, sizes, style preferences, order history.",
-              "Payment information: card details are processed and tokenised by our payment providers — we do not store raw card numbers.",
-              "Technical information: IP address, browser type, cookies, and site usage data.",
-            ]}
-          />
-        </Section>
+        @media (max-width: 640px) {
+          .nav-bar {
+            padding: 16px 20px;
+          }
+        }
 
-        {/* 2 — Baza ligjore — FIX #4 */}
-        <Section title="2. Lawful Basis for Processing (GDPR)">
-          <p className="text-gray-700 mb-3">
-            Under the General Data Protection Regulation (GDPR), we process
-            your personal data on the following legal grounds:
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                basis: "Contract",
-                desc: "Processing your orders, managing your account, and providing customer support.",
-              },
-              {
-                basis: "Consent",
-                desc: "Sending marketing emails and newsletters. You may withdraw consent at any time.",
-              },
-              {
-                basis: "Legitimate Interest",
-                desc: "Improving our services, analyzing site traffic, and preventing fraud — balanced against your rights.",
-              },
-              {
-                basis: "Legal Obligation",
-                desc: "Retaining order and financial records to comply with tax and accounting laws.",
-              },
-            ].map(({ basis, desc }) => (
-              <div key={basis} className="flex gap-3">
-                <span className="font-semibold text-gray-900 min-w-[140px]">
-                  {basis}
-                </span>
-                <span className="text-gray-700">{desc}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
+        .nav-logo {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+          text-decoration: none;
+        }
+        
+        .nav-logo span {
+          font-weight: 400;
+          color: #475569;
+          margin-left: 2px;
+        }
 
-        {/* 3 — Si i përdorim të dhënat */}
-        <Section title="3. How We Use Your Data">
-          <BulletList
-            items={[
-              "Process and fulfill your orders, including shipping and returns.",
-              "Manage your account and provide customer support.",
-              "Send transactional emails (order confirmation, shipping updates).",
-              "Send marketing communications where you have given consent.",
-              "Analyze site usage to improve the shopping experience.",
-              "Detect and prevent fraud and unauthorized access.",
-            ]}
-          />
-        </Section>
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+        }
 
-        {/* 4 — Cookies — FIX #6 */}
-        <Section title="4. Cookies and Similar Technologies">
-          <p className="text-gray-700 mb-3">
-            We use cookies and similar tracking technologies. You can manage or
-            reject non-essential cookies through your browser settings or our
-            cookie banner, although some features may not function correctly
-            without them.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border border-gray-200 rounded-lg overflow-hidden">
-              <thead className="bg-gray-50 text-gray-600 font-semibold">
-                <tr>
-                  <th className="px-4 py-2 border-b border-gray-200">Type</th>
-                  <th className="px-4 py-2 border-b border-gray-200">Purpose</th>
-                  <th className="px-4 py-2 border-b border-gray-200">Duration</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700">
-                {[
-                  ["Essential", "Session management, cart, authentication", "Session"],
-                  ["Analytics", "Understand traffic and user behaviour (e.g. Google Analytics)", "Up to 12 months"],
-                  ["Marketing", "Personalised ads and retargeting (with consent)", "Up to 12 months"],
-                  ["Preferences", "Store language, currency, and display settings", "Up to 12 months"],
-                ].map(([type, purpose, duration]) => (
-                  <tr key={type} className="border-b border-gray-100 last:border-0">
-                    <td className="px-4 py-2 font-medium">{type}</td>
-                    <td className="px-4 py-2">{purpose}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{duration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
+        @media (max-width: 768px) {
+          .nav-links {
+            display: none;
+          }
+        }
 
-        {/* 5 — Ndarja me palët e treta */}
-        <Section title="5. Sharing with Third Parties">
-          <p className="text-gray-700 mb-3">
-            We do not sell your personal data. We may share data with trusted
-            service providers strictly for the purposes listed below:
-          </p>
-          <BulletList
-            items={[
-              "Payment processors (e.g. Stripe, PayPal) — to handle transactions securely.",
-              "Shipping and logistics providers — to fulfill and deliver your orders.",
-              "Email service providers — to send transactional and marketing emails.",
-              "Analytics platforms (e.g. Google Analytics) — to understand site usage (data is anonymised where possible).",
-              "Cloud hosting providers — to store and serve the application.",
-            ]}
-          />
-          <p className="text-gray-700 mt-3">
-            All third parties are contractually bound to use your data only for
-            the agreed purposes and to maintain appropriate security standards.
-          </p>
-        </Section>
+        .nav-link {
+          font-size: 14px;
+          font-weight: 500;
+          color: #475569;
+          text-decoration: none;
+          transition: color 0.15s ease;
+        }
 
-        {/* 6 — Transferimi ndërkombëtar — FIX #5 */}
-        <Section title="6. International Data Transfers">
-          <p className="text-gray-700">
-            Some of our service providers operate outside the European Economic
-            Area (EEA). Where data is transferred internationally, we ensure
-            appropriate safeguards are in place — such as Standard Contractual
-            Clauses (SCCs) approved by the European Commission, or transfers
-            only to countries with an adequate level of data protection as
-            recognised by the EU. You may request details of these safeguards by
-            contacting us at the address below.
-          </p>
-        </Section>
+        .nav-link:hover {
+          color: #0d9488;
+        }
 
-        {/* 7 — Siguria */}
-        <Section title="7. Security">
-          <p className="text-gray-700">
-            We implement appropriate technical and organisational measures —
-            including encryption in transit (HTTPS), hashed passwords, and
-            access controls — to protect your information. No system is entirely
-            invulnerable. If you discover a security incident or vulnerability,
-            please contact us immediately at{" "}
-            <a
-              href="mailto:support@clothing-ecommerce.com"
-              className="text-blue-600 underline"
-            >
-              support@clothing-ecommerce.com
-            </a>
-            .
-          </p>
-        </Section>
+        .nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
 
-        {/* 8 — Mbajtja e të dhënave — FIX #7 */}
-        <Section title="8. Data Retention">
-          <p className="text-gray-700 mb-3">
-            We retain personal data only for as long as necessary for the
-            purposes described in this policy or to comply with legal
-            obligations. Specific retention periods:
-          </p>
-          <BulletList
-            items={[
-              "Account data: retained while your account is active. Deleted within 30 days of an account deletion request.",
-              "Order and financial records: retained for 7 years to comply with tax and accounting regulations.",
-              "Marketing consent records: retained for the duration of the marketing relationship plus 3 years.",
-              "Analytics data: aggregated and anonymised after 12 months.",
-              "Support communications: retained for 2 years after the last contact.",
-            ]}
-          />
-        </Section>
+        .btn-request {
+          font-size: 13px;
+          font-weight: 500;
+          color: #475569;
+          background: transparent;
+          border: 1px solid #cbd5e1;
+          border-radius: 9999px;
+          padding: 8px 18px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
 
-        {/* 9 — Të drejtat e plota GDPR — FIX #3 */}
-        <Section title="9. Your Rights Under GDPR">
-          <p className="text-gray-700 mb-4">
-            If you are located in the EU/EEA, you have the following rights
-            regarding your personal data. To exercise any of these rights,
-            contact us at{" "}
-            <a
-              href="mailto:support@clothing-ecommerce.com"
-              className="text-blue-600 underline"
-            >
-              support@clothing-ecommerce.com
-            </a>
-            . We will respond within 30 days.
-          </p>
-          <div className="space-y-4">
-            {[
-              {
-                right: "Right of Access",
-                desc: "Request a copy of the personal data we hold about you.",
-              },
-              {
-                right: "Right to Rectification",
-                desc: "Request correction of inaccurate or incomplete data.",
-              },
-              {
-                right: "Right to Erasure",
-                desc: 'Request deletion of your data ("right to be forgotten"), subject to legal retention obligations.',
-              },
-              {
-                right: "Right to Restriction",
-                desc: "Request that we limit how we process your data in certain circumstances.",
-              },
-              {
-                right: "Right to Data Portability",
-                desc: "Receive your data in a structured, machine-readable format and transfer it to another provider.",
-              },
-              {
-                right: "Right to Object",
-                desc: "Object to processing based on legitimate interests or for direct marketing purposes.",
-              },
-              {
-                right: "Rights Related to Automated Decision-Making",
-                desc: "Not be subject to decisions based solely on automated processing that significantly affect you.",
-              },
-              {
-                right: "Right to Withdraw Consent",
-                desc: "Withdraw consent at any time where processing is based on consent (e.g. marketing emails), without affecting prior processing.",
-              },
-            ].map(({ right, desc }) => (
-              <div key={right} className="flex gap-3">
-                <span className="font-semibold text-gray-900 min-w-[200px]">
-                  {right}
-                </span>
-                <span className="text-gray-700">{desc}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
+        .btn-request:hover {
+          border-color: #94a3b8;
+          background: #f8fafc;
+          color: #0f172a;
+        }
 
-        {/* 10 — Autoriteti mbikëqyrës — FIX #8 */}
-        <Section title="10. Right to Lodge a Complaint">
-          <p className="text-gray-700">
-            If you believe we have not handled your personal data in accordance
-            with applicable law, you have the right to lodge a complaint with
-            your local data protection supervisory authority. In the EU, you can
-            find your national authority at{" "}
-            <a
-              href="https://edpb.europa.eu/about-edpb/about-edpb/members_en"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 underline"
-            >
-              edpb.europa.eu
-            </a>
-            . We would, however, appreciate the opportunity to address your
-            concerns directly before you approach the authority.
-          </p>
-        </Section>
+        .btn-signin {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+          background: #facc15;
+          border: none;
+          border-radius: 9999px;
+          padding: 8px 18px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
 
-        {/* 11 — Fëmijët */}
-        <Section title="11. Children's Privacy">
-          <p className="text-gray-700">
-            Our Service is not directed at children under the age of 16. We do
-            not knowingly collect personal information from children. If you
-            believe a child has provided us with their data, please contact us
-            and we will delete it promptly.
-          </p>
-        </Section>
+        .btn-signin:hover {
+          background: #eab308;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+        }
 
-        {/* 12 — Ndryshimet e politikës */}
-        <Section title="12. Changes to This Policy">
-          <p className="text-gray-700">
-            We may update this Privacy Policy from time to time. When we make
-            significant changes, we will notify you by email or by posting a
-            prominent notice on our website. The "Last updated" date at the
-            bottom of this page indicates when the policy was last revised.
-            Continued use of the Service after changes constitutes acceptance of
-            the updated policy.
-          </p>
-        </Section>
+        /* Policy Container and Cards */
+        .policy-container {
+          max-width: 768px;
+          margin: 48px auto 80px;
+          padding: 0 20px;
+        }
 
-        {/* 13 — Kontakti */}
-        <Section title="13. Contact">
-          <p className="text-gray-700">
-            For any questions, requests, or concerns regarding this Privacy
-            Policy or our data practices, please contact us at:
-          </p>
-          <address className="not-italic mt-3 text-gray-700 space-y-1">
-            <p className="font-semibold">Clothing E‑commerce</p>
-            <p>
-              Email:{" "}
-              <a
-                href="mailto:support@clothing-ecommerce.com"
-                className="text-blue-600 underline"
-              >
-                support@clothing-ecommerce.com
-              </a>
+        .policy-card {
+          background: #ffffff;
+          border: 1px solid #f1f5f9;
+          border-radius: 16px;
+          padding: 48px 40px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        }
+
+        @media (max-width: 640px) {
+          .policy-card {
+            padding: 32px 20px;
+          }
+        }
+
+        .policy-title {
+          font-size: 32px;
+          font-weight: 700;
+          color: #0f172a;
+          letter-spacing: -0.8px;
+          margin: 0 0 12px;
+        }
+
+        .policy-desc {
+          font-size: 14.5px;
+          color: #64748b;
+          line-height: 1.6;
+          margin: 0 0 32px;
+        }
+
+        .section-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0d9488;
+          margin: 0 0 16px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .policy-text {
+          font-size: 14px;
+          color: #334155;
+          line-height: 1.7;
+          margin: 0 0 16px;
+        }
+
+        .bullet-list {
+          list-style-type: disc;
+          margin: 0 0 16px 20px;
+          padding: 0;
+        }
+
+        .bullet-item {
+          font-size: 14px;
+          color: #334155;
+          line-height: 1.7;
+          margin-bottom: 6px;
+        }
+
+        /* Styled Table */
+        .policy-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          font-size: 13.5px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .policy-table th {
+          background: #f8fafc;
+          color: #334155;
+          font-weight: 600;
+          text-align: left;
+          padding: 12px 16px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .policy-table td {
+          padding: 12px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #475569;
+        }
+
+        .policy-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .policy-link {
+          color: #0d9488;
+          text-decoration: underline;
+          transition: color 0.15s ease;
+        }
+
+        .policy-link:hover {
+          color: #0f766e;
+        }
+      `}</style>
+
+      {/* ── Navigation Header ─────────────────────────────────────────────── */}
+      <nav className="nav-bar">
+        <a href="/" className="nav-logo">
+          Help<span>Center</span>
+        </a>
+        <div className="nav-links">
+          <a href="/" className="nav-link">Home</a>
+          <a href="/help-center" className="nav-link">Articles</a>
+          <a href="/help-center" className="nav-link">Categories</a>
+        </div>
+        <div className="nav-actions">
+          <a href="/help-center#textarea-feedback" className="btn-request">
+            Submit a Request
+          </a>
+          <a href="#" className="btn-signin">
+            Sign In
+          </a>
+        </div>
+      </nav>
+
+      {/* ── Content Card ──────────────────────────────────────────────────── */}
+      <main className="policy-container">
+        <article className="policy-card">
+          <header>
+            <h1 className="policy-title">Privacy Policy</h1>
+            <p className="policy-desc">
+              Kjo Politikë e Privatësisë shpjegon se si Urbani IM ("ne", "neve", ose "Shërbimi") mbledh, përdor dhe mbron të dhënat tuaja personale kur përdorni faqen tonë të internetit ose shërbimet tona. Duke përdorur faqen tonë, ju pranoni praktikat e përshkruara këtu.
             </p>
-          </address>
-        </Section>
+          </header>
 
-        {/* Footer — FIX #1 (text-muted → text-gray-400) + FIX #2 (<small> → <p>) */}
-        <footer className="pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-400">
-            Last updated: May 31, 2026
-          </p>
-        </footer>
+          <Section title="1. Të dhënat që mbledhim">
+            <BulletList
+              items={[
+                "Të dhënat e llogarisë: emri, adresa e emailit, fjalëkalimi i siguruar dhe adresa e dërgesës.",
+                "Të dhënat e udhëtimit: destinacionet e kërkuara, linjat e preferuara, historiku i kërkimeve.",
+                "Të dhënat e pagesës: procesimi i transaksioneve bëhet në mënyrë të sigurt nga ofruesit tanë të pagesave — ne nuk ruajmë numra kartash krediti.",
+                "Të dhënat teknike: adresa IP, lloji i shfletuesit, cookies dhe të dhënat e përdorimit të faqes.",
+              ]}
+            />
+          </Section>
 
-      </article>
-    </main>
+          <Section title="2. Baza ligjore për përpunim (GDPR)">
+            <p className="policy-text">
+              Sipas Rregullores së Përgjithshme për Mbrojtjen e të Dhënave (GDPR), përpunimi i të dhënave bazohet në këto pika ligjore:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '16px 0' }}>
+              {[
+                {
+                  basis: "Kontrata",
+                  desc: "Përpunimi i kërkesave tuaja, menaxhimi i llogarisë dhe dhënia e ndihmës teknike.",
+                },
+                {
+                  basis: "Pëlqimi",
+                  desc: "Dërgimi i email-eve promovuese dhe njoftimeve live. Pëlqimi mund të tërhiqet në çdo kohë.",
+                },
+                {
+                  basis: "Interesi Legjitim",
+                  desc: "Përmirësimi i shërbimeve tona, analizimi i trafikut dhe parandalimi i mashtrimeve.",
+                },
+                {
+                  basis: "Detyrimi Ligjor",
+                  desc: "Ruajtja e të dhënave financiare dhe transaksioneve për t'iu përgjigjur ligjeve tatimore.",
+                },
+              ].map(({ basis, desc }) => (
+                <div key={basis} style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ fontWeight: '700', color: '#1e293b', minWidth: '120px', fontSize: '14px' }}>
+                    {basis}
+                  </span>
+                  <span style={{ color: '#475569', fontSize: '14px' }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="3. Si i përdorim të dhënat tuaja">
+            <BulletList
+              items={[
+                "Për të procesuar dhe lehtësuar udhëtimet tuaja me transport publik.",
+                "Për të menaxhuar llogarinë tuaj dhe për t'ju ofruar ndihmë teknike.",
+                "Për të dërguar njoftime mbi ndryshimet e orareve apo linjave.",
+                "Për të analizuar të dhënat e përdorimit me qëllim përmirësimin e aplikacionit.",
+                "Për të detektuar dhe parandaluar ndërhyrjet e paautorizuara.",
+              ]}
+            />
+          </Section>
+
+          <Section title="4. Cookies dhe Teknologjitë e Ngjashme">
+            <p className="policy-text">
+              Ne përdorim cookies për të ruajtur preferencat tuaja. Mund t'i menaxhoni ato në cilësimet e shfletuesit tuaj, ndonëse disa veçori mund të mos funksionojnë pa to.
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="policy-table">
+                <thead>
+                  <tr>
+                    <th>Lloji</th>
+                    <th>Qëllimi</th>
+                    <th>Kohëzgjatja</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Thelbësore", "Menaxhimi i sesionit dhe autentikimi", "Sesioni"],
+                    ["Analitike", "Kuptimi i trafikut dhe sjelljes (Google Analytics)", "Deri në 12 muaj"],
+                    ["Preferencat", "Ruajtja e gjuhës, qytetit dhe cilësimeve të pamjes", "Deri në 12 muaj"],
+                  ].map(([type, purpose, duration]) => (
+                    <tr key={type}>
+                      <td style={{ fontWeight: '600' }}>{type}</td>
+                      <td>{purpose}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
+          <Section title="5. Ndarja e të dhënave me palët e treta">
+            <p className="policy-text">
+              Ne nuk i shesim të dhënat tuaja personale. Ndarja e të dhënave bëhet vetëm me partnerë të besuar për qëllime të përcaktuara:
+            </p>
+            <BulletList
+              items={[
+                "Procesuesit e pagesave (Stripe, PayPal) për transaksione të sigurta.",
+                "Ofruesit e shërbimeve cloud (AWS, Vercel) për hostimin dhe funksionimin e faqes.",
+                "Platformat analitike (Google Analytics) për përmirësimin e shërbimit.",
+              ]}
+            />
+          </Section>
+
+          <Section title="6. Siguria e të Dhënave">
+            <p className="policy-text">
+              Ne përdorim masa teknike të avancuara, si enkriptimi (HTTPS) dhe ruajtja e koduar e fjalëkalimeve, për të garantuar siguri maksimale. Për çdo dyshim rreth sigurisë, na kontaktoni në{" "}
+              <a
+                href="mailto:support@urbani-im.al"
+                className="policy-link"
+              >
+                support@urbani-im.al
+              </a>
+              .
+            </p>
+          </Section>
+
+          <Section title="7. Ruajtja e të Dhënave">
+            <p className="policy-text">
+              Të dhënat ruhen vetëm për sa kohë janë të nevojshme. Të dhënat e llogarisë fshihen brenda 30 ditëve nga kërkesa juaj për fshirje. Të dhënat e transaksioneve financiare ruhen për 7 vite për arsye ligjore tatimore.
+            </p>
+          </Section>
+
+          <Section title="8. Të Drejtat Tuaja sipas GDPR">
+            <p className="policy-text">
+              Nëse ndodheni në BE/ZPE, ju gëzoni të drejtat e mëposhtme që mund t'i ushtroni duke shkruar në{" "}
+              <a
+                href="mailto:support@urbani-im.al"
+                className="policy-link"
+              >
+                support@urbani-im.al
+              </a>
+              :
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {[
+                { right: "E drejta e aksesit", desc: "Kërkoni një kopje të të dhënave tuaja." },
+                { right: "E drejta e korrigjimit", desc: "Korrigjoni të dhënat e pasakta." },
+                { right: "E drejta e fshirjes", desc: "Fshirja e të dhënave tuaja ('e drejta për t'u harruar')." },
+                { right: "E drejta e transportueshmërisë", desc: "Marrja e të dhënave në një format të lexueshëm nga makinat." },
+              ].map(({ right, desc }) => (
+                <div key={right} style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ fontWeight: '700', color: '#1e293b', minWidth: '180px', fontSize: '14px' }}>
+                    {right}
+                  </span>
+                  <span style={{ color: '#475569', fontSize: '14px' }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <footer style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+              Përditësuar së fundmi: 3 Qershor 2026
+            </p>
+          </footer>
+        </article>
+      </main>
+    </div>
   );
 }

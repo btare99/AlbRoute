@@ -1,14 +1,14 @@
 import React from "react";
 
-// ─── FIX #9: metadata e plotë me robots noindex ───────────────────────────────
+// ─── Metadata ───────────────────────────────────────────────────────────────
 export const metadata = {
-  title: "Terms and Conditions - Clothing E‑commerce",
+  title: "Terms and Conditions - Urbani IM",
   description:
-    "Read the terms and conditions governing your use of Clothing E‑commerce, including orders, payments, returns, and your legal rights.",
+    "Lexoni kushtet dhe rregullat e përdorimit të aplikacionit Urbani IM dhe faqes sonë të internetit.",
   robots: "noindex, nofollow",
 };
 
-// ─── Komponentë ndihmës ───────────────────────────────────────────────────────
+// ─── Helper Components ───────────────────────────────────────────────────────
 function Section({
   title,
   children,
@@ -17,8 +17,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-10">
-      <h2 className="text-xl font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">
+    <section style={{ marginBottom: '32px' }}>
+      <h2 className="section-title">
         {title}
       </h2>
       {children}
@@ -28,236 +28,304 @@ function Section({
 
 function BulletList({ items }: { items: React.ReactNode[] }) {
   return (
-    <ul className="list-disc ml-6 space-y-1 text-gray-700">
+    <ul className="bullet-list">
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <li key={i} className="bullet-item">{item}</li>
       ))}
     </ul>
   );
 }
 
-// ─── Faqja kryesore ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function TermsPage() {
   return (
-    // FIX #2: mbështjellë me <article> semantik
-    <main className="bg-white min-h-screen">
-      <article className="mx-auto max-w-3xl px-6 py-12">
+    <div className="help-wrapper">
+      <style>{`
+        /* Global CSS layout declarations matching reference image style */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        .help-wrapper {
+          background: #fcfdfd;
+          min-height: 100vh;
+          color: #1e293b;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          width: 100%;
+          box-sizing: border-box;
+          overflow-y: auto;
+        }
 
-        {/* Titulli */}
-        <header className="mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Terms and Conditions
-          </h1>
-          <p className="text-gray-600 text-base leading-relaxed">
-            These Terms and Conditions ("Terms") govern your use of the Clothing
-            E‑commerce website and services. By accessing or using the site, you
-            accept these Terms in full. If you do not agree, please do not use
-            the Service.
-          </p>
-        </header>
+        /* Nav Bar rules */
+        .nav-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 40px;
+          background: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
+        }
 
-        {/* 1 — Përdorimi i Shërbimit */}
-        <Section title="1. Use of the Service">
-          <p className="text-gray-700 mb-3">
-            You may use our Service only for lawful purposes and in accordance
-            with these Terms. You agree not to:
-          </p>
-          <BulletList
-            items={[
-              "Provide false, inaccurate, or misleading information when creating an account or placing an order.",
-              "Use the site for any illegal or unauthorised purpose.",
-              "Attempt to gain unauthorised access to any part of the Service or its infrastructure.",
-              "Transmit any harmful, offensive, or disruptive content.",
-              "Use automated tools (bots, scrapers) to access the Service without our prior written consent.",
-            ]}
-          />
-          <p className="text-gray-700 mt-3">
-            We reserve the right to suspend or terminate access for any violation
-            of these Terms.
-          </p>
-        </Section>
+        @media (max-width: 640px) {
+          .nav-bar {
+            padding: 16px 20px;
+          }
+        }
 
-        {/* 2 — Llogaritë */}
-        <Section title="2. Accounts">
-          <p className="text-gray-700 mb-3">
-            To place orders you may need to create an account. You are
-            responsible for:
-          </p>
-          <BulletList
-            items={[
-              "Keeping your login credentials confidential.",
-              "All activity that occurs under your account.",
-              "Notifying us immediately at support@clothing-ecommerce.com if you suspect unauthorised access.",
-            ]}
-          />
-          <p className="text-gray-700 mt-3">
-            We may close accounts that are inactive for an extended period or
-            that we reasonably believe are being misused.
-          </p>
-        </Section>
+        .nav-logo {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+          text-decoration: none;
+        }
+        
+        .nav-logo span {
+          font-weight: 400;
+          color: #475569;
+          margin-left: 2px;
+        }
 
-        {/* 3 — Porositë dhe Pagesat */}
-        <Section title="3. Orders and Payments">
-          <p className="text-gray-700 mb-3">
-            All orders are subject to product availability and our acceptance.
-            We reserve the right to refuse or cancel any order at our
-            discretion. Key points:
-          </p>
-          <BulletList
-            items={[
-              "Payments are processed by third-party providers (e.g. Stripe, PayPal). We do not store full card details on our servers.",
-              "An order confirmation email does not constitute final acceptance — we may cancel if stock becomes unavailable or a pricing error is identified.",
-              "You must be at least 18 years old, or have parental/guardian consent, to make a purchase.",
-              "All prices are shown inclusive of applicable taxes unless stated otherwise.",
-            ]}
-          />
-        </Section>
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+        }
 
-        {/* 4 — Çmimet dhe Gabimet */}
-        <Section title="4. Pricing and Errors">
-          <p className="text-gray-700 mb-3">
-            We make every effort to ensure accurate pricing and product
-            descriptions, but errors may occasionally occur.
-          </p>
-          <BulletList
-            items={[
-              "Prices are subject to change without notice.",
-              "If a pricing error is identified after your order is placed, we will contact you to either confirm the order at the correct price or cancel it with a full refund.",
-              "We are not obliged to honour orders placed at an obviously erroneous price (e.g. a £500 item listed at £0.50).",
-              "Product images are for illustrative purposes; actual items may vary slightly in colour due to display settings.",
-            ]}
-          />
-        </Section>
+        @media (max-width: 768px) {
+          .nav-links {
+            display: none;
+          }
+        }
 
-        {/* 5 — Dërgimi dhe Kthimet — FIX: shtuar detaje */}
-        <Section title="5. Shipping and Returns">
-          <p className="text-gray-700 mb-3">
-            Shipping and return conditions are as follows:
-          </p>
-          <BulletList
-            items={[
-              "Estimated delivery times are provided at checkout and are not guaranteed.",
-              "Risk of loss or damage passes to you once the item is delivered to the address you provided.",
-              "EU/UK customers have the right to cancel an order within 14 days of receiving it (Cooling-Off Period), under the Consumer Rights Directive / Consumer Contracts Regulations.",
-              "To initiate a return, contact support@clothing-ecommerce.com within the applicable return window with your order number.",
-              "Returned items must be unused, in original packaging, and accompanied by proof of purchase.",
-              "Refunds are issued to the original payment method within 14 days of receiving the returned item.",
-              "We cover return shipping costs for defective or incorrectly sent items. For change-of-mind returns, return shipping costs are the customer's responsibility unless otherwise stated.",
-            ]}
-          />
-        </Section>
+        .nav-link {
+          font-size: 14px;
+          font-weight: 500;
+          color: #475569;
+          text-decoration: none;
+          transition: color 0.15s ease;
+        }
 
-        {/* 6 — Dritat e Konsumatorit (EU/UK) — seksion i ri */}
-        <Section title="6. Consumer Rights (EU / UK)">
-          <p className="text-gray-700 mb-3">
-            If you are a consumer in the European Union or United Kingdom, you
-            have statutory rights that these Terms do not affect:
-          </p>
-          <BulletList
-            items={[
-              "Goods must be of satisfactory quality, fit for purpose, and as described.",
-              "If goods are faulty, you may be entitled to a repair, replacement, or refund depending on the circumstances.",
-              "You have a 14-day right to cancel a distance contract (online purchase) without giving a reason, starting from the day you receive the goods.",
-              "Digital content must work as described. You are entitled to a repair, replacement, or price reduction for faulty digital content.",
-            ]}
-          />
-          <p className="text-gray-700 mt-3">
-            Nothing in these Terms limits or excludes your statutory consumer
-            rights.
-          </p>
-        </Section>
+        .nav-link:hover {
+          color: #0d9488;
+        }
 
-        {/* 7 — Përgjegjësia */}
-        <Section title="7. Limitation of Liability">
-          <p className="text-gray-700 mb-3">
-            To the fullest extent permitted by applicable law:
-          </p>
-          <BulletList
-            items={[
-              "We are not liable for indirect, incidental, special, or consequential damages arising from your use of the Service.",
-              "Our total liability for any claim arising out of or related to the Service is limited to the amount you paid for the order giving rise to the claim.",
-              "We are not responsible for delays or failures caused by events outside our reasonable control (force majeure), including natural disasters, strikes, or infrastructure outages.",
-            ]}
-          />
-          <p className="text-gray-700 mt-3">
-            These limitations do not apply to liability for death or personal
-            injury caused by our negligence, fraud, or any other liability that
-            cannot be excluded by law.
-          </p>
-        </Section>
+        .nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
 
-        {/* 8 — Pronësia Intelektuale */}
-        <Section title="8. Intellectual Property">
-          <p className="text-gray-700 mb-3">
-            All content on this site — including text, images, logos, product
-            photography, graphics, and software — is the property of Clothing
-            E‑commerce or its licensors and is protected by copyright and other
-            intellectual property laws.
-          </p>
-          <BulletList
-            items={[
-              "You may not copy, reproduce, distribute, or create derivative works from any site content without our prior written permission.",
-              "You may not use our trademarks or brand assets without express authorisation.",
-              "User-submitted content (e.g. reviews) remains your property, but you grant us a non-exclusive licence to display it on the Service.",
-            ]}
-          />
-        </Section>
+        .btn-request {
+          font-size: 13px;
+          font-weight: 500;
+          color: #475569;
+          background: transparent;
+          border: 1px solid #cbd5e1;
+          border-radius: 9999px;
+          padding: 8px 18px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
 
-        {/* 9 — Ligji i Zbatueshëm — seksion i ri */}
-        <Section title="9. Governing Law and Disputes">
-          <p className="text-gray-700 mb-3">
-            These Terms are governed by and construed in accordance with
-            applicable law. For EU consumers, the mandatory consumer protection
-            laws of your country of residence also apply.
-          </p>
-          <BulletList
-            items={[
-              "We aim to resolve any disputes directly — please contact us first at support@clothing-ecommerce.com.",
-              "EU consumers may also use the European Commission's Online Dispute Resolution (ODR) platform at ec.europa.eu/consumers/odr.",
-              "Nothing in these Terms affects your right to bring proceedings in the courts of your country of residence.",
-            ]}
-          />
-        </Section>
+        .btn-request:hover {
+          border-color: #94a3b8;
+          background: #f8fafc;
+          color: #0f172a;
+        }
 
-        {/* 10 — Ndryshimet e Kushteve */}
-        <Section title="10. Changes to These Terms">
-          <p className="text-gray-700">
-            We may revise these Terms at any time. When we make material changes,
-            we will notify you by email or by displaying a prominent notice on
-            the site. Changes take effect when posted. Your continued use of the
-            Service after changes are posted constitutes your acceptance of the
-            updated Terms. If you do not agree to the revised Terms, you should
-            stop using the Service.
-          </p>
-        </Section>
+        .btn-signin {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+          background: #facc15;
+          border: none;
+          border-radius: 9999px;
+          padding: 8px 18px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
 
-        {/* 11 — Kontakti */}
-        <Section title="11. Contact">
-          <p className="text-gray-700">
-            For any questions or concerns about these Terms, please contact us:
-          </p>
-          <address className="not-italic mt-3 text-gray-700 space-y-1">
-            <p className="font-semibold">Clothing E‑commerce</p>
-            <p>
-              Email:{" "}
-              <a
-                href="mailto:support@clothing-ecommerce.com"
-                className="text-blue-600 underline"
-              >
-                support@clothing-ecommerce.com
-              </a>
+        .btn-signin:hover {
+          background: #eab308;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+        }
+
+        /* Policy Container and Cards */
+        .policy-container {
+          max-width: 768px;
+          margin: 48px auto 80px;
+          padding: 0 20px;
+        }
+
+        .policy-card {
+          background: #ffffff;
+          border: 1px solid #f1f5f9;
+          border-radius: 16px;
+          padding: 48px 40px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        }
+
+        @media (max-width: 640px) {
+          .policy-card {
+            padding: 32px 20px;
+          }
+        }
+
+        .policy-title {
+          font-size: 32px;
+          font-weight: 700;
+          color: #0f172a;
+          letter-spacing: -0.8px;
+          margin: 0 0 12px;
+        }
+
+        .policy-desc {
+          font-size: 14.5px;
+          color: #64748b;
+          line-height: 1.6;
+          margin: 0 0 32px;
+        }
+
+        .section-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0d9488;
+          margin: 0 0 16px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .policy-text {
+          font-size: 14px;
+          color: #334155;
+          line-height: 1.7;
+          margin: 0 0 16px;
+        }
+
+        .bullet-list {
+          list-style-type: disc;
+          margin: 0 0 16px 20px;
+          padding: 0;
+        }
+
+        .bullet-item {
+          font-size: 14px;
+          color: #334155;
+          line-height: 1.7;
+          margin-bottom: 6px;
+        }
+
+        .policy-link {
+          color: #0d9488;
+          text-decoration: underline;
+          transition: color 0.15s ease;
+        }
+
+        .policy-link:hover {
+          color: #0f766e;
+        }
+      `}</style>
+
+      {/* ── Navigation Header ─────────────────────────────────────────────── */}
+      <nav className="nav-bar">
+        <a href="/" className="nav-logo">
+          Help<span>Center</span>
+        </a>
+        <div className="nav-links">
+          <a href="/" className="nav-link">Home</a>
+          <a href="/help-center" className="nav-link">Articles</a>
+          <a href="/help-center" className="nav-link">Categories</a>
+        </div>
+        <div className="nav-actions">
+          <a href="/help-center#textarea-feedback" className="btn-request">
+            Submit a Request
+          </a>
+          <a href="#" className="btn-signin">
+            Sign In
+          </a>
+        </div>
+      </nav>
+
+      {/* ── Content Card ──────────────────────────────────────────────────── */}
+      <main className="policy-container">
+        <article className="policy-card">
+          <header>
+            <h1 className="policy-title">Terms and Conditions</h1>
+            <p className="policy-desc">
+              Këto Kushte dhe Rregulla ("Kushtet") rregullojnë përdorimin e aplikacionit Urbani IM dhe faqes sonë të internetit. Duke hyrë ose përdorur shërbimin, ju pranoni plotësisht këto kushte. Nëse nuk jeni dakord, ju lutemi mos e përdorni shërbimin.
             </p>
-          </address>
-        </Section>
+          </header>
 
-        {/* Footer — FIX #1 (text-muted → text-gray-400) + FIX #2 (<small> → <p>) */}
-        <footer className="pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-400">
-            Last updated: May 31, 2026
-          </p>
-        </footer>
+          <Section title="1. Përdorimi i Shërbimit">
+            <p className="policy-text">
+              Ju mund të përdorni shërbimin tonë vetëm për qëllime të ligjshme. Ndalohet kategorikisht:
+            </p>
+            <BulletList
+              items={[
+                "Dhënia e informacioneve të rreme ose mashtruese gjatë krijimit të llogarisë.",
+                "Përdorimi i shërbimit për qëllime të paligjshme ose të paautorizuara.",
+                "Përpjekja për të dëmtuar infrastrukturën apo për të fituar akses të paautorizuar në serverat tanë.",
+                "Transmetimi i viruseve, malware-ve apo materialeve të tjera të dëmshme.",
+                "Përdorimi i mjeteve të automatizuara (skraper, bot) për nxjerrjen e të dhënave pa autorizim paraprak me shkrim.",
+              ]}
+            />
+          </Section>
 
-      </article>
-    </main>
+          <Section title="2. Llogaritë e Përdoruesve">
+            <p className="policy-text">
+              Kur krijoni një llogari te ne, ju jeni përgjegjës për:
+            </p>
+            <BulletList
+              items={[
+                "Ruajtjen e konfidencialitetit të fjalëkalimit dhe kredencialeve tuaja.",
+                "Çdo aktivitet që ndodh nën llogarinë tuaj.",
+                "Njoftimin e menjëhershëm në support@urbani-im.al nëse dyshoni për ndonjë thyerje të sigurisë.",
+              ]}
+            />
+          </Section>
+
+          <Section title="3. Kushtet e Shërbimit Live">
+            <p className="policy-text">
+              Informacioni mbi pozicionin live të autobusëve vjen nga GPS e instaluar në mjete. Ne bëjmë çdo përpjekje për të garantuar saktësi, por nuk mund të mbajmë përgjegjësi për vonesa apo pasaktësi që vijnë si pasojë e problemeve teknike të operatorëve apo vonesave në rrjet.
+            </p>
+          </Section>
+
+          <Section title="4. Pronësia Intelektuale">
+            <p className="policy-text">
+              Gjithë përmbajtja e faqes dhe aplikacionit — përfshirë tekstin, kodin burimor, logot, grafikat dhe dizajnin — është pronë e Urbani IM ose e licencuesve tanë dhe mbrohet nga ligjet e të drejtës së autorit. Ju nuk mund të kopjoni, shpërndani apo krijoni vepra të derivuara pa autorizim me shkrim.
+            </p>
+          </Section>
+
+          <Section title="5. Kufizimi i Përgjegjësisë">
+            <p className="policy-text">
+              Deri në kufijtë e lejuar nga ligji, Urbani IM nuk do të jetë përgjegjës për asnjë dëm të tërthortë, rastësor ose vijues që rezulton nga përdorimi ose pamundësia për të përdorur shërbimin tonë.
+            </p>
+          </Section>
+
+          <Section title="6. Ndryshimet në Kushtet e Shërbimit">
+            <p className="policy-text">
+              Ne rezervojmë të drejtën të përditësojmë këto Kushte në çdo kohë. Kur kryejmë ndryshime thelbësore, do t'ju njoftojmë përmes aplikacionit ose duke vendosur një njoftim të dukshëm në faqen tonë. Vazhdimi i përdorimit të shërbimit pas përditësimit përbën pranim të kushteve të reja.
+            </p>
+          </Section>
+
+          <Section title="7. Kontakti">
+            <p className="policy-text">
+              Për çdo pyetje apo sqarim mbi këto Kushte, ju lutemi na shkruani në adresa e mëposhtme:
+            </p>
+            <address style={{ fontStyle: 'normal', color: '#475569', fontSize: '14px', lineHeight: 1.6 }}>
+              <p style={{ fontWeight: '700', color: '#1e293b' }}>Urbani IM Support</p>
+              <p>Email: <a href="mailto:support@urbani-im.al" className="policy-link">support@urbani-im.al</a></p>
+            </address>
+          </Section>
+
+          <footer style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+              Përditësuar së fundmi: 3 Qershor 2026
+            </p>
+          </footer>
+        </article>
+      </main>
+    </div>
   );
 }
