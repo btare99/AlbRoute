@@ -42,13 +42,13 @@ export default function HelpView() {
           icon: helpCircleOutline,
           label: 'Help Center',
           sublabel: 'urbanim.app/help',
-          onClick: () => window.open('https://alb-route.vercel.app/help', '_blank', 'noreferrer'),
+          onClick: () => window.open('https://alb-route-1aim.vercel.app/help-center', '_blank', 'noreferrer'),
         },
         {
           icon: chatbubbleOutline,
           label: 'Feedback',
-          sublabel: 'support@albroute.al',
-          onClick: () => window.open('mailto:support@albroute.al'),
+          sublabel: 'Lini një feedback',
+          onClick: () => setView('feedback'),
         },
         {
           icon: mailOutline,

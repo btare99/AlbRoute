@@ -10,6 +10,7 @@ import ProfileView from '../profile/ProfileView';
 import UserFavorites from '../profile/UserFavorites';
 import EditProfileView from '../profile/EditProfileView';
 import HelpView from '../profile/HelpView';
+import FeedbackView from '../profile/FeedbackView';
 import DeleteAccountView from '../profile/DeleteAccountView';
 import SubscriptionView from '../subscription/SubscriptionView';
 import SubscriptionPackagesView from '../subscription/SubscriptionPackagesView';
@@ -154,6 +155,11 @@ export default function AppShell() {
           <HelpView />
         </SwipeDismissView>
       );
+      case 'feedback': return (
+        <SwipeDismissView onDismiss={() => setView('help')} background={<HelpView />}>
+          <FeedbackView />
+        </SwipeDismissView>
+      );
       case 'delete_account': return (
         <SwipeDismissView onDismiss={() => setView('edit_profile')} background={<EditProfileView />}>
           <DeleteAccountView />
@@ -198,7 +204,7 @@ export default function AppShell() {
         <nav className="bottom-nav" aria-label="Main navigation">
           {MENU.map(({ id, label, icon: Icon }) => {
             const active = currentView === id ||
-              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'help' || currentView === 'delete_account' || currentView === 'get_pass')) ||
+              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account' || currentView === 'get_pass')) ||
               (id === 'packages' && (currentView === 'checkout'));
             return (
               <button
