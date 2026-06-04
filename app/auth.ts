@@ -18,11 +18,6 @@ interface DbUser {
   phone?: string;
   savedLocations?: { home: string; work: string };
   travelHistory?: unknown[];
-  idNumber?: string | null;
-  university?: string | null;
-  serialNumber?: string | null;
-  selectedLine?: string | null;
-  subscriptions?: Array<{ photo?: string;[key: string]: unknown }>;
 }
 
 interface AuthUser {
@@ -33,11 +28,6 @@ interface AuthUser {
   phone: string;
   savedLocations: { home: string; work: string };
   travelHistory: unknown[];
-  idNumber: string | null;
-  university: string | null;
-  serialNumber: string | null;
-  selectedLine: string | null;
-  subscriptions: Array<Record<string, unknown>>;
 }
 
 interface ExtendedToken extends JWT {
@@ -46,20 +36,9 @@ interface ExtendedToken extends JWT {
   phone: string;
   savedLocations: { home: string; work: string };
   travelHistory: unknown[];
-  idNumber: string | null;
-  university: string | null;
-  serialNumber: string | null;
-  selectedLine: string | null;
-  subscriptions: Array<Record<string, unknown>>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function stripPhotoFromSubscriptions(
-  subs: DbUser['subscriptions'] = []
-): Array<Record<string, unknown>> {
-  return subs.map(({ photo: _photo, ...rest }) => rest);
-}
 
 function buildAuthUser(dbUser: DbUser, role: string): AuthUser {
   return {
@@ -70,11 +49,6 @@ function buildAuthUser(dbUser: DbUser, role: string): AuthUser {
     phone: dbUser.phone ?? "",
     savedLocations: dbUser.savedLocations ?? { home: "", work: "" },
     travelHistory: dbUser.travelHistory ?? [],
-    idNumber: dbUser.idNumber ?? null,
-    university: dbUser.university ?? null,
-    serialNumber: dbUser.serialNumber ?? null,
-    selectedLine: dbUser.selectedLine ?? null,
-    subscriptions: stripPhotoFromSubscriptions(dbUser.subscriptions),
   };
 }
 
@@ -84,11 +58,6 @@ function attachUserToToken(token: ExtendedToken, user: AuthUser): void {
   token.phone = user.phone;
   token.savedLocations = user.savedLocations;
   token.travelHistory = user.travelHistory;
-  token.idNumber = user.idNumber;
-  token.university = user.university;
-  token.serialNumber = user.serialNumber;
-  token.selectedLine = user.selectedLine;
-  token.subscriptions = user.subscriptions;
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -174,7 +143,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 savedLocations: { home: "", work: "" },
                 travelHistory: [],
                 lastLogin: new Date(),
-                subscriptions: [],
               });
               dbUser = created.toObject() as DbUser;
             } else {
@@ -185,7 +153,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             extendedToken.id = String(dbUser!._id);
             extendedToken.phone = dbUser!.phone ?? "";
-            extendedToken.subscriptions = stripPhotoFromSubscriptions(dbUser!.subscriptions);
           } catch (err) {
             console.error("[Auth] Google sync error:", err);
           }
@@ -211,11 +178,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         phone: extendedToken.phone,
         savedLocations: extendedToken.savedLocations,
         travelHistory: extendedToken.travelHistory,
-        idNumber: extendedToken.idNumber,
-        university: extendedToken.university,
-        serialNumber: extendedToken.serialNumber,
-        selectedLine: extendedToken.selectedLine,
-        subscriptions: extendedToken.subscriptions ?? [],
       };
       return session;
     },

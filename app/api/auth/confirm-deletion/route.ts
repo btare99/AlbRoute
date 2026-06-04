@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import connectDB from '../../../lib/mongodb';
 import { sendEmail } from '../../../lib/mail';
+import { getUserModel } from '../../../lib/dynamicDb';
+import { auth } from '../../../auth';
 
 const DELETION_GRACE_DAYS = 30;
 
@@ -9,81 +10,76 @@ function gracePeriodMs() {
   return DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000;
 }
 
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const token = searchParams.get('token');
-
-    if (!token) {
+    const session = await auth() as any;
+    console.log('[confirm-deletion] Session:', session?.user?.email);
+    
+    if (!session?.user) {
+      console.log('[confirm-deletion] Not authenticated');
       return NextResponse.json(
-        { message: 'Token is required' },
+        { message: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    const { email, code } = await req.json();
+    console.log('[confirm-deletion] Received email:', email, 'code length:', code?.length);
+
+    if (!email || !code) {
+      console.log('[confirm-deletion] Missing email or code');
+      return NextResponse.json(
+        { message: 'Email and code are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email matches user's account email
+    if (email.toLowerCase() !== session.user.email?.toLowerCase()) {
+      console.log('[confirm-deletion] Email mismatch - received:', email, 'session:', session.user.email);
+      return NextResponse.json(
+        { message: 'Email does not match account email' },
         { status: 400 }
       );
     }
 
     await connectDB();
-    const db = mongoose.connection;
+    const User = getUserModel();
+    const emailStr = email.toLowerCase().trim();
 
-    // ── Atomic find + update — eliminon race condition ─────────────────────
-    const deletionRequest = await db
-      .collection('deletion_requests')
-      .findOneAndUpdate(
-        { token, status: 'pending' },
-        { $set: { status: 'confirmed', confirmedAt: new Date() } },
-        { returnDocument: 'before' }
-      ) as any;
+    // ─── FIX #1: Find user and verify code ──────────────────────────────────────
+    const user = await User.findOne({
+      email: emailStr,
+      deletionConfirmationCode: code,
+      deletionConfirmationExpires: { $gt: new Date() }
+    });
 
-    if (!deletionRequest) {
+    if (!user) {
       return NextResponse.json(
-        { message: 'Invalid or expired token' },
+        { message: 'Invalid or expired confirmation code' },
         { status: 400 }
       );
     }
 
-    // ── Kontrollo skadimin ─────────────────────────────────────────────────
-    if (new Date() > new Date(deletionRequest.expiresAt)) {
-      await db.collection('deletion_requests').updateOne(
-        { _id: deletionRequest._id },
-        { $set: { status: 'expired' } }
-      );
-
-      return NextResponse.json(
-        { message: 'Token has expired' },
-        { status: 400 }
-      );
-    }
-
-    // ── Data e fshirjes — e llogaritur një herë, e njëjtë kudo ────────────
+    // ─── FIX #2: Calculate deletion date ────────────────────────────────────────
     const scheduledDeletion = new Date(Date.now() + gracePeriodMs());
     const scheduledDeletionLabel = scheduledDeletion.toLocaleDateString();
 
-    // ── Shëno userin si pending deletion ──────────────────────────────────
-    await db.collection('deletion_requests').updateOne(
-      { _id: deletionRequest._id },
-      { $set: { scheduledDeletionDate: scheduledDeletion } }
-    );
-
-    await db.collection('users').updateOne(
-      { _id: deletionRequest.userId },
+    // ─── FIX #3: Mark user for deletion ─────────────────────────────────────────
+    await User.findByIdAndUpdate(
+      user._id,
       {
-        $set: {
-          deletionConfirmed: true,
-          deletionScheduledFor: scheduledDeletion,
-        },
-      }
+        isMarkedForDeletion: true,
+        scheduledDeletionDate: scheduledDeletion,
+        deletionConfirmationCode: null,
+        deletionConfirmationExpires: null,
+      },
+      { new: true }
     );
 
-    // ── Email konfirmimi ───────────────────────────────────────────────────
+    // ─── FIX #4: Send confirmation email ────────────────────────────────────────
     await sendEmail({
-      to: deletionRequest.email,
+      to: emailStr,
       subject: 'Account Deletion Confirmed - Urbani',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -92,17 +88,20 @@ export async function GET(req: NextRequest) {
           <p>Your account will be completely deleted on <strong>${scheduledDeletionLabel}</strong>.</p>
           <p style="color: #666; font-size: 12px;">
             During this ${DELETION_GRACE_DAYS}-day period, you can still log in if you change your mind.
-            To cancel the deletion, contact our support team.
+            To cancel the deletion, contact our support team at support@albroute.al.
           </p>
         </div>
       `,
     });
 
-    // ── Redirect to delete account page with confirmation status ──────────
-    const appUrl = escapeHtml(process.env.NEXTAUTH_URL ?? 'http://localhost:3000');
-    return NextResponse.redirect(`${appUrl}?deleteConfirmed=true&email=${encodeURIComponent(deletionRequest.email)}`, {
-      status: 302,
-    });
+    return NextResponse.json(
+      { 
+        message: 'Account deletion confirmed. Your account will be deleted in 30 days.',
+        scheduledDeletionDate: scheduledDeletion,
+        success: true
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Error confirming deletion:', error);
     return NextResponse.json(

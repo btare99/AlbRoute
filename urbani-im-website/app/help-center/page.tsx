@@ -1164,20 +1164,20 @@ export default function HelpCenterView() {
 
       {/* ── Navigation Header ─────────────────────────────────────────────── */}
       <nav className="nav-bar">
-        <a href="#" className="nav-logo" onClick={handleHomeClick}>
-          Help<span>Center</span>
+        <a href="/" className="nav-logo">
+          Urbani<span>IM</span>
         </a>
         <div className="nav-links">
-          <a href="#" className="nav-link" onClick={handleHomeClick}>Home</a>
-          <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); scrollTo(guidesRef); }}>Articles</a>
-          <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); scrollTo(guidesRef); }}>Categories</a>
+          <a href="/" className="nav-link">Home</a>
+          <a href="/help-center" className="nav-link">Help</a>
+          <a href="/privacy-policy" className="nav-link">Privacy</a>
         </div>
         <div className="nav-actions">
-          <a href="#" className="btn-request" onClick={(e) => { e.preventDefault(); scrollTo(contactRef); }}>
-            Submit a Request
+          <a href="mailto:support@urbani-im.al" className="btn-request">
+            Contact Support
           </a>
-          <a href="#" className="btn-signin" onClick={(e) => e.preventDefault()}>
-            Sign In
+          <a href="/" className="btn-signin">
+            Back to Home
           </a>
         </div>
       </nav>

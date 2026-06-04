@@ -26,11 +26,6 @@ export async function GET(request: Request) {
       phone: user.phone,
       savedLocations: user.savedLocations,
       travelHistory: user.travelHistory,
-      idNumber: user.idNumber,
-      university: user.university,
-      serialNumber: user.serialNumber,
-      selectedLine: user.selectedLine,
-      subscriptions: user.subscriptions,
       lastLocation: user.lastLocation
     });
 

@@ -230,7 +230,7 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify' | 'new_password'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'verify' | 'verify-registration' | 'new_password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -245,6 +245,8 @@ function LoginContent() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [registrationEmail, setRegistrationEmail] = useState(''); // Store email for verification after registration
+  const [registrationPassword, setRegistrationPassword] = useState(''); // Store password for auto-login after verification
 
   const login = useStore((state: any) => state.login);
   const setGuestMode = useStore((state: any) => state.setGuestMode);
@@ -314,6 +316,53 @@ function LoginContent() {
         setMode('new_password');
       } else {
         setError(data.error || t.auth_invalid_code);
+      }
+    } catch (err) {
+      setError(t.auth_server_error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── FIX #2: Verify email during registration ─────────────────────────────────
+  const handleVerifyEmailRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const combinedCode = otp.join('');
+      
+      if (!combinedCode || combinedCode.length !== 6) {
+        setError('Ju lutem shkruani kodin 6-shifror.');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: registrationEmail, code: combinedCode }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccess('Email-i u verifikua me sukses!');
+        
+        // ─── Auto login after verification ──────────────────────────────────────
+        const loginResult = await signIn('credentials', {
+          email: registrationEmail,
+          password: registrationPassword,
+          redirect: false,
+        });
+
+        if (!loginResult?.error) {
+          addNotification(t.auth_account_created || 'Llogara u krijua me sukses!', 'success');
+          window.location.reload();
+        } else {
+          setError(t.auth_auto_login_error || 'Ndodhi një gabim gjatë hyrjes. Ju lutem provoni të hyni.');
+        }
+      } else {
+        setError(data.error || 'Kodi është i pasaktë ose ka skaduar.');
       }
     } catch (err) {
       setError(t.auth_server_error);
@@ -396,19 +445,14 @@ function LoginContent() {
         const data = await res.json();
 
         if (res.ok) {
-          // Auto login after registration
-          const result = await signIn('credentials', {
-            email: email.toLowerCase(),
-            password,
-            redirect: false,
-          });
-          
-          if (!result?.error) {
-            addNotification(t.auth_account_created, 'success');
-            window.location.reload();
-          } else {
-            setError(t.auth_auto_login_error);
-          }
+          // ─── FIX #1: Store credentials and show verification screen ─────────────
+          setRegistrationEmail(email.toLowerCase());
+          setRegistrationPassword(password);
+          setOtp(['', '', '', '', '', '']); // Reset OTP fields
+          setCode('');
+          setMode('verify-registration');
+          setSuccess(t.auth_code_sent || 'Kodi i verifikimit u dërgua në email-in tuaj.');
+          setError('');
         } else {
           setError(data.error || t.auth_register_failed);
         }
@@ -438,6 +482,13 @@ function LoginContent() {
     setSuccess('');
     if (mode === 'register' || mode === 'forgot') {
       setMode('login');
+    } else if (mode === 'verify-registration') {
+      // ─── FIX #3: Back from email verification — return to register ─────────────
+      setMode('register');
+      setOtp(['', '', '', '', '', '']);
+      setCode('');
+      setRegistrationEmail('');
+      setRegistrationPassword('');
     } else if (mode === 'verify') {
       setMode('forgot');
     } else if (mode === 'new_password') {
@@ -491,6 +542,7 @@ function LoginContent() {
         case 'register': return <>Le të<br />fillojmë</>;
         case 'forgot': return <>Harruat<br />fjalëkalimin?</>;
         case 'verify': return <>Verifiko<br />Email-in</>;
+        case 'verify-registration': return <>Verifiko<br />Email-in</>;
         case 'new_password': return <>Krijo<br />fjalëkalim të ri</>;
       }
     } else if (language === 'it') {
@@ -499,6 +551,7 @@ function LoginContent() {
         case 'register': return <>Iniziamo</>;
         case 'forgot': return <>Password<br />dimenticata?</>;
         case 'verify': return <>Verifica<br />la tua email</>;
+        case 'verify-registration': return <>Verifica<br />la tua email</>;
         case 'new_password': return <>Crea<br />nuova password</>;
       }
     } else {
@@ -507,6 +560,7 @@ function LoginContent() {
         case 'register': return <>Let`s get<br />Started</>;
         case 'forgot': return <>Forget<br />Password?</>;
         case 'verify': return <>Verify<br />Your Email</>;
+        case 'verify-registration': return <>Verify<br />Your Email</>;
         case 'new_password': return <>Create<br />New password</>;
       }
     }
@@ -517,6 +571,7 @@ function LoginContent() {
       switch (mode) {
         case 'forgot': return 'Shkruani email-in tuaj për të marrë kodin.';
         case 'verify': return 'Ju lutem shkruani kodin 6-shifror të dërguar në email-in tuaj';
+        case 'verify-registration': return 'Shkruani kodin 6-shifror të dërguar në email-in tuaj për të përfunduar regjistrimin';
         case 'new_password': return 'Fjalëkalimi i ri duhet të jetë i ndryshëm nga ai i mëparshmi';
         default: return '';
       }
@@ -524,6 +579,7 @@ function LoginContent() {
       switch (mode) {
         case 'forgot': return 'Inserisci il tuo indirizzo email per ricevere il codice.';
         case 'verify': return 'Inserisci il codice a 6 cifre inviato alla tua email';
+        case 'verify-registration': return 'Inserisci il codice a 6 cifre inviato alla tua email per completare la registrazione';
         case 'new_password': return 'La nuova password deve essere diversa da quella precedente';
         default: return '';
       }
@@ -531,6 +587,7 @@ function LoginContent() {
       switch (mode) {
         case 'forgot': return 'Enter your email address to receive a reset link.';
         case 'verify': return 'Please enter the 6 digit code sent to your email.';
+        case 'verify-registration': return 'Please enter the 6 digit code sent to your email to complete registration.';
         case 'new_password': return 'Use the link from your email to set a new password.';
         default: return '';
       }
@@ -881,6 +938,47 @@ function LoginContent() {
                 
                 <button type="submit" className="white-capsule-btn" disabled={loading}>
                   {loading ? t.auth_verifying : t.auth_verify}
+                </button>
+              </form>
+            )}
+
+            {/* ─── FIX #4: Email verification form during registration ──────────────── */}
+            {mode === 'verify-registration' && (
+              <form onSubmit={handleVerifyEmailRegistration} style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'formEnter 0.3s ease-out' }}>
+                {success && <div style={{ color: '#10b981', fontSize: '13px', textAlign: 'center', fontWeight: '600' }}>{success}</div>}
+                
+                <div style={{ background: '#f0f9ff', padding: '12px', borderRadius: '10px', textAlign: 'center', fontSize: '12px', color: '#2563eb' }}>
+                  Kodi u dërgua në: <strong>{registrationEmail}</strong>
+                </div>
+
+                {/* 6 Grid Squares for verification code entry */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px', maxWidth: '340px', margin: '12px auto' }} onPaste={handleOtpPaste}>
+                  {otp.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={el => { otpRefs.current[idx] = el; }}
+                      type="text"
+                      className="otp-square-input"
+                      maxLength={1}
+                      value={digit}
+                      onChange={e => handleOtpChange(e.target.value, idx)}
+                      onKeyDown={e => handleOtpKeyDown(e, idx)}
+                      required
+                      autoFocus={idx === 0}
+                    />
+                  ))}
+                </div>
+
+                <div style={{ textAlign: 'center' }}>
+                  <button type="button" style={{ background: 'none', border: 'none', color: '#71717a', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }} className="hover-white-link">
+                    Dërgoje kodin sërish
+                  </button>
+                </div>
+
+                {error && <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#ef4444', fontWeight: '500', textAlign: 'center' }}>{error}</div>}
+                
+                <button type="submit" className="white-capsule-btn" disabled={loading}>
+                  {loading ? '...' : 'Verifiko'} <ArrowRight size={18} />
                 </button>
               </form>
             )}

@@ -12,15 +12,10 @@ import EditProfileView from '../profile/EditProfileView';
 import HelpView from '../profile/HelpView';
 import FeedbackView from '../profile/FeedbackView';
 import DeleteAccountView from '../profile/DeleteAccountView';
-import SubscriptionView from '../subscription/SubscriptionView';
-import SubscriptionPackagesView from '../subscription/SubscriptionPackagesView';
-import SubscriptionCheckoutView from '../subscription/SubscriptionCheckoutView';
-import SubscriptionGetPassView from '../subscription/SubscriptionGetPassView';
-import PassesView from '../subscription/PassesView';
 import useStore from '../../store/useStore';
 import { useSession } from "next-auth/react";
 import { IonIcon } from '@ionic/react';
-import { mapOutline, busOutline, ticketOutline, personOutline } from 'ionicons/icons';
+import { mapOutline, busOutline, personOutline, heartOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
 
@@ -125,7 +120,7 @@ export default function AppShell() {
   const MENU = [
     { id: 'map', label: t.map, icon: mapOutline },
     { id: 'tracker', label: t.live_buses, icon: busOutline },
-    { id: 'packages', label: t.packages, icon: ticketOutline },
+    { id: 'favorites', label: 'Favourites', icon: heartOutline },
     { id: 'profile', label: t.profile, icon: personOutline },
   ];
 
@@ -136,18 +131,13 @@ export default function AppShell() {
 
       case 'profile': return <ProfileView />;
       case 'favorites': return (
-        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
+        <SwipeDismissView onDismiss={() => setView('map')} background={<MapView />}>
           <UserFavorites />
         </SwipeDismissView>
       );
       case 'edit_profile': return (
         <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
           <EditProfileView />
-        </SwipeDismissView>
-      );
-      case 'subscription': return (
-        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
-          <SubscriptionView />
         </SwipeDismissView>
       );
       case 'help': return (
@@ -163,22 +153,6 @@ export default function AppShell() {
       case 'delete_account': return (
         <SwipeDismissView onDismiss={() => setView('edit_profile')} background={<EditProfileView />}>
           <DeleteAccountView />
-        </SwipeDismissView>
-      );
-      case 'packages': return <SubscriptionPackagesView />;
-      case 'checkout': return (
-        <SwipeDismissView onDismiss={() => setView('packages')} background={<SubscriptionPackagesView />}>
-          <SubscriptionCheckoutView />
-        </SwipeDismissView>
-      );
-      case 'get_pass': return (
-        <SwipeDismissView onDismiss={() => setView('packages')} background={<SubscriptionPackagesView />}>
-          <SubscriptionGetPassView />
-        </SwipeDismissView>
-      );
-      case 'passes': return (
-        <SwipeDismissView onDismiss={() => setView('profile')} background={<ProfileView />}>
-          <PassesView />
         </SwipeDismissView>
       );
       default: return <MapView />;
@@ -204,8 +178,7 @@ export default function AppShell() {
         <nav className="bottom-nav" aria-label="Main navigation">
           {MENU.map(({ id, label, icon: Icon }) => {
             const active = currentView === id ||
-              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'passes' || currentView === 'subscription' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account' || currentView === 'get_pass')) ||
-              (id === 'packages' && (currentView === 'checkout'));
+              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
             return (
               <button
                 key={id}

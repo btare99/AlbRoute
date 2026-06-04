@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
-import { sendEmail } from '../../../lib/mail';
+import { sendDeletionConfirmationCode } from '../../../lib/mail';
 import { auth } from '../../../auth';
-import crypto from 'crypto';
+import { getUserModel } from '../../../lib/dynamicDb';
+
+// ─── Helper: generate 6-digit confirmation code ────────────────────────────────
+
+function generateConfirmationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,64 +40,41 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-    const mongoose = require('mongoose');
-    const db = mongoose.connection;
+    const User = getUserModel();
 
-    // Create a deletion token (valid for 24 hours)
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // ─── FIX #1: Generate 6-digit code dhe expiry (15 min) ──────────────────────
+    const confirmationCode = generateConfirmationCode();
+    const deletionConfirmationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Store deletion request in database
-    await db.collection('deletion_requests').updateOne(
-      { userId: session.user.id },
+    // Update user — save confirmation code
+    const updatedUser = await User.findByIdAndUpdate(
+      session.user.id,
       {
-        $set: {
-          userId: session.user.id,
-          email: session.user.email,
-          token,
-          expiresAt,
-          status: 'pending',
-          createdAt: new Date(),
-        },
+        deletionConfirmationCode: confirmationCode,
+        deletionConfirmationExpires,
+        deletionRequestedAt: new Date(),
       },
-      { upsert: true }
+      { new: true }
     );
 
-    // Send confirmation email
-    const confirmUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/confirm-deletion?token=${token}`;
+    if (!updatedUser) {
+      return NextResponse.json(
+        { message: 'User not found' },
+        { status: 404 }
+      );
+    }
 
-    await sendEmail({
-      to: session.user.email,
-      subject: 'Confirm Account Deletion - Urbani',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Account Deletion Confirmation</h2>
-          <p>Hi ${session.user.name || 'User'},</p>
-          <p>We received a request to delete your account. To confirm this action, click the button below:</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${confirmUrl}" 
-               style="background-color: #ef4444; color: white; padding: 12px 30px; 
-                      text-decoration: none; border-radius: 8px; display: inline-block;
-                      font-weight: bold;">
-              Confirm Account Deletion
-            </a>
-          </div>
-          
-          <p>Or paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${confirmUrl}</p>
-          
-          <p style="color: #666; font-size: 12px;">
-            This link expires in 24 hours. If you did not request this deletion, please ignore this email.
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-          <p style="color: #999; font-size: 12px;">
-            After confirmation, your account will be completely deleted within 30 days.
-          </p>
-        </div>
-      `,
-    });
+    // ─── FIX #2: Send confirmation code email ──────────────────────────────────
+    const emailSent = await sendDeletionConfirmationCode(
+      email.toLowerCase(),
+      session.user.name || 'Udhëtar',
+      confirmationCode
+    );
+
+    if (!emailSent) {
+      console.warn(`[RequestDeletion] Failed to send confirmation email to ${email}`);
+      // Allow user to proceed even if email fails
+    }
 
     return NextResponse.json(
       { message: 'Confirmation email sent. Please check your inbox.' },

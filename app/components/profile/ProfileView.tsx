@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
 import {
-  bookmarkOutline, logOutOutline, chevronForwardOutline, notificationsOutline, shareOutline,
+  logOutOutline, chevronForwardOutline, notificationsOutline, shareOutline,
   helpCircleOutline, trashOutline, alertOutline, closeOutline, mailOutline, callOutline,
-  globeOutline, ticketOutline, checkmarkCircleOutline
+  globeOutline, checkmarkCircleOutline
 } from 'ionicons/icons';
 import { IonIcon } from '@ionic/react';
 import { translations } from '../../store/translations';
@@ -30,16 +30,8 @@ export default function ProfileView() {
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | 'about' | null>(null);
   const router = useRouter();
 
-  const hasSubscription = activeUser?.subscriptions && activeUser.subscriptions.length > 0;
-  const activePackage = hasSubscription ? activeUser.subscriptions[activeUser.subscriptions.length - 1] : null;
-  const subscriptionValue = activePackage
-    ? activePackage.name
-    : t.no_subscription;
-
   const menuItems = [
-    { icon: bookmarkOutline, label: t.prof_saved_stops, action: () => setView('favorites') },
     { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
-    { icon: ticketOutline, label: t.sub_my_subscription, value: subscriptionValue, action: () => setView('subscription') },
     { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
     { icon: helpCircleOutline, label: t.prof_help_center, action: () => setView('help') },
     {

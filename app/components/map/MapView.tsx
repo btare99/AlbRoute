@@ -1583,8 +1583,12 @@ export default function MapView() {
                 }}
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter') {
-                    await planTrip(tripFrom, tripTo);
-                    setIsSearching(false);
+                    if (tripFrom.trim().toLowerCase() === tripTo.trim().toLowerCase()) {
+                      addNotification(t.trip_different_stations, 'error');
+                    } else {
+                      await planTrip(tripFrom, tripTo);
+                      setIsSearching(false);
+                    }
                   }
                 }}
               />
@@ -1595,12 +1599,16 @@ export default function MapView() {
             <button
               onClick={async () => {
                 if (tripFrom && tripTo) {
-                  setIsPlanning(true);
-                  setShowTripDetails(true);
-                  setTripSheetHeight('peek');
-                  await planTrip(tripFrom, tripTo);
-                  setIsPlanning(false);
-                  setIsSearching(false);
+                  if (tripFrom.trim().toLowerCase() === tripTo.trim().toLowerCase()) {
+                    addNotification(t.trip_different_stations, 'error');
+                  } else {
+                    setIsPlanning(true);
+                    setShowTripDetails(true);
+                    setTripSheetHeight('peek');
+                    await planTrip(tripFrom, tripTo);
+                    setIsPlanning(false);
+                    setIsSearching(false);
+                  }
                 }
               }}
 

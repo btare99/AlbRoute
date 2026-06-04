@@ -37,18 +37,6 @@ const TravelHistorySchema = new mongoose.Schema(
   { _id: false }
 );
 
-// ─── Nën-schema për subscriptions (FIX #7) ───────────────────────────────────
-
-const SubscriptionSchema = new mongoose.Schema(
-  {
-    type:      { type: String },  // 'general' | 'student' | 'tourist' | 'single_line'
-    line:      { type: String, default: null },
-    expiresAt: { type: Date },
-    active:    { type: Boolean, default: true },
-  },
-  { _id: false }
-);
-
 // ─── UserSchema ───────────────────────────────────────────────────────────────
 
 const UserSchema = new mongoose.Schema(
@@ -66,18 +54,23 @@ const UserSchema = new mongoose.Schema(
 
     // FIX #7: Array me tip të përcaktuar (nën-schema) në vend të Array të zbrazët
     travelHistory: { type: [TravelHistorySchema], default: [] },
-    subscriptions: { type: [SubscriptionSchema], default: [] },
-
-    // Fusha për abonim linje
-    idNumber:     { type: String, default: null },
-    university:   { type: String, default: null },
-    serialNumber: { type: String, default: null },
-    selectedLine: { type: String, default: null },
 
     // Reset password — FIX #6: index për kërkim të shpejtë
     resetCode:        { type: String, default: null, index: true },
     resetToken:       { type: String, default: null, index: true },
     resetCodeExpires: { type: Date,   default: null },
+
+    // Email verification — FIX #8: fields për email confirmation gjatë registration
+    emailVerificationCode:    { type: String, default: null, index: true },
+    emailVerificationExpires: { type: Date,   default: null },
+    isEmailVerified:          { type: Boolean, default: false, index: true },
+
+    // Account deletion — FIX #9: fields për konfirmimin e fshirjes me kod
+    deletionConfirmationCode:    { type: String, default: null, index: true },
+    deletionConfirmationExpires: { type: Date,   default: null },
+    deletionRequestedAt:         { type: Date,   default: null },
+    isMarkedForDeletion:         { type: Boolean, default: false, index: true },
+    scheduledDeletionDate:       { type: Date,   default: null },
 
     // FIX #2: Date.now pa kllapa — mongoose e thërret si funksion për çdo dokument të ri
     lastLogin: { type: Date, default: Date.now },

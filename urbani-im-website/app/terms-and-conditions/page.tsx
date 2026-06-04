@@ -230,19 +230,19 @@ export default function TermsPage() {
       {/* ── Navigation Header ─────────────────────────────────────────────── */}
       <nav className="nav-bar">
         <a href="/" className="nav-logo">
-          Help<span>Center</span>
+          Urbani<span>IM</span>
         </a>
         <div className="nav-links">
           <a href="/" className="nav-link">Home</a>
-          <a href="/help-center" className="nav-link">Articles</a>
-          <a href="/help-center" className="nav-link">Categories</a>
+          <a href="/help-center" className="nav-link">Help</a>
+          <a href="/terms-and-conditions" className="nav-link">Terms</a>
         </div>
         <div className="nav-actions">
-          <a href="/help-center#textarea-feedback" className="btn-request">
-            Submit a Request
+          <a href="mailto:support@urbani-im.al" className="btn-request">
+            Contact Support
           </a>
-          <a href="#" className="btn-signin">
-            Sign In
+          <a href="/" className="btn-signin">
+            Back to Home
           </a>
         </div>
       </nav>
