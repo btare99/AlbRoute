@@ -1180,3 +1180,18 @@ input::placeholder {
 .custom-ion-icon .ionicon-stroke-width {
   stroke-width: 32px;
 }
+
+/* Hide sidebar and all map overlays on desktop/fullscreen screens (> 1180px) */
+@media (min-width: 1181px) {
+  .sidebar,
+  .sidebar-overlay,
+  .overlay-top-left,
+  .overlay-right-center,
+  .overlay-bottom-center,
+  .bus-info-card,
+  .stop-info-card,
+  .station-dropdown-map,
+  .map-selection-ok-bar {
+    display: none !important;
+  }
+}

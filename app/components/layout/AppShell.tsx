@@ -18,7 +18,20 @@ import { IonIcon } from '@/app/components/common/IonIcon';
 import { mapOutline, busOutline, personOutline, heartOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
+import dynamic from 'next/dynamic';
 
+const BusAdminView = dynamic(() => import('../map/BusAdminView'), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '100%', background: '#0a0f1d', color: '#3b82f6',
+      fontSize: '16px', fontWeight: '600'
+    }}>
+      Loading Admin Panel...
+    </div>
+  )
+});
 
 export default function AppShell() {
   const { data: session } = useSession();
@@ -128,6 +141,7 @@ export default function AppShell() {
     switch (currentView) {
       case 'map': return <MapView />;
       case 'tracker': return <BusTracker />;
+      case 'admin': return <BusAdminView />;
 
       case 'profile': return <ProfileView />;
       case 'favorites': return (

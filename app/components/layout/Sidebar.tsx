@@ -1,6 +1,6 @@
 'use client';
 import { IonIcon } from '@/app/components/common/IonIcon';
-import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline } from 'ionicons/icons';
+import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline, settingsOutline } from 'ionicons/icons';
 import { useState, Fragment } from 'react';
 import { signOut } from "next-auth/react";
 import useStore, { BUS_STOPS } from '../../store/useStore';
@@ -29,6 +29,18 @@ export default function Sidebar() {
     { id: 'profile', label: t.profile, icon: personOutline },
   ];
 
+  const isAdmin = user?.email === 'admin@busal.al' || user?.role === 'admin';
+  const menuItems = [...MENU];
+  if (isAdmin) {
+    // Insert Admin Panel right before profile
+    const profileIdx = menuItems.findIndex(item => item.id === 'profile');
+    if (profileIdx !== -1) {
+      menuItems.splice(profileIdx, 0, { id: 'admin', label: 'Admin Panel', icon: settingsOutline });
+    } else {
+      menuItems.push({ id: 'admin', label: 'Admin Panel', icon: settingsOutline });
+    }
+  }
+
   const filteredStops = BUS_STOPS.filter(stop =>
     stop.name.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 10);
@@ -40,6 +52,10 @@ export default function Sidebar() {
   ];
 
   const handleViewChange = (id: string) => {
+    if (id === 'admin') {
+      window.location.href = '/admin';
+      return;
+    }
     setView(id);
     if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
       useStore.getState().setSidebarOpen(false);
@@ -132,7 +148,7 @@ export default function Sidebar() {
       {/* ── Nav ── */}
       <div className="s-nav-label">{t.menu}</div>
       <nav className="s-nav">
-        {MENU.map(({ id, label, icon: Icon }, idx) => (
+        {menuItems.map(({ id, label, icon: Icon }, idx) => (
           <Fragment key={id}>
             {id === 'profile' && <div className="s-divider" />}
             <button

@@ -192,6 +192,34 @@ const getLegCoords = (leg: any): [number, number][] => {
   return legCoords;
 };
 
+const animateMarker = (
+  marker: any,
+  startLatLng: [number, number],
+  endLatLng: [number, number],
+  duration: number
+) => {
+  const startTime = performance.now();
+
+  const step = (now: number) => {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const lat = startLatLng[0] + (endLatLng[0] - startLatLng[0]) * progress;
+    const lng = startLatLng[1] + (endLatLng[1] - startLatLng[1]) * progress;
+
+    marker.setLatLng([lat, lng]);
+
+    if (progress < 1) {
+      marker._animationFrameId = requestAnimationFrame(step);
+    }
+  };
+
+  if (marker._animationFrameId) {
+    cancelAnimationFrame(marker._animationFrameId);
+  }
+  marker._animationFrameId = requestAnimationFrame(step);
+};
+
 export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -679,6 +707,12 @@ export default function MapView() {
         boundsTimerRef.current = null;
       }
       if (mapInstanceRef.current) {
+        // Cancel all active marker animations
+        Object.values(busMarkersRef.current).forEach((marker: any) => {
+          if (marker._animationFrameId) {
+            cancelAnimationFrame(marker._animationFrameId);
+          }
+        });
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       } else if (mapContainerRef.current && (mapContainerRef.current as any)._leaflet_id) {
@@ -1242,7 +1276,11 @@ export default function MapView() {
     const currentBusIds = new Set(buses.filter((b: any) => b?.id).map((b: any) => b.id.toString()));
     Object.keys(busMarkersRef.current).forEach(id => {
       if (!showBuses || !currentBusIds.has(id)) {
-        map.removeLayer(busMarkersRef.current[id]);
+        const marker = busMarkersRef.current[id];
+        if (marker._animationFrameId) {
+          cancelAnimationFrame(marker._animationFrameId);
+        }
+        map.removeLayer(marker);
         delete busMarkersRef.current[id];
       }
     });
@@ -1256,7 +1294,11 @@ export default function MapView() {
       if (mapBounds && !mapBounds.pad(0.1).contains([bus.lat, bus.lng])) {
         // If it had a marker and went off screen, remove it
         if (busMarkersRef.current[bus.id]) {
-          map.removeLayer(busMarkersRef.current[bus.id]);
+          const marker = busMarkersRef.current[bus.id];
+          if (marker._animationFrameId) {
+            cancelAnimationFrame(marker._animationFrameId);
+          }
+          map.removeLayer(marker);
           delete busMarkersRef.current[bus.id];
           renderedBusIdsRef.current.delete(bus.id.toString());
         }
@@ -1367,7 +1409,8 @@ export default function MapView() {
 
       if (busMarkersRef.current[bus.id]) {
         const marker = busMarkersRef.current[bus.id];
-        marker.setLatLng([bus.lat, bus.lng]);
+        const currentPos = marker.getLatLng();
+        animateMarker(marker, [currentPos.lat, currentPos.lng], [bus.lat, bus.lng], 2800);
         marker.setIcon(L.divIcon({ html: markerHtml, className: '', iconSize: [44, 36], iconAnchor: [22, 36] }));
         marker.setTooltipContent(tooltipHtml);
         marker.setZIndexOffset(isActive ? 1000 : 500);
