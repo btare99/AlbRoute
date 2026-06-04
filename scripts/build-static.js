@@ -23,8 +23,11 @@ try {
     moved = true;
   }
 
-  console.log('Running next build...');
-  execSync('next build', { stdio: 'inherit' });
+  console.log('Running next build with IS_CAPACITOR=true...');
+  execSync('next build', { 
+    stdio: 'inherit',
+    env: { ...process.env, IS_CAPACITOR: 'true' }
+  });
   console.log('Build completed successfully.');
 } catch (error) {
   console.error('Build failed:', error.message);
