@@ -6,7 +6,7 @@ import {
   MapPin, Bus, Bell, User, WifiOff, Zap,
   MessageSquare, Mail, Bug, HelpCircle, BookOpen,
   Shield, Smartphone, Clock, Star, ArrowUpRight,
-  X, CheckCircle2,
+  X, CheckCircle2, ThumbsUp, ThumbsDown, MessageCircle
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -37,13 +37,13 @@ interface Category {
 const CATEGORIES: Category[] = [
   {
     id: 'fillimi',
-    icon: <Zap size={22} strokeWidth={2} />,
+    icon: <Zap size={24} strokeWidth={2} />,
     label: 'Fillimi i shpejtë',
-    description: 'Konfigurimi i parë i aplikacionit',
-    color: '#0d9488',
+    description: 'Konfigurimi i parë i aplikacionit dhe llogaria',
+    color: '#f97316',
     articles: [
       {
-        id: 'f1', title: 'Si të krijoni një llogari', tags: ['llogari', 'regjistrim'],
+        id: 'f1', title: 'Si të krijoni një llogari', tags: ['llogari', 'regjistrim', 'profil'],
         body: 'Hapni aplikacionin dhe trokitni "Regjistrohu". Plotësoni emailin dhe fjalëkalimin tuaj, pastaj konfirmoni emailin nëpërmjet linkut që do të merrni. Mund të regjistroheni edhe me Google ose Apple ID.',
       },
       {
@@ -58,17 +58,17 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'udhetimi',
-    icon: <MapPin size={22} strokeWidth={2} />,
+    icon: <MapPin size={24} strokeWidth={2} />,
     label: 'Planifikimi i udhëtimit',
-    description: 'Harta, linjat dhe oraret',
-    color: '#0d9488',
+    description: 'Përdorimi i hartës live dhe gjetja e rrugëve',
+    color: '#f97316',
     articles: [
       {
         id: 'u1', title: 'Si të planifikoni një udhëtim nga A në B', tags: ['udhëtim', 'planifikim', 'rrugë'],
         body: 'Trokitni ikonën e kërkimit → shkruani destinacionin. Aplikacioni do të tregojë opsionet më të mira: linja direkte, me ndërrim, dhe kohën e parashikuar. Mund të zgjidhni sipas kohës më të shkurtër ose numrit të ndërrimit.',
       },
       {
-        id: 'u2', title: 'Si të lexoni hartën live', tags: ['hartë', 'live', 'autobus'],
+        id: 'u2', title: 'Si të lexoni hartën live', tags: ['hartë', 'live', 'autobus', 'gps'],
         body: 'Autobuset shfaqen si ikona të lëvizshme mbi hartë. Ngjyra tregon linjën. Trokitni mbi autobus për të parë: numrin e linjës, kohën e ardhjes dhe destinacionin. Harta rifresohet çdo 10 sekonda.',
       },
       {
@@ -83,10 +83,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'autobusi',
-    icon: <Bus size={22} strokeWidth={2} />,
+    icon: <Bus size={24} strokeWidth={2} />,
     label: 'Linjat & oraret',
-    description: 'Informacione për transportin publik',
-    color: '#0d9488',
+    description: 'Itineraret zyrtare dhe statusi aktual',
+    color: '#f97316',
     articles: [
       {
         id: 'a1', title: 'Si të gjeni orarin e një linje', tags: ['orar', 'linjë', 'oraret'],
@@ -104,10 +104,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'njoftimet',
-    icon: <Bell size={22} strokeWidth={2} />,
+    icon: <Bell size={24} strokeWidth={2} />,
     label: 'Njoftimet',
-    description: 'Alarme dhe rikujtues',
-    color: '#0d9488',
+    description: 'Konfigurimi i alarmeve dhe lajmërimeve',
+    color: '#f97316',
     articles: [
       {
         id: 'n1', title: 'Njoftimet nuk po vijnë', tags: ['njoftim', 'alarm', 'problem'],
@@ -121,10 +121,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'llogaria',
-    icon: <User size={22} strokeWidth={2} />,
+    icon: <User size={24} strokeWidth={2} />,
     label: 'Llogaria & profili',
-    description: 'Email, fjalëkalim, privatësia',
-    color: '#0d9488',
+    description: 'Menaxhimi i profilit dhe të dhënave personale',
+    color: '#f97316',
     articles: [
       {
         id: 'l1', title: 'Si të ndryshoni emailin ose fjalëkalimin', tags: ['email', 'fjalëkalim', 'ndryshim'],
@@ -142,10 +142,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'teknik',
-    icon: <Smartphone size={22} strokeWidth={2} />,
+    icon: <Smartphone size={24} strokeWidth={2} />,
     label: 'Probleme teknike',
-    description: 'GPS, ngarkimi, bug-e',
-    color: '#0d9488',
+    description: 'Zgjidhja e problemeve me GPS dhe hartën',
+    color: '#f97316',
     articles: [
       {
         id: 't1', title: 'GPS nuk funksionon ose vendndodhja është e pasaktë', tags: ['gps', 'vendndodhje', 'problem'],
@@ -163,10 +163,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'offline',
-    icon: <WifiOff size={22} strokeWidth={2} />,
+    icon: <WifiOff size={24} strokeWidth={2} />,
     label: 'Offline & bateria',
-    description: 'Pa internet dhe kursim energjie',
-    color: '#0d9488',
+    description: 'Përdorimi pa internet dhe kursimi i baterisë',
+    color: '#f97316',
     articles: [
       {
         id: 'o1', title: 'A funksionon aplikacioni pa internet?', tags: ['offline', 'internet', 'harta'],
@@ -180,10 +180,10 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'aksesibiliteti',
-    icon: <Shield size={22} strokeWidth={2} />,
+    icon: <Shield size={24} strokeWidth={2} />,
     label: 'Aksesibiliteti',
-    description: 'Lexues ekrani, kontrast, tekst',
-    color: '#0d9488',
+    description: 'Lexuesit e ekranit dhe kontrastet vizuale',
+    color: '#f97316',
     articles: [
       {
         id: 'ak1', title: 'Mbështetja për VoiceOver dhe TalkBack', tags: ['aksesibiliteti', 'voiceover', 'talkback'],
@@ -205,6 +205,8 @@ const FAQ: FAQItem[] = [
   { q: 'Si mund të kontribuoj me të dhëna?', a: 'Mund të raportoni ndryshime të linjave, stacione të reja ose të dhëna të pasakta direkt nga aplikacioni. Komuniteti aktiv i kontribuesve na ndihmon të mbajmë gjithçka të përditësuar.' },
   { q: 'Çfarë bëj nëse humbas autobusin?', a: 'Harta live do t\'ju tregojë autobusin e ardhshëm. Trokitni mbi stacionin tuaj për të parë të gjitha linjat dhe kohët e ardhjes. Mund të caktoni alarm për herën tjetër.' },
 ];
+
+const POPULAR_KEYWORDS = ['orari', 'harta', 'gps', 'biletat', 'llogaria'];
 
 // ─── Search helper ────────────────────────────────────────────────────────────
 
@@ -229,45 +231,83 @@ function searchAll(query: string): { category: Category; article: Article }[] {
 // ─── Sub-views ────────────────────────────────────────────────────────────────
 
 function ArticleView({
-  article, category, onBack,
-}: { article: Article; category: Category; onBack: () => void }) {
+  article, category, onBack, onVoteUp, onVoteDown, voteStatus
+}: {
+  article: Article;
+  category: Category;
+  onBack: () => void;
+  onVoteUp: () => void;
+  onVoteDown: () => void;
+  voteStatus: 'none' | 'up' | 'down';
+}) {
   return (
-    <article className="animate-fade-up" style={{ padding: '8px 0 40px' }}>
-      <button type="button" onClick={onBack} className="back-button" id="btn-back-to-category">
+    <article className="animate-fade-up bg-white border border-slate-200/80 p-6 md:p-10 rounded-3xl shadow-sm max-w-3xl mx-auto my-4 transition-all duration-300 hover:shadow-md relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700"></div>
+
+      <button type="button" onClick={onBack} className="back-button mb-6 text-slate-500 hover:text-orange-600 font-semibold text-sm transition-colors duration-200 flex items-center gap-1.5" id="btn-back-to-category">
         <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu te kategoritë
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', letterSpacing: '.05em', textTransform: 'uppercase' }}>
-          {category.label}
-        </span>
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider px-3 py-1 bg-orange-50 text-orange-600 rounded-full border border-orange-100/60">{category.label}</span>
       </div>
 
-      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', letterSpacing: '-0.5px', lineHeight: 1.25, margin: '0 0 20px' }}>
+      <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug mb-6">
         {article.title}
       </h2>
 
-      <p style={{ fontSize: '15px', color: '#334155', lineHeight: 1.8, margin: '0 0 32px', whiteSpace: 'pre-line' }}>
+      <div className="text-sm md:text-base text-slate-600 leading-relaxed mb-8 whitespace-pre-line space-y-4">
         {article.body}
-      </p>
+      </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '40px' }}>
+      <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-100 pb-8">
         {article.tags.map((tag) => (
-          <span key={tag} className="tag-badge">#{tag}</span>
+          <span key={tag} className="text-xs px-2.5 py-1 bg-slate-50 border border-slate-200/60 text-slate-500 rounded-lg">#{tag}</span>
         ))}
       </div>
 
-      <div className="helpful-card">
-        <p style={{ fontSize: '14px', fontWeight: '600', color: '#475569', margin: '0 0 14px' }}>
-          A ju ndihmoi ky artikull?
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-          {['👍  Po, faleminderit', '👎  Jo, kam pyetje'].map((label, index) => (
-            <button key={label} type="button" className="helpful-btn" id={`btn-helpful-${index}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="helpful-container bg-slate-50/70 border border-slate-100 rounded-2xl p-6 text-center">
+        {voteStatus === 'none' && (
+          <>
+            <p className="text-sm font-bold text-slate-800 mb-4">
+              A ju ndihmoi ky artikull?
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={onVoteUp}
+                className="helpful-btn flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-slate-200 hover:border-orange-500 hover:bg-orange-50/20 text-slate-600 hover:text-orange-600 font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5"
+                id="btn-helpful-yes"
+              >
+                <ThumbsUp size={14} /> Po, faleminderit
+              </button>
+              <button
+                type="button"
+                onClick={onVoteDown}
+                className="helpful-btn flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-slate-200 hover:border-amber-500 hover:bg-amber-50/20 text-slate-600 hover:text-amber-600 font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5"
+                id="btn-helpful-no"
+              >
+                <ThumbsDown size={14} /> Jo, kam pyetje
+              </button>
+            </div>
+          </>
+        )}
+        {voteStatus === 'up' && (
+          <div className="text-orange-600 flex flex-col items-center gap-2 py-2 animate-fade-up">
+            <CheckCircle2 size={32} strokeWidth={2} />
+            <p className="text-sm font-bold">Ju faleminderit për feedback-un!</p>
+            <p className="text-xs text-slate-400">Vlerësimi juaj na ndihmon të përmirësojmë udhëzuesit tanë.</p>
+          </div>
+        )}
+        {voteStatus === 'down' && (
+          <div className="text-amber-600 flex flex-col items-center gap-2 py-2 animate-fade-up">
+            <HelpCircle size={32} strokeWidth={2} />
+            <p className="text-sm font-bold">Na vjen keq që ky artikull nuk ju ndihmoi.</p>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Ju lutemi plotësoni formën e kontaktit në fund të faqes për të marrë ndihmë të drejtpërdrejtë nga stafi ynë.
+            </p>
+          </div>
+        )}
       </div>
     </article>
   );
@@ -279,49 +319,49 @@ function CategoryView({
   const [openIndex, setOpenIndex] = useState<string | null>(null);
 
   return (
-    <div className="animate-fade-up" style={{ padding: '8px 0 40px' }}>
-      <button type="button" onClick={onBack} className="back-button" id="btn-back-to-main">
+    <div className="animate-fade-up max-w-3xl mx-auto my-4">
+      <button type="button" onClick={onBack} className="back-button mb-6 text-slate-500 hover:text-orange-600 font-semibold text-sm transition-colors duration-200 flex items-center gap-1.5" id="btn-back-to-main">
         <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu në faqen kryesore
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px' }}>
-        <div className="card-icon-round" style={{ margin: '0' }}>
+      <div className="flex items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-orange-500"></div>
+        <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shadow-inner flex-shrink-0">
           {category.icon}
         </div>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1e293b', letterSpacing: '-0.5px', margin: 0 }}>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
             {category.label}
           </h2>
-          <p style={{ fontSize: '13.5px', color: '#64748b', margin: '2px 0 0' }}>{category.description}</p>
+          <p className="text-xs text-slate-400 mt-1">{category.description}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="accordion-wrapper space-y-3">
         {category.articles.map((art) => {
           const isOpen = openIndex === art.id;
           return (
-            <div key={art.id} className="accordion-item-card">
+            <div key={art.id} className={`accordion-card border border-slate-200/60 rounded-2xl bg-white overflow-hidden transition-all duration-300 ${isOpen ? 'border-orange-500 shadow-sm' : 'hover:border-slate-300'}`}>
               <button
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : art.id)}
-                className="accordion-row-btn"
+                className="accordion-trigger w-full flex items-center justify-between p-5 text-left bg-none border-none cursor-pointer"
               >
-                <span className="accordion-row-title">{art.title}</span>
-                <div className="accordion-arrow-round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{art.title}</span>
+                <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
                   <ChevronDown size={14} strokeWidth={2.5} />
                 </div>
               </button>
-              <div className={`accordion-reveal-box ${isOpen ? 'open' : ''}`}>
-                <div className="accordion-reveal-content">
-                  <p style={{ margin: '0 0 16px', color: '#334155', lineHeight: 1.7 }}>{art.body}</p>
+              <div 
+                className="accordion-content transition-all duration-300 ease-in-out"
+                style={{ maxHeight: isOpen ? '500px' : '0px' }}
+              >
+                <div className="accordion-content-inner p-5 pt-0 bg-slate-50/50 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                  <p className="mb-4">{art.body}</p>
                   <button
                     type="button"
                     onClick={() => onArticle(art)}
-                    style={{
-                      background: 'none', border: 'none', color: '#0d9488', fontSize: '13px',
-                      fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px',
-                      cursor: 'pointer', padding: 0
-                    }}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 bg-none border-none p-0 cursor-pointer transition-colors duration-150"
                   >
                     Lexo artikullin e plotë <ArrowUpRight size={14} />
                   </button>
@@ -347,6 +387,9 @@ export default function HelpCenterView() {
   const [contactSent, setContactSent] = useState(false);
   const [contactText, setContactText] = useState('');
   const [contactLoading, setContactLoading] = useState(false);
+  
+  // Track votes on articles
+  const [articleVotes, setArticleVotes] = useState<Record<string, 'up' | 'down'>>({});
 
   const searchRef = useRef<HTMLInputElement>(null);
   const guidesRef = useRef<HTMLDivElement>(null);
@@ -369,7 +412,7 @@ export default function HelpCenterView() {
       });
       setContactSent(true);
       setContactText('');
-      setTimeout(() => setContactSent(false), 4000);
+      setTimeout(() => setContactSent(false), 5000);
     } catch (e) {
       console.error('Failed to submit feedback', e);
     } finally {
@@ -384,13 +427,6 @@ export default function HelpCenterView() {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleHomeClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setActiveCategory(null);
-    setActiveArticle(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   // Grouped sections representation (Getting Started, Transit Services, Technical Support)
   const SECTIONS = [
     {
@@ -401,7 +437,7 @@ export default function HelpCenterView() {
         ...(CATEGORIES.find(c => c.id === 'fillimi')?.articles || []),
         ...(CATEGORIES.find(c => c.id === 'udhetimi')?.articles || []),
       ],
-      catColor: '#0d9488',
+      catColor: '#f97316',
     },
     {
       id: 'sec-transit-services',
@@ -411,7 +447,7 @@ export default function HelpCenterView() {
         ...(CATEGORIES.find(c => c.id === 'autobusi')?.articles || []),
         ...(CATEGORIES.find(c => c.id === 'njoftimet')?.articles || []),
       ],
-      catColor: '#0d9488',
+      catColor: '#f97316',
     },
     {
       id: 'sec-tech-support',
@@ -423,7 +459,7 @@ export default function HelpCenterView() {
         ...(CATEGORIES.find(c => c.id === 'offline')?.articles || []),
         ...(CATEGORIES.find(c => c.id === 'aksesibiliteti')?.articles || []),
       ],
-      catColor: '#0d9488',
+      catColor: '#f97316',
     },
   ];
 
@@ -436,6 +472,14 @@ export default function HelpCenterView() {
             article={activeArticle}
             category={activeCategory}
             onBack={() => setActiveArticle(null)}
+            voteStatus={articleVotes[activeArticle.id] || 'none'}
+            onVoteUp={() => setArticleVotes(prev => ({ ...prev, [activeArticle.id]: 'up' }))}
+            onVoteDown={() => {
+              setArticleVotes(prev => ({ ...prev, [activeArticle.id]: 'down' }));
+              setTimeout(() => {
+                scrollTo(contactRef);
+              }, 1200);
+            }}
           />
         </div>
       );
@@ -455,52 +499,63 @@ export default function HelpCenterView() {
     return (
       <>
         {/* ── 3 Column Feature Cards ───────────────────────────────────────── */}
-        <div className="cards-grid" ref={guidesRef}>
-          <div className="category-pill-card" onClick={() => scrollTo(faqRef)}>
-            <div className="card-icon-round">
+        <div className="cards-grid mb-12" ref={guidesRef}>
+          <div 
+            className="category-pill-card group border border-slate-200/80 bg-white hover:border-orange-500/30 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 p-8 rounded-3xl text-center cursor-pointer relative overflow-hidden" 
+            onClick={() => scrollTo(guidesRef)}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
               <BookOpen size={24} />
             </div>
-            <h3 className="card-title">Udhëzuesit (Guides)</h3>
-            <p className="card-desc">Gjeni udhëzime të hollësishme për përdorimin e hartave, GPS dhe konfigurimet e para.</p>
+            <h3 className="card-title text-base font-bold text-slate-800 mb-2">Udhëzuesit (Guides)</h3>
+            <p className="card-desc text-xs text-slate-400 leading-relaxed">Gjeni udhëzime të hollësishme për përdorimin e hartave, GPS dhe konfigurimet e para.</p>
           </div>
 
-          <div className="category-pill-card" onClick={() => scrollTo(faqRef)}>
-            <div className="card-icon-round">
+          <div 
+            className="category-pill-card group border border-slate-200/80 bg-white hover:border-orange-500/30 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 p-8 rounded-3xl text-center cursor-pointer relative overflow-hidden" 
+            onClick={() => scrollTo(faqRef)}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
               <MessageSquare size={24} />
             </div>
-            <h3 className="card-title">Pyetjet e Shpeshta (FAQ)</h3>
-            <p className="card-desc">Përgjigje të shpejta për pyetjet më të shpeshta rreth aplikacionit dhe të dhënave live.</p>
+            <h3 className="card-title text-base font-bold text-slate-800 mb-2">Pyetjet e Shpeshta (FAQ)</h3>
+            <p className="card-desc text-xs text-slate-400 leading-relaxed">Përgjigje të shpejta për pyetjet më të shpeshta rreth aplikacionit dhe të dhënave live.</p>
           </div>
 
-          <div className="category-pill-card" onClick={() => scrollTo(contactRef)}>
-            <div className="card-icon-round">
-              <User size={24} />
+          <div 
+            className="category-pill-card group border border-slate-200/80 bg-white hover:border-orange-500/30 hover:shadow-xl hover:shadow-slate-100 transition-all duration-300 p-8 rounded-3xl text-center cursor-pointer relative overflow-hidden" 
+            onClick={() => scrollTo(contactRef)}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
+              <MessageCircle size={24} />
             </div>
-            <h3 className="card-title">Komuniteti & Suporti</h3>
-            <p className="card-desc">Na kontaktoni drejtpërdrejt për të raportuar problematika ose sugjeruar linja të reja.</p>
+            <h3 className="card-title text-base font-bold text-slate-800 mb-2">Komuniteti & Suporti</h3>
+            <p className="card-desc text-xs text-slate-400 leading-relaxed">Na kontaktoni drejtpërdrejt për të raportuar problematika ose sugjeruar linja të reja.</p>
           </div>
         </div>
 
-        {/* ── Category Links Grid (Quick Navigation) ───────────────────────── */}
+        {/* ── Category Bento Grid (Quick Navigation) ───────────────────────── */}
         <div className="section-container">
-          <h2 className="section-header-title" style={{ fontSize: '20px', marginBottom: '24px' }}>Lundro sipas kategorisë</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginBottom: '60px' }}>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mb-2">Lundro sipas kategorisë</h2>
+          <p className="text-xs text-slate-400 mb-6">Zgjidhni kategorinë e dëshiruar për të filtruar udhëzimet tona.</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-16">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat)}
-                style={{
-                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
-                  padding: '16px', display: 'flex', alignItems: 'center', gap: '10px',
-                  cursor: 'pointer', textTransform: 'none', textAlign: 'left',
-                  transition: 'all 0.2s ease', outline: 'none'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.background = '#f8fafc'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#ffffff'; }}
+                className="group p-5 bg-white border border-slate-200/70 hover:border-orange-500/30 hover:shadow-lg hover:shadow-slate-50 rounded-2xl flex flex-col items-start gap-4 cursor-pointer text-left transition-all duration-300 relative overflow-hidden hover:-translate-y-1"
               >
-                <span style={{ color: '#0d9488', display: 'flex' }}>{cat.icon}</span>
-                <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#1e293b' }}>{cat.label}</span>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50/20 rounded-bl-full translate-x-4 -translate-y-4 group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform duration-300"></div>
+                <span className="flex p-3 rounded-xl bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-all duration-300 relative z-10">{cat.icon}</span>
+                <div className="relative z-10 w-full">
+                  <span className="block text-[13.5px] font-bold text-slate-800 group-hover:text-orange-600 transition-colors duration-200">{cat.label}</span>
+                  <span className="block text-[10px] text-slate-400 mt-1 font-semibold">{cat.articles.length} artikuj</span>
+                </div>
               </button>
             ))}
           </div>
@@ -509,30 +564,33 @@ export default function HelpCenterView() {
         {/* ── Grouped Accordion Sections ───────────────────────────────────── */}
         {SECTIONS.map((sec) => (
           <div key={sec.id} className="section-container">
-            <h2 className="section-header-title">{sec.title}</h2>
-            <p className="section-header-desc">{sec.subtitle}</p>
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">{sec.title}</h2>
+            <p className="text-xs text-slate-400 mt-1 mb-6">{sec.subtitle}</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="accordion-wrapper space-y-3">
               {sec.articles.map((art) => {
                 const accordionKey = `${sec.id}-${art.id}`;
                 const isOpen = openMainAccordion === accordionKey;
                 return (
-                  <div key={art.id} className="accordion-item-card">
+                  <div key={art.id} className={`accordion-card border border-slate-200/60 rounded-2xl bg-white overflow-hidden transition-all duration-300 ${isOpen ? 'border-orange-500 shadow-sm' : 'hover:border-slate-300'}`}>
                     <button
                       type="button"
                       onClick={() => setOpenMainAccordion(isOpen ? null : accordionKey)}
-                      className="accordion-row-btn"
+                      className="accordion-trigger w-full flex items-center justify-between p-5 text-left bg-none border-none cursor-pointer"
                     >
-                      <span className="accordion-row-title">{art.title}</span>
-                      <div className="accordion-arrow-round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                      <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{art.title}</span>
+                      <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
                         <ChevronDown size={14} strokeWidth={2.5} />
                       </div>
                     </button>
-                    <div className={`accordion-reveal-box ${isOpen ? 'open' : ''}`}>
-                      <div className="accordion-reveal-content">
-                        <p style={{ margin: '0 0 16px', color: '#475569', lineHeight: 1.7 }}>{art.body}</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-                          {art.tags.map(t => <span key={t} className="tag-badge">#{t}</span>)}
+                    <div 
+                      className="accordion-content transition-all duration-300 ease-in-out"
+                      style={{ maxHeight: isOpen ? '500px' : '0px' }}
+                    >
+                      <div className="accordion-content-inner p-5 pt-0 bg-slate-50/50 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                        <p className="mb-4">{art.body}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {art.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 bg-slate-100 border border-slate-200/50 text-slate-500 rounded">#{t}</span>)}
                         </div>
                         <button
                           type="button"
@@ -543,11 +601,7 @@ export default function HelpCenterView() {
                               setActiveArticle(art);
                             }
                           }}
-                          style={{
-                            background: 'none', border: 'none', color: '#0d9488', fontSize: '13px',
-                            fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px',
-                            cursor: 'pointer', padding: 0
-                          }}
+                          className="text-xs font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 bg-none border-none p-0 cursor-pointer transition-colors duration-150"
                         >
                           Faqja e plotë e udhëzuesit <ArrowUpRight size={14} />
                         </button>
@@ -562,28 +616,31 @@ export default function HelpCenterView() {
 
         {/* ── FAQ Section ─────────────────────────────────────────────────── */}
         <div className="section-container" ref={faqRef}>
-          <h2 className="section-header-title">Pyetjet më të shpeshta (FAQ)</h2>
-          <p className="section-header-desc">Përgjigje të shpejta për menaxhimin e përgjithshëm dhe pyetjet më të hasura.</p>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Pyetjet më të shpeshta (FAQ)</h2>
+          <p className="text-xs text-slate-400 mt-1 mb-6">Përgjigje të shpejta për menaxhimin e përgjithshëm dhe pyetjet më të hasura.</p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="accordion-wrapper space-y-3">
             {FAQ.map((item, i) => {
               const accordionKey = `faq-${i}`;
               const isOpen = openMainAccordion === accordionKey;
               return (
-                <div key={i} className="accordion-item-card">
+                <div key={i} className={`accordion-card border border-slate-200/60 rounded-2xl bg-white overflow-hidden transition-all duration-300 ${isOpen ? 'border-orange-500 shadow-sm' : 'hover:border-slate-300'}`}>
                   <button
                     type="button"
                     onClick={() => setOpenMainAccordion(isOpen ? null : accordionKey)}
-                    className="accordion-row-btn"
+                    className="accordion-trigger w-full flex items-center justify-between p-5 text-left bg-none border-none cursor-pointer"
                   >
-                    <span className="accordion-row-title" style={{ color: '#1e293b' }}>{item.q}</span>
-                    <div className="accordion-arrow-round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', color: '#64748b', background: '#f8fafc' }}>
+                    <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{item.q}</span>
+                    <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
                       <ChevronDown size={14} strokeWidth={2.5} />
                     </div>
                   </button>
-                  <div className={`accordion-reveal-box ${isOpen ? 'open' : ''}`}>
-                    <div className="accordion-reveal-content">
-                      <p style={{ margin: 0, color: '#475569', lineHeight: 1.7 }}>{item.a}</p>
+                  <div 
+                    className="accordion-content transition-all duration-300 ease-in-out"
+                    style={{ maxHeight: isOpen ? '250px' : '0px' }}
+                  >
+                    <div className="accordion-content-inner p-5 pt-0 bg-slate-50/50 border-t border-slate-100 text-sm text-slate-600 leading-relaxed">
+                      <p>{item.a}</p>
                     </div>
                   </div>
                 </div>
@@ -594,66 +651,67 @@ export default function HelpCenterView() {
 
         {/* ── Contact Form ─────────────────────────────────────────────────── */}
         <div className="section-container" ref={contactRef}>
-          <h2 className="section-header-title">Nuk e gjetët atë që kërkoni?</h2>
-          <p className="section-header-desc">Shkruani drejtpërdrejt ekipit tonë të mbështetjes teknike dhe do t'ju kthehemi menjëherë.</p>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Nuk e gjetët atë që kërkoni?</h2>
+          <p className="text-xs text-slate-400 mt-1 mb-6">Shkruani drejtpërdrejt ekipit tonë të mbështetjes teknike dhe do t'ju kthehemi menjëherë.</p>
 
-          <div className="accordion-item-card" style={{ padding: '32px 24px', background: '#ffffff' }}>
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 to-orange-700"></div>
             {contactSent ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '16px 0', textAlign: 'center' }}>
-                <div style={{ display: 'flex', padding: '12px', borderRadius: '50%', background: '#f0fdfa', border: '1px solid #ccfbf1' }}>
-                  <CheckCircle2 size={32} color="#0d9488" strokeWidth={1.5} />
+              <div className="flex flex-col items-center gap-4 py-8 text-center animate-fade-up">
+                <div className="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shadow-inner">
+                  <CheckCircle2 size={24} />
                 </div>
-                <p style={{ fontSize: '16px', fontWeight: '700', color: '#1e293b', margin: 0 }}>Kërkesa juaj u dërgua me sukses!</p>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
-                  Do t'ju kthejmë përgjigje brenda 24 orëve në adresën e dhënë.
+                <h3 className="text-base font-bold text-slate-900">Kërkesa juaj u dërgua me sukses!</h3>
+                <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                  Do t'ju kthejmë përgjigje brenda 24 orëve në adresën tuaj të regjistruar.
                 </p>
               </div>
             ) : (
-              <>
+              <div className="flex flex-col gap-4">
                 <textarea
                   id="textarea-feedback"
                   value={contactText}
                   onChange={(e) => setContactText(e.target.value)}
-                  placeholder="Shkruani pyetjen ose problematikën tuaj këtu..."
+                  placeholder="Shkruani pyetjen ose problematikën tuaj këtu me detaje..."
                   rows={4}
                   disabled={contactLoading}
-                  className="contact-textarea"
+                  className="contact-textarea w-full p-4 border border-slate-200 rounded-2xl focus:border-orange-500 focus:ring-4 focus:ring-orange-50 text-slate-700 text-sm outline-none resize-none transition-all duration-200"
                 />
                 <button
                   type="button"
                   onClick={handleContact}
                   id="btn-submit-feedback"
                   disabled={!contactText.trim() || contactLoading}
-                  className={`contact-submit-btn ${contactText.trim() && !contactLoading ? 'active' : 'inactive'}`}
-                  style={{
-                    background: contactText.trim() && !contactLoading ? '#0d9488' : '#f1f5f9',
-                    color: contactText.trim() && !contactLoading ? '#ffffff' : '#94a3b8'
-                  }}
+                  className={`btn-base w-full py-3.5 flex items-center justify-center gap-2 font-bold text-sm rounded-2xl transition-all duration-200 ${
+                    contactText.trim() && !contactLoading 
+                      ? 'btn-primary bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-600/10 hover:shadow-orange-700/20 hover:-translate-y-0.5' 
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
                   {contactLoading ? 'Po dërgohet...' : 'Dërgo mesazh'}
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* ── Support Info footer grid ────────────────────────────────────── */}
-        <div className="section-container" style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+        <div className="section-container mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { icon: <Mail size={15} />, label: 'Email mbështetës', value: 'support@urbani-im.al' },
-              { icon: <Clock size={15} />, label: 'Orari i shërbimit', value: 'E Hënë – E Premte, 09:00–17:00' },
-              { icon: <HelpCircle size={15} />, label: 'Koha mesatare', value: 'Brenda 24 orëve' },
+              { icon: <Mail size={16} />, label: 'Email mbështetës', value: 'support@urbani-im.al' },
+              { icon: <Clock size={16} />, label: 'Orari i shërbimit', value: '09:00 – 17:00' },
+              { icon: <HelpCircle size={16} />, label: 'Koha mesatare', value: 'Brenda 24 orëve' },
             ].map((item, idx) => (
-              <div key={idx} className="support-item" style={{ background: '#ffffff', borderColor: '#f1f5f9' }}>
-                <span style={{ display: 'flex', padding: '8px', borderRadius: '8px', background: '#f0fdfa', color: '#0d9488', flexShrink: 0 }}>
+              <div key={idx} className="support-item flex items-center gap-4 p-5 border border-slate-200/80 bg-white rounded-2xl hover:border-orange-500/20 hover:shadow-lg hover:shadow-slate-50 transition-all duration-300">
+                <span className="flex p-3 rounded-xl bg-orange-50 text-orange-600 flex-shrink-0">
                   {item.icon}
                 </span>
                 <div>
-                  <p style={{ fontSize: '9px', color: '#64748b', margin: 0, fontWeight: '700', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider">
                     {item.label}
                   </p>
-                  <p style={{ fontSize: '13px', color: '#334155', margin: '1px 0 0', fontWeight: '600' }}>
+                  <p className="text-xs font-bold text-slate-800 mt-1 leading-none">
                     {item.value}
                   </p>
                 </div>
@@ -666,139 +724,65 @@ export default function HelpCenterView() {
   };
 
   return (
-    <div className="help-wrapper">
+    <div className="pb-16 animate-fade-up relative overflow-hidden min-h-screen">
+      {/* ── Background Mesh/Glow elements ────────────────────────────────── */}
+      <div className="glow-container absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="glow-orbglow glow-orb-1"></div>
+        <div className="glow-orbglow glow-orb-2"></div>
+      </div>
+
       <style>{`
-        /* Global CSS layout declarations matching reference image style */
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        
-        .help-wrapper {
-          background: #fcfdfd;
-          min-height: 100vh;
-          color: #1e293b;
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          width: 100%;
-          box-sizing: border-box;
-          overflow-y: auto;
+        .glow-orb-1 {
+          position: absolute;
+          top: -100px;
+          left: 10%;
+          width: 500px;
+          height: 500px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(249, 115, 22, 0.07) 0%, transparent 70%);
+          filter: blur(80px);
+          animation: float-orb 15s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+        .glow-orb-2 {
+          position: absolute;
+          top: 300px;
+          right: 5%;
+          width: 450px;
+          height: 450px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(249, 115, 22, 0.04) 0%, transparent 70%);
+          filter: blur(70px);
+          animation: float-orb-rev 18s ease-in-out infinite alternate;
+          pointer-events: none;
         }
 
-        /* Nav Bar rules */
-        .nav-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 40px;
-          background: #ffffff;
-          border-bottom: 1px solid #f1f5f9;
-          position: sticky;
-          top: 0;
-          z-index: 200;
+        @keyframes float-orb {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(40px, -40px) scale(1.1); }
+        }
+        @keyframes float-orb-rev {
+          0% { transform: translate(0, 0) scale(1.1); }
+          100% { transform: translate(-30px, 30px) scale(0.9); }
         }
 
-        @media (max-width: 640px) {
-          .nav-bar {
-            padding: 16px 20px;
-          }
-        }
-
-        .nav-logo {
-          font-size: 18px;
-          font-weight: 700;
-          color: #0f172a;
-          text-decoration: none;
-        }
-        
-        .nav-logo span {
-          font-weight: 400;
-          color: #475569;
-          margin-left: 2px;
-        }
-
-        .nav-links {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-        }
-
-        @media (max-width: 768px) {
-          .nav-links {
-            display: none;
-          }
-        }
-
-        .nav-link {
-          font-size: 14px;
-          font-weight: 500;
-          color: #475569;
-          text-decoration: none;
-          transition: color 0.15s ease;
-        }
-
-        .nav-link:hover {
-          color: #0d9488;
-        }
-
-        .nav-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .btn-request {
-          font-size: 13px;
-          font-weight: 500;
-          color: #475569;
-          background: transparent;
-          border: 1px solid #cbd5e1;
-          border-radius: 9999px;
-          padding: 8px 18px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-request:hover {
-          border-color: #94a3b8;
-          background: #f8fafc;
-          color: #0f172a;
-        }
-
-        .btn-signin {
-          font-size: 13px;
-          font-weight: 600;
-          color: #1e293b;
-          background: #facc15;
-          border: none;
-          border-radius: 9999px;
-          padding: 8px 18px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-signin:hover {
-          background: #eab308;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
-        }
-
-        /* Hero Banner rules */
         .hero-section {
-          padding: 72px 20px 56px;
+          padding: 80px 20px 70px;
           text-align: center;
-          background: radial-gradient(circle at top, #f0fdfa 0%, #fcfdfd 100%);
           position: relative;
+          z-index: 10;
         }
 
         .hero-title {
-          font-size: 38px;
-          font-weight: 700;
+          font-size: 36px;
+          font-weight: 800;
           color: #0f172a;
-          letter-spacing: -1px;
-          margin: 0 0 20px;
-          line-height: 1.25;
+          letter-spacing: -1.5px;
+          margin: 0 0 24px;
+          line-height: 1.2;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .hero-title {
             font-size: 28px;
           }
@@ -815,63 +799,65 @@ export default function HelpCenterView() {
           left: 0;
           bottom: 2px;
           width: 100%;
-          height: 6px;
-          background: rgba(20, 184, 166, 0.25);
+          height: 8px;
+          background: rgba(249, 115, 22, 0.2);
           z-index: -1;
           border-radius: 4px;
         }
 
         .search-pill-container {
           max-width: 540px;
-          margin: 0 auto 16px;
+          margin: 0 auto 20px;
           position: relative;
+          box-shadow: 0 12px 35px -12px rgba(249, 115, 22, 0.15);
+          border-radius: 9999px;
+          z-index: 20;
         }
 
         .search-pill-input {
           width: 100%;
-          padding: 16px 64px 16px 24px;
+          padding: 18px 64px 18px 28px;
           border-radius: 9999px;
           background: #ffffff;
-          border: 1px solid #e2e8f0;
+          border: 1.5px solid #e2e8f0;
           color: #1e293b;
-          font-size: 14.5px;
+          font-size: 15px;
           outline: none;
-          transition: all 0.25s ease;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+          transition: all 0.3s ease;
           font-family: inherit;
           box-sizing: border-box;
         }
 
         .search-pill-input:focus {
-          border-color: #cbd5e1;
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+          border-color: #f97316;
+          box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.08);
         }
 
         .search-pill-btn {
           position: absolute;
-          right: 6px;
+          right: 7px;
           top: 50%;
           transform: translateY(-50%);
-          width: 42px;
-          height: 42px;
+          width: 46px;
+          height: 46px;
           border-radius: 50%;
-          background: #facc15;
+          background: #f97316;
           border: none;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #1e293b;
+          color: #ffffff;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .search-pill-btn:hover {
-          background: #eab308;
+          background: #ea580c;
           transform: translateY(-50%) scale(1.05);
         }
 
         .hero-subtitle {
-          font-size: 13px;
+          font-size: 13.5px;
           color: #64748b;
           margin: 0;
         }
@@ -879,282 +865,28 @@ export default function HelpCenterView() {
         /* 3 Columns Cards rules */
         .cards-grid {
           display: grid;
-          grid-template-columns: repeat(1, 1fr);
-          gap: 20px;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 24px;
           max-width: 960px;
-          margin: -24px auto 48px;
+          margin: -10px auto 48px;
           padding: 0 20px;
-        }
-
-        @media (min-width: 640px) {
-          .cards-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (min-width: 960px) {
-          .cards-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-
-        .category-pill-card {
-          background: #ffffff;
-          border: 1px solid #f1f5f9;
-          border-radius: 16px;
-          padding: 28px 24px;
-          text-align: center;
-          transition: all 0.22s ease;
-          cursor: pointer;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02);
-        }
-
-        .category-pill-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
-          border-color: #e2e8f0;
-        }
-
-        .card-icon-round {
-          width: 52px;
-          height: 52px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f0fdfa;
-          border: 1px solid #ccfbf1;
-          color: #0d9488;
-          margin: 0 auto 16px;
-          transition: transform 0.2s ease;
-        }
-
-        .category-pill-card:hover .card-icon-round {
-          transform: scale(1.08);
-        }
-
-        .card-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0 0 8px;
-        }
-
-        .card-desc {
-          font-size: 12.5px;
-          color: #64748b;
-          line-height: 1.5;
-          margin: 0;
+          position: relative;
+          z-index: 10;
         }
 
         /* Grouped Accordions rules */
         .section-container {
-          max-width: 768px;
-          margin: 0 auto 48px;
+          max-width: 800px;
+          margin: 0 auto 56px;
           padding: 0 20px;
+          position: relative;
+          z-index: 10;
         }
 
-        .section-header-title {
-          font-size: 22px;
-          font-weight: 700;
-          color: #0f172a;
-          text-align: center;
-          margin: 0 0 6px;
-        }
-
-        .section-header-desc {
-          font-size: 13.5px;
-          color: #64748b;
-          text-align: center;
-          margin: 0 0 20px;
-          line-height: 1.55;
-        }
-
-        .accordion-item-card {
-          background: #ffffff;
-          border: 1px solid #f1f5f9;
-          border-radius: 10px;
-          margin-bottom: 10px;
-          transition: all 0.2s ease;
-        }
-
-        .accordion-item-card:hover {
-          border-color: #e2e8f0;
-        }
-
-        .accordion-row-btn {
-          width: 100%;
+        .accordion-wrapper {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 16px 20px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          text-align: left;
-          font-family: inherit;
-        }
-
-        .accordion-row-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: #0d9488;
-          transition: color 0.15s ease;
-        }
-
-        .accordion-arrow-round {
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background: #f0fdfa;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #0d9488;
-          flex-shrink: 0;
-          transition: all 0.2s ease;
-        }
-
-        .accordion-reveal-box {
-          overflow: hidden;
-          max-height: 0;
-          opacity: 0;
-          transition: max-height 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease;
-        }
-
-        .accordion-reveal-box.open {
-          max-height: 400px;
-          opacity: 1;
-        }
-
-        .accordion-reveal-content {
-          padding: 0 20px 16px;
-          color: #334155;
-          font-size: 13.5px;
-          line-height: 1.7;
-        }
-
-        /* Animations */
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fade-up {
-          animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        /* Forms rules */
-        .contact-textarea {
-          width: 100%;
-          padding: 12px;
-          border-radius: 8px;
-          background: #ffffff;
-          border: 1px solid #cbd5e1;
-          color: #1e293b;
-          font-size: 13.5px;
-          font-family: inherit;
-          line-height: 1.6;
-          resize: none;
-          outline: none;
-          transition: all 0.2s ease;
-          box-sizing: border-box;
-        }
-
-        .contact-textarea:focus {
-          border-color: #0d9488;
-          box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
-        }
-
-        .contact-submit-btn {
-          width: 100%;
-          margin-top: 10px;
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 13.5px;
-          font-weight: 600;
-          transition: all 0.2s ease;
-          border: none;
-          font-family: inherit;
-        }
-
-        .contact-submit-btn.active {
-          background: #0d9488;
-          color: #ffffff;
-          cursor: pointer;
-        }
-
-        .contact-submit-btn.inactive {
-          background: #f1f5f9;
-          color: #94a3b8;
-          cursor: not-allowed;
-        }
-
-        /* Sub-views styles */
-        .back-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          background: none;
-          border: none;
-          padding: 6px 0;
-          margin-bottom: 20px;
-          color: #64748b;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: color 0.15s ease;
-          font-family: inherit;
-        }
-
-        .back-button:hover {
-          color: #0d9488;
-        }
-
-        .tag-badge {
-          padding: 3px 8px;
-          border-radius: 6px;
-          background: #f1f5f9;
-          border: 1px solid #e2e8f0;
-          font-size: 11px;
-          color: #475569;
-        }
-
-        .helpful-card {
-          padding: 20px;
-          border-radius: 12px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          text-align: center;
-        }
-
-        .helpful-btn {
-          padding: 8px 16px;
-          border-radius: 8px;
-          background: #ffffff;
-          border: 1px solid #cbd5e1;
-          color: #475569;
-          font-size: 12.5px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          font-family: inherit;
-        }
-
-        .helpful-btn:hover {
-          background: #f8fafc;
-          border-color: #94a3b8;
-          color: #0f172a;
-        }
-
-        .support-item {
-          display: flex;
-          align-items: center;
+          flex-direction: column;
           gap: 12px;
-          padding: 12px 16px;
-          border: 1px solid #f1f5f9;
-          border-radius: 10px;
         }
 
         input::-webkit-search-cancel-button {
@@ -1162,31 +894,13 @@ export default function HelpCenterView() {
         }
       `}</style>
 
-      {/* ── Navigation Header ─────────────────────────────────────────────── */}
-      <nav className="nav-bar">
-        <a href="/" className="nav-logo">
-          Urbani<span>IM</span>
-        </a>
-        <div className="nav-links">
-          <a href="/" className="nav-link">Home</a>
-          <a href="/help-center" className="nav-link">Help</a>
-          <a href="/privacy-policy" className="nav-link">Privacy</a>
-        </div>
-        <div className="nav-actions">
-          <a href="mailto:support@urbani-im.al" className="btn-request">
-            Contact Support
-          </a>
-          <a href="/" className="btn-signin">
-            Back to Home
-          </a>
-        </div>
-      </nav>
-
       {/* ── Hero Banner Section ───────────────────────────────────────────── */}
       <header className="hero-section">
         <h1 className="hero-title">
-          How can we <span className="hero-underline">help you?</span>
+          Si mund t'ju <span className="hero-underline">ndihmojmë?</span>
         </h1>
+        
+        {/* Search Input */}
         <div className="search-pill-container">
           <input
             ref={searchRef}
@@ -1196,33 +910,35 @@ export default function HelpCenterView() {
             onChange={(e) => setSearch(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-            placeholder="Start typing your search..."
+            placeholder="Kërkoni për një artikull ose pyetje..."
             className="search-pill-input"
           />
-          <button type="button" className="search-pill-btn" aria-label="Search" onClick={() => searchRef.current?.focus()}>
+          {search ? (
+            <button 
+              type="button" 
+              className="absolute right-16 top-50% translate-y-[-50%] text-slate-400 hover:text-slate-600 bg-none border-none outline-none cursor-pointer p-1"
+              onClick={clearSearch}
+              style={{ top: '50%' }}
+              aria-label="Fshi kërkimin"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+          <button type="button" className="search-pill-btn" aria-label="Kërko" onClick={() => searchRef.current?.focus()}>
             <Search size={16} />
           </button>
 
           {/* Search Dropdown suggest list */}
           {search && (
             <div
+              className="absolute left-0 right-0 bg-white border border-slate-200/80 rounded-2xl overflow-hidden z-[100] shadow-xl shadow-slate-200/50 text-left mt-2.5 animate-fade-up"
               style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                right: 0,
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                zIndex: 100,
-                boxShadow: '0 12px 30px rgba(0,0,0,0.06)',
-                textAlign: 'left',
+                top: '100%',
               }}
             >
               {searchResults.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13.5px' }}>
-                  No results found for "<span style={{ color: '#0f172a', fontWeight: '600' }}>{search}</span>"
+                <div className="p-6 text-center text-slate-400 text-sm">
+                  Nuk u gjet asnjë rezultat për "<span className="text-slate-800 font-semibold">{search}</span>"
                 </div>
               ) : (
                 searchResults.slice(0, 5).map(({ category, article }) => (
@@ -1230,54 +946,49 @@ export default function HelpCenterView() {
                     key={article.id}
                     type="button"
                     onClick={() => { setSearch(''); setActiveCategory(category); setActiveArticle(article); }}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 20px',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      borderBottom: '1px solid #f1f5f9',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    className="w-full flex items-center gap-4 px-6 py-4 bg-transparent border-none cursor-pointer text-left border-b border-slate-100 hover:bg-slate-50 transition-colors duration-150"
                   >
-                    <BookOpen size={15} color="#0d9488" style={{ flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13.5px', fontWeight: '500', color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <BookOpen size={16} className="text-orange-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 margin-0 truncate">
                         {article.title}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#0d9488', margin: '2px 0 0', fontWeight: '500' }}>
+                      <p className="text-[10px] text-orange-600 mt-1 font-semibold">
                         {category.label}
                       </p>
                     </div>
-                    <ArrowUpRight size={13} color="#94a3b8" />
+                    <ArrowUpRight size={14} className="text-slate-300" />
                   </button>
                 ))
               )}
             </div>
           )}
         </div>
+
+        {/* Popular Tags suggestions */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4 relative z-20">
+          <span className="text-xs text-slate-400 font-semibold">Kërkesat popullore:</span>
+          {POPULAR_KEYWORDS.map(kw => (
+            <button
+              key={kw}
+              type="button"
+              onClick={() => { setSearch(kw); searchRef.current?.focus(); }}
+              className="text-xs px-3 py-1 bg-orange-50/50 hover:bg-orange-50 border border-orange-100/50 hover:border-orange-200 text-orange-600 rounded-full cursor-pointer transition-all duration-200"
+            >
+              #{kw}
+            </button>
+          ))}
+        </div>
+
         <p className="hero-subtitle">
-          Or <span style={{ fontWeight: '600', color: '#0f172a' }}>choose</span> an option below to plan your trip.
+          Ose <span className="font-semibold text-slate-800">zgjidhni</span> një kategori më poshtë për udhëzime të plota.
         </p>
       </header>
 
       {/* ── Main View Content ─────────────────────────────────────────────── */}
-      <main style={{ paddingBottom: '60px' }}>
+      <main className="relative z-10" style={{ paddingBottom: '60px' }}>
         {renderContent()}
       </main>
-
-      {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer style={{ background: '#ffffff', borderTop: '1px solid #f1f5f9', padding: '32px 20px', textAlign: 'center' }}>
-        <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
-          Urbani IM HelpCenter · © {new Date().getFullYear()} · all rights reserved.
-        </p>
-      </footer>
     </div>
   );
 }

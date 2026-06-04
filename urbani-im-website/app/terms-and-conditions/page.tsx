@@ -39,165 +39,55 @@ function BulletList({ items }: { items: React.ReactNode[] }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TermsPage() {
   return (
-    <div className="help-wrapper">
+    <div className="pb-16 animate-fade-up">
       <style>{`
-        /* Global CSS layout declarations matching reference image style */
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        
-        .help-wrapper {
-          background: #fcfdfd;
-          min-height: 100vh;
-          color: #1e293b;
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          width: 100%;
-          box-sizing: border-box;
-          overflow-y: auto;
-        }
-
-        /* Nav Bar rules */
-        .nav-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 40px;
-          background: #ffffff;
-          border-bottom: 1px solid #f1f5f9;
-        }
-
-        @media (max-width: 640px) {
-          .nav-bar {
-            padding: 16px 20px;
-          }
-        }
-
-        .nav-logo {
-          font-size: 18px;
-          font-weight: 700;
-          color: #0f172a;
-          text-decoration: none;
-        }
-        
-        .nav-logo span {
-          font-weight: 400;
-          color: #475569;
-          margin-left: 2px;
-        }
-
-        .nav-links {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-        }
-
-        @media (max-width: 768px) {
-          .nav-links {
-            display: none;
-          }
-        }
-
-        .nav-link {
-          font-size: 14px;
-          font-weight: 500;
-          color: #475569;
-          text-decoration: none;
-          transition: color 0.15s ease;
-        }
-
-        .nav-link:hover {
-          color: #0d9488;
-        }
-
-        .nav-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .btn-request {
-          font-size: 13px;
-          font-weight: 500;
-          color: #475569;
-          background: transparent;
-          border: 1px solid #cbd5e1;
-          border-radius: 9999px;
-          padding: 8px 18px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-request:hover {
-          border-color: #94a3b8;
-          background: #f8fafc;
-          color: #0f172a;
-        }
-
-        .btn-signin {
-          font-size: 13px;
-          font-weight: 600;
-          color: #1e293b;
-          background: #facc15;
-          border: none;
-          border-radius: 9999px;
-          padding: 8px 18px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-signin:hover {
-          background: #eab308;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
-        }
-
         /* Policy Container and Cards */
         .policy-container {
           max-width: 768px;
-          margin: 48px auto 80px;
+          margin: 32px auto 60px;
           padding: 0 20px;
         }
 
         .policy-card {
           background: #ffffff;
-          border: 1px solid #f1f5f9;
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
-          padding: 48px 40px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+          padding: 40px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
         }
 
         @media (max-width: 640px) {
           .policy-card {
-            padding: 32px 20px;
+            padding: 24px 20px;
           }
         }
 
         .policy-title {
-          font-size: 32px;
-          font-weight: 700;
+          font-size: 28px;
+          font-weight: 800;
           color: #0f172a;
           letter-spacing: -0.8px;
           margin: 0 0 12px;
         }
 
         .policy-desc {
-          font-size: 14.5px;
+          font-size: 14px;
           color: #64748b;
           line-height: 1.6;
           margin: 0 0 32px;
         }
 
         .section-title {
-          font-size: 18px;
+          font-size: 16.5px;
           font-weight: 700;
-          color: #0d9488;
+          color: #f97316;
           margin: 0 0 16px;
           padding-bottom: 8px;
           border-bottom: 1px solid #f1f5f9;
         }
 
         .policy-text {
-          font-size: 14px;
+          font-size: 13.5px;
           color: #334155;
           line-height: 1.7;
           margin: 0 0 16px;
@@ -210,42 +100,22 @@ export default function TermsPage() {
         }
 
         .bullet-item {
-          font-size: 14px;
+          font-size: 13.5px;
           color: #334155;
           line-height: 1.7;
           margin-bottom: 6px;
         }
 
         .policy-link {
-          color: #0d9488;
+          color: #f97316;
           text-decoration: underline;
           transition: color 0.15s ease;
         }
 
         .policy-link:hover {
-          color: #0f766e;
+          color: #ea580c;
         }
       `}</style>
-
-      {/* ── Navigation Header ─────────────────────────────────────────────── */}
-      <nav className="nav-bar">
-        <a href="/" className="nav-logo">
-          Urbani<span>IM</span>
-        </a>
-        <div className="nav-links">
-          <a href="/" className="nav-link">Home</a>
-          <a href="/help-center" className="nav-link">Help</a>
-          <a href="/terms-and-conditions" className="nav-link">Terms</a>
-        </div>
-        <div className="nav-actions">
-          <a href="mailto:support@urbani-im.al" className="btn-request">
-            Contact Support
-          </a>
-          <a href="/" className="btn-signin">
-            Back to Home
-          </a>
-        </div>
-      </nav>
 
       {/* ── Content Card ──────────────────────────────────────────────────── */}
       <main className="policy-container">

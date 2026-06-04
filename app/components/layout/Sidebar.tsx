@@ -108,7 +108,11 @@ export default function Sidebar() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button className="s-clear" onClick={() => setSearchQuery('')}>
+            <button
+              className="s-clear"
+              onClick={() => setSearchQuery('')}
+              aria-label={language === 'al' ? 'Pastro kërkimin' : language === 'en' ? 'Clear search' : 'Cancella ricerca'}
+            >
               <IonIcon icon={closeOutline} style={{ fontSize: 12 }} />
             </button>
           )}
@@ -208,10 +212,15 @@ export default function Sidebar() {
             <span className="s-username">{user?.name || 'Admin'}</span>
             <span className="s-useremail">{user?.email || 'admin@busal.al'}</span>
           </div>
-          <button className="s-logout-btn" onClick={() => {
-            useStore.getState().setGuestMode(false);
-            signOut({ callbackUrl: '/' });
-          }} title={t.logout}>
+          <button
+            className="s-logout-btn"
+            onClick={() => {
+              useStore.getState().setGuestMode(false);
+              signOut({ callbackUrl: '/' });
+            }}
+            title={t.logout}
+            aria-label={t.logout}
+          >
             <IonIcon icon={logOutOutline} style={{ fontSize: 15 }} />
           </button>
         </div>

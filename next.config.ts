@@ -13,6 +13,10 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
   transpilePackages: ['leaflet'],
   turbopack: {},
   webpack: (config: any, { isServer }: { isServer: boolean }) => {

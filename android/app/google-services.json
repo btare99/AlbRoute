@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020309830193",
+    "project_id": "urbani-im-22ae5",
+    "storage_bucket": "urbani-im-22ae5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020309830193:android:12389821d626b7a07e3310",
+        "android_client_info": {
+          "package_name": "al.busal.urbani"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3B_krqtGzujd4zwM-OtKcaMwNtYF8Ld4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Device } from '@capacitor/device';
 import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { Network } from '@capacitor/network';
 import { Preferences } from '@capacitor/preferences';
 import { create } from 'zustand';
@@ -926,6 +927,37 @@ const useStore = create<any>()(
             await LocalNotifications.requestPermissions();
             await LocalNotifications.cancel({ notifications: [{ id: 1 }] });
           } catch { }
+
+          if (Capacitor.isNativePlatform()) {
+            try {
+              let permStatus = await PushNotifications.checkPermissions();
+              if (permStatus.receive === 'prompt') {
+                permStatus = await PushNotifications.requestPermissions();
+              }
+              if (permStatus.receive === 'granted') {
+                await PushNotifications.register();
+                
+                await PushNotifications.addListener('registration', (token) => {
+                  console.log('FCM Device Token:', token.value);
+                  // Këtu mund të bëni një thirrje API për të ruajtur token te përdoruesi në DB
+                });
+
+                await PushNotifications.addListener('registrationError', (err) => {
+                  console.error('Push registration error:', err);
+                });
+
+                await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                  console.log('Push received:', notification);
+                });
+
+                await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+                  console.log('Push action performed:', action);
+                });
+              }
+            } catch (pushErr) {
+              console.warn('Push Notifications setup failed:', pushErr);
+            }
+          }
         } catch (error) {
           console.warn('Native service initialization failed:', error);
         }
@@ -1000,6 +1032,7 @@ const useStore = create<any>()(
 
       // ── Buses ──
       buses: [],
+      busesLoading: true,
       selectedBus: null,
       selectedRoute: null,
       userLocation: { lat: 41.3275, lng: 19.8187 },
@@ -1015,9 +1048,14 @@ const useStore = create<any>()(
               ...bus,
               routeId: bus.routeId && !bus.routeId.startsWith('L') ? `L${bus.routeId}` : bus.routeId
             }));
-            set({ buses: normalized });
+            set({ buses: normalized, busesLoading: false });
+          } else {
+            set({ busesLoading: false });
           }
-        } catch (error) { console.error('Failed to fetch buses:', error); }
+        } catch (error) {
+          console.error('Failed to fetch buses:', error);
+          set({ busesLoading: false });
+        }
       },
       updateBus: async (busData: any) => {
         try {
@@ -1341,7 +1379,7 @@ const useStore = create<any>()(
         });
       },
 
-      isSplashFinished: false,
+      isSplashFinished: true,
       setSplashFinished: (val: boolean) => set({ isSplashFinished: val }),
 
       // ── Notifications ──

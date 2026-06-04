@@ -42,6 +42,7 @@ export default function AppShell() {
   const selectingOnMap = useStore((state: any) => state.selectingOnMap);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const addNotification = useStore((state: any) => state.addNotification);
+  const networkStatus = useStore((state: any) => state.networkStatus);
   const t = translations[language] || translations.al;
   const googleLoginHandled = useRef(false);
 
@@ -108,7 +109,7 @@ export default function AppShell() {
     return () => clearInterval(interval);
   }, [currentView, fetchBuses]);
 
-  // ─── Periodic Geolocation Sync (every 5 seconds) ───
+  // ─── Periodic Geolocation Sync (every 60 seconds) ───
   useEffect(() => {
     const initializeNativePlugins = async () => {
       if (Capacitor.isNativePlatform()) {
@@ -125,7 +126,7 @@ export default function AppShell() {
 
     const interval = setInterval(() => {
       useStore.getState().fetchUserLocation?.();
-    }, 15000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
@@ -175,6 +176,14 @@ export default function AppShell() {
 
   return (
     <div className="app-layout">
+      {/* Offline Banner */}
+      {networkStatus && !networkStatus.connected && (
+        <div className="offline-banner">
+          <span className="offline-dot" />
+          <span>Ju jeni offline. Kontrolloni lidhjen me internetin.</span>
+        </div>
+      )}
+
       {/* Sidebar + overlay */}
       <Sidebar />
       <div
@@ -211,6 +220,45 @@ export default function AppShell() {
       )}
 
       <style jsx>{`
+        /* ── Offline Banner ───────────────────────── */
+        .offline-banner {
+          position: fixed;
+          top: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #ef4444;
+          color: #fff;
+          padding: 8px 16px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          z-index: 9999;
+          animation: slideDown 0.3s ease;
+        }
+
+        .offline-dot {
+          width: 8px;
+          height: 8px;
+          background: #fff;
+          border-radius: 50%;
+          animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes slideDown {
+          from {
+            transform: translate(-50%, -20px);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+
         /* ── Layout ───────────────────────────────── */
         .app-layout {
           display: flex;
@@ -236,7 +284,7 @@ export default function AppShell() {
 
           .main-area {
             height: 100%;
-            padding-bottom: 96px;
+            padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
           }
 
           /* Floating pill nav */
@@ -246,7 +294,7 @@ export default function AppShell() {
             justify-content: space-around;
 
             position: fixed;
-            bottom: 20px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
             left: 12px;
             right: 12px;
             height: 64px;
@@ -304,13 +352,13 @@ export default function AppShell() {
         /* ── Tablet-specific refinements (iPad) ── */
         @media (min-width: 901px) and (max-width: 1180px) {
           .main-area {
-            padding-bottom: 112px;
+            padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
           }
 
           .bottom-nav {
             left: 32px;
             right: 32px;
-            bottom: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             height: 72px;
             padding: 0 24px;
             border-radius: 28px;

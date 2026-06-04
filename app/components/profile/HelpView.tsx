@@ -121,7 +121,7 @@ export default function HelpView() {
         </h2>
         <p style={{
           fontSize: '13px',
-          color: 'rgba(255,255,255,0.3)',
+          color: 'rgba(255,255,255,0.55)',
           lineHeight: 1.5,
           margin: 0,
         }}>
@@ -218,7 +218,7 @@ function HelpRow({ item, rowPx }: { item: HelpItem; rowPx: string }) {
           <p style={{
             margin: '3px 0 0 0',
             fontSize: '12px',
-            color: item.danger ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.27)',
+            color: item.danger ? 'rgba(239,68,68,0.75)' : 'rgba(255,255,255,0.55)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

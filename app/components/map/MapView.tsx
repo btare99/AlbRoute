@@ -247,6 +247,7 @@ export default function MapView() {
   const [mapBounds, setMapBounds] = useState<any>(null); // Lazy loading: viewport bounds
 
   const buses = useStore((s: any) => s.buses);
+  const busesLoading = useStore((s: any) => s.busesLoading);
   const userLocation = useStore((s: any) => s.userLocation);
   const setSelectedBus = useStore((s: any) => s.setSelectedBus);
   const setView = useStore((s: any) => s.setView);
@@ -1477,6 +1478,48 @@ export default function MapView() {
   return (
     <div className="full-screen-map">
       <div ref={mapContainerRef} className="map-container" />
+
+      {/* Glassmorphic Map Loading Spinner */}
+      {busesLoading && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          background: 'rgba(10, 14, 24, 0.75)',
+          backdropFilter: 'blur(20px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '22px 28px',
+          borderRadius: '24px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
+        }}>
+          {/* Custom self-contained SVG spinner */}
+          <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <style>{`
+              .spinner_aj1M{transform-origin:center;animation:spinner_mw72 .75s linear infinite}
+              @keyframes spinner_mw72{100%{transform:rotate(360deg)}}
+            `}</style>
+            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="#3b82f6"/>
+            <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" className="spinner_aj1M" fill="#3b82f6"/>
+          </svg>
+          <span style={{
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+          }}>
+            Duke ngarkuar autobusët...
+          </span>
+        </div>
+      )}
 
       {/* (Top Banner for Map Selection moved to center-map UI below) */}
 
