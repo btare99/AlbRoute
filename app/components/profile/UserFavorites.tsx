@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
 import {
   trashOutline,

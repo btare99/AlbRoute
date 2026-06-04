@@ -14,7 +14,7 @@ import FeedbackView from '../profile/FeedbackView';
 import DeleteAccountView from '../profile/DeleteAccountView';
 import useStore from '../../store/useStore';
 import { useSession } from "next-auth/react";
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { mapOutline, busOutline, personOutline, heartOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';

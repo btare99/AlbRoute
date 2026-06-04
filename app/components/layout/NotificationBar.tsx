@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useStore from '../../store/useStore';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { checkmarkCircleOutline, informationCircleOutline, alertOutline, closeOutline } from 'ionicons/icons';
 
 const ICONS: any = { success: checkmarkCircleOutline, info: informationCircleOutline, warning: alertOutline, error: closeOutline };

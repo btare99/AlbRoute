@@ -9,7 +9,7 @@ import {
   helpCircleOutline, trashOutline, alertOutline, closeOutline, mailOutline, callOutline,
   globeOutline, checkmarkCircleOutline
 } from 'ionicons/icons';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { translations } from '../../store/translations';
 import { useRouter } from 'next/navigation';
 import { Share } from '@capacitor/share';

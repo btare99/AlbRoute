@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { cameraOutline, personCircleOutline, alertCircleOutline, checkmarkCircleOutline, syncOutline } from 'ionicons/icons';
 import * as faceapi from 'face-api.js';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';

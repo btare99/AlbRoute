@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { searchOutline, closeOutline, starOutline, chevronUpOutline, chevronDownOutline, busOutline, peopleOutline, flashOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useStore from '../../store/useStore';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { chevronBackOutline, alertOutline, mailOutline, checkmarkCircleOutline } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 

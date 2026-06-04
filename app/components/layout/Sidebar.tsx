@@ -1,5 +1,5 @@
 'use client';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline } from 'ionicons/icons';
 import { useState, Fragment } from 'react';
 import { signOut } from "next-auth/react";

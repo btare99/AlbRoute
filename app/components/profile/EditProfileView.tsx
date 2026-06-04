@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import useStore from '../../store/useStore';
-import { IonIcon } from '@ionic/react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import {
   arrowBackOutline,
   saveOutline,
