@@ -298,6 +298,7 @@ export default function MapView() {
   const [isSearching, setIsSearching] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const [isNavigating3D, setIsNavigating3D] = useState(false);
   const selectingOnMap = useStore((s: any) => s.selectingOnMap);
   const setSelectingOnMap = useStore((s: any) => s.setSelectingOnMap);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -563,6 +564,21 @@ export default function MapView() {
       }
     };
   }, []);
+
+  // ── 3D NAVIGATION MAP FOLLOW ──
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady || !isNavigating3D) return;
+
+    if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+      // Offset slightly north so marker is in the bottom third of the 3D viewport
+      const offset = 0.00065;
+      map.setView([userLocation.lat + offset, userLocation.lng], 18, {
+        animate: true,
+        duration: 1.0,
+      });
+    }
+  }, [userLocation, isNavigating3D, mapReady]);
 
   const requestCompassPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
@@ -1501,7 +1517,63 @@ export default function MapView() {
 
   return (
     <div className="full-screen-map">
-      <div ref={mapContainerRef} className="map-container" />
+      <div 
+        ref={mapContainerRef} 
+        className={`map-container ${isNavigating3D ? 'nav-mode-3d' : ''}`}
+        style={{
+          transform: isNavigating3D
+            ? `perspective(700px) rotateX(55deg) rotateZ(${-((userLocation?.heading ?? deviceHeading ?? 0))}deg) translateY(-20px) scale(1.15)`
+            : undefined,
+          transformOrigin: 'bottom center',
+          transition: 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s',
+        }}
+      />
+
+      {/* Floating Exit Navigation Button */}
+      {isNavigating3D && (
+        <button
+          onClick={() => {
+            setIsNavigating3D(false);
+            // Restore map view to fit route bounds
+            if (activeTrip && mapInstanceRef.current) {
+              const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
+              const coords = allStops.map((name: string) => {
+                const s = BUS_STOPS.find((st: any) => st.name?.toLowerCase().trim() === name?.toLowerCase().trim());
+                return s ? [s.lat, s.lng] : null;
+              }).filter(Boolean) as [number, number][];
+
+              if (coords.length > 1 && LRef.current) {
+                const bounds = LRef.current.latLngBounds(coords);
+                mapInstanceRef.current.fitBounds(bounds, { padding: [100, 100], duration: 1.5 });
+              }
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: 'calc(24px + env(safe-area-inset-top, 0px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 2500,
+            background: 'rgba(239, 68, 68, 0.95)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '16px',
+            color: '#fff',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '800',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 8px 32px rgba(239, 68, 68, 0.4)',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.2s',
+          }}
+        >
+          <X size={16} />
+          {language === 'al' ? 'Mbyll Navigimin' : language === 'it' ? 'Chiudi Navigazione' : 'Exit Navigation'}
+        </button>
+      )}
 
       {/* Glassmorphic Map Loading Spinner */}
       {busesLoading && (
@@ -1558,7 +1630,7 @@ export default function MapView() {
         </div>
       </div>
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
-      {!selectingOnMap && (
+      {!selectingOnMap && !isNavigating3D && (
         <div
           ref={searchContainerRef}
           className="overlay-top-mobile mobile-only"
@@ -1619,6 +1691,7 @@ export default function MapView() {
                   setActiveTrip(null);
                   setWalkingShapes({});
                   setShowTripDetails(false);
+                  setIsNavigating3D(false);
                   setTripFrom('');
                   setTripTo('');
                   setShowRoutes(false);
@@ -2434,8 +2507,9 @@ export default function MapView() {
                 </div>
               </div>
             ) : (
-              /* Content */
-              <div className="route-scrollbar" style={{ padding: '0 16px 100px 16px', overflowX: 'hidden' }}>
+              <>
+                {/* Content */}
+                <div className="route-scrollbar" style={{ padding: '0 16px 100px 16px', overflowX: 'hidden' }}>
 
                 {/* Summary card (Identical to Trip Planner) */}
                 <div style={{
@@ -2591,6 +2665,53 @@ export default function MapView() {
                   );
                 })}
               </div>
+
+              {/* Sticky Get Directions Footer */}
+              {!isPlanning && activeTrip && (
+                <div style={{
+                  position: 'sticky',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '16px 20px',
+                  background: 'linear-gradient(to top, rgba(15, 20, 30, 1) 85%, rgba(15, 20, 30, 0))',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  zIndex: 30,
+                  borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                }}>
+                  <button
+                    onClick={async () => {
+                      requestCompassPermission();
+                      await fetchUserLocation(true);
+                      setIsNavigating3D(true);
+                      setTripSheetHeight('peek');
+                    }}
+                    className="white-capsule-btn"
+                    style={{
+                      background: '#f59e0b',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '16px',
+                      height: '52px',
+                      fontWeight: '800',
+                      fontSize: '15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <Navigation size={18} fill="#fff" />
+                    {t.get_direction || 'Get Directions'}
+                  </button>
+                </div>
+              )}
+              </>
             )}
 
 

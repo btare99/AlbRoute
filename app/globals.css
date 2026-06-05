@@ -1200,3 +1200,19 @@ input::placeholder {
     display: none !important;
   }
 }
+
+/* 3D Map Navigation Perspective Mode */
+.map-container.nav-mode-3d {
+  background-color: #0b0f19 !important;
+}
+
+.map-container.nav-mode-3d .leaflet-control-container {
+  /* Counter-tilt control buttons so they remain easily clickable and straight */
+  transform: rotateX(-50deg) scale(0.9) !important;
+  transform-origin: top left;
+  transition: transform 0.4s ease;
+}
+
+.map-container.nav-mode-3d .leaflet-tile-container {
+  will-change: transform;
+}
