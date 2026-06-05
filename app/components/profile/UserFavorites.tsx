@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { IonIcon } from '@/app/components/common/IonIcon';
 import useStore, { BUS_STOPS, BUS_ROUTES } from '../../store/useStore';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   trashOutline,
   busOutline,
@@ -15,10 +16,10 @@ import {
   shieldOutline,
   checkmarkCircleOutline,
   trendingUpOutline,
-  leafOutline,
   addOutline,
   alertCircleOutline,
   closeOutline,
+  arrowBackOutline,
 } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 
@@ -35,70 +36,7 @@ interface SavedStop {
   name: string;
 }
 
-type Tab = 'routes' | 'stops' | 'activity';
-
-// ── Activity log type ─────────────────────────────────────────────────────────
-interface ActivityItem {
-  type: 'trip' | 'save' | 'check';
-  labelKey: string;
-  timeKey: string;
-  score: string;
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-function EmptyTab({ icon, text, action, actionLabel }: {
-  icon: React.ReactNode;
-  text: string;
-  action: () => void;
-  actionLabel: string;
-}) {
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: '60px 24px', gap: '16px', textAlign: 'center',
-      background: 'rgba(255,255,255,0.01)', borderRadius: '20px',
-      border: '0.5px dashed rgba(255,255,255,0.1)',
-      animation: 'fadeUp 0.3s ease',
-    }}>
-      <div style={{
-        width: '56px', height: '56px', borderRadius: '16px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '0.5px solid rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {icon}
-      </div>
-      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', margin: 0 }}>{text}</p>
-      <button
-        onClick={action}
-        style={{
-          background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)',
-          padding: '8px 16px', borderRadius: '99px', color: '#fff', fontSize: '12px',
-          fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-          transition: 'background 0.2s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-      >
-        <IonIcon icon={addOutline} style={{ fontSize: 14 }} /> {actionLabel}
-      </button>
-    </div>
-  );
-}
-
-// ── Skeleton loader ───────────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div style={{
-      height: '66px', borderRadius: '14px',
-      background: 'rgba(255,255,255,0.03)',
-      border: '0.5px solid rgba(255,255,255,0.06)',
-      animation: 'pulse 1.6s ease-in-out infinite',
-    }} />
-  );
-}
-
-// ── Delete confirm modal ──────────────────────────────────────────────────────
+// ── Delete confirm modal (Animated with Framer Motion) ────────────────────────
 function ConfirmModal({ label, onConfirm, onCancel, t }: {
   label: string;
   onConfirm: () => void;
@@ -106,18 +44,28 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
   t: Record<string, string>;
 }) {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-      animation: 'fadeUp 0.2s ease',
-    }}>
-      <div style={{
-        background: '#111', border: '0.5px solid rgba(255,255,255,0.1)',
-        borderRadius: '20px', padding: '24px', maxWidth: '320px', width: '100%',
-        display: 'flex', flexDirection: 'column', gap: '16px',
-      }}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px',
+      }}
+    >
+      <motion.div 
+        initial={{ scale: 0.9, y: 15 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 15 }}
+        transition={{ type: 'spring', stiffness: 160, damping: 18 }}
+        style={{
+          background: '#111', border: '0.5px solid rgba(255,255,255,0.1)',
+          borderRadius: '20px', padding: '24px', maxWidth: '320px', width: '100%',
+          display: 'flex', flexDirection: 'column', gap: '16px',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '10px',
@@ -144,8 +92,6 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
               color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
           >
             <IonIcon icon={closeOutline} style={{ fontSize: 14, marginRight: 6 }} />
             {t.fav_cancel || 'Anulo'}
@@ -158,19 +104,41 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
               color: '#ef4444', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
           >
             <IonIcon icon={trashOutline} style={{ fontSize: 14, marginRight: 6 }} />
             {t.fav_delete || 'Fshi'}
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Framer Motion Entrance Variants ──────────────────────────────────────────
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 24, opacity: 0, scale: 0.97 },
+  show: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 110,
+      damping: 14
+    }
+  }
+};
+
 export default function UserFavorites() {
   const savedRoutes: SavedRoute[] = useStore((state: any) => state.savedRoutes) || [];
   const removeSavedRoute = useStore((state: any) => state.removeSavedRoute);
@@ -183,20 +151,17 @@ export default function UserFavorites() {
   const buses = useStore((state: any) => state.buses) || [];
   const language = useStore((state: any) => state.language);
   const t = translations[language] || translations.al;
+  const recentRouteId = useStore((state: any) => state.recentRouteId);
+  const currentCoverIndex = useStore((state: any) => state.currentCoverIndex);
 
-  const [tab, setTab] = useState<Tab>('routes');
   const [notified, setNotified] = useState<Record<string, boolean>>({});
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string; type: 'route' | 'stop' } | null>(null);
-  const isLoading = false; // replace with real loading state from store if available
 
-  // ── Computed stats from real data ─────────────────────────────────────────
   const totalFavorites = savedRoutes.length + savedStops.length;
   const activeRoutesCount = savedRoutes.filter(r =>
     buses.some((b: any) => b.routeId === r.id)
   ).length;
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
   const toggleNotify = (id: string, name: string) => {
     setNotified(prev => {
       const next = { ...prev, [id]: !prev[id] };
@@ -217,428 +182,612 @@ export default function UserFavorites() {
     setPendingDelete(null);
   };
 
-  // ── Activity items with translation keys ─────────────────────────────────
-  const activityItems: ActivityItem[] = [
-    { type: 'trip', labelKey: 'fav_act_trip', timeKey: 'fav_act_time_1', score: '+15' },
-    { type: 'save', labelKey: 'fav_act_save', timeKey: 'fav_act_time_2', score: '+5' },
-    { type: 'check', labelKey: 'fav_act_check', timeKey: 'fav_act_time_3', score: '+2' },
-  ];
-
   return (
-    <>
-      {/* ── CSS animations ─────────────────────────────────────────────────── */}
-      <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative', overflow: 'hidden' }}>
+
+      <style jsx>{`
         @keyframes pulse {
-          0%, 100% { opacity: 0.4; }
-          50%       { opacity: 0.7; }
+          0%, 100% { opacity: 0.5; }
+          50%       { opacity: 0.8; }
         }
-        .fav-card { animation: fadeUp 0.25s ease both; }
-        .fav-card:nth-child(1) { animation-delay: 0ms; }
-        .fav-card:nth-child(2) { animation-delay: 40ms; }
-        .fav-card:nth-child(3) { animation-delay: 80ms; }
-        .fav-card:nth-child(4) { animation-delay: 120ms; }
-        .fav-card:nth-child(5) { animation-delay: 160ms; }
+        .live-pulse {
+          animation: pulse 1.5s infinite alternate;
+        }
       `}</style>
 
-      {/* ── Delete confirm modal ─────────────────────────────────────────── */}
-      {pendingDelete && (
-        <ConfirmModal
-          label={pendingDelete.label}
-          onConfirm={confirmDelete}
-          onCancel={() => setPendingDelete(null)}
-          t={t}
-        />
-      )}
+      {/* Animated delete confirm modal */}
+      <AnimatePresence>
+        {pendingDelete && (
+          <ConfirmModal
+            label={pendingDelete.label}
+            onConfirm={confirmDelete}
+            onCancel={() => setPendingDelete(null)}
+            t={t}
+          />
+        )}
+      </AnimatePresence>
 
-      <div className="page-content">
-
-        {/* ── Header (no back button) ────────────────────────────────────── */}
-        <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '16px', fontWeight: '600', margin: 0, color: '#fff' }}>
-              {t.saved}
-            </h1>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: '2px 0 0' }}>
-              {totalFavorites} {totalFavorites === 1 ? t.fav_favorite : t.fav_favorites} {t.fav_saved_adj}
-            </p>
-          </div>
-          {activeRoutesCount > 0 && (
-            <div style={{
-              padding: '5px 10px', borderRadius: '99px',
-              background: 'rgba(16,185,129,0.08)',
-              border: '0.5px solid rgba(16,185,129,0.2)',
-              fontSize: '11px', color: '#10b981', fontWeight: '600',
-              display: 'flex', alignItems: 'center', gap: '5px',
-            }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-              {activeRoutesCount} Live
-            </div>
-          )}
-        </div>
-
-        {/* ── Stats Row (computed from real data) ───────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
-          {[
-            {
-              label: t.fav_trips,
-              val: String(savedRoutes.length),
-              icon: <IonIcon icon={busOutline} style={{ fontSize: 13, color: '#3b82f6' }} />,
-              color: '#3b82f6',
-            },
-            {
-              label: t.fav_saved,
-              val: String(savedStops.length),
-              icon: <IonIcon icon={leafOutline} style={{ fontSize: 13, color: '#10b981' }} />,
-              color: '#10b981',
-            },
-            {
-              label: t.fav_usage,
-              val: activeRoutesCount > 0 ? `${activeRoutesCount} ✓` : '—',
-              icon: <IonIcon icon={trendingUpOutline} style={{ fontSize: 13, color: '#8b5cf6' }} />,
-              color: '#8b5cf6',
-            },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
-              padding: '12px 8px', borderRadius: '12px', textAlign: 'center',
-            }}>
-              <div style={{ color: s.color, marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>{s.icon}</div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#fff' }}>{s.val}</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Tabs ──────────────────────────────────────────────────────── */}
+      {/* Curved Gradient Header (Cover) */}
+      <div style={{
+        position: 'relative',
+        height: '95px',
+        overflow: 'visible',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+        zIndex: 10,
+        background: '#0a0f1d',
+        flexShrink: 0
+      }}>
+        {/* Slideshow background images */}
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num, i) => (
+          <div
+            key={num}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(234, 88, 12, 0.95) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
+              opacity: currentCoverIndex === i ? 1 : 0,
+              transition: 'opacity 1.5s ease-in-out',
+              zIndex: 0
+            }}
+          />
+        ))}
+        {/* Navigation header */}
         <div style={{
-          display: 'flex', gap: '8px', padding: '6px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: '16px', marginBottom: '28px',
-          border: '0.5px solid rgba(255,255,255,0.08)',
+          position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', left: '20px', right: '20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5
         }}>
-          {([
-            { key: 'routes' as Tab, label: t.routes, icon: busOutline, count: savedRoutes.length },
-            { key: 'stops' as Tab, label: t.stations, icon: locationOutline, count: savedStops.length },
-            { key: 'activity' as Tab, label: t.fav_activity, icon: timeOutline, count: 0 },
-          ]).map(({ key, label, icon, count }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                flex: 1, padding: '10px 12px', borderRadius: '12px',
-                border: 'none', cursor: 'pointer',
-                background: tab === key ? '#fff' : 'transparent',
-                color: tab === key ? '#000' : 'rgba(255,255,255,0.4)',
-                fontWeight: '700', fontSize: '13px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                transition: 'all 0.2s',
-                boxShadow: tab === key ? '0 4px 12px rgba(255,255,255,0.1)' : 'none',
-              }}
-            >
-              <IonIcon icon={icon} style={{ fontSize: 16 }} />
-              {label}
-              {count > 0 && (
-                <span style={{
-                  padding: '1px 6px', borderRadius: '8px', fontSize: '10px',
-                  background: tab === key ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)',
-                  color: tab === key ? '#000' : 'rgba(255,255,255,0.4)',
-                  fontWeight: '700',
+          <span style={{
+            color: '#fff', fontSize: '18px', fontWeight: '800',
+            letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
+          }}>
+            Favourites
+          </span>
+        </div>
+
+        {/* Organic Wave Bottom Divider */}
+        <svg viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '30px', zIndex: 2 }}>
+          <path fill="var(--bg-dark)" d="M0,160 C 180,160 180,210 360,210 C 540,210 540,110 720,110 C 900,110 900,210 1080,210 C 1260,210 1260,160 1440,160 L 1440,220 L 0,220 Z"></path>
+        </svg>
+      </div>
+
+      {/* Main dashboard body */}
+      <div 
+        style={{
+          flex: 1,
+          padding: '20px',
+          paddingTop: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          overflowY: 'auto',
+          paddingBottom: '30px'
+        }}
+      >
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+        >
+          {/* SECTION 0: RECENT ROUTE */}
+          {(() => {
+            const recentRoute = BUS_ROUTES.find(r => r.id === recentRouteId);
+            const recentBusesCount = recentRoute ? buses.filter((b: any) => b.routeId === recentRoute.id).length : 0;
+            if (!recentRoute) return null;
+            return (
+              <motion.div variants={itemVariants} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0, paddingLeft: '4px' }}>
+                  {language === 'al' ? 'Linja e Fundit' : language === 'it' ? 'Ultimo Percorso' : 'Recent Route'}
+                </h3>
+                <div
+                  onClick={() => { setSelectedRoute(recentRoute.id); setView('tracker'); }}
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: `4px solid ${recentRoute.color}`,
+                    borderRadius: '0 20px 20px 0',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '12px',
+                      background: recentRoute.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: '900', fontSize: '14px', color: '#fff',
+                      boxShadow: `0 4px 15px ${recentRoute.color}40`,
+                    }}>
+                      {recentRoute.id}
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff' }}>
+                        {recentRoute.name}
+                      </h4>
+                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'rgba(255, 255, 255, 0.35)' }}>
+                        {recentRoute.label}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      background: recentBusesCount > 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                      border: `1px solid ${recentBusesCount > 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)'}`,
+                      padding: '6px 12px', borderRadius: '10px',
+                      fontSize: '11px', fontWeight: '700', color: recentBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.4)',
+                    }}>
+                      <div className="live-pulse" style={{
+                        width: '6px', height: '6px', borderRadius: '50%',
+                        background: '#10b981',
+                        boxShadow: '0 0 8px #10b981',
+                        display: recentBusesCount > 0 ? 'block' : 'none'
+                      }} />
+                      <span>{recentBusesCount} Live</span>
+                    </div>
+                    <IonIcon icon={arrowForwardOutline} style={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.25)' }} />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })()}
+
+          {/* SECTION 1: PANELI I UDHËTIMIT (Travel Panel & Levels) */}
+          <motion.div 
+            variants={itemVariants}
+            style={{
+              background: 'linear-gradient(145deg, rgba(245, 158, 11, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '24px',
+              padding: '20px',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#f59e0b',
                 }}>
-                  {count}
+                  <IonIcon icon={trendingUpOutline} style={{ fontSize: 16 }} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {language === 'al' ? 'Statusi i Udhëtimit' : 'Travel Status'}
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255, 255, 255, 0.35)' }}>
+                    {language === 'al' ? 'Pikat dhe niveli juaj' : 'Your points and level'}
+                  </p>
+                </div>
+              </div>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: '700',
+                color: '#f59e0b'
+              }}>
+                {language === 'al' ? 'Niveli 4' : 'Level 4'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.04)', paddingTop: '14px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                  <span style={{ color: 'rgba(255, 255, 255, 0.45)', fontWeight: '600' }}>540 / 600 pts</span>
+                  <span style={{ color: '#f59e0b', fontWeight: '700' }}>90%</span>
+                </div>
+                <div style={{ height: '6px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{ width: '90%', height: '100%', background: 'linear-gradient(90deg, #f59e0b, #ea580c)', borderRadius: '99px' }} />
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ display: 'block', fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>+140</span>
+                <span style={{ display: 'block', fontSize: '9px', color: 'rgba(255, 255, 255, 0.3)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '700' }}>
+                  {language === 'al' ? 'Minuta Kursim' : 'Mins Saved'}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* SECTION 2: LINJAT E PREFERUARA (Horizontal Swipe Carousel) */}
+          <motion.div variants={itemVariants}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
+              <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                {t.routes}
+              </h3>
+              {savedRoutes.length > 0 && (
+                <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '700' }}>
+                  {savedRoutes.length} {language === 'al' ? 'Të ruajtura' : 'Saved'}
                 </span>
               )}
-            </button>
-          ))}
-        </div>
+            </div>
 
-        {/* ── Content ───────────────────────────────────────────────────── */}
-        <div style={{ minHeight: '300px' }}>
+            {savedRoutes.length === 0 ? (
+              <div style={{
+                padding: '36px 20px', textAlign: 'center',
+                background: 'rgba(255, 255, 255, 0.02)', border: '1.5px dashed rgba(255, 255, 255, 0.05)',
+                borderRadius: '20px',
+              }}>
+                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)' }}>{t.fav_no_routes}</p>
+                <button
+                  onClick={() => setView('tracker')}
+                  style={{
+                    marginTop: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '6px 14px', borderRadius: '12px', color: '#fff', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                  }}
+                >
+                  {language === 'al' ? 'Kërko Linjat' : 'Search Routes'}
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px',
+                scrollbarWidth: 'none', margin: '0 -20px', paddingLeft: '20px', paddingRight: '20px'
+              } as any}>
+                <AnimatePresence mode="popLayout">
+                  {savedRoutes.map((route) => {
+                    const r = BUS_ROUTES.find((x: any) => x.id === route.id) || route;
+                    const activeBusesCount = buses.filter((b: any) => b.routeId === r.id).length;
+                    return (
+                      <motion.div
+                        key={r.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                        transition={{ type: 'spring', stiffness: 140, damping: 15 }}
+                        style={{
+                          flexShrink: 0,
+                          width: '150px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '24px',
+                          padding: '18px 16px 16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                          position: 'relative',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                          e.currentTarget.style.borderColor = `${r.color}50`;
+                          e.currentTarget.style.boxShadow = `0 12px 30px ${r.color}20, 0 8px 20px rgba(0,0,0,0.2)`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                        }}
+                      >
+                        {/* Delete small floating button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: r.id, label: r.name, type: 'route' }); }}
+                          style={{
+                            position: 'absolute', top: '10px', right: '10px',
+                            width: '24px', height: '24px', borderRadius: '50%',
+                            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#ef4444', cursor: 'pointer', zIndex: 5,
+                          }}
+                        >
+                          <IonIcon icon={closeOutline} style={{ fontSize: 11 }} />
+                        </button>
 
-          {/* Routes tab */}
-          {tab === 'routes' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '12px' }}>
-              {isLoading ? (
-                [1, 2, 3].map(i => <SkeletonCard key={i} />)
-              ) : savedRoutes.length === 0 ? (
-                <EmptyTab
-                  icon={<IonIcon icon={busOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.2)' }} />}
-                  text={t.fav_no_routes}
-                  action={() => setView('tracker')}
-                  actionLabel={t.routes}
-                />
-              ) : (
-                savedRoutes.map((route: SavedRoute) => {
-                  const r = BUS_ROUTES.find((x: any) => x.id === route.id) || route;
-                  const activeBusesCount = buses.filter((b: any) => b.routeId === r.id).length;
-                  const isHovered = hoveredId === r.id;
-                  return (
-                    <div
-                      key={r.id}
-                      className="fav-card"
-                      onMouseEnter={() => setHoveredId(r.id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                      style={{
-                        background: isHovered ? `${r.color}08` : 'rgba(255,255,255,0.02)',
-                        border: `0.5px solid ${isHovered ? (r.color + '60') : (r.color + '30')}`,
-                        borderLeft: `2.5px solid ${r.color}`,
-                        borderRadius: '0 14px 14px 0',
-                        padding: '14px 16px',
-                        transition: 'all 0.15s',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Route Badge in Card */}
                         <div style={{
-                          width: '38px', height: '38px', borderRadius: '10px',
-                          background: `${r.color}15`, border: `0.5px solid ${r.color}40`,
+                          width: '40px', height: '40px', borderRadius: '12px',
+                          background: r.color,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: '800', fontSize: '13px', color: r.color, flexShrink: 0,
+                          fontWeight: '900', fontSize: '14px', color: '#fff',
+                          boxShadow: `0 4px 15px ${r.color}40`,
                         }}>
                           {r.id}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: 0 }}>
-                              {r.name}
-                            </h3>
-                            {activeBusesCount > 0 && (
-                              <div style={{
-                                width: '6px', height: '6px', borderRadius: '50%',
-                                background: '#10b981', boxShadow: '0 0 8px #10b98160',
-                              }} />
-                            )}
+
+                        <div style={{ flex: 1, minWidth: 0, marginTop: '4px' }}>
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {r.name}
+                          </h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
+                            <div style={{
+                              width: '5px', height: '5px', borderRadius: '50%',
+                              background: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.2)',
+                              boxShadow: activeBusesCount > 0 ? '0 0 6px #10b981' : 'none'
+                            }} />
+                            <span style={{ fontSize: '10px', color: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                              {activeBusesCount > 0 ? `${activeBusesCount} Live` : t.fav_no_active}
+                            </span>
                           </div>
-                          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
-                            {activeBusesCount > 0
-                              ? `${activeBusesCount} ${t.fav_active_buses}`
-                              : t.fav_no_active}
-                          </p>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+
+                        {/* Interactive Bottom Actions */}
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                           <button
-                            aria-label={notified[r.id] ? t.fav_notif_disable || 'Çaktivizo njoftime' : t.fav_notif_enable || 'Aktivizo njoftime'}
                             onClick={() => toggleNotify(r.id, r.name)}
                             style={{
-                              width: '32px', height: '32px', borderRadius: '8px',
-                              background: notified[r.id] ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
-                              border: `0.5px solid ${notified[r.id] ? '#f59e0b40' : 'rgba(255,255,255,0.08)'}`,
-                              color: notified[r.id] ? '#f59e0b' : 'rgba(255,255,255,0.25)',
+                              flex: 1, height: '28px', borderRadius: '6px',
+                              background: notified[r.id] ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${notified[r.id] ? '#f59e0b30' : 'rgba(255,255,255,0.05)'}`,
+                              color: notified[r.id] ? '#f59e0b' : 'rgba(255,255,255,0.4)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                              transition: 'all 0.15s',
                             }}
                           >
-                            <IonIcon
-                              icon={notified[r.id] ? notificationsOutline : notificationsOffOutline}
-                              style={{ fontSize: 13 }}
-                            />
+                            <IonIcon icon={notified[r.id] ? notificationsOutline : notificationsOffOutline} style={{ fontSize: 12 }} />
                           </button>
                           <button
-                            aria-label={t.fav_track || 'Gjurmo'}
                             onClick={() => { setSelectedRoute(r.id); setView('tracker'); }}
                             style={{
-                              height: '32px', padding: '0 12px', borderRadius: '8px',
-                              background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)',
-                              color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600',
-                              display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
-                              transition: 'background 0.15s',
+                              flex: 2, height: '28px', borderRadius: '6px',
+                              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                              color: 'rgba(255,255,255,0.8)', fontSize: '10px', fontWeight: '800',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
                           >
-                            <IonIcon icon={arrowForwardOutline} style={{ fontSize: 12 }} />
-                            {t.fav_track}
-                          </button>
-                          <button
-                            aria-label={t.fav_remove_route || 'Hiq nga të preferuarat'}
-                            onClick={() => setPendingDelete({ id: r.id, label: r.name, type: 'route' })}
-                            style={{
-                              width: '32px', height: '32px', borderRadius: '8px',
-                              background: 'rgba(239,68,68,0.06)', border: '0.5px solid rgba(239,68,68,0.2)',
-                              color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', transition: 'background 0.15s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.14)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
-                          >
-                            <IonIcon icon={trashOutline} style={{ fontSize: 13 }} />
+                            <IonIcon icon={arrowForwardOutline} style={{ fontSize: 10 }} />
+                            <span>{t.fav_track}</span>
                           </button>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+          </motion.div>
+
+          {/* SECTION 3: STACIONET E PREFERUARA (Grid Masonry Layout) */}
+          <motion.div variants={itemVariants}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
+              <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                {t.stations}
+              </h3>
+              {savedStops.length > 0 && (
+                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '700' }}>
+                  {savedStops.length} {language === 'al' ? 'Stacione' : 'Stops'}
+                </span>
               )}
             </div>
-          )}
 
-          {/* Stops tab */}
-          {tab === 'stops' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '12px' }}>
-              {isLoading ? (
-                [1, 2, 3].map(i => <SkeletonCard key={i} />)
-              ) : savedStops.length === 0 ? (
-                <EmptyTab
-                  icon={<IonIcon icon={locationOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.2)' }} />}
-                  text={t.fav_no_stops}
-                  action={() => setView('map')}
-                  actionLabel={t.map}
-                />
-              ) : (
-                savedStops.map((stop: SavedStop) => {
-                  const s = BUS_STOPS.find((x: any) => x.id === stop.id || x.name === stop.name) || stop;
-                  const stopId = String(s.id || s.name);
-                  const stopRoutes = BUS_ROUTES.filter((r: any) =>
-                    r.stops?.includes(s.id) || r.stops?.includes(s.name)
-                  );
-                  const isHovered = hoveredId === stopId;
-                  return (
-                    <div
-                      key={stopId}
-                      className="fav-card"
-                      onMouseEnter={() => setHoveredId(stopId)}
-                      onMouseLeave={() => setHoveredId(null)}
-                      style={{
-                        background: isHovered ? 'rgba(59,130,246,0.05)' : 'rgba(255,255,255,0.02)',
-                        border: `0.5px solid ${isHovered ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.07)'}`,
-                        borderRadius: '14px',
-                        padding: '14px 16px',
-                        transition: 'all 0.15s',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          width: '38px', height: '38px', borderRadius: '10px',
-                          background: 'rgba(59,130,246,0.1)', border: '0.5px solid rgba(59,130,246,0.2)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <IonIcon icon={locationOutline} style={{ fontSize: 18, color: '#3b82f6' }} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', margin: 0 }}>
+            {savedStops.length === 0 ? (
+              <div style={{
+                padding: '36px 20px', textAlign: 'center',
+                background: 'rgba(255, 255, 255, 0.02)', border: '1.5px dashed rgba(255, 255, 255, 0.05)',
+                borderRadius: '20px',
+              }}>
+                <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)' }}>{t.fav_no_stops}</p>
+                <button
+                  onClick={() => setView('map')}
+                  style={{
+                    marginTop: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '6px 14px', borderRadius: '12px', color: '#fff', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                  }}
+                >
+                  {language === 'al' ? 'Hap Hartën' : 'Open Map'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', position: 'relative' }}>
+                <AnimatePresence mode="popLayout">
+                  {savedStops.map((stop) => {
+                    const s = BUS_STOPS.find((x: any) => x.id === stop.id || x.name === stop.name) || stop;
+                    const stopId = String(s.id || s.name);
+                    const stopRoutes = BUS_ROUTES.filter((r: any) =>
+                      r.stops?.includes(s.id) || r.stops?.includes(s.name)
+                    );
+                    return (
+                      <motion.div
+                        key={stopId}
+                        layout
+                        initial={{ opacity: 0, scale: 0.9, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: -15 }}
+                        transition={{ type: 'spring', stiffness: 140, damping: 15 }}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '20px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          position: 'relative',
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                          transition: 'border-color 0.2s, background 0.2s, transform 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        {/* Delete stop absolute */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: stopId, label: s.name, type: 'stop' }); }}
+                          style={{
+                            position: 'absolute', top: '10px', right: '10px',
+                            width: '24px', height: '24px', borderRadius: '50%',
+                            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#ef4444', cursor: 'pointer', zIndex: 5,
+                          }}
+                        >
+                          <IonIcon icon={closeOutline} style={{ fontSize: 11 }} />
+                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            width: '28px', height: '28px', borderRadius: '8px',
+                            background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#3b82f6', flexShrink: 0
+                          }}>
+                            <IonIcon icon={locationOutline} style={{ fontSize: 14 }} />
+                          </div>
+                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
                             {s.name}
-                          </h3>
-                          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0 }}>
+                          </h4>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', fontWeight: '600' }}>
                             {stopRoutes.length} {t.fav_routes_pass_here}
                           </p>
+                          {/* Miniature badges for route connections */}
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            {stopRoutes.slice(0, 3).map((r) => (
+                              <span
+                                key={r.id}
+                                style={{
+                                  fontSize: '9px', fontWeight: '800', color: '#fff',
+                                  background: r.color, padding: '1px 5px', borderRadius: '4px',
+                                }}
+                              >
+                                {r.id}
+                              </span>
+                            ))}
+                            {stopRoutes.length > 3 && (
+                              <span style={{ fontSize: '9px', fontWeight: '800', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '4px' }}>
+                                +{stopRoutes.length - 3}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            aria-label={t.fav_plan_from || 'Plano nga ky stacion'}
-                            onClick={() => { setTripFrom(s.name); setView('planner'); }}
-                            style={{
-                              width: '32px', height: '32px', borderRadius: '8px',
-                              background: 'rgba(16,185,129,0.08)', border: '0.5px solid rgba(16,185,129,0.2)',
-                              color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', transition: 'background 0.15s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.16)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
-                          >
-                            <IonIcon icon={navigateOutline} style={{ fontSize: 13 }} />
-                          </button>
-                          <button
-                            aria-label={t.fav_remove_stop || 'Hiq stacionin'}
-                            onClick={() => setPendingDelete({ id: stopId, label: s.name, type: 'stop' })}
-                            style={{
-                              width: '32px', height: '32px', borderRadius: '8px',
-                              background: 'rgba(239,68,68,0.06)', border: '0.5px solid rgba(239,68,68,0.2)',
-                              color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', transition: 'background 0.15s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.14)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.06)')}
-                          >
-                            <IonIcon icon={trashOutline} style={{ fontSize: 13 }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
 
-          {/* Activity tab */}
-          {tab === 'activity' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {activityItems.length === 0 ? (
-                <EmptyTab
-                  icon={<IonIcon icon={timeOutline} style={{ fontSize: 24, color: 'rgba(255,255,255,0.2)' }} />}
-                  text={t.fav_no_activity || 'Asnjë aktivitet ende'}
-                  action={() => setView('tracker')}
-                  actionLabel={t.routes}
-                />
-              ) : (
-                activityItems.map((act) => (
-                  <div
-                    key={act.labelKey}
-                    className="fav-card"
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px',
-                      background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
-                      border: '0.5px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '8px',
-                      background: 'rgba(255,255,255,0.04)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {act.type === 'trip'
-                        ? <IonIcon icon={navigateOutline} style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }} />
-                        : act.type === 'save'
-                          ? <IonIcon icon={starOutline} style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }} />
-                          : <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }} />
-                      }
+                        <button
+                          onClick={() => { setTripFrom(s.name); setView('planner'); }}
+                          style={{
+                            width: '100%', height: '30px', borderRadius: '8px',
+                            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)',
+                            color: '#10b981', fontSize: '11px', fontWeight: '700',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                            cursor: 'pointer', transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(16,185,129,0.16)';
+                            e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(16,185,129,0.08)';
+                            e.currentTarget.style.borderColor = 'rgba(16,185,129,0.15)';
+                          }}
+                        >
+                          <IonIcon icon={navigateOutline} style={{ fontSize: 11 }} />
+                          <span>{language === 'al' ? 'Plano' : 'Plan'}</span>
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+          </motion.div>
+
+          {/* SECTION 4: EKO HISTORIKU (Eco Activity Log) */}
+          <motion.div variants={itemVariants}>
+            <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', padding: '0 4px' }}>
+              {t.fav_activity}
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { label: language === 'al' ? 'Udhëtim ekologjik i kryer' : 'Eco trip completed', time: '1 orë më parë', pts: '+15 pts', icon: checkmarkCircleOutline, color: '#10b981', bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.15)' },
+                { label: language === 'al' ? 'Ruajtët linjën Selitë - Allias' : 'Saved Selitë - Allias route', time: 'Dje', pts: '+5 pts', icon: starOutline, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.15)' },
+                { label: language === 'al' ? 'Kontrolluar pozicioni live i busit' : 'Checked live bus location', time: 'Para 3 ditësh', pts: '+2 pts', icon: busOutline, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.08)', border: 'rgba(139, 92, 246, 0.15)' },
+              ].map((act, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
+                    background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: '16px',
+                  }}
+                >
+                  <div style={{
+                    width: '34px', height: '34px', borderRadius: '8px',
+                    background: act.bg, border: `1px solid ${act.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: act.color, flexShrink: 0
+                  }}>
+                    <IonIcon icon={act.icon} style={{ fontSize: 14 }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {act.label}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#fff' }}>
-                        {t[act.labelKey] || act.labelKey}
-                      </div>
-                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>
-                        {t[act.timeKey] || act.timeKey}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#10b981' }}>
-                      {act.score} pts
+                    <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.3)', marginTop: '2px' }}>
+                      {act.time}
                     </div>
                   </div>
-                ))
-              )}
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#10b981' }}>
+                    {act.pts}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </motion.div>
 
-        {/* ── Security footer ───────────────────────────────────────────── */}
-        <div style={{
-          marginTop: '32px', padding: '16px', borderRadius: '16px',
-          background: 'rgba(16,185,129,0.03)', border: '0.5px solid rgba(16,185,129,0.1)',
-          display: 'flex', gap: '12px', alignItems: 'center',
-        }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '10px',
-            background: 'rgba(16,185,129,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <IonIcon icon={shieldOutline} style={{ fontSize: 16, color: '#10b981' }} />
-          </div>
-          <div>
-            <p style={{ fontSize: '12px', fontWeight: '600', color: '#fff', margin: 0 }}>
-              {t.fav_data_protection}
-            </p>
-            <p style={{ fontSize: '11px', color: 'rgba(16,185,129,0.6)', margin: 0 }}>
-              {t.fav_encryption}
-            </p>
-          </div>
-        </div>
+          {/* SECTION 5: SECURITY FOOTER */}
+          <motion.div 
+            variants={itemVariants}
+            style={{
+              marginTop: '8px', padding: '16px', borderRadius: '20px',
+              background: 'rgba(16, 185, 129, 0.02)', border: '1px solid rgba(16, 185, 129, 0.08)',
+              display: 'flex', gap: '14px', alignItems: 'center',
+            }}
+          >
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(16, 185, 129, 0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, color: '#10b981'
+            }}>
+              <IonIcon icon={shieldOutline} style={{ fontSize: 16 }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                {t.fav_data_protection}
+              </p>
+              <p style={{ fontSize: '11px', color: 'rgba(16, 185, 129, 0.5)', margin: '2px 0 0' }}>
+                {t.fav_encryption}
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
 
       </div>
-    </>
+    </div>
   );
 }

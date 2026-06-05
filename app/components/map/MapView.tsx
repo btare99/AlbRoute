@@ -17,6 +17,18 @@ const isValidCoords = (coords: any): boolean => {
   return coords && typeof coords.lat === 'number' && typeof coords.lng === 'number' && !isNaN(coords.lat) && !isNaN(coords.lng);
 };
 
+// Helper to get a stable, deterministic pseudo-random arrival time (2-7 mins) based on bus ID
+const getStableArrivalTime = (bus: any): string => {
+  if (!bus) return '5';
+  const idStr = String(bus.busId || bus.id || bus.routeId || 'default');
+  let hash = 0;
+  for (let i = 0; i < idStr.length; i++) {
+    hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const mins = Math.max(2, (Math.abs(hash) % 6) + 2); // 2 to 7 minutes
+  return mins.toString();
+};
+
 // Snaps a [lat, lng] point to the closest point along a polyline's segments
 const findClosestPointOnPolyline = (point: [number, number], polyline: [number, number][]): [number, number] => {
   if (polyline.length === 0) return point;
@@ -733,6 +745,14 @@ export default function MapView() {
     (map as any)._tileLayer = newTile;
   }, [mapStyle]);
 
+  // Cleanup selected stop and info panel on unmount (changing pages)
+  useEffect(() => {
+    return () => {
+      setSelectedStop(null);
+      setInfoPanel(null);
+    };
+  }, [setSelectedStop, setInfoPanel]);
+
   // ── MAP CLICK HANDLER ──
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -1042,7 +1062,8 @@ export default function MapView() {
               weight: 10,
               opacity: 0.22,
               lineCap: 'round',
-              lineJoin: 'round'
+              lineJoin: 'round',
+              interactive: false
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLineGlow, routeId: `walk_glow_${idx}` });
 
@@ -1053,7 +1074,8 @@ export default function MapView() {
               dashArray: '1, 12',
               lineCap: 'round',
               lineJoin: 'round',
-              opacity: 0.95
+              opacity: 0.95,
+              interactive: false
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLine, routeId: `walk_${idx}` });
           }
@@ -1128,14 +1150,16 @@ export default function MapView() {
             weight: 12,
             opacity: 0.2,
             lineCap: 'round',
-            lineJoin: 'round'
+            lineJoin: 'round',
+            interactive: false
           }).addTo(map);
           routeLinesRef.current.push({ line: glow, routeId: `${route.id}_glow` });
 
           const line = L.polyline(legCoords, {
             color: route.color,
             weight: 6,
-            opacity: 1
+            opacity: 1,
+            interactive: false
           }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
 
@@ -1172,7 +1196,7 @@ export default function MapView() {
           if (coords.length === 0 && dir === '0') coords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
           if (coords.length < 2) return;
           const isActive = !activeRouteFilter || route.id === activeRouteFilter;
-          const line = L.polyline(coords, { color: route.color, weight: isActive ? 4 : 2, opacity: isActive ? 0.9 : 0.2 }).addTo(map);
+          const line = L.polyline(coords, { color: route.color, weight: isActive ? 4 : 2, opacity: isActive ? 0.9 : 0.2, interactive: false }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
 
           // Draw directional arrows only for active/filtered routes
@@ -1507,8 +1531,8 @@ export default function MapView() {
               .spinner_aj1M{transform-origin:center;animation:spinner_mw72 .75s linear infinite}
               @keyframes spinner_mw72{100%{transform:rotate(360deg)}}
             `}</style>
-            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="#3b82f6"/>
-            <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" className="spinner_aj1M" fill="#3b82f6"/>
+            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="#3b82f6" />
+            <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" className="spinner_aj1M" fill="#3b82f6" />
           </svg>
           <span style={{
             color: '#fff',
@@ -1533,14 +1557,13 @@ export default function MapView() {
           </div>
         </div>
       </div>
-
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
       {!selectingOnMap && (
         <div
           ref={searchContainerRef}
           className="overlay-top-mobile mobile-only"
           style={{
-            position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 2002,
+            position: 'absolute', top: 'calc(16px + env(safe-area-inset-top, 0px))', left: '16px', right: '16px', zIndex: 2002,
             display: 'flex', flexDirection: 'column', overflow: 'visible'
           }}
         >
@@ -1573,7 +1596,12 @@ export default function MapView() {
                 }}
                 placeholder={t.select_departure}
                 onClick={(e) => { e.stopPropagation(); setIsSearching(true); }}
-                onFocus={() => { setShowFromDropdown(true); setShowToDropdown(false); }}
+                onFocus={() => {
+                  setShowFromDropdown(true);
+                  setShowToDropdown(false);
+                  setSelectedStop(null);
+                  setInfoPanel(null);
+                }}
                 onBlur={() => setTimeout(() => setShowFromDropdown(false), 200)}
                 style={{
                   background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
@@ -1661,7 +1689,12 @@ export default function MapView() {
                   setShowToDropdown(true);
                 }}
                 placeholder={t.select_destination}
-                onFocus={() => { setShowToDropdown(true); setShowFromDropdown(false); }}
+                onFocus={() => {
+                  setShowToDropdown(true);
+                  setShowFromDropdown(false);
+                  setSelectedStop(null);
+                  setInfoPanel(null);
+                }}
                 onBlur={() => setTimeout(() => setShowToDropdown(false), 200)}
                 style={{
                   background: 'transparent', border: 'none', color: '#fff', fontSize: '15px',
@@ -2343,6 +2376,7 @@ export default function MapView() {
               maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px)' : '40vh',
               minHeight: '200px',
               overflowY: tripSheetHeight === 'full' ? 'auto' : 'hidden',
+              overflowX: 'hidden',
               zIndex: 1001,
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
@@ -2401,7 +2435,7 @@ export default function MapView() {
               </div>
             ) : (
               /* Content */
-              <div className="route-scrollbar" style={{ padding: '0 20px 100px 20px' }}>
+              <div className="route-scrollbar" style={{ padding: '0 16px 100px 16px', overflowX: 'hidden' }}>
 
                 {/* Summary card (Identical to Trip Planner) */}
                 <div style={{
@@ -2418,20 +2452,21 @@ export default function MapView() {
                     </div>
                     <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>Urbani Im AI</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', width: '100%' }}>
                     {[
                       { icon: <Clock size={14} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
                       { icon: <MapPin size={14} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
                       { icon: <Banknote size={14} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
                     ].map(({ icon, value, label, color }, idx) => (
                       <div key={label} style={{
-                        padding: '12px 8px',
+                        padding: '10px 4px',
                         borderRight: idx < 2 ? '0.5px solid rgba(255,255,255,0.05)' : 'none',
+                        minWidth: 0,
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
                       }}>
                         <span style={{ color }}>{icon}</span>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{value}</span>
-                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>{label}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap' }}>{value}</span>
+                        <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{label}</span>
                       </div>
                     ))}
                   </div>
@@ -2506,14 +2541,14 @@ export default function MapView() {
                         padding: '14px',
                         marginBottom: '8px',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', minWidth: 0 }}>
                           <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <Bus size={10} /> {leg.route?.name}
                           </div>
-                          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{r?.name}</span>
-                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}>{r?.name}</span>
+                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                             <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', fontWeight: '600' }}>{t.ticket_40}</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', fontWeight: '600', whiteSpace: 'nowrap' }}>{t.ticket_40}</span>
                           </div>
                         </div>
 
@@ -2529,8 +2564,8 @@ export default function MapView() {
                                   <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
                                   {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', minHeight: '30px' }}>
-                                  <span style={{ fontSize: '13px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)' }}>{stop}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
+                                  <span style={{ fontSize: '12px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stop}</span>
                                 </div>
                               </div>
                             );
@@ -2676,7 +2711,7 @@ export default function MapView() {
                   <MapPin size={28} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
                 </span>
                 <div className="route-texts">
-                  <h3 style={{ maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
+                  <h3 style={{ maxWidth: 'calc(100vw - 140px)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{t.station} • ID {selectedStop.id}</p>
                 </div>
               </div>
@@ -2726,14 +2761,14 @@ export default function MapView() {
                       <span style={{ background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 900, padding: '3px 8px', borderRadius: 6 }}>LIVE</span>
                     </div>
                     {closestBus ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                        <div style={{ width: 44, height: 44, background: (closestBus as any).routeColor || '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div style={{ width: 40, height: 40, background: (closestBus as any).routeColor || '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
                           <Bus size={22} color="#fff" />
                         </div>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{(closestBus as any).routeName || (closestBus as any).routeId}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(closestBus as any).routeName || (closestBus as any).routeId}</div>
                           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                            {t.arrival_time.replace('{count}', Math.max(2, Math.round(Math.random() * 5 + 2)).toString())}
+                            {t.arrival_time.replace('{count}', getStableArrivalTime(closestBus))}
                           </div>
                         </div>
                       </div>
@@ -2756,19 +2791,19 @@ export default function MapView() {
                     {[1, 2, 3, 4, 5].map((i) => {
                       const randomRoute = BUS_ROUTES[i % BUS_ROUTES.length];
                       return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 10, background: randomRoute.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 14 }}>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', gap: '10px', minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 10, background: randomRoute.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 13, flexShrink: 0 }}>
                               {randomRoute.name}
                             </div>
-                            <div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Drejt Qendrës</div>
-                              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>ID: TR-{1000 + i}</div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Drejt Qendrës</div>
+                              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>ID: TR-{1000 + i}</div>
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>{i * 4 + 2} min</div>
-                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{Math.round(400 * i)}m larg</div>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap' }}>{i * 4 + 2} min</div>
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>{Math.round(400 * i)}m larg</div>
                           </div>
                         </div>
                       );
@@ -3215,9 +3250,46 @@ export default function MapView() {
             border-bottom-right-radius: 0;
             border-top-left-radius: 28px;
             border-top-right-radius: 28px;
-            /* Hapësirë shtesë që AppShell mos ta mbulojë përmbajtjen poshtë (butoni Nisu/Detajet) */
             padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 150px) !important;
             animation: sheet-slide-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+            overflow-x: hidden !important;
+          }
+
+          /* Responsive inner content for mobile panels */
+          .card-body {
+            padding: 16px !important;
+            overflow-x: hidden !important;
+          }
+          .card-header {
+            padding: 24px 16px 14px !important;
+          }
+          .header-main {
+            gap: 10px !important;
+            min-width: 0 !important;
+            flex: 1 !important;
+          }
+          .route-texts {
+            min-width: 0 !important;
+            flex: 1 !important;
+          }
+          .route-texts h3 {
+            font-size: 14px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          .route-texts p {
+            font-size: 10px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          .data-grid {
+            gap: 12px !important;
+          }
+          .view-details-btn {
+            font-size: 13px !important;
+            padding: 12px 16px !important;
           }
 
           .mobile-drag-handle {
@@ -3231,7 +3303,6 @@ export default function MapView() {
             width: 40px; height: 5px; background: rgba(255,255,255,0.3);
             border-radius: 3px; margin-top: 4px;
           }
-          .card-header { padding-top: 24px !important; }
           .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
             background-color: rgba(30, 41, 59, 0.4) !important;
           }
@@ -3243,6 +3314,24 @@ export default function MapView() {
             border: 2px solid #fff;
           }
 
+        }
+
+        /* ═══ SMALL PHONES (< 380px) ═══ */
+        @media (max-width: 380px) {
+          .route-num {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 18px !important;
+          }
+          .route-texts h3 {
+            font-size: 13px !important;
+          }
+          .card-header {
+            padding: 24px 12px 12px !important;
+          }
+          .card-body {
+            padding: 12px !important;
+          }
         }
 
         /* ═══ TABLET MAP OVERRIDES (iPad) ═══ */

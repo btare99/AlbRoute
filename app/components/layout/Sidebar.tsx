@@ -1,6 +1,6 @@
 'use client';
 import { IonIcon } from '@/app/components/common/IonIcon';
-import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline, settingsOutline } from 'ionicons/icons';
+import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline, settingsOutline, logInOutline } from 'ionicons/icons';
 import { useState, Fragment } from 'react';
 import { signOut } from "next-auth/react";
 import useStore, { BUS_STOPS } from '../../store/useStore';
@@ -20,6 +20,18 @@ export default function Sidebar() {
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
 
   const t = translations[language] || translations.al;
+
+  const guestMode = useStore((state: any) => state.guestMode);
+  const isAl = language === 'al';
+  const isIt = language === 'it';
+
+  const activeUser = guestMode
+    ? {
+        name: isAl ? "Vizitor" : isIt ? "Ospite" : "Guest",
+        email: isAl ? "Hyni ose regjistrohuni" : isIt ? "Accedi o registrati" : "Sign in or register",
+        avatar: null
+      }
+    : user;
 
   const MENU = [
     { id: 'map', label: t.map, icon: mapOutline },
@@ -204,13 +216,17 @@ export default function Sidebar() {
 
         {/* User */}
         <div className="s-user">
-          <div className="s-avatar">
-            {user?.name?.charAt(0).toUpperCase() || 'A'}
-            <div className="s-online" />
+          <div className="s-avatar" style={{
+            background: guestMode ? 'rgba(245, 158, 11, 0.1)' : undefined,
+            border: guestMode ? '1px solid rgba(245, 158, 11, 0.2)' : undefined,
+            color: guestMode ? '#f59e0b' : undefined
+          }}>
+            {activeUser?.name?.charAt(0).toUpperCase() || 'V'}
+            {!guestMode && <div className="s-online" />}
           </div>
           <div className="s-user-info">
-            <span className="s-username">{user?.name || 'Admin'}</span>
-            <span className="s-useremail">{user?.email || 'admin@busal.al'}</span>
+            <span className="s-username">{activeUser?.name || 'Admin'}</span>
+            <span className="s-useremail">{activeUser?.email || 'admin@busal.al'}</span>
           </div>
           <button
             className="s-logout-btn"
@@ -218,10 +234,26 @@ export default function Sidebar() {
               useStore.getState().setGuestMode(false);
               signOut({ callbackUrl: '/' });
             }}
-            title={t.logout}
-            aria-label={t.logout}
+            title={guestMode ? (isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register") : t.logout}
+            aria-label={guestMode ? (isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register") : t.logout}
+            style={guestMode ? {
+              color: '#10b981',
+              background: 'rgba(16, 185, 129, 0.1)'
+            } : {}}
+            onMouseEnter={(e) => {
+              if (guestMode) {
+                e.currentTarget.style.color = '#34d399';
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (guestMode) {
+                e.currentTarget.style.color = '#10b981';
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+              }
+            }}
           >
-            <IonIcon icon={logOutOutline} style={{ fontSize: 15 }} />
+            <IonIcon icon={guestMode ? logInOutline : logOutOutline} style={{ fontSize: 15 }} />
           </button>
         </div>
 

@@ -13,25 +13,25 @@ import { BUS_SHAPES } from './busShapes';
 export { BUS_ROUTES, BUS_STOPS };
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const WALK_SPEED_MPS         = 1.4;    // 1.4 m/s ≈ 5 km/h walking speed
-const BUS_SPEED_KMH          = 30;     // average urban bus speed km/h
-const BUS_DWELL_SEC          = 20;     // stop dwell time per stop (seconds)
-const MAX_WALK_METERS        = 1200;   // max walk to/from a terminal stop
+const WALK_SPEED_MPS = 1.4;    // 1.4 m/s ≈ 5 km/h walking speed
+const BUS_SPEED_KMH = 30;     // average urban bus speed km/h
+const BUS_DWELL_SEC = 20;     // stop dwell time per stop (seconds)
+const MAX_WALK_METERS = 1200;   // max walk to/from a terminal stop
 const MAX_TRANSFER_WALK_METERS = 700;  // max walk between transfer stops (tighter)
-const MAX_TRANSFERS          = 3;      // max allowed transfers
-const AVG_WAIT_SEC           = 300;    // average bus wait when no live data (5 min)
+const MAX_TRANSFERS = 3;      // max allowed transfers
+const AVG_WAIT_SEC = 300;    // average bus wait when no live data (5 min)
 
 // Transfer penalties (seconds added to effective arrival time)
-const TRANSFER_PENALTY_SEC         = 360;  // base penalty per transfer
-const SHORT_LEG_1STOP_PENALTY_SEC  = 900;  // heavy penalty for 1-stop legs in a transfer
+const TRANSFER_PENALTY_SEC = 360;  // base penalty per transfer
+const SHORT_LEG_1STOP_PENALTY_SEC = 900;  // heavy penalty for 1-stop legs in a transfer
 // FIX 2: 420 → 120 — penalizimi i vjetër bënte transferimet pothuajse të pamundura
-const SHORT_LEG_2STOP_PENALTY_SEC  = 120;  // moderate penalty for 2-stop legs in a transfer
-const MIN_TRANSFER_LEG_STOPS       = 2;    // minimum stops on any transfer leg (enforced hard)
+const SHORT_LEG_2STOP_PENALTY_SEC = 120;  // moderate penalty for 2-stop legs in a transfer
+const MIN_TRANSFER_LEG_STOPS = 2;    // minimum stops on any transfer leg (enforced hard)
 
 // Direction & progress thresholds
 // FIX 1: 1.4 → 1.9 — rrugët me transferim shpesh shkojnë pak "larg" para se të kthehen
-const PROGRESS_DETOUR_RATIO  = 1.9;   // alight stop may be at most 90% farther than board stop from dest
-const PROGRESS_MIN_STOPS     = 2;     // only apply progress check after this many stops on leg
+const PROGRESS_DETOUR_RATIO = 1.9;   // alight stop may be at most 90% farther than board stop from dest
+const PROGRESS_MIN_STOPS = 2;     // only apply progress check after this many stops on leg
 const WALK_DISTANCE_THRESHOLD = 20;   // minimum walk distance (meters) to add walking leg
 
 const EARTH_RADIUS_M = 6371000;
@@ -362,14 +362,14 @@ const runRaptorRouter = (
           };
           const legCoords = getLegCoords(testLeg);
           if (legCoords.length >= 2) {
-            const progBoard  = getProgressOnPolyline([boardStop.lat,  boardStop.lng],  legCoords);
+            const progBoard = getProgressOnPolyline([boardStop.lat, boardStop.lng], legCoords);
             const progAlight = getProgressOnPolyline([alightStop.lat, alightStop.lng], legCoords);
             if (progBoard >= progAlight) continue;
           }
 
           // FIX 1: PROGRESS_DETOUR_RATIO tani është 1.9 (ishte 1.4)
           if (numStops >= PROGRESS_MIN_STOPS && !isDestStop) {
-            const dBoard  = haversineMeters(boardStop.lat,  boardStop.lng,  destCentroid.lat, destCentroid.lng);
+            const dBoard = haversineMeters(boardStop.lat, boardStop.lng, destCentroid.lat, destCentroid.lng);
             const dAlight = haversineMeters(alightStop.lat, alightStop.lng, destCentroid.lat, destCentroid.lng);
             if (dAlight > dBoard * PROGRESS_DETOUR_RATIO) continue;
           }
@@ -385,11 +385,11 @@ const runRaptorRouter = (
           }
 
           alightLabel.arrivalTimeSec = runningTimeSec;
-          alightLabel.transfers      = nextTransfers;
-          alightLabel.prevLeg        = { ...testLeg, liveBus: liveBusRef, etaMinutes };
-          alightLabel.prevStopId     = stopId;
+          alightLabel.transfers = nextTransfers;
+          alightLabel.prevLeg = { ...testLeg, liveBus: liveBusRef, etaMinutes };
+          alightLabel.prevStopId = stopId;
           alightLabel.boardedRouteId = rd.route.id;
-          alightLabel.reachedByWalk  = false;
+          alightLabel.reachedByWalk = false;
           newMarked.add(alightStopId);
         }
       }
@@ -415,18 +415,18 @@ const runRaptorRouter = (
 
         if (arrivalViaWalk < nearLabel.arrivalTimeSec) {
           nearLabel.arrivalTimeSec = arrivalViaWalk;
-          nearLabel.transfers      = fromLabel.transfers;
-          nearLabel.prevLeg        = {
+          nearLabel.transfers = fromLabel.transfers;
+          nearLabel.prevLeg = {
             isWalking: true,
-            boardAt:      fromStop.name,
-            alightAt:     nearStop.name,
-            walkingDist:  Math.round(walkDist),
-            walkingTime:  Math.ceil(walkSec / 60),
+            boardAt: fromStop.name,
+            alightAt: nearStop.name,
+            walkingDist: Math.round(walkDist),
+            walkingTime: Math.ceil(walkSec / 60),
             walkingTimeSec: walkSec,
           };
-          nearLabel.prevStopId     = stopId;
+          nearLabel.prevStopId = stopId;
           nearLabel.boardedRouteId = fromLabel.boardedRouteId;
-          nearLabel.reachedByWalk  = true;
+          nearLabel.reachedByWalk = true;
           newMarked.add(nearStop.id);
         }
       });
@@ -463,10 +463,10 @@ const runRaptorRouter = (
     if (finalWalkDist > WALK_DISTANCE_THRESHOLD) {
       legs.push({
         isWalking: true,
-        boardAt:       destStop.name,
-        alightAt:      'destination',
-        walkingDist:   finalWalkDist,
-        walkingTime:   Math.ceil(walkTimeSec(finalWalkDist) / 60),
+        boardAt: destStop.name,
+        alightAt: 'destination',
+        walkingDist: finalWalkDist,
+        walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60),
         walkingTimeSec: walkTimeSec(finalWalkDist),
       });
     }
@@ -475,28 +475,28 @@ const runRaptorRouter = (
     if (busLegs.length === 0) return;
 
     const totalWalkDist = legs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
-    const totalTimeSec  = destLabel.arrivalTimeSec + walkTimeSec(finalWalkDist) - departureTimeSec;
+    const totalTimeSec = destLabel.arrivalTimeSec + walkTimeSec(finalWalkDist) - departureTimeSec;
     if (totalTimeSec <= 0) return;
 
     const transfers = busLegs.length - 1;
     const score = totalTimeSec + totalWalkDist * 0.5 + transfers * TRANSFER_PENALTY_SEC;
 
     const departure = new Date(departureTimeSec * 1000);
-    const arrival   = new Date((departureTimeSec + totalTimeSec) * 1000);
+    const arrival = new Date((departureTimeSec + totalTimeSec) * 1000);
 
     candidates.push({
       legs,
       totalTimeSec,
       walkDistMeters: totalWalkDist,
       transfers,
-      departureTime:  departure.toISOString(),
-      arrivalTime:    arrival.toISOString(),
-      travelTime:     Math.round(totalTimeSec / 60),
-      totalPrice:     busLegs.length * 40,
+      departureTime: departure.toISOString(),
+      arrivalTime: arrival.toISOString(),
+      travelTime: Math.round(totalTimeSec / 60),
+      totalPrice: busLegs.length * 40,
       score,
       from: '',
-      to:   '',
-      isDirect:   busLegs.length === 1,
+      to: '',
+      isDirect: busLegs.length === 1,
       routeNames: busLegs.map(l => l.route?.name).filter(Boolean).join(' → '),
     });
   });
@@ -506,12 +506,12 @@ const runRaptorRouter = (
   const pareto = candidates.filter(c =>
     !candidates.some(other =>
       other !== c &&
-      other.totalTimeSec    <= c.totalTimeSec &&
-      other.transfers       <= c.transfers &&
-      other.walkDistMeters  <= c.walkDistMeters &&
-      (other.totalTimeSec   <  c.totalTimeSec  ||
-       other.transfers      <  c.transfers     ||
-       other.walkDistMeters <  c.walkDistMeters)
+      other.totalTimeSec <= c.totalTimeSec &&
+      other.transfers <= c.transfers &&
+      other.walkDistMeters <= c.walkDistMeters &&
+      (other.totalTimeSec < c.totalTimeSec ||
+        other.transfers < c.transfers ||
+        other.walkDistMeters < c.walkDistMeters)
     )
   );
 
@@ -574,26 +574,26 @@ export interface StaffAccount {
   status: string;
 }
 
-const MAX_WALK_METERS_BASE     = 800;
-const MAX_WALK_METERS_LONG     = 1600;
-const LONG_TRIP_THRESHOLD_M    = 5000;
-const MAX_CANDIDATE_STOPS      = 20;
-const BEARING_TOLERANCE_DEG    = 110;
+const MAX_WALK_METERS_BASE = 800;
+const MAX_WALK_METERS_LONG = 1600;
+const LONG_TRIP_THRESHOLD_M = 5000;
+const MAX_CANDIDATE_STOPS = 20;
+const BEARING_TOLERANCE_DEG = 110;
 const WALK_PENALTY_THRESHOLD_M = 800;
-const BOARD_BUFFER_SEC         = 45;
-const AVG_BUS_SPEED_MPS        = 8.3;
+const BOARD_BUFFER_SEC = 45;
+const AVG_BUS_SPEED_MPS = 8.3;
 
 const SCORE_WEIGHTS = {
-  travelTime:   1.0,
-  walkPenalty:  1.8,
+  travelTime: 1.0,
+  walkPenalty: 1.8,
   transferCost: 300,
-  reliability:  0.5,
+  reliability: 0.5,
 } as const;
 
 const CONGESTION_WINDOWS = [
-  { start: 7,  end: 9,  factor: 1.4  },
+  { start: 7, end: 9, factor: 1.4 },
   { start: 17, end: 19, factor: 1.35 },
-  { start: 22, end: 5,  factor: 0.9  },
+  { start: 22, end: 5, factor: 0.9 },
 ] as const;
 
 interface LatLng {
@@ -623,15 +623,15 @@ interface LiveBus {
 
 type TripInput =
   | { type: 'MY_LOCATION' }
-  | { type: 'STOP';     stopId: string }
-  | { type: 'ADDRESS';  value: string }
+  | { type: 'STOP'; stopId: string }
+  | { type: 'ADDRESS'; value: string }
   | { type: 'MAP_PICK'; coords: LatLng; displayName?: string };
 
 interface ResolvedInput {
-  coords:      LatLng;
+  coords: LatLng;
   displayName: string;
-  type:        TripInput['type'];
-  stopId?:     string;
+  type: TripInput['type'];
+  stopId?: string;
 }
 
 type CoordCache = Record<string, LatLng>;
@@ -639,9 +639,9 @@ type CoordCache = Record<string, LatLng>;
 function bearingDeg(from: LatLng, to: LatLng): number {
   const dLng = (to.lng - from.lng) * Math.PI / 180;
   const lat1 = from.lat * Math.PI / 180;
-  const lat2 = to.lat   * Math.PI / 180;
-  const y    = Math.sin(dLng) * Math.cos(lat2);
-  const x    = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const lat2 = to.lat * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
@@ -651,7 +651,7 @@ function angleDiff(a: number, b: number): number {
 
 function getCongestionFactor(hour: number): number {
   for (const w of CONGESTION_WINDOWS) {
-    const wraps    = w.start > w.end;
+    const wraps = w.start > w.end;
     const inWindow = wraps
       ? hour >= w.start || hour <= w.end
       : hour >= w.start && hour <= w.end;
@@ -661,8 +661,8 @@ function getCongestionFactor(hour: number): number {
 }
 
 async function resolveInputToCoords(
-  input:        TripInput,
-  cache:        CoordCache,
+  input: TripInput,
+  cache: CoordCache,
   userLocation: LatLng | null,
 ): Promise<ResolvedInput | null> {
   switch (input.type) {
@@ -685,9 +685,9 @@ async function resolveInputToCoords(
     }
     case 'MAP_PICK': {
       return {
-        coords:      input.coords,
+        coords: input.coords,
         displayName: input.displayName ?? `${input.coords.lat.toFixed(4)}, ${input.coords.lng.toFixed(4)}`,
-        type:        'MAP_PICK',
+        type: 'MAP_PICK',
       };
     }
   }
@@ -697,14 +697,14 @@ async function resolveInputToCoords(
 // stacionet afër, pa filtër drejtimi. Kjo rregullon rastet ku destinacioni është
 // "prapa" ose anash origjinës relative ndaj stacioneve.
 function getCandidateStops(
-  coords:        LatLng,
-  destination:   LatLng,
+  coords: LatLng,
+  destination: LatLng,
   tripDistanceM: number,
-  isOrigin:      boolean,
+  isOrigin: boolean,
 ): { stop: any; walkDist: number }[] {
-  const radius        = tripDistanceM > LONG_TRIP_THRESHOLD_M ? MAX_WALK_METERS_LONG : MAX_WALK_METERS_BASE;
+  const radius = tripDistanceM > LONG_TRIP_THRESHOLD_M ? MAX_WALK_METERS_LONG : MAX_WALK_METERS_BASE;
   const targetBearing = bearingDeg(coords, destination);
-  const allNearby     = getNearestStops(coords.lat, coords.lng, radius, MAX_CANDIDATE_STOPS * 2);
+  const allNearby = getNearestStops(coords.lat, coords.lng, radius, MAX_CANDIDATE_STOPS * 2);
 
   const filtered = allNearby.filter(item => {
     // FIX 3: për destinacionin hiqe filtrin e këndit — merr të gjitha stacionet afër
@@ -722,16 +722,16 @@ function getCandidateStops(
 }
 
 function scoreRoute(opt: TripOption, liveBuses: LiveBus[]): number {
-  const walkSec         = (opt.walkDistMeters ?? 0) / 1.39;
-  const walkPenaltySec  = opt.walkDistMeters > WALK_PENALTY_THRESHOLD_M
+  const walkSec = (opt.walkDistMeters ?? 0) / 1.39;
+  const walkPenaltySec = opt.walkDistMeters > WALK_PENALTY_THRESHOLD_M
     ? walkSec * (SCORE_WEIGHTS.walkPenalty - 1) : 0;
 
   const reliabilityPenalty = opt.legs
     .filter(l => !l.isWalking)
     .reduce((sum, leg) => {
-      const bus        = liveBuses.find(b => b.routeId === leg.route?.id);
-      const gpsTime    = bus ? (bus.lastUpdate || (bus.lastGpsUpdate ? new Date(bus.lastGpsUpdate).getTime() : Date.now())) : Date.now();
-      const gpsAgeSec  = bus
+      const bus = liveBuses.find(b => b.routeId === leg.route?.id);
+      const gpsTime = bus ? (bus.lastUpdate || (bus.lastGpsUpdate ? new Date(bus.lastGpsUpdate).getTime() : Date.now())) : Date.now();
+      const gpsAgeSec = bus
         ? (Date.now() - gpsTime) / 1000
         : 120;
       return sum + (gpsAgeSec > 120 ? SCORE_WEIGHTS.reliability * 60 : 0);
@@ -745,23 +745,23 @@ function scoreRoute(opt: TripOption, liveBuses: LiveBus[]): number {
 
 function canCatchBus(params: {
   walkDistanceM: number;
-  busGpsLat:     number;
-  busGpsLng:     number;
-  stopLat:       number;
-  stopLng:       number;
+  busGpsLat: number;
+  busGpsLng: number;
+  stopLat: number;
+  stopLng: number;
 }): { catchable: boolean; marginSeconds: number } {
-  const congestion  = getCongestionFactor(new Date().getHours());
-  const walkSec     = (params.walkDistanceM / 1.39) * congestion;
-  const realBusEta  = haversineMeters(params.busGpsLat, params.busGpsLng, params.stopLat, params.stopLng) / AVG_BUS_SPEED_MPS;
-  const margin      = realBusEta - walkSec - BOARD_BUFFER_SEC;
+  const congestion = getCongestionFactor(new Date().getHours());
+  const walkSec = (params.walkDistanceM / 1.39) * congestion;
+  const realBusEta = haversineMeters(params.busGpsLat, params.busGpsLng, params.stopLat, params.stopLng) / AVG_BUS_SPEED_MPS;
+  const margin = realBusEta - walkSec - BOARD_BUFFER_SEC;
   return { catchable: margin >= 0, marginSeconds: Math.round(margin) };
 }
 
 // FIX 4: nuk fshihet opsioni nëse autobusi nuk gjendet ose GPS është i papërsosur.
 // Vetëm nëse autobusi ka kaluar qartë (margin < -60s) refuzohet opsioni.
 function applyLiveCorrections(
-  options:      TripOption[],
-  liveBuses:    LiveBus[],
+  options: TripOption[],
+  liveBuses: LiveBus[],
   originCoords: LatLng,
 ): TripOption[] {
   return options
@@ -770,18 +770,18 @@ function applyLiveCorrections(
       if (!firstTransit) return opt;
 
       const boardStop = BUS_STOPS.find(s => s.name?.toLowerCase().trim() === firstTransit.boardAt?.toLowerCase().trim());
-      const bus       = liveBuses.find(b => b.routeId === firstTransit.route?.id);
+      const bus = liveBuses.find(b => b.routeId === firstTransit.route?.id);
 
       // FIX 4: nëse nuk kemi live bus data, lejo opsionin të kalojë pa filtrim
       if (!boardStop || !bus || !bus.lat || !bus.lng) return opt;
 
-      const walkDist              = haversineMeters(originCoords.lat, originCoords.lng, boardStop.lat, boardStop.lng);
+      const walkDist = haversineMeters(originCoords.lat, originCoords.lng, boardStop.lat, boardStop.lng);
       const { catchable, marginSeconds } = canCatchBus({
         walkDistanceM: walkDist,
-        busGpsLat:     bus.lat,
-        busGpsLng:     bus.lng,
-        stopLat:       boardStop.lat,
-        stopLng:       boardStop.lng,
+        busGpsLat: bus.lat,
+        busGpsLng: bus.lng,
+        stopLat: boardStop.lat,
+        stopLng: boardStop.lng,
       });
 
       // FIX 4: refuzo vetëm nëse autobusi ka kaluar qartë (> 60s vonesë)
@@ -880,17 +880,22 @@ const useStore = create<any>()(
       user: { name: 'Admin', email: 'admin@busal.al', avatar: null },
       staffUser: null,
       isAuthenticated: true,
-      guestMode: false,
+      guestMode: true,
       setGuestMode: (val: boolean) => set({ guestMode: val }),
       token: 'dev-token',
-      login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token }),
-      loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard' }),
+      login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token, guestMode: false }),
+      loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard', guestMode: false }),
       logout: () => set({ user: null, staffUser: null, isAuthenticated: false, token: null, currentView: 'login' }),
-      updateProfile: async (data: any) => {
+
+      // ── Cover Slideshow ──
+      currentCoverIndex: 0,
+      nextCoverIndex: () => set((state: any) => ({ currentCoverIndex: (state.currentCoverIndex + 1) % 10 })),
+
+      updateProfile: async (data: any, skipApiCall = false) => {
         const currentUser = get().user;
         if (!currentUser) return;
         set((state: any) => ({ user: { ...state.user, ...data } }));
-        if (currentUser.id || currentUser._id) {
+        if (!skipApiCall && (currentUser.id || currentUser._id)) {
           try {
             const res = await fetch('/api/user/profile', {
               method: 'PUT',
@@ -936,7 +941,7 @@ const useStore = create<any>()(
               }
               if (permStatus.receive === 'granted') {
                 await PushNotifications.register();
-                
+
                 await PushNotifications.addListener('registration', (token) => {
                   console.log('FCM Device Token:', token.value);
                   // Këtu mund të bëni një thirrje API për të ruajtur token te përdoruesi në DB
@@ -1315,16 +1320,16 @@ const useStore = create<any>()(
 
         const [origin, destination] = await Promise.all([
           resolveInputToCoords(normFrom, state.coordCache ?? {}, state.userLocation),
-          resolveInputToCoords(normTo,   state.coordCache ?? {}, state.userLocation),
+          resolveInputToCoords(normTo, state.coordCache ?? {}, state.userLocation),
         ]);
 
-        if (!origin)      return set({ tripResult: { error: 'Adresa e nisjes nuk u gjet.' },      activeTrip: null });
+        if (!origin) return set({ tripResult: { error: 'Adresa e nisjes nuk u gjet.' }, activeTrip: null });
         if (!destination) return set({ tripResult: { error: 'Adresa e destinacionit nuk u gjet.' }, activeTrip: null });
 
         const directDistM = haversineMeters(origin.coords.lat, origin.coords.lng, destination.coords.lat, destination.coords.lng);
 
-        let fromStops = getCandidateStops(origin.coords,      destination.coords, directDistM, true);
-        let toStops   = getCandidateStops(destination.coords, origin.coords,      directDistM, false);
+        let fromStops = getCandidateStops(origin.coords, destination.coords, directDistM, true);
+        let toStops = getCandidateStops(destination.coords, origin.coords, directDistM, false);
 
         if (normFrom.type === 'STOP') {
           const matched = BUS_STOPS.find(s => s.id === normFrom.stopId);
@@ -1343,7 +1348,7 @@ const useStore = create<any>()(
           return set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
         }
 
-        const liveBuses  = state.buses ?? [];
+        const liveBuses = state.buses ?? [];
         const departureMode = state.tripDepartureMode;
         const isArriveBy = departureMode === 'arrive_by';
         const desiredTime = (departureMode !== 'now' && state.tripDepartureTime)
@@ -1369,13 +1374,13 @@ const useStore = create<any>()(
         }
 
         set({
-          tripResult:              enriched[0],
-          tripOptions:             enriched,
+          tripResult: enriched[0],
+          tripOptions: enriched,
           selectedTripOptionIndex: 0,
-          activeTrip:              enriched[0],
-          showRoutes:              true,
-          showBuses:               true,
-          coordCache:              state.coordCache ?? {},
+          activeTrip: enriched[0],
+          showRoutes: true,
+          showBuses: true,
+          coordCache: state.coordCache ?? {},
         });
       },
 
@@ -1402,6 +1407,10 @@ const useStore = create<any>()(
         savedRoutes: state.savedRoutes.filter((r: any) => r.id !== routeId)
       })),
 
+      // ── Recent Route ──
+      recentRouteId: null,
+      setRecentRouteId: (routeId: string) => set({ recentRouteId: routeId }),
+
       // ── Filter ──
       activeFilter: 'all',
       setActiveFilter: (f: string) => set({ activeFilter: f }),
@@ -1414,7 +1423,8 @@ const useStore = create<any>()(
         Object.entries(state).filter(([key]) => ![
           'searchQuery', 'tripFrom', 'tripTo', 'tripResult',
           'tripOptions', 'selectedTripOptionIndex', 'activeTrip',
-          'selectedStop', 'activeRouteFilter', 'currentView', 'isSidebarOpen'
+          'selectedStop', 'activeRouteFilter', 'currentView', 'isSidebarOpen',
+          'currentCoverIndex'
         ].includes(key))
       ),
     }

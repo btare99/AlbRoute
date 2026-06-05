@@ -46,6 +46,7 @@ const UserSchema = new mongoose.Schema(
     password: { type: String, required: false }, // Opsional për Google OAuth users
 
     phone: { type: String, default: '' },
+    avatar: { type: String, default: '' },
 
     savedLocations: {
       home: { type: String, default: '' },

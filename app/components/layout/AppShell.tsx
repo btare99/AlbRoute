@@ -51,21 +51,31 @@ export default function AppShell() {
     const handleSession = async () => {
       if (!session?.user) return;
       const u = session.user as any;
-      if (u.role === 'user') {
-        useStore.getState().login(u, 'next-auth-session');
-        // Fetch full profile (with photos) from DB to supplement stripped JWT
-        try {
-          const res = await fetch(`/api/user/profile?userId=${u.id}`);
-          if (!res.ok) throw new Error(`Profile fetch failed (${res.status} ${res.statusText})`);
-          const data = await res.json();
-          if (!data.error) {
-            useStore.getState().login({ ...u, ...data }, 'next-auth-session');
+      if (u.role === 'user' || !u.role) {
+        const storeUser = useStore.getState().user;
+        const isAuthenticated = useStore.getState().isAuthenticated;
+        const needsLogin = !isAuthenticated || !storeUser || (storeUser.id !== u.id && storeUser._id !== u.id);
+
+        if (needsLogin) {
+          useStore.getState().login(u, 'next-auth-session');
+          // Fetch full profile (with photos) from DB to supplement stripped JWT
+          try {
+            const res = await fetch(`/api/user/profile?userId=${u.id}`);
+            if (!res.ok) throw new Error(`Profile fetch failed (${res.status} ${res.statusText})`);
+            const data = await res.json();
+            if (!data.error) {
+              useStore.getState().login({ ...u, ...data }, 'next-auth-session');
+            }
+          } catch (error) {
+            console.error('Failed to load full user profile:', error);
           }
-        } catch (error) {
-          console.error('Failed to load full user profile:', error);
         }
       } else {
-        useStore.getState().loginAsStaff(u);
+        const storeStaffUser = useStore.getState().staffUser;
+        const isAuthenticated = useStore.getState().isAuthenticated;
+        if (!isAuthenticated || !storeStaffUser || storeStaffUser.id !== u.id) {
+          useStore.getState().loginAsStaff(u);
+        }
       }
 
       if (!googleLoginHandled.current) {
@@ -93,6 +103,14 @@ export default function AppShell() {
 
     handleSession();
   }, [session, language, addNotification]);
+
+  // ─── Cover Slideshow Interval (5 minutes) ───
+  useEffect(() => {
+    const interval = setInterval(() => {
+      useStore.getState().nextCoverIndex?.();
+    }, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   // ─── Live Data Polling ───
   useEffect(() => {

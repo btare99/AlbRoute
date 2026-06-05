@@ -8,6 +8,9 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    CapacitorCookies: {
+      enabled: true,
+    },
     Keyboard: {
       resize: 'body',
       style: 'dark',

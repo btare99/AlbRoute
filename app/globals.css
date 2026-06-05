@@ -108,6 +108,7 @@
 /* Fix per [Intervention] touchmove */
 .leaflet-container,
 .leaflet-control-container,
+.maplibregl-map,
 .sidebar-container,
 .map-wrapper,
 #map {
@@ -819,6 +820,7 @@ input::placeholder {
    TABLET / iPAD SPECIFIC (901px – 1180px)
 ═══════════════════════════════════════════════════ */
 @media (min-width: 901px) and (max-width: 1180px) {
+
   /* Bottom nav – slightly larger on iPad */
   .bottom-nav {
     left: 32px !important;
@@ -1000,7 +1002,7 @@ input::placeholder {
   }
 
   .page-content {
-    padding: 16px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px 16px;
   }
 }
 
@@ -1074,7 +1076,7 @@ input::placeholder {
   }
 
   .page-content {
-    padding: 16px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px 16px;
   }
 
   .page-header {
@@ -1174,15 +1176,18 @@ input::placeholder {
   fill: currentColor;
   stroke: currentColor;
 }
+
 .custom-ion-icon .ionicon-fill-none {
   fill: none !important;
 }
+
 .custom-ion-icon .ionicon-stroke-width {
   stroke-width: 32px;
 }
 
 /* Hide sidebar and all map overlays on desktop/fullscreen screens (> 1180px) */
 @media (min-width: 1181px) {
+
   .sidebar,
   .sidebar-overlay,
   .overlay-top-left,

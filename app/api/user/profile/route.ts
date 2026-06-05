@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatar: user.avatar,
       savedLocations: user.savedLocations,
       travelHistory: user.travelHistory,
       lastLocation: user.lastLocation
@@ -70,6 +71,7 @@ export async function PUT(request: Request) {
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
+        avatar: updatedUser.avatar,
         savedLocations: updatedUser.savedLocations,
         travelHistory: updatedUser.travelHistory,
         idNumber: updatedUser.idNumber,

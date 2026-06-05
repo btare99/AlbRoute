@@ -15,11 +15,11 @@ interface SwipeDismissViewProps {
   dragHandleClass?: string;
 }
 
-export default function SwipeDismissView({ 
-  children, 
-  background, 
-  onDismiss, 
-  threshold = 120, 
+export default function SwipeDismissView({
+  children,
+  background,
+  onDismiss,
+  threshold = 120,
   edgeWidth = 40,
   direction = 'horizontal',
   className = '',
@@ -50,7 +50,7 @@ export default function SwipeDismissView({
 
     const touch = e.touches[0];
     const pos = direction === 'horizontal' ? touch.clientX : touch.clientY;
-    
+
     if (direction === 'horizontal') {
       if (pos < edgeWidth || !isFixed) {
         setStartPos(pos);
@@ -67,7 +67,7 @@ export default function SwipeDismissView({
     const touch = e.touches[0];
     const pos = direction === 'horizontal' ? touch.clientX : touch.clientY;
     const diff = pos - startPos;
-    
+
     if (diff > 0) {
       setCurrentOffset(diff);
       if (diff > 10 && e.cancelable) {
@@ -83,7 +83,7 @@ export default function SwipeDismissView({
 
   const handleTouchEnd = () => {
     if (startPos === null) return;
-    
+
     if (currentOffset < -50 && direction === 'vertical' && onSwipeUp) {
       onSwipeUp();
       setIsSwiping(false);
@@ -107,7 +107,7 @@ export default function SwipeDismissView({
 
   const progress = Math.min(currentOffset / dimension, 1);
   const backdropOpacity = 0.4 * (1 - progress);
-  
+
   const bgTranslate = - (dimension * 0.2) * (1 - progress);
 
   const containerStyle: React.CSSProperties = {
@@ -124,8 +124,8 @@ export default function SwipeDismissView({
     ...style
   };
 
-  const transform = direction === 'horizontal' 
-    ? `translateX(${currentOffset}px)` 
+  const transform = direction === 'horizontal'
+    ? `translateX(${currentOffset}px)`
     : `translateY(${currentOffset}px)`;
 
   const bgTransform = direction === 'horizontal'

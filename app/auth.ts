@@ -153,6 +153,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             extendedToken.id = String(dbUser!._id);
             extendedToken.phone = dbUser!.phone ?? "";
+            extendedToken.role = dbUser!.role ?? "user";
           } catch (err) {
             console.error("[Auth] Google sync error:", err);
           }

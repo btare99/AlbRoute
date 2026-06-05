@@ -10,9 +10,25 @@ import { useSession } from "next-auth/react";
 export default function Page() {
   const { data: session, status } = useSession();
   const [hasMounted, setHasMounted] = useState(false);
+  const [hasInitializedGuest, setHasInitializedGuest] = useState(false);
+  
   const moveBuses = useStore((s: any) => s.moveBuses);
   const guestMode = useStore((s: any) => s.guestMode);
-  const isAuthenticated = status === "authenticated" || guestMode;
+  const staffUser = useStore((s: any) => s.staffUser);
+  const setGuestMode = useStore((s: any) => s.setGuestMode);
+  
+  const isAuthenticated = status === "authenticated" || guestMode || !!staffUser;
+
+  // Initial load Guest Mode initialization:
+  // If the user has no session (unauthenticated and not staff), force default to guestMode.
+  useEffect(() => {
+    if (status !== "loading" && !hasInitializedGuest) {
+      if (status === "unauthenticated" && !staffUser) {
+        setGuestMode(true);
+      }
+      setHasInitializedGuest(true);
+    }
+  }, [status, staffUser, hasInitializedGuest, setGuestMode]);
 
   // Initial Data Load & Polling
   useEffect(() => {
@@ -38,18 +54,50 @@ export default function Page() {
     return () => clearInterval(pollInterval);
   }, []);
 
-  // Simulation Movement (Disabled to use real DB data)
-  /*
-  useEffect(() => {
-    if (!hasMounted) return;
-    const interval = setInterval(() => {
-      moveBuses();
-    }, 100);
-    return () => clearInterval(interval);
-  }, [hasMounted, moveBuses]);
-  */
-
-  if (!hasMounted) return null;
+  if (!hasMounted || status === "loading") {
+    return (
+      <div style={{
+        height: '100vh',
+        width: '100vw',
+        background: '#0a0f1a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '15px'
+      }}>
+        <div style={{
+          width: '60px',
+          height: '60px',
+          borderRadius: '16px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden'
+        }}>
+          <img src="/logo.png" alt="Urbani Im Logo" style={{ width: '80%', height: '80%', objectFit: 'contain' }} onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }} />
+        </div>
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '2.5px solid rgba(255,255,255,0.1)',
+          borderTopColor: '#f59e0b',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -58,3 +106,4 @@ export default function Page() {
     </>
   );
 }
+

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import useStore from '../../store/useStore';
@@ -25,7 +26,8 @@ import {
   businessOutline,
   bagHandleOutline,
   leafOutline,
-  navigateOutline
+  navigateOutline,
+  busOutline
 } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import { useEffect, useRef } from 'react';
@@ -66,54 +68,72 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
   return (
     <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
       <div style={{ position: 'relative' }} ref={dropdownRef}>
-        <button type="button" onClick={() => setOpen(!open)} style={{
-          height: '46px', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
-          borderRadius: '12px', color: '#fff', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '8px',
-          cursor: 'pointer', transition: 'all 0.2s'
-        }}>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          onClick={() => setOpen(!open)}
+          style={{
+            height: '46px', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
+            borderRadius: '12px', color: '#fff', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '8px',
+            cursor: 'pointer', transition: 'all 0.2s'
+          }}
+          className="phone-country-btn"
+        >
           <span style={{ fontSize: '18px' }}>{country.flag}</span>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{country.code}</span>
-        </button>
+        </motion.button>
 
-        {open && (
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100,
-            background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-            width: '220px', padding: '8px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
-            backdropFilter: 'blur(20px)'
-          }}>
-            <input
-              autoFocus placeholder="Kërko..."
-              value={search} onChange={e => setSearch(e.target.value)}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
               style={{
-                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                padding: '8px 10px', color: '#fff', fontSize: '12px', outline: 'none', marginBottom: '8px'
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100,
+                background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                width: '220px', padding: '8px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(20px)'
               }}
-            />
-            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-              {filtered.map(c => (
-                <button key={c.code} type="button" onClick={() => { setCountry(c); setOpen(false); setSearch(''); }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px',
-                    borderRadius: '6px', background: country.code === c.code ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left'
-                  }}>
-                  <span style={{ fontSize: '16px' }}>{c.flag}</span>
-                  <span style={{ flex: 1, fontSize: '12px' }}>{c.name}</span>
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{c.code}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+            >
+              <input
+                autoFocus placeholder="Kërko..."
+                value={search} onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                  padding: '8px 10px', color: '#fff', fontSize: '12px', outline: 'none', marginBottom: '8px'
+                }}
+                className="profile-search-input"
+              />
+              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                {filtered.map(c => (
+                  <button key={c.code} type="button" onClick={() => { setCountry(c); setOpen(false); setSearch(''); }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px',
+                      borderRadius: '6px', background: country.code === c.code ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left'
+                    }}
+                    className="dropdown-item"
+                  >
+                    <span style={{ fontSize: '16px' }}>{c.flag}</span>
+                    <span style={{ flex: 1, fontSize: '12px' }}>{c.name}</span>
+                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{c.code}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <input 
+      <input
+        className="profile-input"
         style={{
           flex: 1, height: '46px', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
           borderRadius: '12px', padding: '0 16px', color: '#fff', fontSize: '14px', outline: 'none'
-        }} 
-        type="tel" placeholder="6X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)} 
+        }}
+        type="tel" placeholder="6X XXX XXXX" value={phone} onChange={e => setPhone(e.target.value)}
       />
     </div>
   );
@@ -129,8 +149,250 @@ export default function EditProfileView() {
   const t = translations[language] || translations.al;
   const logout = useStore((state: any) => state.logout);
 
+  const guestMode = useStore((state: any) => state.guestMode);
+  const setGuestMode = useStore((state: any) => state.setGuestMode);
+  const currentCoverIndex = useStore((state: any) => state.currentCoverIndex);
+
   const activeUser = staffUser || user;
   const isStaff = !!staffUser;
+
+  const isAl = language === 'al';
+  const isIt = language === 'it';
+
+  if (guestMode) {
+    const headerTitle = isAl ? "Llogari Vizitori" : isIt ? "Profilo Ospite" : "Guest Profile";
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+      >
+
+        {/* Curved Gradient Header (Cover) */}
+        <motion.div
+          initial={{ y: -30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+          style={{
+            position: 'relative',
+            height: '170px',
+            overflow: 'visible',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+            zIndex: 10,
+            background: '#0a0f1d'
+          }}
+        >
+          {/* Slideshow background images */}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num, i) => (
+            <div
+              key={num}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: `linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(234, 88, 12, 0.85) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
+                opacity: currentCoverIndex === i ? 1 : 0,
+                transition: 'opacity 1.5s ease-in-out',
+                zIndex: 0
+              }}
+            />
+          ))}
+          {/* Navigation header with Back button */}
+          <div style={{
+            position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', left: '20px', right: '20px',
+            display: 'flex', alignItems: 'center', zIndex: 5
+          }}>
+            {/* Back Button */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setView('profile')}
+              style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff',
+                outline: 'none'
+              }}
+            >
+              <IonIcon icon={arrowBackOutline} style={{ fontSize: 18 }} />
+            </motion.button>
+
+            {/* Centered Title */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
+            }}>
+              <span style={{
+                color: '#fff', fontSize: '18px', fontWeight: '800',
+                letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
+              }}>
+                {headerTitle}
+              </span>
+            </div>
+          </div>
+
+          {/* Organic Wave Bottom Divider */}
+          <svg viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '45px', zIndex: 2 }}>
+            <path fill="var(--bg-dark)" d="M0,160 C 180,160 180,210 360,210 C 540,210 540,110 720,110 C 900,110 900,210 1080,210 C 1260,210 1260,160 1440,160 L 1440,220 L 0,220 Z"></path>
+          </svg>
+
+          {/* Overlapping Floating Avatar wrapper (for Guest "G" mock) */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0, x: '-50%' }}
+            animate={{ scale: 1, opacity: 1, x: '-50%' }}
+            transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.15 }}
+            style={{
+              position: 'absolute',
+              bottom: '-45px',
+              left: '50%',
+              display: 'flex',
+              justifyContent: 'center',
+              zIndex: 11
+            }}
+          >
+            <div style={{
+              width: '90px',
+              height: '90px',
+              borderRadius: '50%',
+              border: '4px solid var(--bg-dark)',
+              background: '#111318',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '32px',
+              fontWeight: '800',
+              color: '#f59e0b',
+              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
+            }}>
+              G
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Content scroll area */}
+        <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px', marginTop: '60px', width: '100%' }}>
+
+          <motion.div
+            initial={{ y: 15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 15, delay: 0.25 }}
+            style={{ textAlign: 'center', marginTop: '10px' }}
+          >
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 8px', color: '#fff' }}>
+              {isAl ? "Përshëndetje, Udhëtar!" : isIt ? "Ciao, Viaggiatore!" : "Hello, Traveler!"}
+            </h2>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: '1.6' }}>
+              {isAl
+                ? "Ju po e përdorni aplikacionin si Vizitor. Regjistrohuni falas për të zhbllokuar të gjitha funksionet."
+                : isIt
+                  ? "Stai utilizzando l'app come Ospite. Registrati gratuitamente per sbloccare tutte le funzioni."
+                  : "You are using the app as a Guest. Register for free to unlock all features."}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+            style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.06)' }}
+          />
+
+          {/* Benefits list */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
+            style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}
+          >
+            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#f59e0b', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {isAl ? "Funksionet e Llogarisë:" : isIt ? "Funzionalità dell'Account:" : "Account Features:"}
+            </h3>
+            {[
+              {
+                icon: locationOutline,
+                title: isAl ? "Vendndodhje të Ruajtura" : isIt ? "Posizioni Salvate" : "Saved Locations",
+                desc: isAl ? "Ruaj adresat e Shtëpisë dhe Punës për kërkim të shpejtë." : isIt ? "Salva gli indirizzi di Casa e Lavoro per ricerche rapide." : "Save Home and Work addresses for quick routing."
+              },
+              {
+                icon: busOutline,
+                title: isAl ? "Gjurmim Real-Time" : isIt ? "Monitoraggio Real-Time" : "Real-Time Tracking",
+                desc: isAl ? "Ndiq autobusët live në hartë dhe parashiko mbërritjen." : isIt ? "Segui i bus live sulla mappa e previeni i tempi di attesa." : "Track live buses on the map and see ETAs."
+              },
+              {
+                icon: shieldCheckmarkOutline,
+                title: isAl ? "Sinkronizim i Sigurt" : isIt ? "Sincronizzazione Sicura" : "Secure Sync",
+                desc: isAl ? "Të dhënas tuaja ruhen të sigurta në çdo pajisje." : isIt ? "I tuoi dati sono protetti e sincronizzati su ogni dispositivo." : "Your preferences are securely synced across devices."
+              }
+            ].map((b, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 + idx * 0.1, type: 'spring', stiffness: 120, damping: 15 }}
+                style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}
+              >
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  color: '#f59e0b'
+                }}>
+                  <IonIcon icon={b.icon} style={{ fontSize: 15 }} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#fff', margin: 0 }}>{b.title}</h4>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '2px 0 0', lineHeight: '1.4' }}>{b.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.3, delay: 0.65 }}
+            style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.06)', marginTop: '8px' }}
+          />
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 100, damping: 15, delay: 0.7 }}
+            style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}
+          >
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setGuestMode(false)}
+              style={{
+                width: '100%', height: '48px', borderRadius: '14px',
+                background: '#f59e0b', color: '#000', border: 'none',
+                fontWeight: '700', fontSize: '15px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(245,158,11,0.3)', transition: 'all 0.2s'
+              }}
+            >
+              {isAl ? "Krijo Llogari ose Hyr" : isIt ? "Crea Account o Accedi" : "Create Account or Sign In"}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setView('profile')}
+              style={{
+                width: '100%', height: '48px', borderRadius: '14px',
+                background: 'rgba(255,255,255,0.04)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.08)',
+                fontWeight: '600', fontSize: '14px', cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {isAl ? "Kthehu mbrapa" : isIt ? "Torna indietro" : "Go Back"}
+            </motion.button>
+          </motion.div>
+
+        </div>
+      </motion.div>
+    );
+  }
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -368,7 +630,7 @@ export default function EditProfileView() {
     }
 
     setIsSaving(true);
-    
+
     try {
       if (!isStaff) {
         const fullPhone = `${selectedCountry.code} ${phoneOnly}`;
@@ -388,13 +650,13 @@ export default function EditProfileView() {
         const result = await response.json();
 
         if (response.ok) {
-          updateProfile({ 
-            name: form.name, 
+          updateProfile({
+            name: form.name,
             email: form.email,
             phone: `${selectedCountry.code} ${phoneOnly}`,
             savedLocations: { home: form.home, work: form.work },
             avatar: form.avatar
-          });
+          }, true);
           addNotification(t.edit_changes_saved, 'success');
           setView('profile');
         } else {
@@ -436,127 +698,237 @@ export default function EditProfileView() {
   };
 
   return (
-    <>
-      <div className="page-content" style={{ paddingBottom: '120px' }}>
-        
-        {/* ── Header ── */}
-        <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+    >
+
+      {/* Curved Gradient Header (Cover) */}
+      <motion.div
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+        style={{
+          position: 'relative',
+          height: '170px',
+          overflow: 'visible',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+          zIndex: 10,
+          background: '#0a0f1d'
+        }}
+      >
+        {/* Slideshow background images */}
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num, i) => (
+          <div
+            key={num}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(234, 88, 12, 0.85) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
+              opacity: currentCoverIndex === i ? 1 : 0,
+              transition: 'opacity 1.5s ease-in-out',
+              zIndex: 0
+            }}
+          />
+        ))}
+        {/* Navigation header with Back button */}
+        <div style={{
+          position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', left: '20px', right: '20px',
+          display: 'flex', alignItems: 'center', zIndex: 5
+        }}>
+          {/* Back Button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setView('profile')}
             style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff'
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff',
+              outline: 'none'
             }}
           >
             <IonIcon icon={arrowBackOutline} style={{ fontSize: 18 }} />
-          </button>
-          <div>
-            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{t.edit_credentials}</h1>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0' }}>{t.edit_update_details}</p>
+          </motion.button>
+
+          {/* Centered Title */}
+          <div style={{
+            position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
+          }}>
+            <span style={{
+              color: '#fff', fontSize: '18px', fontWeight: '800',
+              letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
+            }}>
+              {t.edit_credentials}
+            </span>
           </div>
         </div>
 
-        {/* Footer links removed from Edit Profile per request */}
+        {/* Organic Wave Bottom Divider */}
+        <svg viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '45px', zIndex: 2 }}>
+          <path fill="var(--bg-dark)" d="M0,160 C 180,160 180,210 360,210 C 540,210 540,110 720,110 C 900,110 900,210 1080,210 C 1260,210 1260,160 1440,160 L 1440,220 L 0,220 Z"></path>
+        </svg>
 
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          marginBottom: '32px', textAlign: 'center'
-        }}>
-          <div 
-            style={{
-              width: '84px', height: '84px', borderRadius: '28px',
-              background: '#111318',
-              border: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '32px', fontWeight: '600', color: '#fff',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.03)',
-              marginBottom: '16px',
-              position: 'relative',
-              cursor: 'pointer',
-              overflow: 'visible'
-            }}
-            onClick={() => document.getElementById('photo-upload')?.click()}
-          >
+        {/* Overlapping Floating Avatar wrapper (for Photo Upload / Change) */}
+        <motion.div
+          initial={{ scale: 0, opacity: 0, x: '-50%' }}
+          animate={{ scale: 1, opacity: 1, x: '-50%' }}
+          whileHover={{ scale: 1.05, x: '-50%' }}
+          transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.15 }}
+          style={{
+            position: 'absolute',
+            bottom: '-45px', // overlaps the wave
+            left: '50%',
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 11,
+            cursor: 'pointer'
+          }}
+          onClick={() => document.getElementById('photo-upload')?.click()}
+          onMouseEnter={(e) => {
+            const overlay = e.currentTarget.querySelector('.avatar-hover-overlay') as HTMLElement;
+            if (overlay) overlay.style.opacity = '1';
+          }}
+          onMouseLeave={(e) => {
+            const overlay = e.currentTarget.querySelector('.avatar-hover-overlay') as HTMLElement;
+            if (overlay) overlay.style.opacity = '0';
+          }}
+        >
+          {/* Circular Container with Background Color Border */}
+          <div style={{
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            border: '4px solid var(--bg-dark)',
+            background: '#111318',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
+            fontWeight: '700',
+            color: guestMode ? '#f59e0b' : '#fff',
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
+          }}>
             {form.avatar ? (
-              <img src={form.avatar} style={{ width: '100%', height: '100%', borderRadius: '28px', objectFit: 'cover' }} alt="Profile" />
+              <img src={form.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
             ) : (
               activeUser?.name?.charAt(0) || 'U'
             )}
-            
-            <div style={{
-              position: 'absolute', bottom: '-4px', right: '-4px',
-              width: '28px', height: '28px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              zIndex: 2
-            }}>
-              <IonIcon icon={cameraOutline} style={{ fontSize: 14, color: '#fff' }} />
+
+            {/* Dark glass hover overlay */}
+            <div
+              className="avatar-hover-overlay"
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: 0,
+                transition: 'opacity 0.2s ease',
+                zIndex: 1
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {isAl ? "Ndrysho" : "Change"}
+              </span>
             </div>
-            <input 
-              type="file" 
-              id="photo-upload" 
-              style={{ display: 'none' }} 
-              accept="image/*"
-              onChange={handlePhotoUpload}
-            />
           </div>
+
+          {/* Camera icon badge */}
+          <div style={{
+            position: 'absolute', bottom: '0px', right: '0px',
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: '#ea580c',
+            border: '2px solid var(--bg-dark)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            zIndex: 2,
+            color: '#fff'
+          }}>
+            <IonIcon icon={cameraOutline} style={{ fontSize: 13 }} />
+          </div>
+
+          <input
+            type="file"
+            id="photo-upload"
+            style={{ display: 'none' }}
+            accept="image/*"
+            onChange={handlePhotoUpload}
+          />
+        </motion.div>
+      </motion.div>
+
+      {/* Content scroll area */}
+      <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px', marginTop: '60px' }}>
+
+        {/* User name & email labels (moved below overlapping avatar) */}
+        <motion.div
+          initial={{ y: 15, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 15, delay: 0.25 }}
+          style={{ textAlign: 'center', marginBottom: '16px' }}
+        >
           <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#fff' }}>{activeUser?.name || 'Përdorues'}</h2>
           <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{activeUser?.email || 'Nuk ka email të regjistruar'}</p>
-        </div>
+        </motion.div>
 
-        <style jsx>{`
-          /* Minimalist styles */
-        `}</style>
-
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '24px',
           alignItems: 'start'
         }}>
-          
+
           {/* Left Column: Personal Info */}
-          <div style={{
-            background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
-            padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
-          }}>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
+            style={{
+              background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
+              padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
+            }}
+          >
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={personOutline} style={{ fontSize: 16, color: '#475569' }} /> {t.edit_personal_info}
             </h3>
-            
+
             <div>
               <label style={labelStyle}>{t.edit_full_name}</label>
-              <input 
-                style={inputStyle} 
-                value={form.name} 
-                onChange={e => setForm({...form, name: e.target.value})}
+              <input
+                className="profile-input"
+                style={inputStyle}
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
               />
             </div>
 
             <div>
               <label style={labelStyle}>Email</label>
               <div style={{ position: 'relative' }}>
-                <input 
-                  style={{ ...inputStyle, paddingLeft: '40px' }} 
-                  value={form.email} 
-                  onChange={e => setForm({...form, email: e.target.value})}
+                <input
+                  className="profile-input"
+                  style={{ ...inputStyle, paddingLeft: '40px' }}
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
                 />
-                <IonIcon icon={mailOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
+                <div className="input-icon-container" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', marginTop: '3px', transition: 'color 0.2s' }}>
+                  <IonIcon icon={mailOutline} style={{ fontSize: 16 }} />
+                </div>
               </div>
             </div>
 
             <div>
               <label style={labelStyle}>{t.phone_number}</label>
-              <PhoneInput 
-                country={selectedCountry} 
-                setCountry={setSelectedCountry} 
-                phone={phoneOnly} 
-                setPhone={setPhoneOnly} 
-                t={t} 
+              <PhoneInput
+                country={selectedCountry}
+                setCountry={setSelectedCountry}
+                phone={phoneOnly}
+                setPhone={setPhoneOnly}
+                t={t}
               />
             </div>
 
@@ -573,10 +945,15 @@ export default function EditProfileView() {
             </div>
 
 
-          </div>
+          </motion.div>
 
           {/* Right Column: Locations & Action */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.45 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+          >
             {!isStaff && (
               <div style={{
                 background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
@@ -589,19 +966,22 @@ export default function EditProfileView() {
                 <div ref={homeRef} style={{ position: 'relative' }}>
                   <label style={labelStyle}>{t.home}</label>
                   <div style={{ position: 'relative' }}>
-                    <input 
-                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }} 
-                      value={form.home} 
+                    <input
+                      className="profile-input"
+                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }}
+                      value={form.home}
                       onChange={e => {
-                        setForm({...form, home: e.target.value});
+                        setForm({ ...form, home: e.target.value });
                         setIsTypingHome(true);
                         setShowHomeSuggestions(true);
                       }}
                       onFocus={() => setShowHomeSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
-                    <IonIcon icon={homeOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
-                    
+                    <div className="input-icon-container" style={{ position: 'absolute', left: '14px', top: '22px', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.2)', transition: 'color 0.2s' }}>
+                      <IonIcon icon={homeOutline} style={{ fontSize: 14 }} />
+                    </div>
+
                     {isSearchingHome && (
                       <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
                         <div style={{ width: '12px', height: '12px', border: '1.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
@@ -609,100 +989,111 @@ export default function EditProfileView() {
                     )}
                   </div>
 
-                  {showHomeSuggestions && (
-                    <div style={{
-                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
-                      background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
-                      backdropFilter: 'blur(20px)'
-                    }}>
-                      {/* Current Location Option */}
-                      <button
-                        type="button"
-                        onClick={() => handleUseCurrentLocation('home')}
+                  <AnimatePresence>
+                    {showHomeSuggestions && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                          padding: '12px 12px 14px 12px', borderRadius: '0px',
-                          background: 'none', border: 'none',
-                          borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
-                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
+                          background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                          boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
+                          backdropFilter: 'blur(20px)'
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
                       >
-                        <div style={{
-                          width: '24px', height: '24px', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
+                        {/* Current Location Option */}
+                        <button
+                          type="button"
+                          onClick={() => handleUseCurrentLocation('home')}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                            padding: '12px 12px 14px 12px', borderRadius: '0px',
+                            background: 'none', border: 'none',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                            cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                        >
                           <div style={{
-                            width: '14px', height: '14px', borderRadius: '50%',
-                            border: '2px solid #3b82f6', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            width: '24px', height: '24px', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0
                           }}>
                             <div style={{
-                              width: '6px', height: '6px', borderRadius: '50%',
-                              background: '#3b82f6'
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                          {t.use_current_location}
-                        </span>
-                      </button>
-                      {homeSuggestions.map((item, idx) => {
-                        const parsed = parseAddressName(item);
-                        const placeIcon = getPlaceIcon(item);
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setForm({ ...form, home: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
-                              setIsTypingHome(false);
-                              setShowHomeSuggestions(false);
-                            }}
-                            style={{
-                              width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
-                              borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
-                              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-                            }}
-                            className="suggestion-item"
-                          >
-                            <div style={{
-                              width: '24px', height: '24px', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center',
-                              flexShrink: 0
+                              width: '14px', height: '14px', borderRadius: '50%',
+                              border: '2px solid #3b82f6', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', flexShrink: 0
                             }}>
-                              <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
+                              <div style={{
+                                width: '6px', height: '6px', borderRadius: '50%',
+                                background: '#3b82f6'
+                              }} />
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-                              <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
-                              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                            {t.use_current_location}
+                          </span>
+                        </button>
+                        {homeSuggestions.map((item, idx) => {
+                          const parsed = parseAddressName(item);
+                          const placeIcon = getPlaceIcon(item);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setForm({ ...form, home: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
+                                setIsTypingHome(false);
+                                setShowHomeSuggestions(false);
+                              }}
+                              style={{
+                                width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                                borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
+                                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                              }}
+                              className="suggestion-item"
+                            >
+                              <div style={{
+                                width: '24px', height: '24px', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div ref={workRef} style={{ position: 'relative' }}>
                   <label style={labelStyle}>{t.work}</label>
                   <div style={{ position: 'relative' }}>
-                    <input 
-                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }} 
-                      value={form.work} 
+                    <input
+                      className="profile-input"
+                      style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '40px' }}
+                      value={form.work}
                       onChange={e => {
-                        setForm({...form, work: e.target.value});
+                        setForm({ ...form, work: e.target.value });
                         setIsTypingWork(true);
                         setShowWorkSuggestions(true);
                       }}
                       onFocus={() => setShowWorkSuggestions(true)}
                       placeholder={t.edit_add_address}
                     />
-                    <IonIcon icon={briefcaseOutline} style={{ position: 'absolute', left: '14px', top: '22px', fontSize: 14, color: 'rgba(255,255,255,0.2)' }} />
-                    
+                    <div className="input-icon-container" style={{ position: 'absolute', left: '14px', top: '22px', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.2)', transition: 'color 0.2s' }}>
+                      <IonIcon icon={briefcaseOutline} style={{ fontSize: 14 }} />
+                    </div>
+
                     {isSearchingWork && (
                       <div style={{ position: 'absolute', right: '14px', top: '22px', display: 'flex', alignItems: 'center' }}>
                         <div style={{ width: '12px', height: '12px', border: '1.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
@@ -710,82 +1101,90 @@ export default function EditProfileView() {
                     )}
                   </div>
 
-                  {showWorkSuggestions && (
-                    <div style={{
-                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
-                      background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
-                      backdropFilter: 'blur(20px)'
-                    }}>
-                      {/* Current Location Option */}
-                      <button
-                        type="button"
-                        onClick={() => handleUseCurrentLocation('work')}
+                  <AnimatePresence>
+                    {showWorkSuggestions && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                          padding: '12px 12px 14px 12px', borderRadius: '0px',
-                          background: 'none', border: 'none',
-                          borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
-                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '6px',
+                          background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                          boxShadow: '0 12px 40px rgba(0,0,0,0.6)', maxHeight: '220px', overflowY: 'auto', padding: '6px',
+                          backdropFilter: 'blur(20px)'
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
                       >
-                        <div style={{
-                          width: '24px', height: '24px', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
+                        {/* Current Location Option */}
+                        <button
+                          type="button"
+                          onClick={() => handleUseCurrentLocation('work')}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                            padding: '12px 12px 14px 12px', borderRadius: '0px',
+                            background: 'none', border: 'none',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
+                            cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                        >
                           <div style={{
-                            width: '14px', height: '14px', borderRadius: '50%',
-                            border: '2px solid #3b82f6', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            width: '24px', height: '24px', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0
                           }}>
                             <div style={{
-                              width: '6px', height: '6px', borderRadius: '50%',
-                              background: '#3b82f6'
-                            }} />
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                          {t.use_current_location}
-                        </span>
-                      </button>
-                      {workSuggestions.map((item, idx) => {
-                        const parsed = parseAddressName(item);
-                        const placeIcon = getPlaceIcon(item);
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setForm({ ...form, work: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
-                              setIsTypingWork(false);
-                              setShowWorkSuggestions(false);
-                            }}
-                            style={{
-                              width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
-                              borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
-                              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-                            }}
-                            className="suggestion-item"
-                          >
-                            <div style={{
-                              width: '24px', height: '24px', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center',
-                              flexShrink: 0
+                              width: '14px', height: '14px', borderRadius: '50%',
+                              border: '2px solid #3b82f6', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', flexShrink: 0
                             }}>
-                              <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
+                              <div style={{
+                                width: '6px', height: '6px', borderRadius: '50%',
+                                background: '#3b82f6'
+                              }} />
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-                              <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
-                              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                            {t.use_current_location}
+                          </span>
+                        </button>
+                        {workSuggestions.map((item, idx) => {
+                          const parsed = parseAddressName(item);
+                          const placeIcon = getPlaceIcon(item);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setForm({ ...form, work: parsed.title + (parsed.subtitle ? ', ' + parsed.subtitle : '') });
+                                setIsTypingWork(false);
+                                setShowWorkSuggestions(false);
+                              }}
+                              style={{
+                                width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                                borderRadius: '8px', background: 'transparent', border: 'none', color: '#fff',
+                                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                              }}
+                              className="suggestion-item"
+                            >
+                              <div style={{
+                                width: '24px', height: '24px', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <IonIcon icon={placeIcon.icon} style={{ fontSize: 16, color: placeIcon.color }} />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.title}</span>
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{parsed.subtitle}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             )}
@@ -795,8 +1194,9 @@ export default function EditProfileView() {
               background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
               padding: '20px', borderRadius: '24px', marginTop: isStaff ? '0' : 'auto'
             }}>
-              <button 
-                onClick={handleSave} 
+              <motion.button
+                whileTap={isSaving ? {} : { scale: 0.98 }}
+                onClick={handleSave}
                 disabled={isSaving}
                 style={{
                   width: '100%', padding: '14px', borderRadius: '14px',
@@ -814,14 +1214,15 @@ export default function EditProfileView() {
                 ) : (
                   <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
                 )}
-              </button>
+              </motion.button>
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
                 {t.edit_changes_applied_immediate}
               </p>
             </div>
 
             {/* Delete Account Button */}
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={() => setView('delete_account')}
               style={{
                 width: '100%', padding: '14px', borderRadius: '14px',
@@ -830,18 +1231,11 @@ export default function EditProfileView() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
-                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
-              }}
+              className="delete-account-btn"
             >
               <IonIcon icon={trashOutline} style={{ fontSize: 16 }} /> Delete Account
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
 
         <style jsx>{`
@@ -853,8 +1247,42 @@ export default function EditProfileView() {
           .suggestion-item:hover {
             background: rgba(255,255,255,0.06) !important;
           }
+          .profile-input {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .profile-input:focus {
+            border-color: #ea580c !important;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15) !important;
+            background: rgba(255,255,255,0.05) !important;
+          }
+          .profile-input:focus + .input-icon-container {
+            color: #ea580c !important;
+          }
+          .phone-country-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .phone-country-btn:hover {
+            border-color: rgba(255,255,255,0.2) !important;
+            background: rgba(255,255,255,0.06) !important;
+          }
+          .phone-country-btn:focus {
+            border-color: #ea580c !important;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15) !important;
+          }
+          .profile-search-input:focus {
+            border-color: #ea580c !important;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15) !important;
+            background: rgba(255,255,255,0.08) !important;
+          }
+          .dropdown-item:hover {
+            background: rgba(255,255,255,0.05) !important;
+          }
+          .delete-account-btn:hover {
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: rgba(239, 68, 68, 0.3) !important;
+          }
         `}</style>
       </div>
-    </>
+    </motion.div>
   );
 }

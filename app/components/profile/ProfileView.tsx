@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from "next-auth/react";
 import useStore from '../../store/useStore';
 import {
   logOutOutline, chevronForwardOutline, notificationsOutline, shareOutline,
   helpCircleOutline, trashOutline, alertOutline, closeOutline, mailOutline, callOutline,
-  globeOutline, checkmarkCircleOutline
+  globeOutline, checkmarkCircleOutline, logInOutline, arrowBackOutline, locationOutline,
+  personOutline
 } from 'ionicons/icons';
 import { IonIcon } from '@/app/components/common/IonIcon';
 import { translations } from '../../store/translations';
@@ -24,152 +25,317 @@ export default function ProfileView() {
   const t = translations[language] || translations.al;
   const setView = useStore((state: any) => state.setView);
   const addNotification = useStore((state: any) => state.addNotification);
+  const currentView = useStore((state: any) => state.currentView);
 
-  const activeUser = staffUser || user;
+  const [avatarScale, setAvatarScale] = useState(currentView === 'profile' ? 0 : 1);
+
+  useEffect(() => {
+    if (currentView === 'profile') {
+      setAvatarScale(1);
+    } else {
+      setAvatarScale(0);
+    }
+  }, [currentView]);
+
+  const guestMode = useStore((state: any) => state.guestMode);
+  const setGuestMode = useStore((state: any) => state.setGuestMode);
+  const currentCoverIndex = useStore((state: any) => state.currentCoverIndex);
+
+  const isAl = language === 'al';
+  const isIt = language === 'it';
+
+  const activeUser = guestMode
+    ? {
+      name: isAl ? "Vizitor" : isIt ? "Ospite" : "Guest",
+      email: isAl ? "Hyni ose regjistrohuni" : isIt ? "Accedi o registrati" : "Sign in or register",
+      avatar: null
+    }
+    : (staffUser || user);
 
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | 'about' | null>(null);
   const router = useRouter();
 
-  const menuItems = [
-    { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
-    { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
-    { icon: helpCircleOutline, label: t.prof_help_center, action: () => setView('help') },
-    {
-      icon: shareOutline, label: t.share_app_label, action: async () => {
-        try {
-          if (Capacitor.isNativePlatform()) {
-            // Përdor Capacitor Share për mobilet
-            await Share.share({
-              title: t.share_app_title,
-              text: t.share_app_text,
-              url: 'https://urbanim.app'
-            });
-            addNotification(t.share_success, 'success');
-          } else if (navigator.share) {
-            // Përdor Web Share API për browserët
-            await navigator.share({
-              title: t.share_app_title,
-              text: t.share_app_text,
-              url: window.location.origin
-            });
-            addNotification(t.share_success, 'success');
-          } else {
-            addNotification(t.prof_link_copied, 'success');
-          }
-        } catch (error: any) {
-          const errorMessage = error?.message || String(error) || '';
-          // Ignore share canceled errors, timeouts, and permission denied
-          if (errorMessage.toLowerCase().includes('canceled') || 
-              errorMessage.toLowerCase().includes('abort') ||
-              errorMessage.toLowerCase().includes('timeout') ||
-              errorMessage.toLowerCase().includes('denied')) {
-            return;
-          }
-          // Safely log error
-          if (error instanceof Error) {
-            console.warn('Share error:', error.message);
-          } else {
-            console.warn('Share action dismissed or unavailable');
-          }
-          // Only show notification for actual failures
-          if (!errorMessage.toLowerCase().includes('user')) {
-            addNotification(t.share_error, 'danger');
-          }
-        }
+  // Capacitor/Web sharing handler
+  const handleShare = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await Share.share({
+          title: t.share_app_title,
+          text: t.share_app_text,
+          url: 'https://urbanim.app'
+        });
+        addNotification(t.share_success, 'success');
+      } else if (navigator.share) {
+        await navigator.share({
+          title: t.share_app_title,
+          text: t.share_app_text,
+          url: window.location.origin
+        });
+        addNotification(t.share_success, 'success');
+      } else {
+        addNotification(t.prof_link_copied, 'success');
       }
-    },
-    { icon: logOutOutline, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error) || '';
+      if (errorMessage.toLowerCase().includes('canceled') ||
+        errorMessage.toLowerCase().includes('abort') ||
+        errorMessage.toLowerCase().includes('timeout') ||
+        errorMessage.toLowerCase().includes('denied')) {
+        return;
+      }
+      if (error instanceof Error) {
+        console.warn('Share error:', error.message);
+      } else {
+        console.warn('Share action dismissed or unavailable');
+      }
+      if (!errorMessage.toLowerCase().includes('user')) {
+        addNotification(t.share_error, 'danger');
+      }
+    }
+  };
+
+  const accountGroup = [
+    { icon: personOutline, label: isAl ? "Të dhënat personale" : isIt ? "Dati personali" : "Personal Data", sub: guestMode ? (isAl ? "Kliko për të parë përfitimet" : isIt ? "Clicca per vedere i vantaggi" : "Click to view benefits") : t.prof_edit_personal_info, action: () => setView('edit_profile') },
+    { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
+    { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
+  ];
+
+  const supportGroup = [
+    { icon: helpCircleOutline, label: t.prof_help_center, action: () => setView('help') },
+    { icon: shareOutline, label: t.share_app_label, action: handleShare },
+    guestMode
+      ? { icon: logInOutline, label: isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register", action: () => setGuestMode(false), isSuccessColor: true }
+      : { icon: logOutOutline, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+    >
 
-      {/* Header Profile Card */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.35 }}
-        style={{ padding: '30px 20px 20px 20px' }}>
-        <button
-          onClick={() => setView('edit_profile')}
+      {/* Curved Gradient Header (Cover) */}
+      <motion.div 
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+        style={{
+          position: 'relative',
+          height: '170px',
+          overflow: 'visible',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+          zIndex: 1,
+          background: '#0a0f1d'
+        }}
+      >
+        {/* Slideshow background images */}
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num, i) => (
+          <div
+            key={num}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(234, 88, 12, 0.85) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
+              opacity: currentCoverIndex === i ? 1 : 0,
+              transition: 'opacity 1.5s ease-in-out',
+              zIndex: 0
+            }}
+          />
+        ))}
+        {/* Safe Area Top-spacing and Navigation header */}
+        <div style={{
+          position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', left: '20px', right: '20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5
+        }}>
+          {/* Title */}
+          <span style={{
+            color: '#fff', fontSize: '18px', fontWeight: '800',
+            letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
+          }}>
+            {t.profile}
+          </span>
+        </div>
+
+        {/* Organic Wave Bottom Divider */}
+        <svg viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '45px', zIndex: 2 }}>
+          <path fill="var(--bg-dark)" d="M0,160 C 180,160 180,210 360,210 C 540,210 540,110 720,110 C 900,110 900,210 1080,210 C 1260,210 1260,160 1440,160 L 1440,220 L 0,220 Z"></path>
+        </svg>
+
+        {/* Overlapping Floating Avatar wrapper (absolute positioned inside the visible-overflow header) */}
+        <motion.div 
+          initial={{ scale: currentView === 'profile' ? 0 : 1, opacity: currentView === 'profile' ? 0 : 1, x: '-50%' }}
+          animate={{ 
+            scale: avatarScale, 
+            opacity: avatarScale, 
+            x: '-50%' 
+          }}
+          transition={{ 
+            type: 'spring', 
+            stiffness: avatarScale === 1 ? 150 : 80, 
+            damping: avatarScale === 1 ? 12 : 20,
+            restDelta: 0.001
+          }}
           style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: '15px',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '20px', padding: '16px', cursor: 'pointer', textAlign: 'left',
-            transition: 'all 0.2s ease', boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            position: 'absolute',
+            bottom: '-45px', // positions it to overlap the bottom edge
+            left: '50%',
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 10,
+            transformOrigin: 'center'
           }}
         >
+          {/* Circular Container with Background Color Border */}
           <div style={{
-            width: '56px', height: '56px', borderRadius: '18px',
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            border: '4px solid var(--bg-dark)',
             background: '#111318',
-            border: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '22px', fontWeight: '600', color: '#fff',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.03)'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
+            fontWeight: '700',
+            color: guestMode ? '#f59e0b' : '#fff',
+            overflow: 'hidden',
+            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
           }}>
             {activeUser?.avatar ? (
-              <img src={activeUser.avatar} style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover' }} alt="Profile" />
+              <img src={activeUser.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
             ) : (
               activeUser?.name?.charAt(0) || 'U'
             )}
           </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#fff' }}>{activeUser?.name || 'Përdorues'}</h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '2px 0 0 0' }}>
-              {t.prof_edit_personal_info}
-            </p>
-          </div>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.05)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', color: '#fff'
-          }}>
-            <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px' }} />
-          </div>
-        </button>
+        </motion.div>
       </motion.div>
 
-      {/* Menu List */}
-      <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-        <AnimatePresence>
-          {menuItems.map((item, idx) => (
-            <motion.button
-              key={idx}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.05 }}
-              onClick={item.action}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
-              background: 'transparent', border: 'none', borderRadius: '14px',
-              padding: '16px', cursor: 'pointer', textAlign: 'left',
-              color: item.isDestructive ? '#ef4444' : '#fff',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{
-              width: '40px', height: '40px', borderRadius: '12px',
-              background: item.isDestructive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: item.isDestructive ? '#ef4444' : 'rgba(255,255,255,0.5)',
-              transition: 'all 0.2s ease'
-            }}>
-              <IonIcon icon={item.icon} style={{ fontSize: '18px' }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: '15px', fontWeight: '500' }}>{item.label}</span>
-              {item.value && (
-                <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
-                  {item.value}
-                </span>
-              )}
-            </div>
-            {!item.isDestructive && (
-              <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: 'rgba(255,255,255,0.15)' }} />
-            )}
-            </motion.button>
-          ))}
-        </AnimatePresence>
+      {/* Spacer for Floating Avatar */}
+      <motion.div 
+        initial={{ y: 15, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 120, damping: 15, delay: 0.25 }}
+        style={{ textAlign: 'center', marginTop: '55px', marginBottom: '24px', padding: '0 20px' }}
+      >
+        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 4px 0' }}>
+          {activeUser?.name || 'Përdorues'}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: 'rgba(255, 255, 255, 0.4)', fontSize: '13px' }}>
+          <IonIcon icon={locationOutline} style={{ fontSize: '14px', color: '#f59e0b' }} />
+          <span>{isAl ? "Tiranë, Shqipëri" : "Tirana, Albania"}</span>
+        </div>
+      </motion.div>
+
+      {/* Groups Container */}
+      <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px' }}>
+
+        {/* Account Card Group */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
+        >
+          <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', paddingLeft: '8px' }}>
+            {isAl ? "Llogaria" : isIt ? "Account" : "Account"}
+          </h3>
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '20px',
+            overflow: 'hidden'
+          }}>
+            {accountGroup.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={item.action}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
+                  background: 'transparent', border: 'none',
+                  borderBottom: idx < accountGroup.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  padding: '16px', cursor: 'pointer', textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.015)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '11px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#f59e0b',
+                  flexShrink: 0
+                }}>
+                  <IonIcon icon={item.icon} style={{ fontSize: '18px' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: '#fff' }}>{item.label}</span>
+                  {(item.sub || item.value) && (
+                    <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.sub || item.value}
+                    </span>
+                  )}
+                </div>
+                <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: 'rgba(255,255,255,0.15)' }} />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Support & Settings Card Group */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.45 }}
+        >
+          <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', paddingLeft: '8px' }}>
+            {isAl ? "Mbeshtetja & Cilësimet" : isIt ? "Supporto & Impostazioni" : "Support & Settings"}
+          </h3>
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '20px',
+            overflow: 'hidden'
+          }}>
+            {supportGroup.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={item.action}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
+                  background: 'transparent', border: 'none',
+                  borderBottom: idx < supportGroup.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  padding: '16px', cursor: 'pointer', textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.015)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '11px',
+                  background: item.isDestructive ? 'rgba(239,68,68,0.08)' : item.isSuccessColor ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)',
+                  border: item.isDestructive ? '1px solid rgba(239,68,68,0.15)' : item.isSuccessColor ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: item.isDestructive ? '#ef4444' : item.isSuccessColor ? '#10b981' : '#f59e0b',
+                  flexShrink: 0
+                }}>
+                  <IonIcon icon={item.icon} style={{ fontSize: '18px' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: item.isDestructive ? '#ef4444' : item.isSuccessColor ? '#10b981' : '#fff' }}>
+                    {item.label}
+                  </span>
+                </div>
+                <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: item.isDestructive ? 'rgba(239,68,68,0.2)' : item.isSuccessColor ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.15)' }} />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
       </div>
 
       {/* Modals */}
@@ -195,83 +361,82 @@ export default function ProfileView() {
                 borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
-                    {activeModal === 'logout' ? t.logout :
-                      activeModal === 'language' ? t.prof_language :
-                        activeModal === 'delete' ? 'Fshij Llogarinë' : (activeModal === 'about' ? 'Rreth Urbani Im' : 'Informacion')}
-                  </h3>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                  {activeModal === 'logout' ? t.logout :
+                    activeModal === 'language' ? t.prof_language :
+                      activeModal === 'delete' ? 'Fshij Llogarinë' : (activeModal === 'about' ? 'Rreth Urbani Im' : 'Informacion')}
+                </h3>
                 <button onClick={() => setActiveModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                   <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
                 </button>
-            </div>
-
-            {activeModal === 'language' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {[
-                  { id: 'al', name: 'Shqip', flag: '🇦🇱' },
-                  { id: 'en', name: 'English', flag: '🇬🇧' },
-                  { id: 'it', name: 'Italiano', flag: '🇮🇹' }
-                ].map(lang => (
-                  <button
-                    key={lang.id}
-                    onClick={() => { setLanguage(lang.id); setActiveModal(null); }}
-                    style={{
-                      width: '100%', padding: '14px 16px', borderRadius: '12px',
-                      background: language === lang.id ? 'rgba(234, 88, 12, 0.1)' : 'transparent',
-                      border: 'none',
-                      color: language === lang.id ? '#ea580c' : 'rgba(255,255,255,0.5)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease',
-                      position: 'relative'
-                    }}
-                  >
-                    {language === lang.id && (
-                      <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '4px', background: '#ea580c', borderRadius: '0 4px 4px 0' }} />
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '22px', filter: language === lang.id ? 'none' : 'grayscale(0.4) opacity(0.7)' }}>{lang.flag}</span>
-                      <span style={{ fontSize: '15px', color: language === lang.id ? '#fff' : 'inherit', fontWeight: language === lang.id ? '600' : '500' }}>{lang.name}</span>
-                    </div>
-                    {language === lang.id && (
-                      <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '18px', color: '#ea580c' }} />
-                    )}
-                  </button>
-                ))}
               </div>
-            ) : activeModal === 'logout' ? (
-              <div>
-                <p style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#fff', fontWeight: '500', lineHeight: '1.5' }}>
-                  {t.logout_confirm}
-                </p>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={() => setActiveModal(null)}
-                    style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '14px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', cursor: 'pointer' }}
-                  >
-                    {t.no}
-                  </button>
-                  <button
-                    onClick={() => {
-                      useStore.getState().setGuestMode(false);
-                      signOut({ callbackUrl: '/' });
-                      setActiveModal(null);
-                    }}
-                    style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
-                  >
-                    {t.yes}
-                  </button>
+
+              {activeModal === 'language' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { id: 'al', name: 'Shqip', flag: '🇦🇱' },
+                    { id: 'en', name: 'English', flag: '🇬🇧' },
+                    { id: 'it', name: 'Italiano', flag: '🇮🇹' }
+                  ].map(lang => (
+                    <button
+                      key={lang.id}
+                      onClick={() => { setLanguage(lang.id); setActiveModal(null); }}
+                      style={{
+                        width: '100%', padding: '14px 16px', borderRadius: '12px',
+                        background: language === lang.id ? 'rgba(234, 88, 12, 0.1)' : 'transparent',
+                        border: 'none',
+                        color: language === lang.id ? '#ea580c' : 'rgba(255,255,255,0.5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      {language === lang.id && (
+                        <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '4px', background: '#ea580c', borderRadius: '0 4px 4px 0' }} />
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '22px', filter: language === lang.id ? 'none' : 'grayscale(0.4) opacity(0.7)' }}>{lang.flag}</span>
+                        <span style={{ fontSize: '15px', color: language === lang.id ? '#fff' : 'inherit', fontWeight: language === lang.id ? '600' : '500' }}>{lang.name}</span>
+                      </div>
+                      {language === lang.id && (
+                        <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '18px', color: '#ea580c' }} />
+                      )}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            ) : activeModal === 'about' ? (
-              <div>
-                <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>Urbani Im — Ndjekja e Autobuzëve në Shqipëri. Version 1.0.6. Për pyetje ose sugjerime, na kontaktoni në support@albroute.al.</p>
-              </div>
-            ) : (
-              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
-                {activeModal === 'notifications' && t.prof_no_new_notifications}
-              </p>
-            )}
-
+              ) : activeModal === 'logout' ? (
+                <div>
+                  <p style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#fff', fontWeight: '500', lineHeight: '1.5' }}>
+                    {t.logout_confirm}
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => setActiveModal(null)}
+                      style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '14px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                      {t.no}
+                    </button>
+                    <button
+                      onClick={() => {
+                        useStore.getState().setGuestMode(false);
+                        signOut({ callbackUrl: '/' });
+                        setActiveModal(null);
+                      }}
+                      style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
+                    >
+                      {t.yes}
+                    </button>
+                  </div>
+                </div>
+              ) : activeModal === 'about' ? (
+                <div>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>Urbani Im — Ndjekja e Autobuzëve në Shqipëri. Version 1.0.6. Për pyetje ose sugjerime, na kontaktoni në support@albroute.al.</p>
+                </div>
+              ) : (
+                <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
+                  {activeModal === 'notifications' && t.prof_no_new_notifications}
+                </p>
+              )}
 
             </motion.div>
           </motion.div>
@@ -284,6 +449,6 @@ export default function ProfileView() {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 }

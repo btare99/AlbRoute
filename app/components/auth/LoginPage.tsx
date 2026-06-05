@@ -1037,19 +1037,29 @@ function LoginContent() {
           {/* Footer Navigation */}
           <div style={{ marginTop: '36px', textAlign: 'center' }}>
             {mode === 'login' ? (
-              <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
-                Don`t have an account?{' '}
-                <button type="button" onClick={() => { setMode('register'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
-                  Sign up
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
+                  Don`t have an account?{' '}
+                  <button type="button" onClick={() => { setMode('register'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Sign up
+                  </button>
+                </p>
+                <button type="button" onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: '#f59e0b', fontWeight: '700', fontSize: '14px', padding: '4px', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fbbf24'} onMouseLeave={(e) => e.currentTarget.style.color = '#f59e0b'}>
+                  Vazhdo si Vizitor / Continue as Guest ➔
                 </button>
-              </p>
+              </div>
             ) : mode === 'register' ? (
-              <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
-                Already have an account?{' '}
-                <button type="button" onClick={() => { setMode('login'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
-                  Login
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                <p style={{ fontSize: '13px', color: '#71717a', margin: 0 }}>
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => { setMode('login'); setError(''); }} style={{ background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', padding: '2px', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Login
+                  </button>
+                </p>
+                <button type="button" onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: '#f59e0b', fontWeight: '700', fontSize: '14px', padding: '4px', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fbbf24'} onMouseLeave={(e) => e.currentTarget.style.color = '#f59e0b'}>
+                  Vazhdo si Vizitor / Continue as Guest ➔
                 </button>
-              </p>
+              </div>
             ) : null}
 
             {/* Compact footer: location, version + links */}
