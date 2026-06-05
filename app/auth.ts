@@ -77,8 +77,48 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        idToken: { label: "idToken", type: "text" },
+        provider: { label: "provider", type: "text" },
       },
       async authorize(credentials): Promise<AuthUser | null> {
+        if (credentials?.provider === "google-native") {
+          const idToken = credentials?.idToken as string;
+          if (!idToken) return null;
+          try {
+            const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+            if (!verifyRes.ok) {
+              console.error("[Auth] Google native token verification failed");
+              return null;
+            }
+            const payload = await verifyRes.json();
+            const email = payload.email?.toLowerCase().trim();
+            if (!email) return null;
+
+            await connectDB();
+            const UserModel = getUserModel();
+            let dbUser = await UserModel.findOne({ email }).lean<DbUser>();
+            let role = "user";
+
+            if (!dbUser) {
+              const created = await UserModel.create({
+                name: payload.name ?? "",
+                email,
+                savedLocations: { home: "", work: "" },
+                travelHistory: [],
+                lastLogin: new Date(),
+              });
+              dbUser = created.toObject() as DbUser;
+            } else {
+              await UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() }).exec().catch(() => {});
+            }
+
+            return buildAuthUser(dbUser, role);
+          } catch (err) {
+            console.error("[Auth] Google native authorize error:", err);
+            return null;
+          }
+        }
+
         const email = (credentials?.email as string | undefined)?.toLowerCase().trim();
         const password = credentials?.password as string | undefined;
 

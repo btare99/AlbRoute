@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from "next-auth/react";
 import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 import { AsYouType } from 'libphonenumber-js';
@@ -468,10 +469,35 @@ function LoginContent() {
     try {
       setLoading(true);
       if (provider.toLowerCase() === 'google') {
-        await Preferences.set({ key: 'google_login_pending', value: '1' });
+        if (Capacitor.isNativePlatform()) {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+          const googleUser = await GoogleAuth.signIn();
+          const idToken = googleUser?.authentication?.idToken;
+          if (!idToken) {
+            throw new Error('Google Sign-In failed: No ID Token');
+          }
+
+          const result = await signIn('credentials', {
+            idToken,
+            provider: 'google-native',
+            redirect: false,
+          });
+
+          if (result?.error) {
+            setError(t.auth_invalid_credentials || 'Identifikimi dështoi.');
+            setLoading(false);
+          } else {
+            addNotification(t.auth_welcome, 'success');
+            window.location.reload();
+          }
+          return;
+        } else {
+          await Preferences.set({ key: 'google_login_pending', value: '1' });
+        }
       }
       await signIn(provider.toLowerCase());
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Social login error:', err);
       addNotification('Social login failed.', 'danger');
       setLoading(false);
     }
