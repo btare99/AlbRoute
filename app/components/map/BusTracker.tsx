@@ -636,7 +636,7 @@ export default function BusTracker() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {routeBuses.map((bus: any) => {
+                  {routeBuses.map((bus: any, idx: number) => {
                     const isExpanded = expandedBusId === bus.id;
                     const load = getLoad(bus.passengerLoad);
                     const isReturn = bus.direction === 'return';
@@ -690,7 +690,7 @@ export default function BusTracker() {
 
                     return (
                       <div
-                        key={bus.id}
+                        key={bus.id || bus.busId || bus.plate || idx}
                         style={{
                           background: 'rgba(255, 255, 255, 0.02)',
                           border: isExpanded ? `1.5px solid ${route.color}50` : '1.5px solid rgba(255, 255, 255, 0.05)',

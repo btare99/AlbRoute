@@ -1,13 +1,10 @@
 'use client';
-import { ArrowRight, Banknote, Briefcase, Bug, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route as RouteIcon, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut, Play, Pause, Volume2, VolumeX, Flag } from 'lucide-react';
+import { ArrowRight, Banknote, Briefcase, Bug, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
 import SwipeDismissView from '../layout/SwipeDismissView';
-import { Route as MapboxRoute, fetchRoutes, formatDistance, formatDuration, formatETA, getManeuverIcon } from '../../services/routeService';
-import { useNavigation } from '../../hooks/useNavigation';
-import NavigationPanel, { ArrivalOverlay } from './NavigationPanel';
 
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -68,76 +65,7 @@ const findClosestPointOnPolyline = (point: [number, number], polyline: [number, 
   return closestPoint;
 };
 
-// ─── DIRECTION ARROW GEOMETRY HELPERS ──────────────────────────────────────────
 
-/** Haversine distance in meters between two [lat, lng] points */
-const haversineDistance = (a: [number, number], b: [number, number]): number => {
-  const R = 6371000;
-  const dLat = (b[0] - a[0]) * Math.PI / 180;
-  const dLng = (b[1] - a[1]) * Math.PI / 180;
-  const sinDLat = Math.sin(dLat / 2);
-  const sinDLng = Math.sin(dLng / 2);
-  const h = sinDLat * sinDLat + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * sinDLng * sinDLng;
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-};
-
-/** Bearing in degrees from point A to point B (0=N, 90=E, etc.) */
-const getSegmentBearing = (a: [number, number], b: [number, number]): number => {
-  const lat1 = a[0] * Math.PI / 180;
-  const lat2 = b[0] * Math.PI / 180;
-  const dLng = (b[1] - a[1]) * Math.PI / 180;
-  const y = Math.sin(dLng) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-  return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
-};
-
-/** Returns absolute angle difference in degrees (0-180) */
-const getAngleDifference = (a: number, b: number): number => {
-  let diff = Math.abs(a - b) % 360;
-  if (diff > 180) diff = 360 - diff;
-  return diff;
-};
-
-/** Generate interpolated points along a polyline at the given spacing (meters).
- *  Returns [{lat, lng, bearing}] for each arrow placement. */
-const getPointsAlongPolyline = (
-  coords: [number, number][],
-  spacingMeters: number = 150
-): { lat: number; lng: number; bearing: number }[] => {
-  if (coords.length < 2) return [];
-
-  const points: { lat: number; lng: number; bearing: number }[] = [];
-  let accumulated = spacingMeters; // start with spacing so first arrow is offset
-
-  for (let i = 0; i < coords.length - 1; i++) {
-    const segStart = coords[i];
-    const segEnd = coords[i + 1];
-    const segLen = haversineDistance(segStart, segEnd);
-    if (segLen < 0.1) continue; // skip degenerate segments
-
-    const bearing = getSegmentBearing(segStart, segEnd);
-    let remaining = segLen;
-    let along = 0;
-
-    // Walk along this segment placing arrows
-    while (accumulated <= along + remaining) {
-      const frac = (accumulated - along) / segLen;
-      const lat = segStart[0] + frac * (segEnd[0] - segStart[0]);
-      const lng = segStart[1] + frac * (segEnd[1] - segStart[1]);
-      points.push({ lat, lng, bearing });
-      remaining -= (accumulated - along);
-      along = accumulated;
-      accumulated += spacingMeters;
-    }
-
-    accumulated -= (along + remaining);
-    // carry over the remainder for the next segment
-    accumulated = spacingMeters - remaining;
-    if (accumulated < 0) accumulated = 0;
-  }
-
-  return points;
-};
 
 // Retrieves the detailed coordinates of a route leg
 const getLegCoords = (leg: any): [number, number][] => {
@@ -207,38 +135,6 @@ const getLegCoords = (leg: any): [number, number][] => {
   return legCoords;
 };
 
-// Helper to get coordinates of a leg, including walking paths
-const getLegCoordinatesIncludingWalking = (leg: any, idx: number, tripOriginCoords: any, tripDestCoords: any, walkingShapes: any, totalLegs: any[]): [number, number][] => {
-  if (!leg) return [];
-  if (leg.isWalking) {
-    const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
-    const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
-
-    let startLat = bStop ? bStop.lat : null;
-    let startLng = bStop ? bStop.lng : null;
-    let destLat = aStop ? aStop.lat : null;
-    let destLng = aStop ? aStop.lng : null;
-
-    if (idx === 0 && tripOriginCoords) {
-      startLat = tripOriginCoords.lat;
-      startLng = tripOriginCoords.lng;
-    }
-    if (idx === totalLegs.length - 1 && tripDestCoords) {
-      destLat = tripDestCoords.lat;
-      destLng = tripDestCoords.lng;
-    }
-
-    if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
-      return walkingShapes[`walk_${idx}`] || [
-        [startLat, startLng],
-        [destLat, destLng]
-      ];
-    }
-    return [];
-  }
-  return getLegCoords(leg);
-};
-
 const animateMarker = (
   marker: any,
   startLatLng: [number, number],
@@ -267,32 +163,6 @@ const animateMarker = (
   marker._animationFrameId = requestAnimationFrame(step);
 };
 
-const getInstructionText = (leg: any, lang: string) => {
-  if (!leg) return '';
-  const isAl = lang === 'al';
-  const isIt = lang === 'it';
-
-  if (leg.isWalking) {
-    if (isAl) {
-      return `Ec ${leg.walkingDist}m deri te stacioni "${leg.alightAt}" (${leg.walkingTime} min)`;
-    } else if (isIt) {
-      return `Cammina per ${leg.walkingDist}m verso la stazione "${leg.alightAt}" (${leg.walkingTime} min)`;
-    } else {
-      return `Walk ${leg.walkingDist}m to station "${leg.alightAt}" (${leg.walkingTime} min)`;
-    }
-  } else {
-    const routeName = leg.route?.name || '';
-    const numStops = leg.stops?.length || 0;
-    if (isAl) {
-      return `Hyr në Autobusin ${routeName} te "${leg.boardAt}". Udhëto ${numStops} stacione deri te "${leg.alightAt}"`;
-    } else if (isIt) {
-      return `Sali sull'Autobus ${routeName} a "${leg.boardAt}". Viaggia per ${numStops} fermate fino a "${leg.alightAt}"`;
-    } else {
-      return `Board Bus ${routeName} at "${leg.boardAt}". Ride ${numStops} stops to "${leg.alightAt}"`;
-    }
-  }
-};
-
 export default function MapView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -308,6 +178,7 @@ export default function MapView() {
   const destPinMarkerRef = useRef<any>(null);
   const prevActiveTripRef = useRef<any>(null);
   const boundsTimerRef = useRef<number | null>(null);
+  const isFittingBoundsRef = useRef(false);
 
   const language = useStore((s: any) => s.language);
   const t = translations[language] || translations.al;
@@ -359,201 +230,6 @@ export default function MapView() {
   const [isSearching, setIsSearching] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
-  const isNavigating3D = useStore((s: any) => s.isNavigating3D);
-  const setIsNavigating3D = useStore((s: any) => s.setIsNavigating3D);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isRecenterNeeded, setIsRecenterNeeded] = useState(false);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simCoordinateIndex, setSimCoordinateIndex] = useState(0);
-  const [simSpeed, setSimSpeed] = useState<1 | 3 | 5>(1);
-  const [navigationPerspective, setNavigationPerspective] = useState<'3D' | '2D'>('3D');
-  const [isMuted, setIsMuted] = useState(false);
-  const [showVolumeBanner, setShowVolumeBanner] = useState(false);
-
-  // ── MAPBOX DRIVING NAVIGATION STATE ──
-  const [mapboxRoutes, setMapboxRoutes] = useState<MapboxRoute[]>([]);
-  const [selectedMapboxRouteIndex, setSelectedMapboxRouteIndex] = useState<number>(0);
-  const [isMapboxRouteMode, setIsMapboxRouteMode] = useState(false); // STATE A: route selection
-  const [isMapboxNavMode, setIsMapboxNavMode] = useState(false); // STATE B: turn-by-turn
-  const [mapboxDestName, setMapboxDestName] = useState('');
-  const [mapboxDestCoords, setMapboxDestCoords] = useState<[number, number] | null>(null); // [lng, lat]
-  const [isFetchingRoutes, setIsFetchingRoutes] = useState(false);
-  const mapboxRouteLinesRef = useRef<any[]>([]);
-
-  const selectedMapboxRoute = mapboxRoutes[selectedMapboxRouteIndex] || null;
-
-  // ── MAPBOX NAVIGATION HOOK ──
-  const navState = useNavigation({
-    selectedRoute: selectedMapboxRoute,
-    destination: mapboxDestCoords,
-    destinationName: mapboxDestName,
-    isMuted,
-    language,
-    onDeviation: () => {
-      console.log('[MapView] Route deviation detected');
-    },
-    onArrival: () => {
-      console.log('[MapView] Arrived at destination');
-    },
-    onReroute: (newRoute) => {
-      console.log('[MapView] Rerouted');
-      setMapboxRoutes([newRoute]);
-      setSelectedMapboxRouteIndex(0);
-      // Redraw the route on the map
-      drawMapboxRoute(newRoute);
-    },
-  });
-
-  // ── FETCH MAPBOX ROUTES ──
-  const fetchMapboxRoutes = useCallback(async (originLat: number, originLng: number, destLat: number, destLng: number, destName: string) => {
-    setIsFetchingRoutes(true);
-    try {
-      const routes = await fetchRoutes([originLng, originLat], [destLng, destLat]);
-      if (routes.length > 0) {
-        setMapboxRoutes(routes);
-        setSelectedMapboxRouteIndex(0);
-        setMapboxDestName(destName);
-        setMapboxDestCoords([destLng, destLat]);
-        setIsMapboxRouteMode(true);
-        setIsSearching(false);
-        // Fit map to route bounds
-        if (mapInstanceRef.current && LRef.current && routes[0].coordinates.length > 1) {
-          const bounds = LRef.current.latLngBounds(routes[0].coordinates);
-          mapInstanceRef.current.fitBounds(bounds, { padding: [80, 80], duration: 1.5 });
-        }
-      } else {
-        addNotification(language === 'al' ? 'Nuk u gjetën rrugë për këtë destinacion.' : 'No routes found for this destination.', 'error');
-      }
-    } catch (err) {
-      console.error('Failed to fetch Mapbox routes:', err);
-      addNotification(language === 'al' ? 'Gabim në gjetjen e rrugëve.' : 'Error fetching routes.', 'error');
-    } finally {
-      setIsFetchingRoutes(false);
-    }
-  }, [language, addNotification]);
-
-  // ── DRAW MAPBOX ROUTE ON LEAFLET MAP ──
-  const drawMapboxRoute = useCallback((route: MapboxRoute) => {
-    const map = mapInstanceRef.current;
-    const L = LRef.current;
-    if (!map || !L) return;
-    // Clear old route lines
-    mapboxRouteLinesRef.current.forEach(l => map.removeLayer(l));
-    mapboxRouteLinesRef.current = [];
-    // Draw the active route
-    if (route.coordinates.length >= 2) {
-      const glow = L.polyline(route.coordinates, {
-        color: '#3b82f6', weight: 12, opacity: 0.25, lineCap: 'round', lineJoin: 'round', interactive: false
-      }).addTo(map);
-      const line = L.polyline(route.coordinates, {
-        color: '#3b82f6', weight: 6, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false
-      }).addTo(map);
-      mapboxRouteLinesRef.current.push(glow, line);
-    }
-  }, []);
-
-  // ── DRAW ALL MAPBOX ROUTE OPTIONS ON MAP (STATE A) ──
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const L = LRef.current;
-    if (!map || !L || !isMapboxRouteMode || mapboxRoutes.length === 0) {
-      // Clear old lines if exiting route mode
-      mapboxRouteLinesRef.current.forEach(l => map?.removeLayer(l));
-      mapboxRouteLinesRef.current = [];
-      return;
-    }
-    // Clear previous
-    mapboxRouteLinesRef.current.forEach(l => map.removeLayer(l));
-    mapboxRouteLinesRef.current = [];
-    // Draw each route
-    mapboxRoutes.forEach((route, idx) => {
-      const isSelected = idx === selectedMapboxRouteIndex;
-      if (route.coordinates.length >= 2) {
-        if (isSelected) {
-          // Glow for selected
-          const glow = L.polyline(route.coordinates, {
-            color: '#3b82f6', weight: 12, opacity: 0.25, lineCap: 'round', lineJoin: 'round', interactive: false
-          }).addTo(map);
-          mapboxRouteLinesRef.current.push(glow);
-        }
-        const line = L.polyline(route.coordinates, {
-          color: isSelected ? '#3b82f6' : '#64748b',
-          weight: isSelected ? 6 : 4,
-          opacity: isSelected ? 1 : 0.5,
-          lineCap: 'round', lineJoin: 'round',
-          interactive: true,
-          className: isSelected ? 'mapbox-route-selected' : 'mapbox-route-alt'
-        }).addTo(map);
-        line.on('click', () => setSelectedMapboxRouteIndex(idx));
-        mapboxRouteLinesRef.current.push(line);
-      }
-    });
-  }, [isMapboxRouteMode, mapboxRoutes, selectedMapboxRouteIndex]);
-
-  // ── CLEAN UP MAPBOX ROUTES WHEN EXITING ──
-  const exitMapboxNavigation = useCallback(() => {
-    const map = mapInstanceRef.current;
-    // Clear route lines
-    mapboxRouteLinesRef.current.forEach(l => map?.removeLayer(l));
-    mapboxRouteLinesRef.current = [];
-    // Reset state
-    setMapboxRoutes([]);
-    setSelectedMapboxRouteIndex(0);
-    setIsMapboxRouteMode(false);
-    setIsMapboxNavMode(false);
-    setMapboxDestName('');
-    setMapboxDestCoords(null);
-    navState.stopNavigation();
-    // Restore map view
-    if (map) {
-      map.setView(TIRANA_CENTER, DEFAULT_ZOOM, { animate: true, duration: 1.5 });
-    }
-  }, [navState]);
-
-  // ── START MAPBOX TURN-BY-TURN ──
-  const startMapboxNavigation = useCallback(() => {
-    if (!selectedMapboxRoute) return;
-    setIsMapboxRouteMode(false);
-    setIsMapboxNavMode(true);
-    // Draw only the selected route
-    drawMapboxRoute(selectedMapboxRoute);
-    navState.startNavigation();
-  }, [selectedMapboxRoute, drawMapboxRoute, navState]);
-
-  // ── UPDATE MAP DURING MAPBOX NAVIGATION ──
-  useEffect(() => {
-    if (!isMapboxNavMode || !navState.isNavigating) return;
-    const map = mapInstanceRef.current;
-    if (!map || !navState.userPosition) return;
-    // Recenter map on user
-    if (!isRecenterNeeded) {
-      const offset = navigationPerspective === '3D' ? 0.00045 : 0;
-      map.setView(
-        [navState.userPosition.lat + offset, navState.userPosition.lng],
-        18,
-        { animate: true, duration: 0.6 }
-      );
-    }
-  }, [isMapboxNavMode, navState.isNavigating, navState.userPosition, isRecenterNeeded, navigationPerspective]);
-
-
-  useEffect(() => {
-    if (showVolumeBanner) {
-      const timer = setTimeout(() => setShowVolumeBanner(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showVolumeBanner]);
-
-  useEffect(() => {
-    if (!isNavigating3D) {
-      setIsSimulating(false);
-      setSimCoordinateIndex(0);
-    } else {
-      setIsSimulating(true);
-      setSimCoordinateIndex(0);
-      setIsRecenterNeeded(false);
-    }
-  }, [isNavigating3D]);
   const selectingOnMap = useStore((s: any) => s.selectingOnMap);
   const setSelectingOnMap = useStore((s: any) => s.setSelectingOnMap);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -764,6 +440,7 @@ export default function MapView() {
         const L = LRef.current;
         if (L) {
           const bounds = L.latLngBounds(coords);
+          isFittingBoundsRef.current = true;
           mapInstanceRef.current.fitBounds(bounds, { padding: [100, 100], duration: 1.5 });
         }
       }
@@ -819,107 +496,6 @@ export default function MapView() {
       }
     };
   }, []);
-
-  // ── 3D/2D NAVIGATION MAP FOLLOW ──
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !mapReady || !isNavigating3D) return;
-
-    if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
-      if (isRecenterNeeded) return;
-      const offset = navigationPerspective === '3D' ? 0.00045 : 0;
-      map.setView([userLocation.lat + offset, userLocation.lng], 18, {
-        animate: true,
-        duration: 0.6,
-      });
-    }
-  }, [userLocation, isNavigating3D, mapReady, isRecenterNeeded, navigationPerspective]);
-
-  // ── NAVIGATION SIMULATION TIMER ──
-  useEffect(() => {
-    if (!isNavigating3D || !isSimulating || !activeTrip || !activeTrip.legs) {
-      return;
-    }
-
-    const legs = activeTrip.legs;
-    const currentLeg = legs[currentStepIndex];
-    if (!currentLeg) return;
-
-    const coords = getLegCoordinatesIncludingWalking(currentLeg, currentStepIndex, tripOriginCoords, tripDestCoords, walkingShapes, legs);
-    if (coords.length === 0) {
-      if (currentStepIndex < legs.length - 1) {
-        setCurrentStepIndex(prev => prev + 1);
-        setSimCoordinateIndex(0);
-      } else {
-        setIsSimulating(false);
-        addNotification(language === 'al' ? 'Mbërritët në destinacion!' : 'You have arrived at your destination!', 'success');
-      }
-      return;
-    }
-
-    const intervalTime = simSpeed === 5 ? 250 : simSpeed === 3 ? 600 : 1500;
-
-    const interval = setInterval(() => {
-      setSimCoordinateIndex(prev => prev + 1);
-    }, intervalTime);
-
-    return () => clearInterval(interval);
-  }, [isNavigating3D, isSimulating, currentStepIndex, activeTrip, simSpeed, tripOriginCoords, tripDestCoords, walkingShapes, language]);
-
-  // ── SYNCHRONIZE SIMULATION COORDINATES TO STORE & HEADING ──
-  useEffect(() => {
-    if (!isNavigating3D || !isSimulating || !activeTrip || !activeTrip.legs) {
-      return;
-    }
-
-    const legs = activeTrip.legs;
-    const currentLeg = legs[currentStepIndex];
-    if (!currentLeg) return;
-
-    const coords = getLegCoordinatesIncludingWalking(currentLeg, currentStepIndex, tripOriginCoords, tripDestCoords, walkingShapes, legs);
-    if (coords.length === 0) return;
-
-    if (simCoordinateIndex >= coords.length) {
-      if (currentStepIndex < legs.length - 1) {
-        setCurrentStepIndex(prev => prev + 1);
-        setSimCoordinateIndex(0);
-      } else {
-        setIsSimulating(false);
-        addNotification(language === 'al' ? 'Mbërritët në destinacion!' : 'You have arrived at your destination!', 'success');
-      }
-      return;
-    }
-
-    if (simCoordinateIndex >= 0 && simCoordinateIndex < coords.length) {
-      const pt = coords[simCoordinateIndex];
-      const nextPt = coords[simCoordinateIndex + 1] || pt;
-      const bearing = getSegmentBearing(pt, nextPt);
-      useStore.setState({
-        userLocation: {
-          lat: pt[0],
-          lng: pt[1],
-          heading: bearing,
-          accuracy: 5
-        }
-      });
-      setDeviceHeading(bearing);
-    }
-  }, [simCoordinateIndex, isNavigating3D, isSimulating, activeTrip, currentStepIndex, tripOriginCoords, tripDestCoords, walkingShapes, language]);
-
-  // ── MAP DRAG DETECTOR FOR RECENTER BUTTON ──
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !mapReady) return;
-
-    const onMapMoveStart = () => {
-      if (isNavigating3D) {
-        setIsRecenterNeeded(true);
-      }
-    };
-
-    map.on('movestart', onMapMoveStart);
-    return () => { map.off('movestart', onMapMoveStart); };
-  }, [mapReady, isNavigating3D]);
 
   const requestCompassPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
@@ -1055,6 +631,7 @@ export default function MapView() {
 
         // Fix: debounce bounds updates to avoid expensive rerender cascades during rapid pan/zoom
         map.on('moveend zoomend', () => {
+          isFittingBoundsRef.current = false;
           if (boundsTimerRef.current) window.clearTimeout(boundsTimerRef.current);
           boundsTimerRef.current = window.setTimeout(() => {
             setMapBounds(map.getBounds());
@@ -1216,10 +793,30 @@ export default function MapView() {
     prevActiveTripRef.current = activeTrip;
 
     if (activeTripChanged) {
+      if (activeTrip) {
+        isFittingBoundsRef.current = true;
+      }
       renderedStopIdsRef.current.forEach(id => {
         const marker = stopMarkersMapRef.current[id];
         if (marker) {
-          map.removeLayer(marker);
+          const el = marker.getElement();
+          if (el) {
+            const innerEl = el.querySelector('.marker-enter');
+            if (innerEl) {
+              innerEl.classList.remove('marker-enter');
+              innerEl.classList.add('marker-exit');
+              setTimeout(() => {
+                map.removeLayer(marker);
+              }, 250);
+            } else {
+              el.classList.add('marker-exit');
+              setTimeout(() => {
+                map.removeLayer(marker);
+              }, 250);
+            }
+          } else {
+            map.removeLayer(marker);
+          }
         }
       });
       clusterGroupRef.current.clearLayers();
@@ -1227,8 +824,11 @@ export default function MapView() {
       stopMarkersMapRef.current = {};
     }
 
+    const currentZoom = map.getZoom();
+    const showRouteStops = !activeTrip || (currentZoom >= 16 && !isFittingBoundsRef.current);
+
     let displayedStops = activeTrip
-      ? BUS_STOPS.filter((s: any) => activeTripStopIds.includes(s.id))
+      ? (showRouteStops ? BUS_STOPS.filter((s: any) => activeTripStopIds.includes(s.id)) : [])
       : BUS_STOPS;
 
     // LAZY LOADING: filter to viewport only (skip for active trip — show all trip stops)
@@ -1244,8 +844,27 @@ export default function MapView() {
       if (!nextIds.has(id)) {
         const marker = stopMarkersMapRef.current[id];
         if (marker) {
-          map.removeLayer(marker);
-          clusterGroupRef.current.removeLayer(marker);
+          const el = marker.getElement();
+          if (el) {
+            const innerEl = el.querySelector('.marker-enter');
+            if (innerEl) {
+              innerEl.classList.remove('marker-enter');
+              innerEl.classList.add('marker-exit');
+              setTimeout(() => {
+                map.removeLayer(marker);
+                clusterGroupRef.current.removeLayer(marker);
+              }, 250);
+            } else {
+              el.classList.add('marker-exit');
+              setTimeout(() => {
+                map.removeLayer(marker);
+                clusterGroupRef.current.removeLayer(marker);
+              }, 250);
+            }
+          } else {
+            map.removeLayer(marker);
+            clusterGroupRef.current.removeLayer(marker);
+          }
           delete stopMarkersMapRef.current[id];
         }
       }
@@ -1271,7 +890,7 @@ export default function MapView() {
       }
 
       const stopHtml = isTripStop ? `
-        <div class="marker-enter counter-rotate-inner" style="display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.4)'" onmouseout="this.style.transform='scale(1)'">
+        <div class="marker-enter" style="display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.4)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
             background: #ffffff;
             width: 8px; height: 8px;
@@ -1281,7 +900,7 @@ export default function MapView() {
             cursor: pointer;
           "></div>
         </div>` : `
-        <div class="marker-enter counter-rotate-inner" style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+        <div class="marker-enter" style="display: flex; flex-direction: column; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
           <div style="
             background: #1e293b;
             width: 28px; height: 28px;
@@ -1352,7 +971,7 @@ export default function MapView() {
       const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
       if (isCustomFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
-          <div class="marker-enter counter-rotate-inner" style="display: flex; filter: drop-shadow(0 2px 6px rgba(249,115,22,0.35));">
+          <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(249,115,22,0.35));">
             <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#f97316"/>
               <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
@@ -1370,7 +989,7 @@ export default function MapView() {
       const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
       if (isCustomTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
-          <div class="marker-enter counter-rotate-inner" style="display: flex; filter: drop-shadow(0 2px 6px rgba(234,67,53,0.35));">
+          <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(234,67,53,0.35));">
             <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.373 18.627 0 12 0z" fill="#EA4335"/>
               <circle cx="12" cy="12" r="5.5" fill="rgba(255,255,255,0.95)"/>
@@ -1425,16 +1044,14 @@ export default function MapView() {
             routeLinesRef.current.push({ line: walkLineGlow, routeId: `walk_glow_${idx}` });
 
             // 2. High-fidelity circular dots representing pedestrian footsteps
-            const isCurrentWalkLeg = isNavigating3D && idx === currentStepIndex;
             const walkLine = L.polyline(walkCoords, {
               color: '#10b981',
               weight: 5,
-              dashArray: isCurrentWalkLeg ? '8, 12' : '1, 12',
+              dashArray: '1, 12',
               lineCap: 'round',
               lineJoin: 'round',
               opacity: 0.95,
-              interactive: false,
-              className: isCurrentWalkLeg ? 'animated-route-line' : ''
+              interactive: false
             }).addTo(map);
             routeLinesRef.current.push({ line: walkLine, routeId: `walk_${idx}` });
           }
@@ -1514,36 +1131,15 @@ export default function MapView() {
           }).addTo(map);
           routeLinesRef.current.push({ line: glow, routeId: `${route.id}_glow` });
 
-          const isCurrentRouteLeg = isNavigating3D && idx === currentStepIndex;
           const line = L.polyline(legCoords, {
             color: route.color,
             weight: 6,
             opacity: 1,
-            interactive: false,
-            className: isCurrentRouteLeg ? 'animated-route-line' : ''
+            interactive: false
           }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
 
-          // Draw direction arrows along the leg
-          const arrowPoints = getPointsAlongPolyline(legCoords, 150);
-          arrowPoints.forEach((pt) => {
-            const arrowHtml = `<div style="
-              width: 14px; height: 14px;
-              display: flex; align-items: center; justify-content: center;
-              transform: rotate(${pt.bearing}deg);
-              pointer-events: none;
-            "><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${route.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg></div>`;
-            const arrow = L.marker([pt.lat, pt.lng], {
-              icon: L.divIcon({
-                html: arrowHtml,
-                className: '',
-                iconSize: [14, 14],
-                iconAnchor: [7, 7]
-              }),
-              interactive: false
-            }).addTo(map);
-            routeLinesRef.current.push({ line: arrow, routeId: `${route.id}_arrow` });
-          });
+
         }
       });
 
@@ -1560,29 +1156,7 @@ export default function MapView() {
           const line = L.polyline(coords, { color: route.color, weight: isActive ? 4 : 2, opacity: isActive ? 0.9 : 0.2, interactive: false }).addTo(map);
           routeLinesRef.current.push({ line, routeId: route.id });
 
-          // Draw directional arrows only for active/filtered routes
-          if (isActive) {
-            const arrowPoints = getPointsAlongPolyline(coords, 200);
-            arrowPoints.forEach((pt) => {
-              const arrowHtml = `<div style="
-                width: 12px; height: 12px;
-                display: flex; align-items: center; justify-content: center;
-                transform: rotate(${pt.bearing}deg);
-                opacity: 0.85;
-                pointer-events: none;
-              "><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${route.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l7-7 7 7"/></svg></div>`;
-              const arrow = L.marker([pt.lat, pt.lng], {
-                icon: L.divIcon({
-                  html: arrowHtml,
-                  className: '',
-                  iconSize: [12, 12],
-                  iconAnchor: [6, 6]
-                }),
-                interactive: false
-              }).addTo(map);
-              routeLinesRef.current.push({ line: arrow, routeId: `${route.id}_arrow` });
-            });
-          }
+
         });
       });
     }
@@ -1709,7 +1283,7 @@ export default function MapView() {
 
       // Marker pill
       const markerHtml = `
-      <div class="counter-rotate-inner" style="
+      <div style="
         display:inline-flex;flex-direction:column;align-items:center;
         opacity:${opacity};transition:opacity 0.3s;
       ">
@@ -1860,573 +1434,9 @@ export default function MapView() {
     }
   };
 
-  const heading = userLocation?.heading ?? deviceHeading ?? 0;
-  const mapTransform = isNavigating3D
-    ? navigationPerspective === '3D'
-      ? `perspective(800px) rotateX(55deg) rotateZ(${-heading}deg) translateY(-10px) scale(1.1)`
-      : `rotateZ(${-heading}deg)`
-    : undefined;
-
-  const counterRotation = isNavigating3D
-    ? navigationPerspective === '3D'
-      ? `rotateZ(${heading}deg) rotateX(-55deg)`
-      : `rotateZ(${heading}deg)`
-    : 'none';
-
-  const tiltVal = isNavigating3D && navigationPerspective === '3D' ? '55deg' : '0deg';
-
-  // Compute remaining travel time realistically during simulation progress
-  const getSimulatedStats = () => {
-    if (!activeTrip || !activeTrip.legs) return { remainingTime: 0, nextStop: '' };
-
-    const totalLegs = activeTrip.legs.length;
-    const currentLeg = activeTrip.legs[currentStepIndex];
-    if (!currentLeg) return { remainingTime: activeTrip.travelTime, nextStop: '' };
-
-    const coords = getLegCoordinatesIncludingWalking(currentLeg, currentStepIndex, tripOriginCoords, tripDestCoords, walkingShapes, activeTrip.legs);
-    const progress = coords.length > 0 ? (simCoordinateIndex / coords.length) : 0;
-    const overallProgress = (currentStepIndex + progress) / totalLegs;
-    const remainingTime = Math.max(1, Math.round(activeTrip.travelTime * (1 - overallProgress)));
-    const nextStop = currentLeg.alightAt || '';
-
-    return { remainingTime, nextStop };
-  };
-
-  const { remainingTime, nextStop } = getSimulatedStats();
-
   return (
     <div className="full-screen-map">
-      <div
-        ref={mapContainerRef}
-        className={`map-container ${isNavigating3D ? 'nav-mode-3d' : ''}`}
-        style={{
-          transform: mapTransform,
-          transformOrigin: 'bottom center',
-          transition: 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.3s',
-          // Pass CSS variables for markers to read
-          ['--map-rotation-counter' as any]: counterRotation,
-          ['--map-tilt' as any]: tiltVal,
-        }}
-      />
-
-      {/* ═══ MAPBOX TURN-BY-TURN NAVIGATION UI ═══ */}
-
-      {/* STATE A: Route Selection Mode — Bottom sheet with route options */}
-      {isMapboxRouteMode && mapboxRoutes.length > 0 && !isMapboxNavMode && (
-        <div
-          id="mapbox-route-selection"
-          style={{
-            position: 'absolute',
-            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            left: '16px',
-            right: '16px',
-            zIndex: 2500,
-            animation: 'slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-          }}
-        >
-          {/* Route cards scroller */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            background: 'rgba(15, 20, 30, 0.94)',
-            backdropFilter: 'blur(20px) saturate(160%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '24px',
-            padding: '16px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-          }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Navigation size={18} style={{ color: '#3b82f6' }} />
-                <span style={{ fontSize: '14px', fontWeight: '800', color: '#fff' }}>
-                  {language === 'al' ? 'Zgjidhni Rrugën' : 'Select Route'}
-                </span>
-              </div>
-              <button
-                onClick={exitMapboxNavigation}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '12px', width: '32px', height: '32px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#94a3b8', cursor: 'pointer',
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Destination name */}
-            <div style={{
-              fontSize: '11px', color: 'rgba(255,255,255,0.35)', fontWeight: '600',
-              padding: '0 0 8px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              → {mapboxDestName}
-            </div>
-
-            {/* Route option cards */}
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {mapboxRoutes.map((route, idx) => {
-                const isSelected = idx === selectedMapboxRouteIndex;
-                return (
-                  <button
-                    key={route.id}
-                    onClick={() => {
-                      setSelectedMapboxRouteIndex(idx);
-                      // Fit to this route
-                      if (mapInstanceRef.current && LRef.current && route.coordinates.length > 1) {
-                        const bounds = LRef.current.latLngBounds(route.coordinates);
-                        mapInstanceRef.current.fitBounds(bounds, { padding: [80, 80], duration: 1 });
-                      }
-                    }}
-                    style={{
-                      flex: '0 0 auto',
-                      minWidth: '140px',
-                      padding: '12px 16px',
-                      borderRadius: '16px',
-                      background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255,255,255,0.03)',
-                      border: isSelected ? '1.5px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.06)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <div style={{ fontSize: '12px', fontWeight: '800', color: isSelected ? '#3b82f6' : '#94a3b8', marginBottom: '6px' }}>
-                      {route.label}
-                    </div>
-                    <div style={{ fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>
-                      {formatDuration(route.totalDuration)}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
-                      {formatDistance(route.totalDistance)}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Get Directions button */}
-            <button
-              onClick={startMapboxNavigation}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: '16px',
-                background: '#3b82f6',
-                border: 'none',
-                color: '#fff',
-                fontSize: '15px',
-                fontWeight: '800',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.4)',
-                transition: 'all 0.2s',
-                marginTop: '4px',
-              }}
-            >
-              <Navigation size={18} fill="#fff" />
-              {language === 'al' ? 'Fillo Navigimin' : 'Get Directions'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STATE B: Mapbox Turn-by-Turn Navigation Mode */}
-      {isMapboxNavMode && navState.isNavigating && !navState.hasArrived && (
-        <NavigationPanel
-          currentStep={navState.currentStep}
-          currentStepIndex={navState.currentStepIndex}
-          totalSteps={selectedMapboxRoute?.steps?.length || 0}
-          distanceToNextTurn={navState.distanceToNextTurn}
-          distanceToNextTurnFormatted={navState.distanceToNextTurnFormatted}
-          eta={navState.eta}
-          remainingDuration={navState.remainingDuration}
-          remainingDistance={navState.remainingDistance}
-          destinationName={mapboxDestName}
-          isRerouting={navState.isRerouting}
-          isMuted={isMuted}
-          onToggleMute={() => {
-            setIsMuted(prev => !prev);
-            setShowVolumeBanner(true);
-          }}
-          onStopNavigation={exitMapboxNavigation}
-          language={language}
-        />
-      )}
-
-      {/* STATE C: Arrival overlay */}
-      {navState.hasArrived && (
-        <ArrivalOverlay
-          destinationName={mapboxDestName}
-          onDismiss={exitMapboxNavigation}
-          language={language}
-        />
-      )}
-
-      {/* Route fetching spinner */}
-      {isFetchingRoutes && (
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)', zIndex: 3000,
-          background: 'rgba(10, 14, 24, 0.85)',
-          backdropFilter: 'blur(20px)',
-          padding: '20px 28px', borderRadius: '20px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', gap: '12px',
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <style>{`.spin_nav{transform-origin:center;animation:spin_nav .75s linear infinite}@keyframes spin_nav{100%{transform:rotate(360deg)}}`}</style>
-            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="#3b82f6" />
-            <path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" className="spin_nav" fill="#3b82f6" />
-          </svg>
-          <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
-            {language === 'al' ? 'Duke kërkuar rrugë...' : 'Finding routes...'}
-          </span>
-        </div>
-      )}
-
-      {/* ── ACTIVE NAVIGATION HUD DASHBOARD ── */}
-      {isNavigating3D && activeTrip && (
-        <>
-          {/* Top Instruction HUD Card */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(16px + env(safe-area-inset-top, 0px))',
-              left: '16px',
-              right: '16px',
-              zIndex: 2500,
-              background: 'rgba(15, 23, 42, 0.92)',
-              backdropFilter: 'blur(20px) saturate(160%)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '24px',
-              padding: '16px 20px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              animation: 'slideDown 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {/* Step Icon */}
-              <div
-                style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '16px',
-                  background: activeTrip.legs?.[currentStepIndex]?.isWalking
-                    ? 'rgba(16, 185, 129, 0.15)'
-                    : 'rgba(245, 158, 11, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  border: activeTrip.legs?.[currentStepIndex]?.isWalking
-                    ? '1px solid rgba(16, 185, 129, 0.3)'
-                    : '1px solid rgba(245, 158, 11, 0.3)',
-                }}
-              >
-                {activeTrip.legs?.[currentStepIndex]?.isWalking ? (
-                  <Locate size={20} style={{ color: '#10b981' }} />
-                ) : (
-                  <Bus size={20} style={{ color: '#f59e0b' }} />
-                )}
-              </div>
-
-              {/* Instruction Text */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '2px' }}>
-                  {activeTrip.legs?.[currentStepIndex]?.isWalking ? t.walk_transfer : `${t.route_label} ${activeTrip.legs?.[currentStepIndex]?.route?.name}`}
-                </span>
-                <p style={{ margin: 0, fontSize: '13.5px', fontWeight: '700', color: '#fff', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {getInstructionText(activeTrip.legs?.[currentStepIndex], language)}
-                </p>
-              </div>
-
-              {/* Step Flipper Buttons */}
-              {activeTrip.legs && activeTrip.legs.length > 1 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
-                  <button
-                    disabled={currentStepIndex === 0}
-                    onClick={() => {
-                      setCurrentStepIndex(prev => Math.max(0, prev - 1));
-                      setSimCoordinateIndex(0);
-                    }}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '8px',
-                      width: '32px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: currentStepIndex === 0 ? 'rgba(255,255,255,0.1)' : '#fff', cursor: 'pointer', transition: 'all 0.2s'
-                    }}
-                  >
-                    <ChevronUp size={16} />
-                  </button>
-                  <button
-                    disabled={currentStepIndex === activeTrip.legs.length - 1}
-                    onClick={() => {
-                      setCurrentStepIndex(prev => Math.min(activeTrip.legs.length - 1, prev + 1));
-                      setSimCoordinateIndex(0);
-                    }}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '8px',
-                      width: '32px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: currentStepIndex === activeTrip.legs.length - 1 ? 'rgba(255,255,255,0.1)' : '#fff', cursor: 'pointer', transition: 'all 0.2s'
-                    }}
-                  >
-                    <ChevronDown size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Premium Leg Progress Bar */}
-            {activeTrip.legs && activeTrip.legs.length > 1 && (
-              <div style={{ display: 'flex', gap: '6px', marginTop: '4px', width: '100%' }}>
-                {activeTrip.legs.map((_: any, idx: number) => (
-                  <div
-                    key={idx}
-                    style={{
-                      flex: 1,
-                      height: '4px',
-                      borderRadius: '2px',
-                      background: idx === currentStepIndex
-                        ? '#f59e0b'
-                        : idx < currentStepIndex
-                          ? '#10b981'
-                          : 'rgba(255,255,255,0.15)',
-                      transition: 'background 0.3s'
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Volume notification banner */}
-          {showVolumeBanner && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(120px + env(safe-area-inset-top, 0px))',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 2500,
-                background: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '9999px',
-                padding: '8px 18px',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: '700',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                animation: 'fadeIn 0.25s ease',
-              }}
-            >
-              {isMuted ? <VolumeX size={14} style={{ color: '#ef4444' }} /> : <Volume2 size={14} style={{ color: '#10b981' }} />}
-              {isMuted
-                ? (language === 'al' ? 'Udhëzimet zanore u çaktivizuan' : 'Voice instructions disabled')
-                : (language === 'al' ? 'Udhëzimet zanore u aktivizuan' : 'Voice instructions enabled')}
-            </div>
-          )}
-
-          {/* Recenter Map Button */}
-          {isRecenterNeeded && (
-            <button
-              onClick={() => {
-                setIsRecenterNeeded(false);
-                if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number' && mapInstanceRef.current) {
-                  const offset = navigationPerspective === '3D' ? 0.00045 : 0;
-                  mapInstanceRef.current.setView([userLocation.lat + offset, userLocation.lng], 18, { animate: true, duration: 1.0 });
-                }
-              }}
-              style={{
-                position: 'absolute',
-                bottom: 'calc(106px + env(safe-area-inset-bottom, 0px))',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 2500,
-                background: 'rgba(59, 130, 246, 0.95)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '9999px',
-                color: '#fff',
-                padding: '8px 18px',
-                fontSize: '12.5px',
-                fontWeight: '800',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)',
-                cursor: 'pointer',
-                backdropFilter: 'blur(10px)',
-                animation: 'fadeIn 0.25s ease',
-              }}
-            >
-              <Locate size={14} />
-              {language === 'al' ? 'Riqendro' : language === 'it' ? 'Ricentra' : 'Recenter'}
-            </button>
-          )}
-
-          {/* Bottom Active Navigation Panel (Dashboard) */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-              left: '16px',
-              right: '16px',
-              zIndex: 2500,
-              background: 'rgba(15, 20, 30, 0.94)',
-              backdropFilter: 'blur(20px) saturate(160%)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '24px',
-              padding: '16px 20px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              animation: 'slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            }}
-          >
-            {/* Travel stats */}
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                <span style={{ fontSize: '24px', fontWeight: '900', color: '#10b981', letterSpacing: '-0.02em' }}>
-                  {remainingTime}
-                </span>
-                <span style={{ fontSize: '14px', fontWeight: '800', color: '#10b981' }}>
-                  {language === 'al' ? 'min' : language === 'it' ? 'min' : 'min'}
-                </span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '600', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {nextStop ? `${language === 'al' ? 'Stacioni i radhës:' : 'Next Stop:'} ${nextStop}` : `${activeTrip.totalStops} stacione · ${activeTrip.totalPrice}L`}
-              </span>
-            </div>
-
-            {/* ETA display */}
-            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '6px 10px', flexShrink: 0 }}>
-              <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>
-                {language === 'al' ? 'Mbërritja' : language === 'it' ? 'Arrivo' : 'ETA'}
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#fff', display: 'block', marginTop: '2px' }}>
-                {new Date(Date.now() + remainingTime * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-
-            {/* Floating Navigation Controls Grid */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              {/* Perspective 3D/2D Toggle */}
-              <button
-                onClick={() => setNavigationPerspective(prev => prev === '3D' ? '2D' : '3D')}
-                style={{
-                  background: navigationPerspective === '3D' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
-                  border: navigationPerspective === '3D' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '14px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: navigationPerspective === '3D' ? '#f59e0b' : '#fff', cursor: 'pointer', transition: 'all 0.2s', fontWeight: '800', fontSize: '10px'
-                }}
-                title={language === 'al' ? 'Perspektiva' : 'Perspective'}
-              >
-                {navigationPerspective}
-              </button>
-
-              {/* Mute/Volume Toggle */}
-              <button
-                onClick={() => {
-                  setIsMuted(prev => !prev);
-                  setShowVolumeBanner(true);
-                }}
-                style={{
-                  background: isMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  border: isMuted ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
-                  borderRadius: '14px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isMuted ? '#ef4444' : '#10b981', cursor: 'pointer', transition: 'all 0.2s'
-                }}
-                title={isMuted ? 'Volume Off' : 'Volume On'}
-              >
-                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-
-              {/* Simulation Play/Pause */}
-              <button
-                onClick={() => setIsSimulating(prev => !prev)}
-                style={{
-                  background: isSimulating ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.05)',
-                  border: isSimulating ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '14px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isSimulating ? '#3b82f6' : '#fff', cursor: 'pointer', transition: 'all 0.2s'
-                }}
-                title={isSimulating ? 'Pause Simulation' : 'Play Simulation'}
-              >
-                {isSimulating ? <Pause size={16} /> : <Play size={16} />}
-              </button>
-
-              {/* Simulation Speed Multiplier */}
-              {isSimulating && (
-                <button
-                  onClick={() => setSimSpeed(prev => prev === 1 ? 3 : prev === 3 ? 5 : 1)}
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '14px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', cursor: 'pointer', transition: 'all 0.2s', fontSize: '10px', fontWeight: '800'
-                  }}
-                  title="Simulation Speed"
-                >
-                  {simSpeed}x
-                </button>
-              )}
-
-              {/* Stop Button */}
-              <button
-                onClick={() => {
-                  setIsNavigating3D(false);
-                  setIsRecenterNeeded(false);
-                  setIsSimulating(false);
-                  if (activeTrip && mapInstanceRef.current) {
-                    const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
-                    const coords = allStops.map((name: string) => {
-                      const s = BUS_STOPS.find((st: any) => st.name?.toLowerCase().trim() === name?.toLowerCase().trim());
-                      return s ? [s.lat, s.lng] : null;
-                    }).filter(Boolean) as [number, number][];
-
-                    if (coords.length > 1 && LRef.current) {
-                      const bounds = LRef.current.latLngBounds(coords);
-                      mapInstanceRef.current.fitBounds(bounds, { padding: [100, 100], duration: 1.5 });
-                    }
-                  }
-                }}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.95)',
-                  border: 'none',
-                  borderRadius: '14px',
-                  height: '40px',
-                  width: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
-                }}
-                title={t.close}
-              >
-                <X size={16} strokeWidth={2.5} />
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <div ref={mapContainerRef} className="map-container" />
 
       {/* Glassmorphic Map Loading Spinner */}
       {busesLoading && (
@@ -2483,7 +1493,7 @@ export default function MapView() {
         </div>
       </div>
       {/* ── TOP OVERLAY: MOBILE SEARCH BAR ── */}
-      {!selectingOnMap && !isNavigating3D && (
+      {!selectingOnMap && (
         <div
           ref={searchContainerRef}
           className="overlay-top-mobile mobile-only"
@@ -2544,7 +1554,6 @@ export default function MapView() {
                   setActiveTrip(null);
                   setWalkingShapes({});
                   setShowTripDetails(false);
-                  setIsNavigating3D(false);
                   setTripFrom('');
                   setTripTo('');
                   setShowRoutes(false);
@@ -2956,43 +1965,6 @@ export default function MapView() {
                 </span>
               </button>
 
-              {/* Drive Here Option — triggers Mapbox turn-by-turn */}
-              {tripOriginCoords && tripDestCoords && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowToDropdown(false);
-                    setIsSearching(false);
-                    const destName = tripTo || tripDestName || (language === 'al' ? 'Destinacioni' : 'Destination');
-                    await fetchMapboxRoutes(
-                      tripOriginCoords.lat, tripOriginCoords.lng,
-                      tripDestCoords.lat, tripDestCoords.lng,
-                      destName
-                    );
-                  }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 14px', borderRadius: '0px',
-                    background: 'none', border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#3b82f6',
-                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', marginBottom: '8px'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.05)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                >
-                  <div style={{
-                    width: '24px', height: '24px', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <Navigation size={18} style={{ color: '#3b82f6' }} />
-                  </div>
-                  <span style={{ fontSize: '13px', fontWeight: '700' }}>
-                    {language === 'al' ? '🚗 Navigo me Makinë' : '🚗 Drive Here'}
-                  </span>
-                </button>
-              )}
-
               {/* Saved Places (Home & Work) Shortcuts inside the dropdown */}
               {(mapShowHomeDest || mapShowWorkDest) && (
                 <div style={{
@@ -3157,36 +2129,6 @@ export default function MapView() {
                         }}>
                           {itemType || ''}
                         </span>
-                        {/* Drive button — triggers Mapbox navigation directly */}
-                        {tripOriginCoords && (
-                          <div
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isValidCoords({ lat: item.lat, lng: item.lng })) return;
-                              const fullText = item.name + (item.address ? ', ' + item.address : '');
-                              setTripDestCoords({ lat: item.lat, lng: item.lng }, fullText);
-                              setTripTo(fullText);
-                              setShowToDropdown(false);
-                              setIsSearching(false);
-                              fetchMapboxRoutes(
-                                tripOriginCoords.lat, tripOriginCoords.lng,
-                                item.lat, item.lng,
-                                fullText
-                              );
-                            }}
-                            style={{
-                              width: '28px', height: '28px', borderRadius: '8px',
-                              background: 'rgba(59,130,246,0.1)',
-                              border: '1px solid rgba(59,130,246,0.2)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
-                            }}
-                            title={language === 'al' ? 'Navigo me makinë' : 'Drive here'}
-                          >
-                            <Navigation size={12} style={{ color: '#3b82f6' }} />
-                          </div>
-                        )}
                         <ChevronRight size={14} style={{ opacity: 0.2 }} />
                       </button>
                     );
@@ -3206,16 +2148,12 @@ export default function MapView() {
 
       <style jsx>{`
         @keyframes slideUp {
-          from { transform: translateY(30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
         @keyframes slideDown {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { transform: translateX(-20px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
 
       `}</style>
@@ -3263,7 +2201,7 @@ export default function MapView() {
           <div className="glass-panel vertical-group toggles desktop-only">
             <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title={t.toggle_stops}><MapPin size={20} /></button>
             <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title={t.toggle_buses}><Bus size={20} /></button>
-            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title={t.toggle_routes}><RouteIcon size={20} /></button>
+            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title={t.toggle_routes}><Route size={20} /></button>
           </div>
         </div>
       </div>
@@ -3350,7 +2288,7 @@ export default function MapView() {
       </div>
 
       {/* ── TRIP DETAILS PANEL ── */}
-      {showTripDetails && (isPlanning || activeTrip) && !isNavigating3D && (
+      {showTripDetails && (isPlanning || activeTrip) && (
         <SwipeDismissView
           direction="vertical"
           isFixed={false}
@@ -3431,214 +2369,163 @@ export default function MapView() {
                 </div>
               </div>
             ) : (
-              <>
-                {/* Content */}
-                <div className="route-scrollbar" style={{ padding: '0 16px 100px 16px', overflowX: 'hidden' }}>
+              /* Content */
+              <div className="route-scrollbar" style={{ padding: '0 16px 100px 16px', overflowX: 'hidden' }}>
 
-                  {/* Summary card (Identical to Trip Planner) */}
-                  <div style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '0.5px solid rgba(255,255,255,0.07)',
-                    borderRadius: '14px',
-                    overflow: 'hidden',
-                    margin: '16px 0',
-                  }}>
-                    <div style={{ padding: '14px 18px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#10b981', letterSpacing: '0.04em' }}>{t.best_route}</span>
+                {/* Summary card (Identical to Trip Planner) */}
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '0.5px solid rgba(255,255,255,0.07)',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  margin: '16px 0',
+                }}>
+                  <div style={{ padding: '14px 18px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#10b981', letterSpacing: '0.04em' }}>{t.best_route}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>Urbani Im AI</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', width: '100%' }}>
+                    {[
+                      { icon: <Clock size={14} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
+                      { icon: <MapPin size={14} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
+                      { icon: <Banknote size={14} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
+                    ].map(({ icon, value, label, color }, idx) => (
+                      <div key={label} style={{
+                        padding: '10px 4px',
+                        borderRight: idx < 2 ? '0.5px solid rgba(255,255,255,0.05)' : 'none',
+                        minWidth: 0,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                      }}>
+                        <span style={{ color }}>{icon}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap' }}>{value}</span>
+                        <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{label}</span>
                       </div>
-                      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)' }}>Urbani Im AI</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', width: '100%' }}>
-                      {[
-                        { icon: <Clock size={14} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
-                        { icon: <MapPin size={14} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
-                        { icon: <Banknote size={14} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
-                      ].map(({ icon, value, label, color }, idx) => (
-                        <div key={label} style={{
-                          padding: '10px 4px',
-                          borderRight: idx < 2 ? '0.5px solid rgba(255,255,255,0.05)' : 'none',
-                          minWidth: 0,
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                        }}>
-                          <span style={{ color }}>{icon}</span>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap' }}>{value}</span>
-                          <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{label}</span>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
+                </div>
 
-                  <div style={{ fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: '12px' }}>
-                    {t.step_by_step}
-                  </div>
+                <div style={{ fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginBottom: '12px' }}>
+                  {t.step_by_step}
+                </div>
 
-                  {activeTrip.legs?.map((leg: any, i: number) => {
-                    const prevLeg = i > 0 ? activeTrip.legs[i - 1] : null;
-                    const isDirectTransfer = prevLeg && !prevLeg.isWalking && !leg.isWalking;
+                {activeTrip.legs?.map((leg: any, i: number) => {
+                  const prevLeg = i > 0 ? activeTrip.legs[i - 1] : null;
+                  const isDirectTransfer = prevLeg && !prevLeg.isWalking && !leg.isWalking;
 
-                    if (leg.isWalking) {
-                      return (
-                        <div key={i} style={{
-                          background: 'rgba(16,185,129,0.04)',
-                          border: '0.5px solid rgba(16,185,129,0.15)',
-                          borderLeft: '2px solid #10b981',
-                          borderRadius: '0 10px 10px 0',
-                          padding: '12px 14px',
-                          marginBottom: '8px',
-                          display: 'flex', gap: '12px', alignItems: 'center',
-                        }}>
-                          <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Locate size={15} style={{ color: '#10b981' }} />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>{t.walk_transfer}</div>
-                            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{leg.boardAt} → {leg.alightAt}</div>
-                            <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                              {t.walking_notice.replace('{dist}', leg.walkingDist?.toString()).replace('{time}', leg.walkingTime?.toString())}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
-                    const color = r?.color || '#888';
-                    const allShown = showAllStops[i];
-                    const stops = leg.stops || [];
-                    const stopsToShow = allShown
-                      ? stops
-                      : [stops[0], ...(stops.length > 3 ? [] : stops.slice(1, -1)), stops[stops.length - 1]].filter(Boolean);
-                    const hiddenCount = Math.max(0, stops.length - 2);
-
+                  if (leg.isWalking) {
                     return (
-                      <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
-                        {isDirectTransfer && (
-                          <div style={{
-                            padding: '10px 14px',
-                            background: 'rgba(245, 158, 11, 0.08)',
-                            border: '1px solid rgba(245, 158, 11, 0.2)',
-                            color: '#f59e0b',
-                            borderRadius: '10px',
-                            marginBottom: '8px',
-                            fontSize: '13px',
-                            fontWeight: '700',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px'
-                          }}>
-                            <RefreshCcw size={16} /> {t.transfer_at} <span style={{ color: '#fff' }}>{leg.boardAt}</span>
-                          </div>
-                        )}
-                        <div style={{
-                          background: 'rgba(255,255,255,0.02)',
-                          border: '0.5px solid rgba(255,255,255,0.06)',
-                          borderLeft: `2px solid ${color}`,
-                          borderRadius: '0 10px 10px 0',
-                          padding: '14px',
-                          marginBottom: '8px',
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', minWidth: 0 }}>
-                            <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <Bus size={10} /> {leg.route?.name}
-                            </div>
-                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}>{r?.name}</span>
-                            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                              <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', fontWeight: '600', whiteSpace: 'nowrap' }}>{t.ticket_40}</span>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {stopsToShow.map((stop: string, j: number) => {
-                              const isFirst = j === 0;
-                              const isLast = j === stopsToShow.length - 1;
-                              const isTerminal = isFirst || isLast;
-                              return (
-                                <div key={j} style={{ display: 'flex', gap: '12px' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
-                                    {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                                    <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
-                                    {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
-                                    <span style={{ fontSize: '12px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stop}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-
-                            {stops.length > 3 && (
-                              <div style={{ display: 'flex', gap: '12px' }}>
-                                <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
-                                  <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
-                                </div>
-                                <button
-                                  onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
-                                  style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                >
-                                  <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                                  {allShown ? t.hide_stations : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${t.other_stations}`}
-                                </button>
-                              </div>
-                            )}
+                      <div key={i} style={{
+                        background: 'rgba(16,185,129,0.04)',
+                        border: '0.5px solid rgba(16,185,129,0.15)',
+                        borderLeft: '2px solid #10b981',
+                        borderRadius: '0 10px 10px 0',
+                        padding: '12px 14px',
+                        marginBottom: '8px',
+                        display: 'flex', gap: '12px', alignItems: 'center',
+                      }}>
+                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Locate size={15} style={{ color: '#10b981' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>{t.walk_transfer}</div>
+                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{leg.boardAt} → {leg.alightAt}</div>
+                          <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
+                            {t.walking_notice.replace('{dist}', leg.walkingDist?.toString()).replace('{time}', leg.walkingTime?.toString())}
                           </div>
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  }
 
-                {/* Sticky Get Directions Footer */}
-                {!isPlanning && activeTrip && (
-                  <div style={{
-                    position: 'sticky',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: '16px 20px',
-                    background: 'linear-gradient(to top, rgba(15, 20, 30, 1) 85%, rgba(15, 20, 30, 0))',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    zIndex: 30,
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-                  }}>
-                    <button
-                      onClick={async () => {
-                        requestCompassPermission();
-                        await fetchUserLocation(true);
-                        setCurrentStepIndex(0);
-                        setSimCoordinateIndex(0);
-                        setIsRecenterNeeded(false);
-                        setIsNavigating3D(true);
-                        setTripSheetHeight('peek');
-                      }}
-                      className="white-capsule-btn"
-                      style={{
-                        background: '#f59e0b',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '16px',
-                        height: '52px',
-                        fontWeight: '800',
-                        fontSize: '15px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        width: '100%',
-                        boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      <Navigation size={18} fill="#fff" />
-                      {t.get_direction || 'Get Directions'}
-                    </button>
-                  </div>
-                )}
-              </>
+                  const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
+                  const color = r?.color || '#888';
+                  const allShown = showAllStops[i];
+                  const stops = leg.stops || [];
+                  const stopsToShow = allShown
+                    ? stops
+                    : [stops[0], ...(stops.length > 3 ? [] : stops.slice(1, -1)), stops[stops.length - 1]].filter(Boolean);
+                  const hiddenCount = Math.max(0, stops.length - 2);
+
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
+                      {isDirectTransfer && (
+                        <div style={{
+                          padding: '10px 14px',
+                          background: 'rgba(245, 158, 11, 0.08)',
+                          border: '1px solid rgba(245, 158, 11, 0.2)',
+                          color: '#f59e0b',
+                          borderRadius: '10px',
+                          marginBottom: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <RefreshCcw size={16} /> {t.transfer_at} <span style={{ color: '#fff' }}>{leg.boardAt}</span>
+                        </div>
+                      )}
+                      <div style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '0.5px solid rgba(255,255,255,0.06)',
+                        borderLeft: `2px solid ${color}`,
+                        borderRadius: '0 10px 10px 0',
+                        padding: '14px',
+                        marginBottom: '8px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', minWidth: 0 }}>
+                          <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Bus size={10} /> {leg.route?.name}
+                          </div>
+                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}>{r?.name}</span>
+                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                            <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', fontWeight: '600', whiteSpace: 'nowrap' }}>{t.ticket_40}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {stopsToShow.map((stop: string, j: number) => {
+                            const isFirst = j === 0;
+                            const isLast = j === stopsToShow.length - 1;
+                            const isTerminal = isFirst || isLast;
+                            return (
+                              <div key={j} style={{ display: 'flex', gap: '12px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
+                                  {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                                  <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
+                                  {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
+                                  <span style={{ fontSize: '12px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stop}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {stops.length > 3 && (
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
+                                <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
+                              </div>
+                              <button
+                                onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
+                                style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
+                              >
+                                <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                                {allShown ? t.hide_stations : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${t.other_stations}`}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
 
@@ -4254,12 +3141,21 @@ export default function MapView() {
 
         /* ── LAZY LOADING: REVEAL ANIMATION (only new markers) ── */
         :global(.marker-enter) {
-          animation: premiumReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-          transform-origin: bottom center;
+          animation: premiumReveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transform-origin: center;
         }
         @keyframes premiumReveal {
-          0%   { opacity: 0; transform: translateY(20px) scale(0.5) rotateX(-40deg); filter: blur(6px); }
-          100% { opacity: 1; transform: translateY(0)   scale(1)   rotateX(0deg);   filter: blur(0px); }
+          0%   { opacity: 0; transform: scale(0.3); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        :global(.marker-exit) {
+          animation: premiumExit 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+          transform-origin: center;
+          pointer-events: none;
+        }
+        @keyframes premiumExit {
+          0%   { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.3); }
         }
 
         .mobile-drag-handle { display: none; }
