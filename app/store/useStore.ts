@@ -981,6 +981,8 @@ const useStore = create<any>()(
       setShowRoutes: (val: boolean) => set({ showRoutes: val }),
       setShowBuses: (val: boolean) => set({ showBuses: val }),
       setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open }),
+      isNavigating3D: false,
+      setIsNavigating3D: (val: boolean) => set({ isNavigating3D: val }),
 
       // ── Map Selection Mode ──
       selectingOnMap: null as 'from' | 'to' | null,
@@ -1424,7 +1426,7 @@ const useStore = create<any>()(
           'searchQuery', 'tripFrom', 'tripTo', 'tripResult',
           'tripOptions', 'selectedTripOptionIndex', 'activeTrip',
           'selectedStop', 'activeRouteFilter', 'currentView', 'isSidebarOpen',
-          'currentCoverIndex'
+          'currentCoverIndex', 'isNavigating3D'
         ].includes(key))
       ),
     }

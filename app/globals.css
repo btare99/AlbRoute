@@ -1206,6 +1206,11 @@ input::placeholder {
   background-color: #0b0f19 !important;
 }
 
+.map-container.nav-mode-3d .leaflet-control-container .leaflet-control-zoom,
+.map-container.nav-mode-3d .leaflet-control-container .leaflet-control-attribution {
+  display: none !important;
+}
+
 .map-container.nav-mode-3d .leaflet-control-container {
   /* Counter-tilt control buttons so they remain easily clickable and straight */
   transform: rotateX(-50deg) scale(0.9) !important;
@@ -1215,4 +1220,74 @@ input::placeholder {
 
 .map-container.nav-mode-3d .leaflet-tile-container {
   will-change: transform;
+}
+
+/* Marching Ants / Flowing active path animation */
+@keyframes leaflet-ant-path {
+  from {
+    stroke-dashoffset: 24;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animated-route-line {
+  stroke-dasharray: 8, 12;
+  animation: leaflet-ant-path 1.2s linear infinite !important;
+}
+
+/* Smooth counter-rotation helper class */
+.counter-rotate-inner {
+  transform: var(--map-rotation-counter) !important;
+  transform-origin: center center;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Keyframe animations for HUD */
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
 }

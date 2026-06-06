@@ -43,6 +43,7 @@ export default function AppShell() {
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const addNotification = useStore((state: any) => state.addNotification);
   const networkStatus = useStore((state: any) => state.networkStatus);
+  const isNavigating3D = useStore((state: any) => state.isNavigating3D);
   const t = translations[language] || translations.al;
   const googleLoginHandled = useRef(false);
 
@@ -203,19 +204,20 @@ export default function AppShell() {
       )}
 
       {/* Sidebar + overlay */}
-      <Sidebar />
+      {!isNavigating3D && <Sidebar />}
       <div
-        className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
-        onClick={() => useStore.getState().setSidebarOpen(false)}
+        className={`sidebar-overlay ${isSidebarOpen && !isNavigating3D ? 'visible' : ''}`}
+        onClick={() => !isNavigating3D && useStore.getState().setSidebarOpen(false)}
+        style={{ display: isNavigating3D ? 'none' : undefined }}
       />
 
       {/* Main content */}
-      <main className="main-area">
+      <main className={`main-area ${isNavigating3D ? 'nav-active' : ''}`}>
         {renderView()}
       </main>
 
       {/* Floating bottom nav — mobile only */}
-      {!selectingOnMap && (
+      {!selectingOnMap && !isNavigating3D && (
         <nav className="bottom-nav" aria-label="Main navigation">
           {MENU.map(({ id, label, icon: Icon }) => {
             const active = currentView === id ||
@@ -289,6 +291,11 @@ export default function AppShell() {
           flex: 1;
           overflow-y: auto;
           overflow-x: hidden;
+        }
+
+        .main-area.nav-active {
+          padding-bottom: 0 !important;
+          height: 100dvh !important;
         }
 
         /* ── Bottom nav — hidden on desktop ──────── */

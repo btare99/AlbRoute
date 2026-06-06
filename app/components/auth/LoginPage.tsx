@@ -914,6 +914,18 @@ function LoginContent() {
                 <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: mode === 'register' ? '12px' : '0px' }}>
                   {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={18} />
                 </button>
+
+                {mode === 'login' && (
+                  <button 
+                    type="button" 
+                    onClick={() => setGuestMode(true)} 
+                    className="social-capsule-btn"
+                    style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
+                  >
+                    <User size={18} />
+                    {language === 'al' ? 'Hyni si Vizitor (Guest)' : language === 'it' ? 'Continua come Ospite' : 'Continue as Guest'}
+                  </button>
+                )}
               </form>
             )}
 
