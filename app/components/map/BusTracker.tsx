@@ -331,20 +331,14 @@ export default function BusTracker() {
           display: 'flex', alignItems: 'center', gap: 10,
           background: 'rgba(255,255,255,0.1)',
           border: '1px solid rgba(255,255,255,0.2)',
-          borderBottom: 'none',
-          borderTopLeftRadius: 16, borderTopRightRadius: 16,
-          borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
-          padding: '10px 16px 12px',
+          borderRadius: '14px',
+          padding: '10px 16px 10px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           transition: 'all 0.2s ease',
           overflow: 'hidden'
         }}>
-          {/* Wavy bottom border SVG line */}
-          <svg viewBox="0 0 1440 20" preserveAspectRatio="none" style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '6px', pointerEvents: 'none' }}>
-            <path fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="3" d="M0,10 C 180,10 180,18 360,18 C 540,18 540,2 720,2 C 900,2 900,18 1080,18 C 1260,18 1260,10 1440,10"></path>
-          </svg>
 
           <IonIcon icon={searchOutline} style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', flexShrink: 0, zIndex: 1 }} />
           <input
