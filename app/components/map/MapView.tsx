@@ -5,6 +5,7 @@ import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
 import SwipeDismissView from '../layout/SwipeDismissView';
+import { WalkingEngine } from '../../lib/engines/walkingEngine';
 
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -445,7 +446,62 @@ export default function MapView() {
         }
       }
     }
-  }, [activeTrip]);
+
+    let active = true;
+    const fetchWalkShapes = async () => {
+      const L = LRef.current;
+      if (!L) return;
+
+      const engine = new WalkingEngine();
+      const newShapes: Record<string, [number, number][]> = {};
+
+      for (let idx = 0; idx < activeTrip.legs.length; idx++) {
+        const leg = activeTrip.legs[idx];
+        if (leg.isWalking) {
+          const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+          const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
+
+          let startLat = bStop ? bStop.lat : null;
+          let startLng = bStop ? bStop.lng : null;
+          let destLat = aStop ? aStop.lat : null;
+          let destLng = aStop ? aStop.lng : null;
+
+          if (idx === 0 && tripOriginCoords) {
+            startLat = tripOriginCoords.lat;
+            startLng = tripOriginCoords.lng;
+          }
+          if (idx === activeTrip.legs.length - 1 && tripDestCoords) {
+            destLat = tripDestCoords.lat;
+            destLng = tripDestCoords.lng;
+          }
+
+          if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
+            try {
+              const res = await engine.calculateWalkingRoute(
+                { lat: startLat, lng: startLng },
+                { lat: destLat, lng: destLng }
+              );
+              if (active && res && res.waypoints && res.waypoints.length >= 2) {
+                newShapes[`walk_${idx}`] = res.waypoints;
+              }
+            } catch (err) {
+              console.error(`Error fetching walking shape for leg ${idx}:`, err);
+            }
+          }
+        }
+      }
+
+      if (active) {
+        setWalkingShapes(newShapes);
+      }
+    };
+
+    fetchWalkShapes();
+
+    return () => {
+      active = false;
+    };
+  }, [activeTrip, tripOriginCoords, tripDestCoords]);
 
 
   useEffect(() => {
