@@ -300,7 +300,7 @@ export default function BusTracker() {
             style={{
               position: 'absolute',
               inset: 0,
-              background: `linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(234, 88, 12, 0.95) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
+              background: `linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(234, 88, 12, 0.85) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
               opacity: currentCoverIndex === i ? 1 : 0,
               transition: 'opacity 1.5s ease-in-out',
               zIndex: 0
