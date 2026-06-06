@@ -210,7 +210,7 @@ export default function UserFavorites() {
       {/* Curved Gradient Header (Cover) */}
       <div style={{
         position: 'relative',
-        height: '95px',
+        height: 'calc(95px + env(safe-area-inset-top, 0px))',
         overflow: 'visible',
         boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
         zIndex: 10,

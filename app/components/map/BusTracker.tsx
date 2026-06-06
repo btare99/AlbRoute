@@ -288,7 +288,7 @@ export default function BusTracker() {
       {/* ━━━━ HEADER ━━━━ */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
-        height: '135px',
+        height: 'calc(135px + env(safe-area-inset-top, 0px))',
         overflow: 'visible',
         boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
         background: '#0a0f1d'
