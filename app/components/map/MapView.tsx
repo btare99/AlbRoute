@@ -2390,9 +2390,11 @@ export default function MapView() {
               bottom: '0',
               left: '0',
               right: '0',
-              background: 'rgba(15, 20, 30, 0.95)',
-              backdropFilter: 'blur(20px)',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
+              background: '#040712',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: 'none',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.8)',
+              borderRadius: tripSheetHeight === 'full' ? '0' : '28px 28px 0 0',
               maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px - env(safe-area-inset-top, 0px))' : '40vh',
               minHeight: '200px',
               overflowY: tripSheetHeight === 'full' ? 'auto' : 'hidden',
@@ -2401,9 +2403,20 @@ export default function MapView() {
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
-            <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(30, 41, 59, 0.85)', backdropFilter: 'blur(16px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            {/* Filler background to prevent map showing below during swipe-up */}
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              height: '100vh',
+              background: '#040712',
+              zIndex: -1
+            }} />
+
+            <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#040712', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="mobile-drag-handle" style={{ position: 'relative' }}>
-                <div className="drag-indicator" />
+                <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.25)' }} />
                 {tripSheetHeight === 'peek' && (
                   <div style={{
                     position: 'absolute', top: '2px', left: '50%',
@@ -2416,24 +2429,42 @@ export default function MapView() {
                   </div>
                 )}
               </div>
-              <div className="card-header" style={{ background: 'transparent', padding: '10px 20px 15px 20px' }}>
+              <div className="card-header" style={{ background: 'transparent', padding: '20px 24px 14px', border: 'none' }}>
                 <div className="header-main">
-                  <span className="route-num" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none' }}>
-                    <IonIcon icon={navigateOutline} style={{ fontSize: 26, color: '#f59e0b', filter: 'drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5))' }} />
+                  <span className="route-num" style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none' }}>
+                    <IonIcon icon={navigateOutline} style={{ fontSize: 28, color: '#f59e0b', filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
                   </span>
                   <div className="route-texts">
                     <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
                       {isPlanning ? t.calculating : t.step_by_step}
                     </h3>
                     {!isPlanning && activeTrip ? (
-                      <p style={{ margin: 0 }}>{activeTrip.from} → {activeTrip.to}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{activeTrip.from} → {activeTrip.to}</p>
                     ) : (
-                      <p style={{ margin: 0 }}>{t.finding_optimal_route}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{t.finding_optimal_route}</p>
                     )}
                   </div>
                 </div>
-                <button className="close-btn" onClick={() => setShowTripDetails(false)} style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.5 }}>
-                  <IonIcon icon={closeOutline} style={{ fontSize: 20 }} />
+                <button
+                  className="close-btn"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                  onClick={() => setShowTripDetails(false)}
+                >
+                  <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
                 </button>
               </div>
             </div>
