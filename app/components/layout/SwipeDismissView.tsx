@@ -89,11 +89,17 @@ export default function SwipeDismissView({
       setIsSwiping(false);
       setCurrentOffset(0);
     } else if (currentOffset > threshold) {
-      setCurrentOffset(dimension);
-      setIsSwiping(false);
-      setTimeout(() => {
-        onDismiss();
-      }, 200);
+      if (direction === 'vertical' && onSwipeDown) {
+        onSwipeDown();
+        setIsSwiping(false);
+        setCurrentOffset(0);
+      } else {
+        setCurrentOffset(dimension);
+        setIsSwiping(false);
+        setTimeout(() => {
+          onDismiss();
+        }, 200);
+      }
     } else if (currentOffset > 50 && direction === 'vertical' && onSwipeDown) {
       onSwipeDown();
       setIsSwiping(false);
