@@ -1,11 +1,29 @@
 'use client';
-import { ArrowRight, Banknote, Briefcase, Bug, Building2, Bus, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Fuel, Globe, GraduationCap, Home, Locate, MapPin, Moon, Navigation, RefreshCcw, Route, ShoppingBag, Sun, TreePine, Utensils, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
 import SwipeDismissView from '../layout/SwipeDismissView';
 import { WalkingEngine } from '../../lib/engines/walkingEngine';
+import { IonIcon } from '@/app/components/common/IonIcon';
+import {
+  walkOutline, busOutline, syncOutline, cashOutline, chevronDownOutline,
+  chevronUpOutline, chevronBackOutline, chevronForwardOutline, closeOutline,
+  locateOutline, pinOutline, navigateOutline, moonOutline, sunnyOutline,
+  globeOutline, addOutline, removeOutline, compassOutline, arrowForwardOutline,
+  timeOutline, homeOutline, briefcaseOutline, restaurantOutline, schoolOutline,
+  businessOutline, flameOutline, bagOutline, leafOutline
+} from 'ionicons/icons';
+
+interface Leg {
+  isWalking: boolean;
+  route?: { id: string; name: string };
+  stops: string[];
+  boardAt: string;
+  alightAt: string;
+  walkingDist?: number;
+  walkingTime?: number;
+}
 
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -319,28 +337,28 @@ export default function MapView() {
     const type = item.placeType;
     if (cls === 'amenity') {
       if (type === 'restaurant' || type === 'cafe' || type === 'bar' || type === 'pub' || type === 'fast_food') {
-        return { icon: Utensils, color: '#f59e0b' };
+        return { icon: restaurantOutline, color: '#f59e0b' };
       }
       if (type === 'school' || type === 'university' || type === 'college') {
-        return { icon: GraduationCap, color: '#06b6d4' };
+        return { icon: schoolOutline, color: '#06b6d4' };
       }
       if (type === 'hospital' || type === 'clinic' || type === 'pharmacy') {
-        return { icon: Building2, color: '#ef4444' };
+        return { icon: businessOutline, color: '#ef4444' };
       }
       if (type === 'fuel') {
-        return { icon: Fuel, color: '#ef4444' };
+        return { icon: flameOutline, color: '#ef4444' };
       }
     }
     if (cls === 'shop' || type === 'mall') {
-      return { icon: ShoppingBag, color: '#a855f7' };
+      return { icon: bagOutline, color: '#a855f7' };
     }
     if (cls === 'tourism') {
-      return { icon: Building2, color: '#6366f1' };
+      return { icon: businessOutline, color: '#6366f1' };
     }
     if (cls === 'leisure' && (type === 'park' || type === 'garden')) {
-      return { icon: TreePine, color: '#22c55e' };
+      return { icon: leafOutline, color: '#22c55e' };
     }
-    return { icon: MapPin, color: '#10b981' };
+    return { icon: pinOutline, color: '#10b981' };
   };
 
   // Kërkim Autocomplete me Debounce për Pikën e Nisjes (Tirana)
@@ -458,6 +476,11 @@ export default function MapView() {
       for (let idx = 0; idx < activeTrip.legs.length; idx++) {
         const leg = activeTrip.legs[idx];
         if (leg.isWalking) {
+          if (leg.waypoints && leg.waypoints.length >= 2) {
+            newShapes[`walk_${idx}`] = leg.waypoints;
+            continue;
+          }
+
           const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
           const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
 
@@ -1025,7 +1048,8 @@ export default function MapView() {
       // 1. Draw Custom Address/Street Pin Markers (Nisja & Destinacioni)
       const isCustomFrom = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.from?.toLowerCase().trim());
       const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
-      if (isCustomFrom && tripOriginCoords && !isFromUserLoc) {
+      const shouldDrawFrom = isCustomFrom || activeTrip.legs[0]?.isWalking;
+      if (shouldDrawFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
           <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(249,115,22,0.35));">
             <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1043,7 +1067,8 @@ export default function MapView() {
 
       const isCustomTo = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.to?.toLowerCase().trim());
       const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
-      if (isCustomTo && tripDestCoords && !isToUserLoc) {
+      const shouldDrawTo = isCustomTo || activeTrip.legs[activeTrip.legs.length - 1]?.isWalking;
+      if (shouldDrawTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
           <div class="marker-enter" style="display: flex; filter: drop-shadow(0 2px 6px rgba(234,67,53,0.35));">
             <svg viewBox="0 0 24 34" width="22" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1490,6 +1515,11 @@ export default function MapView() {
     }
   };
 
+  const routeMap = useMemo(
+    () => Object.fromEntries(BUS_ROUTES.map(r => [r.id, r])),
+    []
+  );
+
   return (
     <div className="full-screen-map">
       <div ref={mapContainerRef} className="map-container" />
@@ -1577,7 +1607,7 @@ export default function MapView() {
                 textAlign: 'left', cursor: 'pointer', height: '100%'
               }}
             >
-              <Navigation size={20} style={{ color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
+              <IonIcon icon={navigateOutline} style={{ fontSize: 20, color: isSearching ? '#fff' : '#94a3b8', transition: 'color 0.3s' }} />
               <input
                 ref={tripFromInputRef}
                 value={tripFrom}
@@ -1624,7 +1654,7 @@ export default function MapView() {
                 }}
                 title={t.close}
               >
-                <X size={22} />
+                <IonIcon icon={closeOutline} style={{ fontSize: 22 }} />
               </button>
             ) : (
               <button
@@ -1648,7 +1678,7 @@ export default function MapView() {
                   background: 'transparent', color: '#fff', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
               >
-                <Locate size={22} />
+                <IonIcon icon={locateOutline} style={{ fontSize: 22 }} />
               </button>
             )}
           </div>
@@ -1671,7 +1701,7 @@ export default function MapView() {
             transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
           }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px', height: '100%' }}>
-              <MapPin size={20} style={{ color: '#94a3b8' }} />
+              <IonIcon icon={pinOutline} style={{ fontSize: 20, color: '#94a3b8' }} />
               <input
                 id="trip-to-input"
                 value={tripTo}
@@ -1730,9 +1760,9 @@ export default function MapView() {
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <ArrowRight
-                size={22}
-                style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }}
+              <IonIcon
+                icon={arrowForwardOutline}
+                style={{ fontSize: 22, filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.8))' }}
               />
             </button>
           </div>
@@ -1783,7 +1813,7 @@ export default function MapView() {
                   alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <MapPin size={18} style={{ color: '#f59e0b' }} />
+                  <IonIcon icon={pinOutline} style={{ fontSize: 18, color: '#f59e0b' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: '700' }}>
                   {t.choose_on_map}
@@ -1813,7 +1843,7 @@ export default function MapView() {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                     >
-                      <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <IonIcon icon={homeOutline} style={{ fontSize: 13, color: '#10b981', flexShrink: 0 }} />
                       <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
                     </button>
                   )}
@@ -1834,7 +1864,7 @@ export default function MapView() {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                     >
-                      <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                      <IonIcon icon={briefcaseOutline} style={{ fontSize: 13, color: '#3b82f6', flexShrink: 0 }} />
                       <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
                     </button>
                   )}
@@ -1873,7 +1903,7 @@ export default function MapView() {
                         </svg>
                       </div>
                       <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                      <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                      <IonIcon icon={chevronForwardOutline} style={{ fontSize: 14, opacity: 0.2 }} />
                     </button>
                   ))}
                 </>
@@ -1942,7 +1972,7 @@ export default function MapView() {
                           width: '24px', height: '24px', display: 'flex',
                           alignItems: 'center', justifyContent: 'center', flexShrink: 0
                         }}>
-                          <IconComp size={16} style={{ color: placeIcon.color }} />
+                          <IonIcon icon={IconComp} style={{ fontSize: 16, color: placeIcon.color }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
@@ -1954,7 +1984,7 @@ export default function MapView() {
                         }}>
                           {itemType || ''}
                         </span>
-                        <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                        <IonIcon icon={chevronForwardOutline} style={{ fontSize: 14, opacity: 0.2 }} />
                       </button>
                     );
                   })}
@@ -2014,7 +2044,7 @@ export default function MapView() {
                   alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <MapPin size={18} style={{ color: '#f59e0b' }} />
+                  <IonIcon icon={pinOutline} style={{ fontSize: 18, color: '#f59e0b' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: '700' }}>
                   {t.choose_on_map}
@@ -2044,7 +2074,7 @@ export default function MapView() {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                     >
-                      <Home size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <IonIcon icon={homeOutline} style={{ fontSize: 13, color: '#10b981', flexShrink: 0 }} />
                       <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Shtëpia</span>
                     </button>
                   )}
@@ -2065,7 +2095,7 @@ export default function MapView() {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                     >
-                      <Briefcase size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                      <IonIcon icon={briefcaseOutline} style={{ fontSize: 13, color: '#3b82f6', flexShrink: 0 }} />
                       <span style={{ fontWeight: '700', fontSize: '11px', whiteSpace: 'nowrap' }}>Puna</span>
                     </button>
                   )}
@@ -2104,7 +2134,7 @@ export default function MapView() {
                         </svg>
                       </div>
                       <span style={{ flex: 1, fontWeight: '600' }}>{name}</span>
-                      <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                      <IonIcon icon={chevronForwardOutline} style={{ fontSize: 14, opacity: 0.2 }} />
                     </button>
                   ))}
                 </>
@@ -2173,7 +2203,7 @@ export default function MapView() {
                           width: '24px', height: '24px', display: 'flex',
                           alignItems: 'center', justifyContent: 'center', flexShrink: 0
                         }}>
-                          <IconComp size={16} style={{ color: placeIcon.color }} />
+                          <IonIcon icon={IconComp} style={{ fontSize: 16, color: placeIcon.color }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
@@ -2185,7 +2215,7 @@ export default function MapView() {
                         }}>
                           {itemType || ''}
                         </span>
-                        <ChevronRight size={14} style={{ opacity: 0.2 }} />
+                        <IonIcon icon={chevronForwardOutline} style={{ fontSize: 14, opacity: 0.2 }} />
                       </button>
                     );
                   })}
@@ -2219,17 +2249,17 @@ export default function MapView() {
         <div className="controls-column">
           {/* Layer Selector - Vertical */}
           <div className="glass-panel vertical-group desktop-only">
-            <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title={t.dark_mode}><Moon size={20} /></button>
-            <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title={t.light_mode}><Sun size={20} /></button>
-            <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title={t.satellite}><Globe size={20} /></button>
+            <button className={mapStyle === 'dark' ? 'active' : ''} onClick={() => setMapStyle('dark')} title={t.dark_mode}><IonIcon icon={moonOutline} style={{ fontSize: 20 }} /></button>
+            <button className={mapStyle === 'light' ? 'active' : ''} onClick={() => setMapStyle('light')} title={t.light_mode}><IonIcon icon={sunnyOutline} style={{ fontSize: 20 }} /></button>
+            <button className={mapStyle === 'satellite' ? 'active' : ''} onClick={() => setMapStyle('satellite')} title={t.satellite}><IonIcon icon={globeOutline} style={{ fontSize: 20 }} /></button>
           </div>
 
           <div className="v-spacer desktop-only" />
 
           {/* Zoom Controls */}
           <div className="glass-panel vertical-group desktop-only">
-            <button onClick={() => mapInstanceRef.current?.zoomIn()} title={t.zoom_in}><ZoomIn size={20} /></button>
-            <button onClick={() => mapInstanceRef.current?.zoomOut()} title={t.zoom_out}><ZoomOut size={20} /></button>
+            <button onClick={() => mapInstanceRef.current?.zoomIn()} title={t.zoom_in}><IonIcon icon={addOutline} style={{ fontSize: 20 }} /></button>
+            <button onClick={() => mapInstanceRef.current?.zoomOut()} title={t.zoom_out}><IonIcon icon={removeOutline} style={{ fontSize: 20 }} /></button>
           </div>
 
           <div className="v-spacer" />
@@ -2248,16 +2278,16 @@ export default function MapView() {
             }}
             title={t.locate_me}
           >
-            <Locate size={22} />
+            <IonIcon icon={locateOutline} style={{ fontSize: 22 }} />
           </button>
 
           <div className="v-spacer desktop-only" />
 
           {/* Visibility Toggles */}
           <div className="glass-panel vertical-group toggles desktop-only">
-            <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title={t.toggle_stops}><MapPin size={20} /></button>
-            <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title={t.toggle_buses}><Bus size={20} /></button>
-            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title={t.toggle_routes}><Route size={20} /></button>
+            <button className={showStops ? 'active' : ''} onClick={() => setShowStops(!showStops)} title={t.toggle_stops}><IonIcon icon={pinOutline} style={{ fontSize: 20 }} /></button>
+            <button className={showBuses ? 'active' : ''} onClick={() => setShowBuses(!showBuses)} title={t.toggle_buses}><IonIcon icon={busOutline} style={{ fontSize: 20 }} /></button>
+            <button className={showRoutes ? 'active' : ''} onClick={() => setShowRoutes(!showRoutes)} title={t.toggle_routes}><IonIcon icon={compassOutline} style={{ fontSize: 20 }} /></button>
           </div>
         </div>
       </div>
@@ -2267,7 +2297,7 @@ export default function MapView() {
         {activeTrip ? (
           <div className="glass-panel" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Navigation size={20} style={{ color: 'var(--primary)' }} />
+              <IonIcon icon={navigateOutline} style={{ fontSize: 20, color: 'var(--primary)' }} />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {t.active_trip_label}
@@ -2297,7 +2327,7 @@ export default function MapView() {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                {t.continue_btn || 'Continue'} <ArrowRight size={14} />
+                {t.continue_btn || 'Continue'} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 14 }} />
               </button>
               <button
                 onClick={() => {
@@ -2309,13 +2339,13 @@ export default function MapView() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ef4444'; }}
               >
-                <X size={16} /> {t.close}
+                <IonIcon icon={closeOutline} style={{ fontSize: 16 }} /> {t.close}
               </button>
             </div>
           </div>
         ) : (
           <div className="scroller-wrapper">
-            <button className="nav-arrow left" onClick={() => scrollRoutes('left')}><ChevronLeft size={24} /></button>
+            <button className="nav-arrow left" onClick={() => scrollRoutes('left')}><IonIcon icon={chevronBackOutline} style={{ fontSize: 24 }} /></button>
 
             <div className="route-scroller-container">
               <div ref={routeScrollerRef} className="glass-panel route-scroller route-scrollbar">
@@ -2338,7 +2368,7 @@ export default function MapView() {
               </div>
             </div>
 
-            <button className="nav-arrow right" onClick={() => scrollRoutes('right')}><ChevronRight size={24} /></button>
+            <button className="nav-arrow right" onClick={() => scrollRoutes('right')}><IonIcon icon={chevronForwardOutline} style={{ fontSize: 24 }} /></button>
           </div>
         )}
       </div>
@@ -2364,7 +2394,7 @@ export default function MapView() {
               background: 'rgba(15, 20, 30, 0.95)',
               backdropFilter: 'blur(20px)',
               borderTop: '1px solid rgba(255,255,255,0.1)',
-              maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px)' : '40vh',
+              maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px - env(safe-area-inset-top, 0px))' : '40vh',
               minHeight: '200px',
               overflowY: tripSheetHeight === 'full' ? 'auto' : 'hidden',
               overflowX: 'hidden',
@@ -2383,14 +2413,14 @@ export default function MapView() {
                     color: 'rgba(255,255,255,0.5)',
                     pointerEvents: 'none'
                   }}>
-                    <ChevronUp size={16} />
+                    <IonIcon icon={chevronUpOutline} style={{ fontSize: 16 }} />
                   </div>
                 )}
               </div>
               <div className="card-header" style={{ background: 'transparent', padding: '10px 20px 15px 20px' }}>
                 <div className="header-main">
                   <span className="route-num" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none' }}>
-                    <Navigation size={26} color="#f59e0b" style={{ filter: 'drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5))' }} />
+                    <IonIcon icon={navigateOutline} style={{ fontSize: 26, color: '#f59e0b', filter: 'drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5))' }} />
                   </span>
                   <div className="route-texts">
                     <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>
@@ -2404,7 +2434,7 @@ export default function MapView() {
                   </div>
                 </div>
                 <button className="close-btn" onClick={() => setShowTripDetails(false)} style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.5 }}>
-                  <X size={20} />
+                  <IonIcon icon={closeOutline} style={{ fontSize: 20 }} />
                 </button>
               </div>
             </div>
@@ -2445,9 +2475,9 @@ export default function MapView() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', width: '100%' }}>
                     {[
-                      { icon: <Clock size={14} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
-                      { icon: <MapPin size={14} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
-                      { icon: <Banknote size={14} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
+                      { icon: <IonIcon icon={timeOutline} style={{ fontSize: 14 }} />, value: `${activeTrip.travelTime}m`, label: t.time_label, color: '#3b82f6' },
+                      { icon: <IonIcon icon={pinOutline} style={{ fontSize: 14 }} />, value: activeTrip.totalStops, label: t.stations, color: '#8b5cf6' },
+                      { icon: <IonIcon icon={cashOutline} style={{ fontSize: 14 }} />, value: `${activeTrip.totalPrice}L`, label: t.cost_label, color: '#10b981' },
                     ].map(({ icon, value, label, color }, idx) => (
                       <div key={label} style={{
                         padding: '10px 4px',
@@ -2467,120 +2497,220 @@ export default function MapView() {
                   {t.step_by_step}
                 </div>
 
-                {activeTrip.legs?.map((leg: any, i: number) => {
-                  const prevLeg = i > 0 ? activeTrip.legs[i - 1] : null;
-                  const isDirectTransfer = prevLeg && !prevLeg.isWalking && !leg.isWalking;
+                <div style={{ position: 'relative', paddingLeft: '8px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '8px' }}>
+                  {/* Timeline Background Line */}
+                  <div style={{
+                    position: 'absolute',
+                    left: '23px',
+                    top: '20px',
+                    bottom: '20px',
+                    width: '2px',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                    zIndex: 1
+                  }} />
 
-                  if (leg.isWalking) {
+                  {activeTrip.legs?.map((leg: Leg, i: number) => {
+                    const prevLeg = i > 0 ? (activeTrip.legs[i - 1] as Leg) : null;
+                    const isDirectTransfer = prevLeg && !prevLeg.isWalking && !leg.isWalking;
+                    const r = leg.route?.id ? routeMap[leg.route.id] : undefined;
+                    const color = r?.color || '#888';
+                    const allShown = showAllStops[i];
+                    const stops = leg.stops || [];
+                    const stopsToShow = allShown
+                      ? stops
+                      : stops.length <= 3
+                        ? stops
+                        : [stops[0], stops[stops.length - 1]];
+                    const hiddenCount = Math.max(0, stops.length - 2);
+
                     return (
-                      <div key={i} style={{
-                        background: 'rgba(16,185,129,0.04)',
-                        border: '0.5px solid rgba(16,185,129,0.15)',
-                        borderLeft: '2px solid #10b981',
-                        borderRadius: '0 10px 10px 0',
-                        padding: '12px 14px',
-                        marginBottom: '8px',
-                        display: 'flex', gap: '12px', alignItems: 'center',
-                      }}>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Locate size={15} style={{ color: '#10b981' }} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '10px', color: 'rgba(16,185,129,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>{t.walk_transfer}</div>
-                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>{leg.boardAt} → {leg.alightAt}</div>
-                          <div style={{ fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: '600' }}>
-                            {t.walking_notice.replace('{dist}', leg.walkingDist?.toString()).replace('{time}', leg.walkingTime?.toString())}
+                      <div key={leg.route?.id ?? `leg-${i}`} style={{ display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
+                        {isDirectTransfer && (
+                          <div style={{
+                            marginLeft: '48px',
+                            padding: '8px 12px',
+                            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%)',
+                            border: '1px solid rgba(245, 158, 11, 0.15)',
+                            color: '#f59e0b',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}>
+                            <IonIcon icon={syncOutline} style={{ fontSize: '14px', animation: 'spin 4s linear infinite' }} />
+                            <span>{t.transfer_at} <strong style={{ color: '#fff' }}>{leg.boardAt}</strong></span>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                          {/* Timeline Node Icon */}
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: leg.isWalking ? 'rgba(16, 185, 129, 0.12)' : `${color}18`,
+                            border: `2.5px solid ${leg.isWalking ? '#10b981' : color}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            boxShadow: `0 0 12px ${leg.isWalking ? 'rgba(16, 185, 129, 0.3)' : `${color}30`}`,
+                            zIndex: 3
+                          }}>
+                            {leg.isWalking ? (
+                              <IonIcon icon={walkOutline} style={{ fontSize: '14px', color: '#10b981' }} />
+                            ) : (
+                              <IonIcon icon={busOutline} style={{ fontSize: '14px', color }} />
+                            )}
+                          </div>
+
+                          {/* Content Card */}
+                          <div style={{
+                            flex: 1,
+                            background: leg.isWalking
+                              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.01) 100%)'
+                              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%)',
+                            backdropFilter: 'blur(12px)',
+                            WebkitBackdropFilter: 'blur(12px)',
+                            border: leg.isWalking
+                              ? '1px solid rgba(16, 185, 129, 0.15)'
+                              : '1px solid rgba(255, 255, 255, 0.06)',
+                            borderRadius: '16px',
+                            padding: '14px 16px',
+                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px'
+                          }}
+                          className="step-card-hover"
+                          >
+                            {leg.isWalking ? (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '10px', fontWeight: '800', color: '#10b981', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                    {t.walk_transfer}
+                                  </span>
+                                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', background: 'rgba(16, 185, 129, 0.08)', padding: '2px 8px', borderRadius: '8px' }}>
+                                    {leg.walkingTime} min
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#fff', marginBottom: '4px' }}>
+                                  {leg.boardAt} → {leg.alightAt}
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', fontWeight: '500' }}>
+                                  {t.walking_notice.replace('{dist}', leg.walkingDist?.toString() || '0').replace('{time}', leg.walkingTime?.toString() || '0')}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                                  <div style={{
+                                    background: color,
+                                    color: '#fff',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '11px',
+                                    fontWeight: '900',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: `0 2px 8px ${color}35`
+                                  }}>
+                                    <IonIcon icon={busOutline} style={{ fontSize: '11px', color: '#fff' }} /> {leg.route?.name ?? '—'}
+                                  </div>
+                                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                                    {r?.name}
+                                  </span>
+                                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <IonIcon icon={cashOutline} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }} />
+                                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '700' }}>{t.ticket_40}</span>
+                                  </div>
+                                </div>
+
+                                {/* Stops Timeline */}
+                                <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingLeft: '2px' }}>
+                                  {/* Inner dashed line */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '5px',
+                                    top: '12px',
+                                    bottom: '12px',
+                                    width: '1px',
+                                    borderLeft: `1px dashed ${color}45`,
+                                  }} />
+
+                                  {stopsToShow.map((stop: string, j: number) => {
+                                    const isFirst = j === 0;
+                                    const isLast = j === stopsToShow.length - 1;
+                                    const isTerminal = isFirst || isLast;
+                                    return (
+                                      <div key={`${leg.route?.id ?? i}-stop-${j}`} style={{ display: 'flex', gap: '12px', position: 'relative', zIndex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', height: '28px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: isTerminal ? '10px' : '6px',
+                                            height: isTerminal ? '10px' : '6px',
+                                            borderRadius: '50%',
+                                            background: isTerminal ? color : 'rgba(255,255,255,0.15)',
+                                            border: isTerminal ? `2px solid ${color}` : 'none',
+                                            boxShadow: isTerminal ? `0 0 8px ${color}80` : 'none',
+                                            transition: 'transform 0.2s',
+                                          }} />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
+                                          <span style={{
+                                            fontSize: '12px',
+                                            fontWeight: isTerminal ? '700' : '500',
+                                            color: isTerminal ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap'
+                                          }}>
+                                            {stop}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+
+                                  {stops.length > 3 && (
+                                    <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+                                      <div style={{ width: '12px' }} />
+                                      <button
+                                        onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
+                                        style={{
+                                          padding: '4px 12px',
+                                          background: 'rgba(255, 255, 255, 0.03)',
+                                          border: '1px solid rgba(255,255,255,0.06)',
+                                          borderRadius: '20px',
+                                          cursor: 'pointer',
+                                          color: color,
+                                          fontSize: '11px',
+                                          fontWeight: '700',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}
+                                      >
+                                        <IonIcon icon={chevronDownOutline} style={{ fontSize: '12px', transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                                        {allShown ? t.hide_stations : `+ ${hiddenCount} ${t.stations.toLowerCase()} ${t.other_stations}`}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     );
-                  }
-
-                  const r = BUS_ROUTES.find(x => x.id === leg.route?.id);
-                  const color = r?.color || '#888';
-                  const allShown = showAllStops[i];
-                  const stops = leg.stops || [];
-                  const stopsToShow = allShown
-                    ? stops
-                    : [stops[0], ...(stops.length > 3 ? [] : stops.slice(1, -1)), stops[stops.length - 1]].filter(Boolean);
-                  const hiddenCount = Math.max(0, stops.length - 2);
-
-                  return (
-                    <div key={i} style={{ display: 'flex', flexDirection: 'column' }}>
-                      {isDirectTransfer && (
-                        <div style={{
-                          padding: '10px 14px',
-                          background: 'rgba(245, 158, 11, 0.08)',
-                          border: '1px solid rgba(245, 158, 11, 0.2)',
-                          color: '#f59e0b',
-                          borderRadius: '10px',
-                          marginBottom: '8px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
-                        }}>
-                          <RefreshCcw size={16} /> {t.transfer_at} <span style={{ color: '#fff' }}>{leg.boardAt}</span>
-                        </div>
-                      )}
-                      <div style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '0.5px solid rgba(255,255,255,0.06)',
-                        borderLeft: `2px solid ${color}`,
-                        borderRadius: '0 10px 10px 0',
-                        padding: '14px',
-                        marginBottom: '8px',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', minWidth: 0 }}>
-                          <div style={{ background: color, color: '#fff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Bus size={10} /> {leg.route?.name}
-                          </div>
-                          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}>{r?.name}</span>
-                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                            <Banknote size={12} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', fontWeight: '600', whiteSpace: 'nowrap' }}>{t.ticket_40}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          {stopsToShow.map((stop: string, j: number) => {
-                            const isFirst = j === 0;
-                            const isLast = j === stopsToShow.length - 1;
-                            const isTerminal = isFirst || isLast;
-                            return (
-                              <div key={j} style={{ display: 'flex', gap: '12px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '14px', flexShrink: 0 }}>
-                                  {!isFirst && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                                  <div style={{ width: isTerminal ? '11px' : '6px', height: isTerminal ? '11px' : '6px', borderRadius: '50%', background: isTerminal ? color : 'rgba(255,255,255,0.08)', border: isTerminal ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
-                                  {!isLast && <div style={{ width: '1.5px', height: '14px', background: `${color}30` }} />}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
-                                  <span style={{ fontSize: '12px', fontWeight: isTerminal ? '600' : '400', color: isTerminal ? '#fff' : 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stop}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {stops.length > 3 && (
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                              <div style={{ width: '14px', display: 'flex', justifyContent: 'center' }}>
-                                <div style={{ width: '1.5px', flex: 1, background: `${color}30` }} />
-                              </div>
-                              <button
-                                onClick={() => setShowAllStops(prev => ({ ...prev, [i]: !prev[i] }))}
-                                style={{ padding: '5px 0', background: 'none', border: 'none', cursor: 'pointer', color: color, fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
-                              >
-                                <ChevronDown size={13} style={{ transform: allShown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                                {allShown ? t.hide_stations : `+ ${hiddenCount - 1} ${t.stations.toLowerCase()} ${t.other_stations}`}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  })}
+                </div>
               </div>
             )}
 
@@ -2622,7 +2752,7 @@ export default function MapView() {
                   <p>{t.on_move} • {t.live}</p>
                 </div>
               </div>
-              <button className="close-btn" onClick={() => setInfoPanel(null)}><X size={20} /></button>
+              <button className="close-btn" onClick={() => setInfoPanel(null)}><IonIcon icon={closeOutline} style={{ fontSize: 20 }} /></button>
             </div>
             <div className="card-body">
               <div className="data-grid">
@@ -2643,7 +2773,7 @@ export default function MapView() {
                 </div>
               </div>
               <button className="view-details-btn" onClick={() => setView('tracker')}>
-                {t.view_details} <ChevronRight size={16} />
+                {t.view_details} <IonIcon icon={chevronForwardOutline} style={{ fontSize: 16 }} />
               </button>
             </div>
           </div>
@@ -2671,8 +2801,8 @@ export default function MapView() {
           <div
             className={`stop-info-card sheet-${sheetHeight}`}
             style={{
-              height: sheetHeight === 'peek' ? '350px' : sheetHeight === 'half' ? '50vh' : 'calc(100vh - 90px)',
-              maxHeight: 'calc(100vh - 90px)',
+              height: sheetHeight === 'peek' ? '350px' : sheetHeight === 'half' ? '50vh' : 'calc(100vh - 90px - env(safe-area-inset-top, 0px))',
+              maxHeight: 'calc(100vh - 90px - env(safe-area-inset-top, 0px))',
               borderRadius: sheetHeight === 'full' ? '0' : '28px 28px 0 0',
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               position: 'relative',
@@ -2699,7 +2829,7 @@ export default function MapView() {
             <div className="card-header" style={{ background: '#040712', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '20px 24px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="header-main">
                 <span className="route-num" style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none' }}>
-                  <MapPin size={28} color="#f59e0b" style={{ filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
+                  <IonIcon icon={pinOutline} style={{ fontSize: 28, color: '#f59e0b', filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
                 </span>
                 <div className="route-texts">
                   <h3 style={{ maxWidth: 'calc(100vw - 140px)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
@@ -2725,7 +2855,7 @@ export default function MapView() {
                 onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
                 onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}
               >
-                <X size={16} />
+                <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
               </button>
             </div>
 
@@ -2754,7 +2884,7 @@ export default function MapView() {
                     {closestBus ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                         <div style={{ width: 40, height: 40, background: (closestBus as any).routeColor || '#1e293b', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
-                          <Bus size={22} color="#fff" />
+                          <IonIcon icon={busOutline} style={{ fontSize: 22, color: '#fff' }} />
                         </div>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(closestBus as any).routeName || (closestBus as any).routeId}</div>
@@ -2844,7 +2974,7 @@ export default function MapView() {
                     }, 100);
                   }}
                 >
-                  {t.depart_from_here} <ChevronRight size={18} />
+                  {t.depart_from_here} <IonIcon icon={chevronForwardOutline} style={{ fontSize: 18 }} />
                 </button>
               )}
             </div>
@@ -2896,7 +3026,7 @@ export default function MapView() {
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'; }}
             >
-              <ChevronLeft size={24} />
+              <IonIcon icon={chevronBackOutline} style={{ fontSize: 24 }} />
             </button>
 
             {/* Center Info Text */}
@@ -2938,7 +3068,7 @@ export default function MapView() {
                 filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))'
               }}
             >
-              <MapPin size={28} color="#f59e0b" fill="rgba(245, 158, 11, 0.18)" strokeWidth={2.5} />
+              <IonIcon icon={pinOutline} style={{ fontSize: 28, color: '#f59e0b' }} />
               <div
                 style={{
                   width: '1.5px',
@@ -2949,7 +3079,7 @@ export default function MapView() {
               />
             </div>
             {/* Small orange X at the exact map center */}
-            <X size={16} color="#f59e0b" strokeWidth={3.5} style={{ marginTop: '-4px' }} />
+            <IonIcon icon={closeOutline} style={{ fontSize: 16, color: '#f59e0b', marginTop: '-4px', fontWeight: 'bold' }} />
           </div>
 
           {/* ── BOTTOM SELECTION PILL (OK BUTTON) ── */}

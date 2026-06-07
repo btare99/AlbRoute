@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { 
-  Menu, X, Bus, Home, Ticket, HelpCircle, 
-  MessageSquare, ChevronRight, Smartphone 
-} from 'lucide-react';
+  menuOutline, closeOutline, busOutline, homeOutline, ticketOutline, helpCircleOutline, 
+  chatbubbleOutline, chevronForwardOutline, phonePortraitOutline 
+} from 'ionicons/icons';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,11 +50,11 @@ export default function Header() {
   }, [isOpen]);
 
   const navLinks = [
-    { name: 'Shtëpia', path: '/', icon: <Home size={18} /> },
-    { name: 'Linjat & Oraret', path: '/routes', icon: <Bus size={18} /> },
-    { name: 'Biletat & Abonetë', path: '/tickets', icon: <Ticket size={18} /> },
-    { name: 'Ndihma', path: '/help-center', icon: <HelpCircle size={18} /> },
-    { name: 'Kontakti', path: '/contact', icon: <MessageSquare size={18} /> },
+    { name: 'Shtëpia', path: '/', icon: <IonIcon icon={homeOutline} style={{ fontSize: 18 }} /> },
+    { name: 'Linjat & Oraret', path: '/routes', icon: <IonIcon icon={busOutline} style={{ fontSize: 18 }} /> },
+    { name: 'Biletat & Abonetë', path: '/tickets', icon: <IonIcon icon={ticketOutline} style={{ fontSize: 18 }} /> },
+    { name: 'Ndihma', path: '/help-center', icon: <IonIcon icon={helpCircleOutline} style={{ fontSize: 18 }} /> },
+    { name: 'Kontakti', path: '/contact', icon: <IonIcon icon={chatbubbleOutline} style={{ fontSize: 18 }} /> },
   ];
 
   return (
@@ -188,7 +189,7 @@ export default function Header() {
               className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100/80 text-slate-700 hover:bg-slate-200/80 transition-colors border border-slate-200/20"
               aria-label="Hap menunë"
             >
-              <Menu size={18} />
+              <IonIcon icon={menuOutline} style={{ fontSize: 18 }} />
             </button>
           </div>
         </header>
@@ -226,7 +227,7 @@ export default function Header() {
               className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors border border-slate-200/10"
               aria-label="Mbyll menunë"
             >
-              <X size={16} />
+              <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
             </button>
           </div>
 
@@ -258,8 +259,9 @@ export default function Header() {
                     </span>
                     <span className="text-sm">{link.name}</span>
                   </div>
-                  <ChevronRight 
-                    size={15} 
+                  <IonIcon 
+                    icon={chevronForwardOutline}
+                    style={{ fontSize: 15 }} 
                     className={`transition-all duration-200 ${
                       isActive 
                         ? 'text-orange-500 translate-x-0' 
@@ -275,7 +277,7 @@ export default function Header() {
           <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col gap-4">
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center gap-3">
               <span className="p-2.5 rounded-xl bg-orange-50 text-orange-500 flex-shrink-0">
-                <Smartphone size={18} />
+                <IonIcon icon={phonePortraitOutline} style={{ fontSize: 18 }} />
               </span>
               <div>
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider leading-none">

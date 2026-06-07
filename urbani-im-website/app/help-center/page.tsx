@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import {
-  Search, ChevronRight, ChevronDown, ChevronLeft,
-  MapPin, Bus, Bell, User, WifiOff, Zap,
-  MessageSquare, Mail, Bug, HelpCircle, BookOpen,
-  Shield, Smartphone, Clock, Star, ArrowUpRight,
-  X, CheckCircle2, ThumbsUp, ThumbsDown, MessageCircle
-} from 'lucide-react';
+  searchOutline, chevronDownOutline, chevronBackOutline, pinOutline,
+  busOutline, notificationsOutline, personOutline, wifiOutline,
+  flashOutline, chatbubbleOutline, mailOutline, helpCircleOutline,
+  bookOutline, shieldCheckmarkOutline, phonePortraitOutline, timeOutline,
+  openOutline, closeOutline, checkmarkCircleOutline, thumbsUpOutline,
+  thumbsDownOutline, chatbubbleEllipsesOutline
+} from 'ionicons/icons';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,7 +39,7 @@ interface Category {
 const CATEGORIES: Category[] = [
   {
     id: 'fillimi',
-    icon: <Zap size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={flashOutline} style={{ fontSize: 24 }} />,
     label: 'Fillimi i shpejtë',
     description: 'Konfigurimi i parë i aplikacionit dhe llogaria',
     color: '#f97316',
@@ -58,7 +60,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'udhetimi',
-    icon: <MapPin size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={pinOutline} style={{ fontSize: 24 }} />,
     label: 'Planifikimi i udhëtimit',
     description: 'Përdorimi i hartës live dhe gjetja e rrugëve',
     color: '#f97316',
@@ -83,7 +85,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'autobusi',
-    icon: <Bus size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={busOutline} style={{ fontSize: 24 }} />,
     label: 'Linjat & oraret',
     description: 'Itineraret zyrtare dhe statusi aktual',
     color: '#f97316',
@@ -104,7 +106,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'njoftimet',
-    icon: <Bell size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={notificationsOutline} style={{ fontSize: 24 }} />,
     label: 'Njoftimet',
     description: 'Konfigurimi i alarmeve dhe lajmërimeve',
     color: '#f97316',
@@ -121,7 +123,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'llogaria',
-    icon: <User size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={personOutline} style={{ fontSize: 24 }} />,
     label: 'Llogaria & profili',
     description: 'Menaxhimi i profilit dhe të dhënave personale',
     color: '#f97316',
@@ -142,7 +144,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'teknik',
-    icon: <Smartphone size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={phonePortraitOutline} style={{ fontSize: 24 }} />,
     label: 'Probleme teknike',
     description: 'Zgjidhja e problemeve me GPS dhe hartën',
     color: '#f97316',
@@ -163,7 +165,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'offline',
-    icon: <WifiOff size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={wifiOutline} style={{ fontSize: 24 }} />,
     label: 'Offline & bateria',
     description: 'Përdorimi pa internet dhe kursimi i baterisë',
     color: '#f97316',
@@ -180,7 +182,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: 'aksesibiliteti',
-    icon: <Shield size={24} strokeWidth={2} />,
+    icon: <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 24 }} />,
     label: 'Aksesibiliteti',
     description: 'Lexuesit e ekranit dhe kontrastet vizuale',
     color: '#f97316',
@@ -245,7 +247,7 @@ function ArticleView({
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700"></div>
 
       <button type="button" onClick={onBack} className="back-button mb-6 text-slate-500 hover:text-orange-600 font-semibold text-sm transition-colors duration-200 flex items-center gap-1.5" id="btn-back-to-category">
-        <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu te kategoritë
+        <IonIcon icon={chevronBackOutline} style={{ fontSize: 16 }} /> Kthehu te kategoritë
       </button>
 
       <div className="flex items-center gap-2 mb-4">
@@ -279,7 +281,7 @@ function ArticleView({
                 className="helpful-btn flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-slate-200 hover:border-orange-500 hover:bg-orange-50/20 text-slate-600 hover:text-orange-600 font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5"
                 id="btn-helpful-yes"
               >
-                <ThumbsUp size={14} /> Po, faleminderit
+                <IonIcon icon={thumbsUpOutline} style={{ fontSize: 14 }} /> Po, faleminderit
               </button>
               <button
                 type="button"
@@ -287,21 +289,21 @@ function ArticleView({
                 className="helpful-btn flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-slate-200 hover:border-amber-500 hover:bg-amber-50/20 text-slate-600 hover:text-amber-600 font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5"
                 id="btn-helpful-no"
               >
-                <ThumbsDown size={14} /> Jo, kam pyetje
+                <IonIcon icon={thumbsDownOutline} style={{ fontSize: 14 }} /> Jo, kam pyetje
               </button>
             </div>
           </>
         )}
         {voteStatus === 'up' && (
           <div className="text-orange-600 flex flex-col items-center gap-2 py-2 animate-fade-up">
-            <CheckCircle2 size={32} strokeWidth={2} />
+            <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 32 }} />
             <p className="text-sm font-bold">Ju faleminderit për feedback-un!</p>
             <p className="text-xs text-slate-400">Vlerësimi juaj na ndihmon të përmirësojmë udhëzuesit tanë.</p>
           </div>
         )}
         {voteStatus === 'down' && (
           <div className="text-amber-600 flex flex-col items-center gap-2 py-2 animate-fade-up">
-            <HelpCircle size={32} strokeWidth={2} />
+            <IonIcon icon={helpCircleOutline} style={{ fontSize: 32 }} />
             <p className="text-sm font-bold">Na vjen keq që ky artikull nuk ju ndihmoi.</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Ju lutemi plotësoni formën e kontaktit në fund të faqes për të marrë ndihmë të drejtpërdrejtë nga stafi ynë.
@@ -321,7 +323,7 @@ function CategoryView({
   return (
     <div className="animate-fade-up max-w-3xl mx-auto my-4">
       <button type="button" onClick={onBack} className="back-button mb-6 text-slate-500 hover:text-orange-600 font-semibold text-sm transition-colors duration-200 flex items-center gap-1.5" id="btn-back-to-main">
-        <ChevronLeft size={16} strokeWidth={2.5} /> Kthehu në faqen kryesore
+        <IonIcon icon={chevronBackOutline} style={{ fontSize: 16 }} /> Kthehu në faqen kryesore
       </button>
 
       <div className="flex items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm mb-6 relative overflow-hidden">
@@ -349,7 +351,7 @@ function CategoryView({
               >
                 <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{art.title}</span>
                 <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
-                  <ChevronDown size={14} strokeWidth={2.5} />
+                      <IonIcon icon={chevronDownOutline} style={{ fontSize: 14 }} />
                 </div>
               </button>
               <div 
@@ -363,7 +365,7 @@ function CategoryView({
                     onClick={() => onArticle(art)}
                     className="text-xs font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 bg-none border-none p-0 cursor-pointer transition-colors duration-150"
                   >
-                    Lexo artikullin e plotë <ArrowUpRight size={14} />
+                    Lexo artikullin e plotë <IonIcon icon={openOutline} style={{ fontSize: 14 }} />
                   </button>
                 </div>
               </div>
@@ -506,7 +508,7 @@ export default function HelpCenterView() {
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
-              <BookOpen size={24} />
+              <IonIcon icon={bookOutline} style={{ fontSize: 24 }} />
             </div>
             <h3 className="card-title text-base font-bold text-slate-800 mb-2">Udhëzuesit (Guides)</h3>
             <p className="card-desc text-xs text-slate-400 leading-relaxed">Gjeni udhëzime të hollësishme për përdorimin e hartave, GPS dhe konfigurimet e para.</p>
@@ -518,7 +520,7 @@ export default function HelpCenterView() {
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
-              <MessageSquare size={24} />
+              <IonIcon icon={chatbubbleOutline} style={{ fontSize: 24 }} />
             </div>
             <h3 className="card-title text-base font-bold text-slate-800 mb-2">Pyetjet e Shpeshta (FAQ)</h3>
             <p className="card-desc text-xs text-slate-400 leading-relaxed">Përgjigje të shpejta për pyetjet më të shpeshta rreth aplikacionit dhe të dhënave live.</p>
@@ -530,7 +532,7 @@ export default function HelpCenterView() {
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="card-icon-round w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-5 transition-transform duration-300 group-hover:scale-110 group-hover:bg-orange-500 group-hover:text-white">
-              <MessageCircle size={24} />
+              <IonIcon icon={chatbubbleEllipsesOutline} style={{ fontSize: 24 }} />
             </div>
             <h3 className="card-title text-base font-bold text-slate-800 mb-2">Komuniteti & Suporti</h3>
             <p className="card-desc text-xs text-slate-400 leading-relaxed">Na kontaktoni drejtpërdrejt për të raportuar problematika ose sugjeruar linja të reja.</p>
@@ -580,7 +582,7 @@ export default function HelpCenterView() {
                     >
                       <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{art.title}</span>
                       <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
-                        <ChevronDown size={14} strokeWidth={2.5} />
+                        <IonIcon icon={chevronDownOutline} style={{ fontSize: 14 }} />
                       </div>
                     </button>
                     <div 
@@ -603,7 +605,7 @@ export default function HelpCenterView() {
                           }}
                           className="text-xs font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 bg-none border-none p-0 cursor-pointer transition-colors duration-150"
                         >
-                          Faqja e plotë e udhëzuesit <ArrowUpRight size={14} />
+                          Faqja e plotë e udhëzuesit <IonIcon icon={openOutline} style={{ fontSize: 14 }} />
                         </button>
                       </div>
                     </div>
@@ -632,7 +634,7 @@ export default function HelpCenterView() {
                   >
                     <span className={`accordion-title text-[14.5px] font-bold transition-colors duration-200 ${isOpen ? 'text-orange-600' : 'text-slate-700'}`}>{item.q}</span>
                     <div className={`accordion-icon w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-500'}`}>
-                      <ChevronDown size={14} strokeWidth={2.5} />
+                      <IonIcon icon={chevronDownOutline} style={{ fontSize: 14 }} />
                     </div>
                   </button>
                   <div 
@@ -659,7 +661,7 @@ export default function HelpCenterView() {
             {contactSent ? (
               <div className="flex flex-col items-center gap-4 py-8 text-center animate-fade-up">
                 <div className="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shadow-inner">
-                  <CheckCircle2 size={24} />
+                  <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 24 }} />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">Kërkesa juaj u dërgua me sukses!</h3>
                 <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
@@ -699,9 +701,9 @@ export default function HelpCenterView() {
         <div className="section-container mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { icon: <Mail size={16} />, label: 'Email mbështetës', value: 'support@urbani-im.al' },
-              { icon: <Clock size={16} />, label: 'Orari i shërbimit', value: '09:00 – 17:00' },
-              { icon: <HelpCircle size={16} />, label: 'Koha mesatare', value: 'Brenda 24 orëve' },
+              { icon: <IonIcon icon={mailOutline} style={{ fontSize: 16 }} />, label: 'Email mbështetës', value: 'support@urbani-im.al' },
+              { icon: <IonIcon icon={timeOutline} style={{ fontSize: 16 }} />, label: 'Orari i shërbimit', value: '09:00 – 17:00' },
+              { icon: <IonIcon icon={helpCircleOutline} style={{ fontSize: 16 }} />, label: 'Koha mesatare', value: 'Brenda 24 orëve' },
             ].map((item, idx) => (
               <div key={idx} className="support-item flex items-center gap-4 p-5 border border-slate-200/80 bg-white rounded-2xl hover:border-orange-500/20 hover:shadow-lg hover:shadow-slate-50 transition-all duration-300">
                 <span className="flex p-3 rounded-xl bg-orange-50 text-orange-600 flex-shrink-0">
@@ -921,11 +923,11 @@ export default function HelpCenterView() {
               style={{ top: '50%' }}
               aria-label="Fshi kërkimin"
             >
-              <X size={16} />
+              <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
             </button>
           ) : null}
           <button type="button" className="search-pill-btn" aria-label="Kërko" onClick={() => searchRef.current?.focus()}>
-            <Search size={16} />
+            <IonIcon icon={searchOutline} style={{ fontSize: 16 }} />
           </button>
 
           {/* Search Dropdown suggest list */}
@@ -948,7 +950,7 @@ export default function HelpCenterView() {
                     onClick={() => { setSearch(''); setActiveCategory(category); setActiveArticle(article); }}
                     className="w-full flex items-center gap-4 px-6 py-4 bg-transparent border-none cursor-pointer text-left border-b border-slate-100 hover:bg-slate-50 transition-colors duration-150"
                   >
-                    <BookOpen size={16} className="text-orange-600 flex-shrink-0" />
+                    <IonIcon icon={bookOutline} style={{ fontSize: 16 }} className="text-orange-600 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-800 margin-0 truncate">
                         {article.title}
@@ -957,7 +959,7 @@ export default function HelpCenterView() {
                         {category.label}
                       </p>
                     </div>
-                    <ArrowUpRight size={14} className="text-slate-300" />
+                    <IonIcon icon={openOutline} style={{ fontSize: 14 }} className="text-slate-300" />
                   </button>
                 ))
               )}

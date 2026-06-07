@@ -8,7 +8,11 @@ import { Capacitor } from '@capacitor/core';
 import useStore from '../../store/useStore';
 import { translations } from '../../store/translations';
 import { AsYouType } from 'libphonenumber-js';
-import { Mail, Lock, User, Phone, Eye, EyeOff, ChevronLeft, ArrowRight } from 'lucide-react';
+import { IonIcon } from '@/app/components/common/IonIcon';
+import {
+  mailOutline, lockClosedOutline, personOutline, phonePortraitOutline,
+  eyeOutline, eyeOffOutline, chevronBackOutline, arrowForwardOutline
+} from 'ionicons/icons';
 
 const COUNTRY_CODES = [
   { code: '+93', flag: '🇦🇫', name: 'Afghanistan' },
@@ -186,7 +190,7 @@ function PhoneInput({ country, setCountry, phone, setPhone, t }: { country: any;
 
       <div style={{ position: 'relative', flex: 1 }}>
         <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-          <Phone size={18} />
+          <IonIcon icon={phonePortraitOutline} style={{ fontSize: 18 }} />
         </span>
         <input 
           className="premium-dark-input" 
@@ -811,7 +815,7 @@ function LoginContent() {
                 padding: '8px 0', minWidth: 'auto', minHeight: 'auto'
               }}
             >
-              <ChevronLeft size={18} /> Back
+              <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} /> Back
             </button>
           ) : <div />}
 
@@ -865,7 +869,7 @@ function LoginContent() {
                 {mode === 'register' && (
                   <div style={{ position: 'relative', width: '100%' }}>
                     <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                      <User size={18} />
+                      <IonIcon icon={personOutline} style={{ fontSize: 18 }} />
                     </span>
                     <input className="premium-dark-input" type="text" placeholder={t.auth_fullname} value={name} onChange={e => setName(e.target.value)} required autoComplete="name" />
                   </div>
@@ -873,7 +877,7 @@ function LoginContent() {
                 
                 <div style={{ position: 'relative', width: '100%' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                    <Mail size={18} />
+                    <IonIcon icon={mailOutline} style={{ fontSize: 18 }} />
                   </span>
                   <input className="premium-dark-input" type="email" placeholder={t.auth_email} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
                 </div>
@@ -884,7 +888,7 @@ function LoginContent() {
                 
                 <div style={{ position: 'relative', width: '100%' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                    <Lock size={18} />
+                    <IonIcon icon={lockClosedOutline} style={{ fontSize: 18 }} />
                   </span>
                   <input 
                     className="premium-dark-input" 
@@ -897,7 +901,7 @@ function LoginContent() {
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'} 
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', background: 'none', border: 'none', cursor: 'pointer', width: '24px', height: '24px', minWidth: 'auto', minHeight: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPass ? <IonIcon icon={eyeOffOutline} style={{ fontSize: 18 }} /> : <IonIcon icon={eyeOutline} style={{ fontSize: 18 }} />}
                   </button>
                 </div>
 
@@ -912,7 +916,7 @@ function LoginContent() {
                 {error && <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#ef4444', fontWeight: '500', textAlign: 'center' }}>{error}</div>}
 
                 <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: mode === 'register' ? '12px' : '0px' }}>
-                  {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <ArrowRight size={18} />
+                  {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 18 }} />
                 </button>
 
                 {mode === 'login' && (
@@ -922,7 +926,7 @@ function LoginContent() {
                     className="social-capsule-btn"
                     style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
                   >
-                    <User size={18} />
+                    <IonIcon icon={personOutline} style={{ fontSize: 18 }} />
                     {language === 'al' ? 'Hyni si Vizitor (Guest)' : language === 'it' ? 'Continua come Ospite' : 'Continue as Guest'}
                   </button>
                 )}
@@ -933,7 +937,7 @@ function LoginContent() {
               <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.3s ease-out' }}>
                 <div style={{ position: 'relative', width: '100%' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                    <Mail size={18} />
+                    <IonIcon icon={mailOutline} style={{ fontSize: 18 }} />
                   </span>
                   <input className="premium-dark-input" type="email" placeholder={t.auth_email} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
                 </div>
@@ -1016,7 +1020,7 @@ function LoginContent() {
                 {error && <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#ef4444', fontWeight: '500', textAlign: 'center' }}>{error}</div>}
                 
                 <button type="submit" className="white-capsule-btn" disabled={loading}>
-                  {loading ? '...' : 'Verifiko'} <ArrowRight size={18} />
+                  {loading ? '...' : 'Verifiko'} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 18 }} />
                 </button>
               </form>
             )}
@@ -1025,13 +1029,13 @@ function LoginContent() {
               <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'formEnter 0.3s ease-out' }}>
                 <div style={{ position: 'relative', width: '100%' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                    <Lock size={18} />
+                    <IonIcon icon={lockClosedOutline} style={{ fontSize: 18 }} />
                   </span>
                   <input className="premium-dark-input" type="password" placeholder={t.auth_new_password} value={newPassword} onChange={e => setNewPassword(e.target.value)} required autoComplete="new-password" />
                 </div>
                 <div style={{ position: 'relative', width: '100%' }}>
                   <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#52525b', display: 'flex', alignItems: 'center' }}>
-                    <Lock size={18} />
+                    <IonIcon icon={lockClosedOutline} style={{ fontSize: 18 }} />
                   </span>
                   <input className="premium-dark-input" type="password" placeholder={t.edit_confirm_new_password || 'Confirm New Password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
                 </div>

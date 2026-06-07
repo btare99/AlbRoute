@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { BUS_ROUTES, BUS_STOPS } from '../constants/busData';
 import { BUS_SHAPES } from './busShapes';
+import { WalkingEngine } from '../lib/engines/walkingEngine';
 export { BUS_ROUTES, BUS_STOPS };
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -165,6 +166,9 @@ interface TripLeg {
   walkingTimeSec?: number;
   liveBus?: any;
   etaMinutes?: number;
+  boardNodeId?: string;
+  alightNodeId?: string;
+  waypoints?: [number, number][];
 }
 
 interface TripOption {
@@ -277,7 +281,7 @@ const runRaptorRouter = (
       label.arrivalTimeSec = arrivalSec;
       label.transfers = 0;
       label.prevLeg = walkDist > WALK_DISTANCE_THRESHOLD
-        ? { isWalking: true, boardAt: 'origin', alightAt: stop.name, walkingDist: walkDist, walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec }
+        ? { isWalking: true, boardAt: 'origin', alightAt: stop.name, alightNodeId: stop.id, walkingDist: walkDist, walkingTime: Math.ceil(walkSec / 60), walkingTimeSec: walkSec }
         : null;
       label.prevStopId = null;
       label.boardedRouteId = null;
@@ -420,6 +424,8 @@ const runRaptorRouter = (
             isWalking: true,
             boardAt: fromStop.name,
             alightAt: nearStop.name,
+            boardNodeId: fromStop.id,
+            alightNodeId: nearStop.id,
             walkingDist: Math.round(walkDist),
             walkingTime: Math.ceil(walkSec / 60),
             walkingTimeSec: walkSec,
@@ -465,6 +471,7 @@ const runRaptorRouter = (
         isWalking: true,
         boardAt: destStop.name,
         alightAt: 'destination',
+        boardNodeId: destStop.id,
         walkingDist: finalWalkDist,
         walkingTime: Math.ceil(walkTimeSec(finalWalkDist) / 60),
         walkingTimeSec: walkTimeSec(finalWalkDist),
@@ -832,6 +839,7 @@ function enrichTripLegs(
           isWalking: true,
           boardAt: fromName,
           alightAt: boardStopName,
+          alightNodeId: boardStop.id,
           walkingDist: walkDist,
           walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
           walkingTimeSec: walkTimeSec(walkDist),
@@ -853,6 +861,7 @@ function enrichTripLegs(
           isWalking: true,
           boardAt: alightStopName,
           alightAt: toName,
+          boardNodeId: alightStop.id,
           walkingDist: walkDist,
           walkingTime: Math.ceil(walkTimeSec(walkDist) / 60),
           walkingTimeSec: walkTimeSec(walkDist),
@@ -861,14 +870,34 @@ function enrichTripLegs(
     }
   }
 
+  // Merge consecutive walking legs
+  const mergedLegs: TripLeg[] = [];
+  for (const leg of legs) {
+    if (mergedLegs.length > 0 && mergedLegs[mergedLegs.length - 1].isWalking && leg.isWalking) {
+      const prev = mergedLegs[mergedLegs.length - 1];
+      prev.alightAt = leg.alightAt;
+      prev.alightNodeId = leg.alightNodeId;
+      prev.walkingDist = (prev.walkingDist || 0) + (leg.walkingDist || 0);
+      prev.walkingTimeSec = (prev.walkingTimeSec || 0) + (leg.walkingTimeSec || 0);
+      prev.walkingTime = Math.ceil(prev.walkingTimeSec / 60);
+      if (prev.waypoints && leg.waypoints) {
+        prev.waypoints = [...prev.waypoints, ...leg.waypoints];
+      } else {
+        prev.waypoints = undefined;
+      }
+    } else {
+      mergedLegs.push(leg);
+    }
+  }
+
   return {
     ...opt,
-    legs,
+    legs: mergedLegs,
     from: fromName,
     to: toName,
     optionIndex: index + 1,
     travelTime: opt.travelTime ?? Math.round(opt.totalTimeSec / 60),
-    totalPrice: opt.totalPrice ?? (legs.filter(l => !l.isWalking).length * 40)
+    totalPrice: opt.totalPrice ?? (mergedLegs.filter(l => !l.isWalking).length * 40)
   };
 }
 
@@ -1348,6 +1377,47 @@ const useStore = create<any>()(
           return set({ tripResult: { error: 'Nuk u gjetën stacione afër vendndodhjes suaj.' }, activeTrip: null });
         }
 
+        // Fetch actual walking distances via OSRM Table API
+        if (fromStops.length > 0) {
+          const fromCoords = [origin.coords, ...fromStops.map(x => x.stop)];
+          const coordsStr = fromCoords.map(c => `${c.lng},${c.lat}`).join(';');
+          try {
+            const res = await fetch(`https://router.project-osrm.org/table/v1/foot/${coordsStr}?sources=0&annotations=distance`);
+            const data = await res.json();
+            if (data.code === 'Ok' && data.distances && data.distances[0]) {
+              fromStops = fromStops.map((item, idx) => {
+                const trueDist = data.distances[0][idx + 1];
+                return {
+                  ...item,
+                  walkDist: typeof trueDist === 'number' ? Math.round(trueDist) : item.walkDist,
+                };
+              });
+            }
+          } catch (err) {
+            console.warn('OSRM fromStops table routing failed, falling back to Haversine:', err);
+          }
+        }
+
+        if (toStops.length > 0) {
+          const toCoords = [destination.coords, ...toStops.map(x => x.stop)];
+          const coordsStr = toCoords.map(c => `${c.lng},${c.lat}`).join(';');
+          try {
+            const res = await fetch(`https://router.project-osrm.org/table/v1/foot/${coordsStr}?sources=0&annotations=distance`);
+            const data = await res.json();
+            if (data.code === 'Ok' && data.distances && data.distances[0]) {
+              toStops = toStops.map((item, idx) => {
+                const trueDist = data.distances[0][idx + 1];
+                return {
+                  ...item,
+                  walkDist: typeof trueDist === 'number' ? Math.round(trueDist) : item.walkDist,
+                };
+              });
+            }
+          } catch (err) {
+            console.warn('OSRM toStops table routing failed, falling back to Haversine:', err);
+          }
+        }
+
         const liveBuses = state.buses ?? [];
         const departureMode = state.tripDepartureMode;
         const isArriveBy = departureMode === 'arrive_by';
@@ -1373,11 +1443,95 @@ const useStore = create<any>()(
           return set({ tripResult: { error: 'Të gjitha autobuset kanë nisur. Provo orë tjetër.' }, tripOptions: [], activeTrip: null });
         }
 
+        // Asynchronously enrich the top 5 options with precise walking geometries and distances from OSRM
+        const engine = new WalkingEngine();
+        const finalOptions: TripOption[] = [];
+
+        for (const opt of enriched.slice(0, 5)) {
+          let updatedLegs = [...opt.legs];
+          let modified = false;
+
+          for (let idx = 0; idx < updatedLegs.length; idx++) {
+            const leg = updatedLegs[idx];
+            if (leg.isWalking) {
+              const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+              const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
+
+              let startLat = bStop ? bStop.lat : null;
+              let startLng = bStop ? bStop.lng : null;
+              let destLat = aStop ? aStop.lat : null;
+              let destLng = aStop ? aStop.lng : null;
+
+              if (idx === 0) {
+                startLat = origin.coords.lat;
+                startLng = origin.coords.lng;
+              }
+              if (idx === opt.legs.length - 1) {
+                destLat = destination.coords.lat;
+                destLng = destination.coords.lng;
+              }
+
+              if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
+                try {
+                  const res = await engine.calculateWalkingRoute(
+                    { lat: startLat, lng: startLng },
+                    { lat: destLat, lng: destLng }
+                  );
+                  if (res && res.distanceMeters && res.durationSeconds) {
+                    updatedLegs[idx] = {
+                      ...leg,
+                      walkingDist: res.distanceMeters,
+                      walkingTime: Math.ceil(res.durationSeconds / 60),
+                      walkingTimeSec: res.durationSeconds,
+                      waypoints: res.waypoints,
+                    };
+                    modified = true;
+                  }
+                } catch (err) {
+                  console.warn(`Error enriching walking leg ${idx}:`, err);
+                }
+              }
+            }
+          }
+
+          if (modified) {
+            const totalWalkDist = updatedLegs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingDist || 0), 0);
+            const originalTotalWalkSec = opt.legs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingTimeSec || 0), 0);
+            const transitTimeSec = opt.totalTimeSec - originalTotalWalkSec;
+
+            const newTotalWalkSec = updatedLegs.filter(l => l.isWalking).reduce((s, l) => s + (l.walkingTimeSec || 0), 0);
+            const newTotalTimeSec = Math.max(1, transitTimeSec + newTotalWalkSec);
+
+            const departure = new Date(opt.departureTime);
+            const arrival = new Date(departure.getTime() + newTotalTimeSec * 1000);
+
+            const updatedOpt: TripOption = {
+              ...opt,
+              legs: updatedLegs,
+              totalTimeSec: newTotalTimeSec,
+              walkDistMeters: totalWalkDist,
+              travelTime: Math.round(newTotalTimeSec / 60),
+              arrivalTime: arrival.toISOString(),
+            };
+
+            updatedOpt.score = scoreRoute(updatedOpt, liveBuses);
+            finalOptions.push(updatedOpt);
+          } else {
+            finalOptions.push(opt);
+          }
+        }
+
+        if (enriched.length > 5) {
+          finalOptions.push(...enriched.slice(5));
+        }
+
+        finalOptions.sort((a, b) => a.score - b.score);
+
         set({
-          tripResult: enriched[0],
-          tripOptions: enriched,
+          tripResult: finalOptions[0],
+          tripOptions: finalOptions,
           selectedTripOptionIndex: 0,
-          activeTrip: enriched[0],
+          activeTrip: finalOptions[0],
           showRoutes: true,
           showBuses: true,
           coordCache: state.coordCache ?? {},

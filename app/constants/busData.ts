@@ -456,7 +456,7 @@ export const BUS_STOPS = [
   { id: 'komisariati_6_stop2', name: 'Komisariati 6', lat: 41.31271529507327, lng: 19.763904610856333 },
   { id: 'varrezat_sharre_stop1', name: 'Varrezat Sharre', lat: 41.310541910647004, lng: 19.75978361206111 },
   { id: 'varrezat_sharre_stop2', name: 'Varrezat Sharre', lat: 41.31049383822419, lng: 19.759550762690342 },
-  { id: 'kthesa_sharre_stop1', name: 'Kthesa Sharre',lat: 41.30668170943334, lng: 19.75722601542828 },
+  { id: 'kthesa_sharre_stop1', name: 'Kthesa Sharre', lat: 41.30668170943334, lng: 19.75722601542828 },
   { id: 'kthesa_sharre_stop2', name: 'Kthesa Sharre', lat: 41.30660110184705, lng: 19.757365224329398 },
   { id: 'prush_stop1', name: 'Prush', lat: 41.30568864693283, lng: 19.754499767745212 },
   { id: 'prush_stop2', name: 'Prush', lat: 41.30559932364658, lng: 19.75461094152041 },
@@ -537,7 +537,7 @@ export const BUS_ROUTES = [
   {
     id: 'L1A', name: '1A', label: 'Allias – Selitë', color: '#e63946',
     stops: [
-      'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 
+      'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2',
       'shkolla_bashkuar_stop2',
       'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres',
       'muzeu_kombetar', 'shallvaret_r', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
@@ -546,7 +546,7 @@ export const BUS_ROUTES = [
     returnStops: [
       'selite', 'rrapo_hekali', 'nenkalimi', 'qendra_kristal_2', 'prokop_mima',
       'lulishtja', 'stadiumi_dinamo', 'lulishte_cajupi', 'drejtoria_e_policise_b',
-      'parku_rinia_r', 'pesembedhjete_kateshet', 'stacioni_i_trenit', 'shkencat_natyres',
+      'parku_rinia_r', 'pesembedhjete_kateshet', 'stacioni_i_trenit',
       'dispanseria_stop1', 'tregu_5_maji_stop1', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
       'bajram_curri_stop1', 'parafabrikatet_stop1', 'kopshti_27_stop1', 'allias'
     ]
@@ -577,8 +577,8 @@ export const BUS_ROUTES = [
     stops: [
       'terminal_jugilor', 'teg', 'tuneli', 'liqeni_i_thate_stop1', 'rruga_peti',
       'kopshti_zoologjik_stop1', 'rruga_kosovareve_stop1', 'petro_nini_luarasi',
-      'libri_universitar_stop1', 'rektorati','piramida1', 'kateshet_a', 'stacioni_i_trenit',
-      'barrikadat','shkencat_natyres', 'muzeu_kombetar' , 'shallvaret_r',
+      'libri_universitar_stop1', 'rektorati', 'piramida1', 'kateshet_a', 'stacioni_i_trenit',
+      'barrikadat', 'shkencat_natyres', 'muzeu_kombetar', 'shallvaret_r',
       'piramida2', 'libri_universitar_stop2', 'sheshi_wilson', 'rruga_kosovareve_stop2',
       'kopshti_zoologjik_stop2', 'liqeni_i_thate_stop2', 'tuneli', 'teg', 'terminal_jugilor'
     ]
@@ -615,7 +615,7 @@ export const BUS_ROUTES = [
   {
     id: 'L3C', name: '3C', label: 'Qendër – Yrshek', color: '#749bc2',
     stops: [
-      'biblioteka','banka_shqiperise_a', 'kisha_katolike_a',
+      'biblioteka', 'banka_shqiperise_a', 'kisha_katolike_a',
       'poliklinika_9_a', 'ndre_mjeda', 'ura_teknologjike_a', 'tregu_a', 'kombinati_mishit_a',
       'joklin_persi_a', 'bego_hoxha_a', 'besim_alla_a', 'yzberisht_a',
       'pallati_minierave_a', 'ish_xhenio_a', 'mezez_a', 'top_channel_stop1',
@@ -872,7 +872,7 @@ export const BUS_ROUTES = [
       'muzeu_kombetar', 'parku_rinia', 'piramida2', 'libri_universitar_stop2', 'stadiumi_dinamo_stop2',
       'vasil_shanto_stop1', 'pallati_me_shigjeta_stop1', 'teodor_keko_stop1', 'kristaq_dollaku_stop1',
       'nexho_konomi', 'kristaq_mone', 'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a',
-      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz', 
+      'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz',
       'shkencat_natyres', 'muzeu_kombetar'
     ]
   },
@@ -886,7 +886,7 @@ export const BUS_ROUTES = [
       'aleksandri_madh', 'kryqezimi_kashar',
       'kristaq_dollaku_stop2', 'teodor_keko_stop2', 'pallati_me_shigjeta_stop2', 'vasil_shanto_stop2',
       'komuna_parisit_stop2', 'posta_8_stop1', 'libri_universitar_stop1', 'rektorati', 'piramida1',
-       'pesembedhjete_kateshet'
+      'pesembedhjete_kateshet'
     ]
   },
 

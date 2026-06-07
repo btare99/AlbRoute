@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { 
-  Mail, Clock, HelpCircle, CheckCircle2, 
-  Send, MessageSquare, MapPin, Shield 
-} from 'lucide-react';
+  mailOutline, timeOutline, helpCircleOutline, checkmarkCircleOutline, 
+  paperPlaneOutline, chatbubbleOutline, pinOutline, shieldCheckmarkOutline 
+} from 'ionicons/icons';
 
 export default function ContactPage() {
   const [contactText, setContactText] = useState('');
@@ -32,9 +33,9 @@ export default function ContactPage() {
   };
 
   const contactCards = [
-    { icon: <Mail size={20} />, label: 'Email mbështetës', value: 'support@urbani-im.al', desc: 'Na shkruani në çdo kohë' },
-    { icon: <Clock size={20} />, label: 'Orari i shërbimit', value: 'E Hënë – E Premte, 09:00–17:00', desc: 'Ekipi ynë është i gatshëm t\'ju ndihmojë' },
-    { icon: <HelpCircle size={20} />, label: 'Koha e përgjigjes', value: 'Brenda 24 orëve', desc: 'Rishikim i shpejtë i biletave/sugjerimeve' }
+    { icon: <IonIcon icon={mailOutline} style={{ fontSize: 20 }} />, label: 'Email mbështetës', value: 'support@urbani-im.al', desc: 'Na shkruani në çdo kohë' },
+    { icon: <IonIcon icon={timeOutline} style={{ fontSize: 20 }} />, label: 'Orari i shërbimit', value: 'E Hënë – E Premte, 09:00–17:00', desc: 'Ekipi ynë është i gatshëm t\'ju ndihmojë' },
+    { icon: <IonIcon icon={helpCircleOutline} style={{ fontSize: 20 }} />, label: 'Koha e përgjigjes', value: 'Brenda 24 orëve', desc: 'Rishikim i shpejtë i biletave/sugjerimeve' }
   ];
 
   return (
@@ -42,7 +43,7 @@ export default function ContactPage() {
       {/* Header */}
       <div className="text-center mb-16">
         <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200/60 rounded-full px-4 py-1.5 mb-4">
-          <MessageSquare size={14} className="text-orange-600" />
+          <IonIcon icon={chatbubbleOutline} style={{ fontSize: 14 }} className="text-orange-600" />
           <span className="text-xs font-semibold text-orange-800">Komunikim i Hapur</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -103,7 +104,7 @@ export default function ContactPage() {
             </div>
             
             <div className="relative bg-white/95 backdrop-blur-sm p-3 rounded-xl border border-slate-200/60 shadow-sm flex items-center gap-2">
-              <MapPin size={16} className="text-orange-600" />
+              <IonIcon icon={pinOutline} style={{ fontSize: 16 }} className="text-orange-600" />
               <div>
                 <div className="text-[10px] font-bold text-slate-800">Zyra Urbani IM</div>
                 <div className="text-[8px] text-slate-400">Sheshi Skënderbej, Tiranë, Shqipëri</div>
@@ -121,7 +122,7 @@ export default function ContactPage() {
           {contactSent ? (
             <div className="flex flex-col items-center gap-4 py-12 text-center">
               <div className="w-16 h-16 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shadow-inner">
-                <CheckCircle2 size={32} />
+                <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 32 }} />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Sugjerimi juaj u dërgua!</h3>
               <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
@@ -147,7 +148,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 border border-slate-100 p-3.5 rounded-xl leading-relaxed">
-                <Shield size={16} className="text-orange-600 flex-shrink-0" />
+                <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 16 }} className="text-orange-600 flex-shrink-0" />
                 <span>
                   Duke klikuar dërgo, ju pranoni përpunimin e të dhënave tuaja të komunikimit sipas Rregullores së Politikës së Privatësisë.
                 </span>
@@ -162,7 +163,7 @@ export default function ContactPage() {
                   <span>Po dërgohet...</span>
                 ) : (
                   <>
-                    <Send size={16} /> <span>Dërgo Mesazh</span>
+                    <IonIcon icon={paperPlaneOutline} style={{ fontSize: 16 }} /> <span>Dërgo Mesazh</span>
                   </>
                 )}
               </button>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Bus, Mail, Phone, Clock, ShieldCheck } from 'lucide-react';
+import { IonIcon } from '@/app/components/common/IonIcon';
+import { busOutline, mailOutline, timeOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 
 const AppleIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" className="inline-block mr-2">
@@ -23,7 +24,7 @@ export default function Footer() {
         <div className="flex flex-col gap-4">
           <Link href="/" className="flex items-center gap-2 group text-decoration-none">
             <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-md">
-              <Bus size={18} strokeWidth={2.5} />
+              <IonIcon icon={busOutline} style={{ fontSize: 18 }} />
             </div>
             <span className="font-extrabold text-xl tracking-tight text-white">
               Urbani<span className="text-orange-400 font-medium">IM</span>
@@ -33,7 +34,7 @@ export default function Footer() {
             Zgjidhja më e mirë dixhitale për ndjekjen e transportit publik dhe blerjen e abonesë në të gjitha qytetet kryesore shqiptare.
           </p>
           <div className="flex items-center gap-2 mt-2 text-xs text-orange-400 bg-teal-950/40 border border-orange-800/40 px-3 py-1.5 rounded-lg w-fit">
-            <ShieldCheck size={14} />
+            <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 14 }} />
             100% e mbrojtur sipas GDPR
           </div>
         </div>
@@ -70,13 +71,13 @@ export default function Footer() {
           <h4 className="text-white font-bold text-sm uppercase tracking-wider">Suporti</h4>
           <ul className="list-none p-0 m-0 flex flex-col gap-3">
             <li className="flex items-center gap-2 text-sm text-slate-400">
-              <Mail size={16} className="text-orange-500" />
+              <IonIcon icon={mailOutline} style={{ fontSize: 16 }} className="text-orange-500" />
               <a href="mailto:support@urbani-im.al" className="text-slate-400 hover:text-white transition-colors text-decoration-none">
                 support@urbani-im.al
               </a>
             </li>
             <li className="flex items-start gap-2 text-sm text-slate-400">
-              <Clock size={16} className="text-orange-500 mt-0.5" />
+              <IonIcon icon={timeOutline} style={{ fontSize: 16 }} className="text-orange-500 mt-0.5" />
               <span>
                 E Hënë – E Premte
                 <br />

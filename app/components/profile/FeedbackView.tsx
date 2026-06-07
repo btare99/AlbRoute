@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import useStore from '../../store/useStore';
-import { ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { IonIcon } from '@/app/components/common/IonIcon';
+import { chevronBackOutline, checkmarkCircleOutline } from 'ionicons/icons';
 
 const MAX_CHARS = 500;
 
@@ -68,7 +69,7 @@ export default function FeedbackView() {
           letterSpacing: '0.01em',
         }}
       >
-        <ChevronLeft size={17} strokeWidth={2} />
+        <IonIcon icon={chevronBackOutline} style={{ fontSize: 17 }} />
         Kthehu
       </button>
 
@@ -106,7 +107,7 @@ export default function FeedbackView() {
           gap: '12px',
           textAlign: 'center',
         }}>
-          <CheckCircle2 size={42} strokeWidth={1.5} color="#22c55e" />
+          <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 42, color: '#22c55e' }} />
           <p style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0 }}>
             Feedback-u u dërgua!
           </p>

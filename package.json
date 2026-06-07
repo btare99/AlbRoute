@@ -42,7 +42,6 @@
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "libphonenumber-js": "^1.13.2",
-    "lucide-react": "^1.14.0",
     "mapbox-gl": "^3.24.0",
     "maplibre-gl": "^5.24.0",
     "mongoose": "^9.6.1",

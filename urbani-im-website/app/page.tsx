@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { 
-  MapPin, Bus, WifiOff, Zap, Clock, Shield, 
-  ChevronDown, ArrowUpRight, Star, Smartphone, 
-  QrCode, Activity, CheckCircle2 
-} from 'lucide-react';
+  pinOutline, busOutline, cloudOfflineOutline, flashOutline, timeOutline, shieldOutline, 
+  chevronDownOutline, arrowForwardOutline, star, phonePortraitOutline, 
+  qrCodeOutline, pulseOutline, checkmarkCircleOutline 
+} from 'ionicons/icons';
 
 interface FAQItem {
   q: string;
@@ -84,11 +85,11 @@ export default function Home() {
             <div className="flex items-center gap-6 justify-center lg:justify-start mt-6 pt-6 border-t border-slate-200">
               <div>
                 <div className="flex items-center gap-1 text-amber-500 font-bold text-lg">
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
+                  <IonIcon icon={star} style={{ fontSize: 18 }} />
+                  <IonIcon icon={star} style={{ fontSize: 18 }} />
+                  <IonIcon icon={star} style={{ fontSize: 18 }} />
+                  <IonIcon icon={star} style={{ fontSize: 18 }} />
+                  <IonIcon icon={star} style={{ fontSize: 18 }} />
                   <span className="text-slate-800 ml-1">4.8</span>
                 </div>
                 <div className="text-xs text-slate-500 mt-1">Vlerësimi në App Store</div>
@@ -151,7 +152,7 @@ export default function Home() {
                     {line.name}
                   </h4>
                   <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                    <Activity size={12} /> Përditësuar tani
+                    <IonIcon icon={pulseOutline} style={{ fontSize: 12 }} /> Përditësuar tani
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -169,7 +170,7 @@ export default function Home() {
           
           <div className="text-center mt-8">
             <Link href="/routes" className="text-sm font-semibold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 group text-decoration-none">
-              Shiko oraret e plota për të gjitha stacionet <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              Shiko oraret e plota për të gjitha stacionet <IonIcon icon={arrowForwardOutline} style={{ fontSize: 16 }} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
         </div>
@@ -191,7 +192,7 @@ export default function Home() {
             {/* Feature 1 */}
             <div className="glass-card rounded-2xl p-8 relative flex flex-col gap-5">
               <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                <MapPin size={24} />
+                <IonIcon icon={pinOutline} style={{ fontSize: 24 }} />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Ndjekja në Kohë Reale</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
@@ -202,7 +203,7 @@ export default function Home() {
             {/* Feature 2 */}
             <div className="glass-card rounded-2xl p-8 relative flex flex-col gap-5">
               <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                <Bus size={24} />
+                <IonIcon icon={busOutline} style={{ fontSize: 24 }} />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Bileta &amp; Abone Dixhitale</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
@@ -213,7 +214,7 @@ export default function Home() {
             {/* Feature 3 */}
             <div className="glass-card rounded-2xl p-8 relative flex flex-col gap-5">
               <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                <WifiOff size={24} />
+                <IonIcon icon={cloudOfflineOutline} style={{ fontSize: 24 }} />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Funksionimi Offline</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
@@ -255,7 +256,7 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <div className="w-6 h-6 rounded-md bg-orange-500 flex items-center justify-center text-white">
-                    <Bus size={12} strokeWidth={2.5} />
+                    <IonIcon icon={busOutline} style={{ fontSize: 12 }} />
                   </div>
                   <span className="font-bold text-xs text-white">Urbani IM</span>
                 </div>
@@ -267,7 +268,7 @@ export default function Home() {
               {/* QR Code Container */}
               <div className="flex-grow flex flex-col items-center justify-center my-6">
                 <div className="bg-white p-4 rounded-xl shadow-lg border border-slate-800">
-                  <QrCode size={120} className="text-slate-900" />
+                  <IonIcon icon={qrCodeOutline} style={{ fontSize: 120 }} className="text-slate-900" />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-3 uppercase tracking-wider font-semibold">
                   Skeno kodin për verifikim
@@ -297,9 +298,9 @@ export default function Home() {
       <section className="py-16 md:py-24 max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { icon: <Zap size={20} />, label: 'Përdorues', value: '10,000+ Shkarkime Aktive', desc: 'Qindra qytetarë që udhëtojnë çdo ditë më shpejt.' },
-            { icon: <Clock size={20} />, label: 'Përditësimi GPS', value: 'Live çdo 3 sekonda', desc: 'Të dhëna të sakta pa vonesa në marrjen e sinjalit.' },
-            { icon: <Shield size={20} />, label: 'Privatësia', value: '100% e mbrojtur', desc: 'Të dhënat tuaja përpunohen plotësisht sipas GDPR.' },
+            { icon: <IonIcon icon={flashOutline} style={{ fontSize: 20 }} />, label: 'Përdorues', value: '10,000+ Shkarkime Aktive', desc: 'Qindra qytetarë që udhëtojnë çdo ditë më shpejt.' },
+            { icon: <IonIcon icon={timeOutline} style={{ fontSize: 20 }} />, label: 'Përditësimi GPS', value: 'Live çdo 3 sekonda', desc: 'Të dhëna të sakta pa vonesa në marrjen e sinjalit.' },
+            { icon: <IonIcon icon={shieldOutline} style={{ fontSize: 20 }} />, label: 'Privatësia', value: '100% e mbrojtur', desc: 'Të dhënat tuaja përpunohen plotësisht sipas GDPR.' },
           ].map((item, idx) => (
             <div key={idx} className="bg-white rounded-2xl border border-slate-200/50 p-6 flex items-start gap-4 shadow-sm">
               <span className="flex p-3 rounded-xl bg-orange-50 text-orange-600 flex-shrink-0">
@@ -344,7 +345,7 @@ export default function Home() {
                 >
                   <span className="accordion-title">{faq.q}</span>
                   <div className="accordion-icon">
-                    <ChevronDown size={16} strokeWidth={2.5} />
+                    <IonIcon icon={chevronDownOutline} style={{ fontSize: 16 }} />
                   </div>
                 </button>
                 <div 
@@ -362,7 +363,7 @@ export default function Home() {
 
         <div className="text-center mt-8">
           <Link href="/help-center" className="text-sm font-semibold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 group text-decoration-none">
-            Shiko qendrën e plotë të ndihmës për më shumë udhëzime <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            Shiko qendrën e plotë të ndihmës për më shumë udhëzime <IonIcon icon={arrowForwardOutline} style={{ fontSize: 16 }} className="group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
       </section>

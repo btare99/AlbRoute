@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { 
-  QrCode, CreditCard, ShieldCheck, CheckCircle2, 
-  ChevronDown, Smartphone, Bus, BadgePercent 
-} from 'lucide-react';
+  qrCodeOutline, cardOutline, shieldCheckmarkOutline, checkmarkCircleOutline, 
+  chevronDownOutline, phonePortraitOutline, busOutline, pricetagOutline 
+} from 'ionicons/icons';
 
 interface FAQItem {
   q: string;
@@ -62,17 +63,17 @@ export default function DigitalTickets() {
 
   const purchaseSteps = [
     {
-      icon: <Smartphone size={24} />,
+      icon: <IonIcon icon={phonePortraitOutline} style={{ fontSize: 24 }} />,
       title: '1. Shkarko & Regjistrohu',
       desc: 'Shkarkoni aplikacionin Urbani IM në iOS ose Android dhe krijoni një llogari me emailin tuaj ose me Google/Apple ID.'
     },
     {
-      icon: <CreditCard size={24} />,
+      icon: <IonIcon icon={cardOutline} style={{ fontSize: 24 }} />,
       title: '2. Zgjidh & Paguaj',
       desc: 'Shkoni tek seksioni "Biletat" në profilin tuaj, zgjidhni abonenë që dëshironi dhe kryeni pagesën e sigurt me kartë krediti/debiti ose portofol elektronik.'
     },
     {
-      icon: <QrCode size={24} />,
+      icon: <IonIcon icon={qrCodeOutline} style={{ fontSize: 24 }} />,
       title: '3. Merr Kodin QR & Udhëto',
       desc: 'Kodi QR i abonesë tuaj do të gjenerohet menjëherë në aplikacion. Thjesht skenojeni atë në pajisjen verifikuese kur hipni në autobus.'
     }
@@ -90,7 +91,7 @@ export default function DigitalTickets() {
       {/* Header */}
       <div className="text-center mb-16">
         <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200/60 rounded-full px-4 py-1.5 mb-4">
-          <BadgePercent size={14} className="text-orange-600" />
+          <IonIcon icon={pricetagOutline} style={{ fontSize: 14 }} className="text-orange-600" />
           <span className="text-xs font-semibold text-orange-800">Kurseni Kohë &amp; Para</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -133,7 +134,7 @@ export default function DigitalTickets() {
               <ul className="flex flex-col gap-3 my-6 list-none p-0 m-0 border-t pt-6 border-slate-200/20">
                 {pass.features.map((feat, fIdx) => (
                   <li key={fIdx} className="flex items-start gap-2.5 text-xs">
-                    <CheckCircle2 size={16} className={pass.primary ? 'text-orange-400 mt-0.5' : 'text-orange-600 mt-0.5'} />
+                    <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: 16 }} className={pass.primary ? 'text-orange-400 mt-0.5' : 'text-orange-600 mt-0.5'} />
                     <span className={pass.primary ? 'text-slate-300' : 'text-slate-600'}>{feat}</span>
                   </li>
                 ))}
@@ -187,9 +188,9 @@ export default function DigitalTickets() {
           </p>
           <div className="flex flex-col gap-3">
             {[
-              { icon: <ShieldCheck className="text-orange-600" size={18} />, label: 'Enkriptim 256-bit SSL për të gjitha pagesat' },
-              { icon: <CreditCard className="text-orange-600" size={18} />, label: 'Mbështetje për VISA, MasterCard dhe Apple Pay' },
-              { icon: <Bus className="text-orange-600" size={18} />, label: 'Skenim i shpejtë dhe funksionim i garantuar në autobus' }
+              { icon: <IonIcon icon={shieldCheckmarkOutline} className="text-orange-600" style={{ fontSize: 18 }} />, label: 'Enkriptim 256-bit SSL për të gjitha pagesat' },
+              { icon: <IonIcon icon={cardOutline} className="text-orange-600" style={{ fontSize: 18 }} />, label: 'Mbështetje për VISA, MasterCard dhe Apple Pay' },
+              { icon: <IonIcon icon={busOutline} className="text-orange-600" style={{ fontSize: 18 }} />, label: 'Skenim i shpejtë dhe funksionim i garantuar në autobus' }
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-3 text-xs text-slate-700 font-semibold">
                 {item.icon}
@@ -201,7 +202,7 @@ export default function DigitalTickets() {
 
         <div className="bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center items-center text-center">
           <div className="absolute top-0 right-0 w-60 h-60 bg-orange-500/10 rounded-full blur-3xl -z-10" />
-          <QrCode size={160} className="text-orange-400 mb-4" />
+          <IonIcon icon={qrCodeOutline} style={{ fontSize: 160 }} className="text-orange-400 mb-4" />
           <h3 className="text-lg font-bold">Verifikimi me Kod QR</h3>
           <p className="text-xs text-slate-400 max-w-sm mt-2 leading-relaxed">
             Skaneri i autobusit do të lexojë kodin tuaj QR në sekonda. Ekranet tanë mbështesin skanimin edhe në nivele të ulëta ndriçimi.
@@ -229,7 +230,7 @@ export default function DigitalTickets() {
                 >
                   <span className="accordion-title">{faq.q}</span>
                   <div className="accordion-icon">
-                    <ChevronDown size={16} strokeWidth={2.5} />
+                    <IonIcon icon={chevronDownOutline} style={{ fontSize: 16 }} />
                   </div>
                 </button>
                 <div 

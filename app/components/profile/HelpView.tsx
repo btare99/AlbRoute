@@ -2,7 +2,6 @@
 import { motion } from 'framer-motion';
 import { IonIcon } from '@/app/components/common/IonIcon';
 import useStore from '../../store/useStore';
-import { ChevronLeft } from 'lucide-react';
 import {
   helpCircleOutline,
   shieldOutline,

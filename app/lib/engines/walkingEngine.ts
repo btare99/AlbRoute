@@ -98,7 +98,28 @@ export class WalkingEngine {
 
     for (const provider of ordered) {
       try {
-        return await provider.fetch(origin, destination);
+        const res = await provider.fetch(origin, destination);
+        if (res && res.waypoints && res.waypoints.length > 0) {
+          const first = res.waypoints[0];
+          const last = res.waypoints[res.waypoints.length - 1];
+          const originCoords: [number, number] = [origin.lat, origin.lng];
+          const destCoords: [number, number] = [destination.lat, destination.lng];
+
+          let newWaypoints = [...res.waypoints];
+
+          const distToFirst = Math.pow(first[0] - origin.lat, 2) + Math.pow(first[1] - origin.lng, 2);
+          if (distToFirst > 1e-9) {
+            newWaypoints.unshift(originCoords);
+          }
+
+          const distToLast = Math.pow(last[0] - destination.lat, 2) + Math.pow(last[1] - destination.lng, 2);
+          if (distToLast > 1e-9) {
+            newWaypoints.push(destCoords);
+          }
+
+          res.waypoints = newWaypoints;
+        }
+        return res;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.warn(`WalkingEngine: ${provider.key} dështoi — ${message}. Duke provuar fallback...`);

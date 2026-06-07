@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { IonIcon } from '@/app/components/common/IonIcon';
 import { 
-  Search, Bus, Clock, MapPin, ChevronDown, 
-  Map, Activity, ArrowRight, Shield 
-} from 'lucide-react';
+  searchOutline, busOutline, timeOutline, pinOutline, chevronDownOutline, 
+  mapOutline, pulseOutline, shieldCheckmarkOutline 
+} from 'ionicons/icons';
 
 interface BusLine {
   id: string;
@@ -198,7 +199,7 @@ export default function TransitRoutes() {
       {/* Page Header */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200/60 rounded-full px-4 py-1.5 mb-4">
-          <Map size={14} className="text-orange-600" />
+          <IonIcon icon={mapOutline} style={{ fontSize: 14 }} className="text-orange-600" />
           <span className="text-xs font-semibold text-orange-800">Itineraret Zyrtare &amp; Stacionet</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -212,7 +213,7 @@ export default function TransitRoutes() {
       {/* Search Bar */}
       <div className="relative mb-8 max-w-lg mx-auto">
         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
-          <Search size={18} />
+          <IonIcon icon={searchOutline} style={{ fontSize: 18 }} />
         </div>
         <input 
           type="text" 
@@ -274,7 +275,7 @@ export default function TransitRoutes() {
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
                         <span className="flex items-center gap-1">
-                          <Clock size={12} /> {line.frequency}
+                          <IonIcon icon={timeOutline} style={{ fontSize: 12 }} /> {line.frequency}
                         </span>
                         <span className="hidden sm:inline">&bull;</span>
                         <span>{line.stations.length} Stacione</span>
@@ -294,7 +295,7 @@ export default function TransitRoutes() {
                       </div>
                     </div>
                     <div className={`accordion-icon ${isExpanded ? 'bg-orange-50 text-orange-600 rotate-180' : 'bg-slate-100 text-slate-400'}`}>
-                      <ChevronDown size={16} strokeWidth={2.5} />
+                      <IonIcon icon={chevronDownOutline} style={{ fontSize: 16 }} />
                     </div>
                   </div>
                 </button>
@@ -364,13 +365,13 @@ export default function TransitRoutes() {
                         <div className="flex flex-col gap-4">
                           <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
                             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Activity size={14} className="text-orange-600" /> Ditë Pune (E Hënë - E Premte)
+                              <IonIcon icon={pulseOutline} style={{ fontSize: 14 }} className="text-orange-600" /> Ditë Pune (E Hënë - E Premte)
                             </h4>
                             <p className="text-sm text-slate-600 leading-relaxed">{line.timetable.weekdays}</p>
                           </div>
                           <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
                             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Clock size={14} className="text-amber-500" /> Fundjavë &amp; Festa Zyrtare
+                              <IonIcon icon={timeOutline} style={{ fontSize: 14 }} className="text-amber-500" /> Fundjavë &amp; Festa Zyrtare
                             </h4>
                             <p className="text-sm text-slate-600 leading-relaxed">{line.timetable.weekends}</p>
                           </div>
@@ -402,7 +403,7 @@ export default function TransitRoutes() {
           })
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
-            <Bus size={32} className="text-slate-300 mx-auto mb-3" />
+            <IonIcon icon={busOutline} style={{ fontSize: 32 }} className="text-slate-300 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-700">Nuk u gjet asnjë linjë</p>
             <p className="text-xs text-slate-400 mt-1">Provoni të kërkoni me një emër tjetër linje ose stacioni.</p>
           </div>
@@ -412,7 +413,7 @@ export default function TransitRoutes() {
       {/* Info Tip Footer Card */}
       <div className="bg-orange-50 border border-orange-200/60 p-6 rounded-2xl mt-12 flex flex-col sm:flex-row items-start gap-4 shadow-sm">
         <span className="flex p-3 rounded-xl bg-white text-orange-600 shadow-sm flex-shrink-0">
-          <Shield size={20} />
+          <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 20 }} />
         </span>
         <div>
           <h4 className="text-sm font-bold text-orange-800 leading-snug">Vonesat në Trafik &amp; Devijimet</h4>
