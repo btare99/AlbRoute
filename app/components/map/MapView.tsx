@@ -2390,10 +2390,12 @@ export default function MapView() {
               bottom: '0',
               left: '0',
               right: '0',
-              background: '#040712',
+              background: 'rgba(10, 14, 24, 0.82)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderBottom: 'none',
-              boxShadow: '0 -10px 40px rgba(0,0,0,0.8)',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
               borderRadius: tripSheetHeight === 'full' ? '0' : '28px 28px 0 0',
               maxHeight: tripSheetHeight === 'full' ? 'calc(100vh - 90px - env(safe-area-inset-top, 0px))' : '40vh',
               minHeight: '200px',
@@ -2410,13 +2412,13 @@ export default function MapView() {
               left: 0,
               right: 0,
               height: '100vh',
-              background: '#040712',
+              background: 'rgba(10, 14, 24, 0.95)',
               zIndex: -1
             }} />
 
-            <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#040712', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10, 14, 24, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="mobile-drag-handle" style={{ position: 'relative' }}>
-                <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.25)' }} />
+                <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.2)' }} />
                 {tripSheetHeight === 'peek' && (
                   <div style={{
                     position: 'absolute', top: '2px', left: '50%',
@@ -2439,17 +2441,17 @@ export default function MapView() {
                       {isPlanning ? t.calculating : t.step_by_step}
                     </h3>
                     {!isPlanning && activeTrip ? (
-                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{activeTrip.from} → {activeTrip.to}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '3px 0 0' }}>{activeTrip.from} → {activeTrip.to}</p>
                     ) : (
-                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{t.finding_optimal_route}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '3px 0 0' }}>{t.finding_optimal_route}</p>
                     )}
                   </div>
                 </div>
                 <button
                   className="close-btn"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
                     borderRadius: '50%',
                     width: '32px',
                     height: '32px',
@@ -2460,8 +2462,8 @@ export default function MapView() {
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
-                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; e.currentTarget.style.color = '#94a3b8'; }}
                   onClick={() => setShowTripDetails(false)}
                 >
                   <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
@@ -2836,10 +2838,12 @@ export default function MapView() {
               borderRadius: sheetHeight === 'full' ? '0' : '28px 28px 0 0',
               transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               position: 'relative',
-              background: '#040712',
+              background: 'rgba(10, 14, 24, 0.82)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderBottom: 'none',
-              boxShadow: '0 -10px 40px rgba(0,0,0,0.8)'
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)'
             }}
           >
             {/* Filler background to prevent map showing below during swipe-up */}
@@ -2849,28 +2853,28 @@ export default function MapView() {
               left: 0,
               right: 0,
               height: '100vh',
-              background: '#040712',
+              background: 'rgba(10, 14, 24, 0.95)',
               zIndex: -1
             }} />
 
             <div className="mobile-drag-handle">
-              <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.25)' }} />
+              <div className="drag-indicator" style={{ background: 'rgba(255,255,255,0.2)' }} />
             </div>
-            <div className="card-header" style={{ background: '#040712', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '20px 24px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="card-header" style={{ background: 'transparent', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: '20px 24px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="header-main">
                 <span className="route-num" style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none' }}>
                   <IonIcon icon={pinOutline} style={{ fontSize: 28, color: '#f59e0b', filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))' }} />
                 </span>
                 <div className="route-texts">
                   <h3 style={{ maxWidth: 'calc(100vw - 140px)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff', fontSize: '16px', fontWeight: 800 }}>{selectedStop.name}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '3px 0 0' }}>{t.station} • ID {selectedStop.id}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '3px 0 0' }}>{t.station} • ID {selectedStop.id}</p>
                 </div>
               </div>
               <button
                 className="close-btn"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
                   borderRadius: '50%',
                   width: '32px',
                   height: '32px',
@@ -2881,8 +2885,8 @@ export default function MapView() {
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; e.currentTarget.style.color = '#94a3b8'; }}
                 onClick={() => { setSelectedStop(null); setSheetHeight('peek'); }}
               >
                 <IonIcon icon={closeOutline} style={{ fontSize: 16 }} />
@@ -3291,16 +3295,18 @@ export default function MapView() {
         /* ── BUS INFO PANEL ── */
         .bus-info-card {
           position: absolute; bottom: 120px; right: 20px; width: 320px;
-          background: #040712; border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+          background: rgba(10, 14, 24, 0.82); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.5);
           z-index: 1000; overflow: hidden;
         }
 
         /* ── STOP INFO PANEL ── */
         .stop-info-card {
           position: absolute; top: 120px; left: 20px; width: 320px;
-          background: #040712; border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+          background: rgba(10, 14, 24, 0.82); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.5);
           z-index: 1000; overflow: hidden;
         }
 
