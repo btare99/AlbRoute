@@ -604,7 +604,8 @@ export default function MapView() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
-  const [showTripDetails, setShowTripDetails] = useState(false);
+  const showTripDetails = useStore((s: any) => s.showTripDetails);
+  const setShowTripDetails = useStore((s: any) => s.setShowTripDetails);
   const [tripSheetHeight, setTripSheetHeight] = useState<'peek' | 'full'>('peek');
   const [isPlanning, setIsPlanning] = useState(false);
   const [showAllStops, setShowAllStops] = useState<{ [key: number]: boolean }>({});

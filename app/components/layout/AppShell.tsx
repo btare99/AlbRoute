@@ -40,6 +40,8 @@ export default function AppShell() {
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
   const language = useStore((state: any) => state.language);
   const selectingOnMap = useStore((state: any) => state.selectingOnMap);
+  const selectedStop = useStore((state: any) => state.selectedStop);
+  const showTripDetails = useStore((state: any) => state.showTripDetails);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const addNotification = useStore((state: any) => state.addNotification);
   const networkStatus = useStore((state: any) => state.networkStatus);
@@ -215,7 +217,7 @@ export default function AppShell() {
       </main>
 
       {/* Floating bottom nav — mobile only */}
-      {!selectingOnMap && (
+      {!selectingOnMap && !selectedStop && !showTripDetails && (
         <nav className="bottom-nav" aria-label="Main navigation">
           {MENU.map(({ id, label, icon: Icon }) => {
             const active = currentView === id ||

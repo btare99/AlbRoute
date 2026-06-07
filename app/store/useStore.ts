@@ -1202,6 +1202,8 @@ const useStore = create<any>()(
       setSelectedRoute: (route: any) => set({ selectedRoute: route }),
       selectedStop: null,
       setSelectedStop: (stop: any) => set({ selectedStop: stop }),
+      showTripDetails: false,
+      setShowTripDetails: (show: boolean) => set({ showTripDetails: show }),
 
       // ── Traffic Zones ──
       trafficZones: [
