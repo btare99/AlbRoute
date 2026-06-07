@@ -699,8 +699,7 @@ export default function MapView() {
 
         const map = L.map(container, {
           zoomControl: false,
-          attributionControl: false,
-          preferCanvas: true
+          attributionControl: false
         }).setView(TIRANA_CENTER, DEFAULT_ZOOM);
 
         if (!isMounted) {
