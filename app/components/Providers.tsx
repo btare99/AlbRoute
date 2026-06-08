@@ -8,28 +8,51 @@ import { Capacitor } from "@capacitor/core";
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
   const originalFetch = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.101:3000'; // Fallback to local PC IP for testing
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.111:3000'; // Fallback to local PC IP for testing
+    const localhostBase = 'http://localhost:3000';
     
+    let finalInit = init;
     if (typeof input === 'string') {
       if (input.startsWith('/')) {
         input = `${apiBase}${input}`;
+        finalInit = { ...init, credentials: 'include' };
+      } else if (input.startsWith(localhostBase)) {
+        input = input.replace(localhostBase, apiBase);
+        finalInit = { ...init, credentials: 'include' };
+      } else if (input.startsWith(apiBase)) {
+        finalInit = { ...init, credentials: 'include' };
       }
     } else if (input instanceof Request) {
       const url = input.url;
       if (url.startsWith('/')) {
         input = new Request(`${apiBase}${url}`, input);
+        input = new Request(input, { credentials: 'include' });
       } else if (url.startsWith(window.location.origin)) {
         const relativePath = url.substring(window.location.origin.length);
         if (relativePath.startsWith('/')) {
           input = new Request(`${apiBase}${relativePath}`, input);
+          input = new Request(input, { credentials: 'include' });
         }
+      } else if (url.startsWith(localhostBase)) {
+        const relativePath = url.substring(localhostBase.length);
+        input = new Request(`${apiBase}${relativePath}`, input);
+        input = new Request(input, { credentials: 'include' });
+      } else if (url.startsWith(apiBase)) {
+        input = new Request(input, { credentials: 'include' });
       }
     } else if (input instanceof URL) {
       if (input.pathname.startsWith('/')) {
         input = new URL(`${apiBase}${input.pathname}${input.search}`);
+        finalInit = { ...init, credentials: 'include' };
+      } else if (input.href.startsWith(localhostBase)) {
+        const relativePath = input.href.substring(localhostBase.length);
+        input = new URL(`${apiBase}${relativePath}`);
+        finalInit = { ...init, credentials: 'include' };
+      } else if (input.href.startsWith(apiBase)) {
+        finalInit = { ...init, credentials: 'include' };
       }
     }
-    return originalFetch(input, init);
+    return originalFetch(input, finalInit);
   };
 }
 

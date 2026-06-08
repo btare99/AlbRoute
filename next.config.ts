@@ -33,6 +33,20 @@ const nextConfig: NextConfig = {
     config.externals = [...(config.externals || []), 'fsevents'];
     return config;
   },
+  async headers() {
+    if (process.env.IS_CAPACITOR === 'true') return [];
+    return [
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+          { key: "Access-Control-Allow-Origin", value: "capacitor://localhost" },
+          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT,OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
+        ]
+      }
+    ]
+  },
 } as any;
 
 export default withPWA(nextConfig);

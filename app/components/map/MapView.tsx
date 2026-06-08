@@ -14,7 +14,7 @@ import {
   locateOutline, pinOutline, navigateOutline, moonOutline, sunnyOutline,
   globeOutline, addOutline, removeOutline, compassOutline, arrowForwardOutline,
   timeOutline, homeOutline, briefcaseOutline, restaurantOutline, schoolOutline,
-  businessOutline, flameOutline, bagOutline, leafOutline
+  businessOutline, flameOutline, bagOutline, leafOutline, playOutline
 } from 'ionicons/icons';
 
 interface Leg {
@@ -454,18 +454,26 @@ export default function MapView() {
 
     // Zoom to route
     if (activeTrip && mapInstanceRef.current) {
+      const coords: [number, number][] = [];
+      if (tripOriginCoords) {
+        coords.push([tripOriginCoords.lat, tripOriginCoords.lng]);
+      }
+      if (tripDestCoords) {
+        coords.push([tripDestCoords.lat, tripDestCoords.lng]);
+      }
+
       const allStops = activeTrip.legs?.flatMap((l: any) => l.stops || []) || [];
-      const coords = allStops.map((name: string) => {
+      allStops.forEach((name: string) => {
         const s = BUS_STOPS.find((st: any) => st.name?.toLowerCase().trim() === name?.toLowerCase().trim());
-        return s ? [s.lat, s.lng] : null;
-      }).filter(Boolean) as [number, number][];
+        if (s) coords.push([s.lat, s.lng]);
+      });
 
       if (coords.length > 1) {
         const L = LRef.current;
         if (L) {
           const bounds = L.latLngBounds(coords);
           isFittingBoundsRef.current = true;
-          mapInstanceRef.current.fitBounds(bounds, { padding: [100, 100], duration: 1.5 });
+          mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30], duration: 1.5 });
         }
       }
     }
@@ -711,10 +719,14 @@ export default function MapView() {
         if (!isMounted) return;
         LRef.current = L;
 
-        // Pastro instancën e vjetër nëse ekziston në element
+        // Pastro plotësisht çdo gjendje të mbetur të Leaflet nga kontaineri
         const container = mapContainerRef.current;
-        if (container && (container as any)._leaflet_id) {
-          (container as any)._leaflet_id = null;
+        if (container) {
+          // Fshi të gjitha properties e brendshme të Leaflet nga elementi DOM
+          const leafletKeys = Object.keys(container).filter(k => k.startsWith('_leaflet'));
+          leafletKeys.forEach(k => delete (container as any)[k]);
+          // Pastro edhe HTML-in e brendshëm në rast se ka mbetur ndonjë layer
+          container.innerHTML = '';
         }
 
         const map = L.map(container, {
@@ -760,9 +772,13 @@ export default function MapView() {
         });
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-      } else if (mapContainerRef.current && (mapContainerRef.current as any)._leaflet_id) {
-        (mapContainerRef.current as any)._leaflet_id = null;
       }
+      // Pastro plotësisht çdo gjendje të mbetur të Leaflet nga kontaineri
+      if (mapContainerRef.current) {
+        const leafletKeys = Object.keys(mapContainerRef.current).filter(k => k.startsWith('_leaflet'));
+        leafletKeys.forEach(k => delete (mapContainerRef.current as any)[k]);
+      }
+      LRef.current = null;
     };
   }, []);
 
@@ -2591,6 +2607,51 @@ export default function MapView() {
                     </div>
                   ))}
                 </div>
+
+                <button
+                  onClick={() => {
+                    addNotification(t.route_started, 'success');
+                    if (mapInstanceRef.current && userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+                      mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 17, { animate: true });
+                    }
+                    setTripSheetHeight('peek');
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '52px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '16px',
+                    color: '#ffffff',
+                    fontWeight: '800',
+                    fontSize: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
+                    marginBottom: '24px',
+                    transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.35)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.25)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'scale(0.98)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                >
+                  <IonIcon icon={playOutline} style={{ fontSize: '18px', color: '#fff' }} />
+                  {t.start_route}
+                </button>
 
                 <div style={{ fontSize: '10px', fontWeight: '800', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
                   {t.step_by_step}

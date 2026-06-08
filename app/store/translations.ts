@@ -315,6 +315,8 @@ export const translations: Record<string, any> = {
     edit_delete_confirm: "A jeni të sigurt që dëshironi të fshini llogarinë tuaj? Ky veprim nuk mund të kthehet.",
     edit_cancel: "Anulo",
     edit_delete: "Fshi",
+    start_route: "Nis udhëtimin",
+    route_started: "Udhëtimi nisi! Paç udhëtim të mbarë. 🚀",
   },
   en: {
     // ── General ──
@@ -632,6 +634,8 @@ export const translations: Record<string, any> = {
     edit_delete_confirm: "Are you sure you want to delete your account? This action cannot be undone.",
     edit_cancel: "Cancel",
     edit_delete: "Delete",
+    start_route: "Start your route",
+    route_started: "Route started! Have a nice trip. 🚀",
   },
   it: {
     // ── General ──
@@ -940,5 +944,7 @@ export const translations: Record<string, any> = {
     edit_delete_confirm: "Sei sicuro di voler eliminare l'account? Questa azione non può essere annullata.",
     edit_cancel: "Annulla",
     edit_delete: "Elimina",
+    start_route: "Inizia il tuo percorso",
+    route_started: "Percorso iniziato! Buon viaggio. 🚀",
   }
 };
