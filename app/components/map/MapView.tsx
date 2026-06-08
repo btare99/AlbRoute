@@ -609,6 +609,20 @@ export default function MapView() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
   const [sheetHeight, setSheetHeight] = useState<'peek' | 'half' | 'full'>('peek');
+  const [stopAnimateIn, setStopAnimateIn] = useState(false);
+
+  useEffect(() => {
+    if (selectedStop) {
+      setStopAnimateIn(false);
+      const timer = setTimeout(() => {
+        setStopAnimateIn(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setStopAnimateIn(false);
+    }
+  }, [selectedStop]);
+
   const showTripDetails = useStore((s: any) => s.showTripDetails);
   const setShowTripDetails = useStore((s: any) => s.setShowTripDetails);
   const [tripSheetHeight, setTripSheetHeight] = useState<'peek' | 'full'>('peek');
@@ -2848,7 +2862,7 @@ export default function MapView() {
           dragHandleClass="mobile-drag-handle"
         >
           <div
-            className={`stop-info-card sheet-${sheetHeight}`}
+            className={`stop-info-card sheet-${sheetHeight} ${!stopAnimateIn ? 'stop-info-card-mounting' : ''}`}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -3503,6 +3517,11 @@ export default function MapView() {
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.5);
           z-index: 1000; overflow: hidden;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .stop-info-card.stop-info-card-mounting {
+          transform: translateY(100px) !important;
+          opacity: 0 !important;
         }
 
         .card-header { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
@@ -3795,7 +3814,11 @@ export default function MapView() {
           .stop-info-card {
             height: calc(100vh - 90px - env(safe-area-inset-top, 0px)) !important;
             max-height: calc(100vh - 90px - env(safe-area-inset-top, 0px)) !important;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s !important;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s !important;
+          }
+          .stop-info-card.stop-info-card-mounting {
+            transform: translateY(100%) !important;
+            opacity: 0 !important;
           }
           .stop-info-card.sheet-peek {
             transform: translateY(calc(100% - 280px)) !important;
