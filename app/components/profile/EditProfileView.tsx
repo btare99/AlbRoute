@@ -149,8 +149,12 @@ export default function EditProfileView() {
   const t = translations[language] || translations.al;
   const logout = useStore((state: any) => state.logout);
 
-  const guestMode = useStore((state: any) => state.guestMode);
-  const setGuestMode = useStore((state: any) => state.setGuestMode);
+  useEffect(() => {
+    if (useStore.getState().guestMode) {
+      setView('profile');
+    }
+  }, [setView]);
+
   const currentCoverIndex = useStore((state: any) => state.currentCoverIndex);
 
   const activeUser = staffUser || user;
@@ -158,241 +162,6 @@ export default function EditProfileView() {
 
   const isAl = language === 'al';
   const isIt = language === 'it';
-
-  if (guestMode) {
-    const headerTitle = isAl ? "Llogari Vizitori" : isIt ? "Profilo Ospite" : "Guest Profile";
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
-      >
-
-        {/* Curved Gradient Header (Cover) */}
-        <motion.div
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 100, damping: 15 }}
-          style={{
-            position: 'relative',
-            height: '170px',
-            overflow: 'visible',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-            zIndex: 10,
-            background: '#0a0f1d'
-          }}
-        >
-          {/* Slideshow background images */}
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num, i) => (
-            <div
-              key={num}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: `linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(234, 88, 12, 0.85) 100%), url("/tirana_cover_${num}.png") center/cover no-repeat`,
-                opacity: currentCoverIndex === i ? 1 : 0,
-                transition: 'opacity 1.5s ease-in-out',
-                zIndex: 0
-              }}
-            />
-          ))}
-          {/* Navigation header with Back button */}
-          <div style={{
-            position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', left: '20px', right: '20px',
-            display: 'flex', alignItems: 'center', zIndex: 5
-          }}>
-            {/* Back Button */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setView('profile')}
-              style={{
-                width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff',
-                outline: 'none'
-              }}
-            >
-              <IonIcon icon={arrowBackOutline} style={{ fontSize: 18 }} />
-            </motion.button>
-
-            {/* Centered Title */}
-            <div style={{
-              position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none'
-            }}>
-              <span style={{
-                color: '#fff', fontSize: '18px', fontWeight: '800',
-                letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
-              }}>
-                {headerTitle}
-              </span>
-            </div>
-          </div>
-
-          {/* Organic Wave Bottom Divider */}
-          <svg viewBox="0 0 1440 220" preserveAspectRatio="none" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '45px', zIndex: 2 }}>
-            <path fill="var(--bg-dark)" d="M0,160 C 180,160 180,210 360,210 C 540,210 540,110 720,110 C 900,110 900,210 1080,210 C 1260,210 1260,160 1440,160 L 1440,220 L 0,220 Z"></path>
-          </svg>
-
-          {/* Overlapping Floating Avatar wrapper (for Guest "G" mock) */}
-          <motion.div
-            initial={{ scale: 0, opacity: 0, x: '-50%' }}
-            animate={{ scale: 1, opacity: 1, x: '-50%' }}
-            transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.15 }}
-            style={{
-              position: 'absolute',
-              bottom: '-45px',
-              left: '50%',
-              display: 'flex',
-              justifyContent: 'center',
-              zIndex: 11
-            }}
-          >
-            <div style={{
-              width: '90px',
-              height: '90px',
-              borderRadius: '50%',
-              border: '4px solid var(--bg-dark)',
-              background: '#111318',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '32px',
-              fontWeight: '800',
-              color: '#f59e0b',
-              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
-            }}>
-              G
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Content scroll area */}
-        <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px', marginTop: '60px', width: '100%' }}>
-
-          <motion.div
-            initial={{ y: 15, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 15, delay: 0.25 }}
-            style={{ textAlign: 'center', marginTop: '10px' }}
-          >
-            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 8px', color: '#fff' }}>
-              {isAl ? "Përshëndetje, Udhëtar!" : isIt ? "Ciao, Viaggiatore!" : "Hello, Traveler!"}
-            </h2>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: '1.6' }}>
-              {isAl
-                ? "Ju po e përdorni aplikacionin si Vizitor. Regjistrohuni falas për të zhbllokuar të gjitha funksionet."
-                : isIt
-                  ? "Stai utilizzando l'app come Ospite. Registrati gratuitamente per sbloccare tutte le funzioni."
-                  : "You are using the app as a Guest. Register for free to unlock all features."}
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.06)' }}
-          />
-
-          {/* Benefits list */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
-            style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}
-          >
-            <h3 style={{ fontSize: '12px', fontWeight: '800', color: '#f59e0b', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {isAl ? "Funksionet e Llogarisë:" : isIt ? "Funzionalità dell'Account:" : "Account Features:"}
-            </h3>
-            {[
-              {
-                icon: locationOutline,
-                title: isAl ? "Vendndodhje të Ruajtura" : isIt ? "Posizioni Salvate" : "Saved Locations",
-                desc: isAl ? "Ruaj adresat e Shtëpisë dhe Punës për kërkim të shpejtë." : isIt ? "Salva gli indirizzi di Casa e Lavoro per ricerche rapide." : "Save Home and Work addresses for quick routing."
-              },
-              {
-                icon: busOutline,
-                title: isAl ? "Gjurmim Real-Time" : isIt ? "Monitoraggio Real-Time" : "Real-Time Tracking",
-                desc: isAl ? "Ndiq autobusët live në hartë dhe parashiko mbërritjen." : isIt ? "Segui i bus live sulla mappa e previeni i tempi di attesa." : "Track live buses on the map and see ETAs."
-              },
-              {
-                icon: shieldCheckmarkOutline,
-                title: isAl ? "Sinkronizim i Sigurt" : isIt ? "Sincronizzazione Sicura" : "Secure Sync",
-                desc: isAl ? "Të dhënas tuaja ruhen të sigurta në çdo pajisje." : isIt ? "I tuoi dati sono protetti e sincronizzati su ogni dispositivo." : "Your preferences are securely synced across devices."
-              }
-            ].map((b, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + idx * 0.1, type: 'spring', stiffness: 120, damping: 15 }}
-                style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}
-              >
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  color: '#f59e0b'
-                }}>
-                  <IonIcon icon={b.icon} style={{ fontSize: 15 }} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#fff', margin: 0 }}>{b.title}</h4>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '2px 0 0', lineHeight: '1.4' }}>{b.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.3, delay: 0.65 }}
-            style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.06)', marginTop: '8px' }}
-          />
-
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 15, delay: 0.7 }}
-            style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}
-          >
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setGuestMode(false)}
-              style={{
-                width: '100%', height: '48px', borderRadius: '14px',
-                background: '#f59e0b', color: '#000', border: 'none',
-                fontWeight: '700', fontSize: '15px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 8px 24px rgba(245,158,11,0.3)', transition: 'all 0.2s'
-              }}
-            >
-              {isAl ? "Krijo Llogari ose Hyr" : isIt ? "Crea Account o Accedi" : "Create Account or Sign In"}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setView('profile')}
-              style={{
-                width: '100%', height: '48px', borderRadius: '14px',
-                background: 'rgba(255,255,255,0.04)', color: '#fff',
-                border: '1px solid rgba(255,255,255,0.08)',
-                fontWeight: '600', fontSize: '14px', cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {isAl ? "Kthehu mbrapa" : isIt ? "Torna indietro" : "Go Back"}
-            </motion.button>
-          </motion.div>
-
-        </div>
-      </motion.div>
-    );
-  }
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -808,7 +577,7 @@ export default function EditProfileView() {
             justifyContent: 'center',
             fontSize: '32px',
             fontWeight: '700',
-            color: guestMode ? '#f59e0b' : '#fff',
+            color: '#fff',
             overflow: 'hidden',
             position: 'relative',
             boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'

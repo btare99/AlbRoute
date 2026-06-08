@@ -906,15 +906,15 @@ const useStore = create<any>()(
   persist(
     (set, get) => ({
       // ── Auth ──
-      user: { name: 'Admin', email: 'admin@busal.al', avatar: null },
+      user: null,
       staffUser: null,
-      isAuthenticated: true,
+      isAuthenticated: false,
+      token: null,
       guestMode: true,
       setGuestMode: (val: boolean) => set({ guestMode: val }),
-      token: 'dev-token',
       login: (userData: any, token: any) => set({ user: userData, isAuthenticated: true, token, guestMode: false }),
-      loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, currentView: 'staff_dashboard', guestMode: false }),
-      logout: () => set({ user: null, staffUser: null, isAuthenticated: false, token: null, currentView: 'login' }),
+      loginAsStaff: (staffData: any) => set({ staffUser: staffData, isAuthenticated: true, user: null, guestMode: false, currentView: 'staff_dashboard' }),
+      logout: () => set({ user: null, staffUser: null, isAuthenticated: false, token: null, guestMode: true, currentView: 'map' }),
 
       // ── Cover Slideshow ──
       currentCoverIndex: 0,
@@ -1580,7 +1580,8 @@ const useStore = create<any>()(
           'searchQuery', 'tripFrom', 'tripTo', 'tripResult',
           'tripOptions', 'selectedTripOptionIndex', 'activeTrip',
           'selectedStop', 'activeRouteFilter', 'currentView', 'isSidebarOpen',
-          'currentCoverIndex'
+          'currentCoverIndex', 'showTripDetails', 'selectingOnMap',
+          'selectedBus', 'selectedRoute', 'watchId', 'guestMode'
         ].includes(key))
       ),
     }

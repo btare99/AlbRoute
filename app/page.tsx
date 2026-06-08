@@ -10,29 +10,26 @@ import { useSession } from "next-auth/react";
 export default function Page() {
   const { data: session, status } = useSession();
   const [hasMounted, setHasMounted] = useState(false);
-  const [hasInitializedGuest, setHasInitializedGuest] = useState(false);
-  
-  const moveBuses = useStore((s: any) => s.moveBuses);
-  const guestMode = useStore((s: any) => s.guestMode);
-  const staffUser = useStore((s: any) => s.staffUser);
-  const setGuestMode = useStore((s: any) => s.setGuestMode);
-  
-  const isAuthenticated = status === "authenticated" || guestMode || !!staffUser;
 
-  // Initial load Guest Mode initialization:
-  // If the user has no session (unauthenticated and not staff), force default to guestMode.
-  useEffect(() => {
-    if (status !== "loading" && !hasInitializedGuest) {
-      if (status === "unauthenticated" && !staffUser) {
-        setGuestMode(true);
-      }
-      setHasInitializedGuest(true);
-    }
-  }, [status, staffUser, hasInitializedGuest, setGuestMode]);
+  const moveBuses = useStore((s: any) => s.moveBuses);
+  const staffUser = useStore((s: any) => s.staffUser);
+  const guestMode = useStore((s: any) => s.guestMode);
+
+  const isAuthenticated = status === "authenticated" || !!staffUser || guestMode;
 
   // Initial Data Load & Polling
   useEffect(() => {
     setHasMounted(true);
+
+    // Reset transient UI state that might have been persisted or left in a bad state
+    useStore.setState({
+      selectedStop: null,
+      selectedBus: null,
+      selectedRoute: null,
+      selectingOnMap: null,
+      showTripDetails: false,
+      isSidebarOpen: false
+    });
 
     const loadInitialData = async () => {
       try {

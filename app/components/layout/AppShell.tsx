@@ -34,7 +34,7 @@ const BusAdminView = dynamic(() => import('../map/BusAdminView'), {
 });
 
 export default function AppShell() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const currentView = useStore((state: any) => state.currentView);
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
@@ -51,6 +51,20 @@ export default function AppShell() {
   // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
     const handleSession = async () => {
+      if (status === 'unauthenticated') {
+        const storeUser = useStore.getState().user;
+        const storeStaffUser = useStore.getState().staffUser;
+        if (storeUser || storeStaffUser) {
+          useStore.getState().logout();
+        }
+        return;
+      }
+      if (status === 'authenticated') {
+        const storeGuestMode = useStore.getState().guestMode;
+        if (storeGuestMode) {
+          useStore.setState({ guestMode: false });
+        }
+      }
       if (!session?.user) return;
       const u = session.user as any;
       if (u.role === 'user' || !u.role) {
@@ -104,7 +118,7 @@ export default function AppShell() {
     };
 
     handleSession();
-  }, [session, language, addNotification]);
+  }, [session, status, language, addNotification]);
 
   // ─── Cover Slideshow Interval (5 minutes) ───
   useEffect(() => {

@@ -12,7 +12,9 @@ export default function Sidebar() {
   const currentView = useStore((state: any) => state.currentView);
   const setView = useStore((state: any) => state.setView);
   const user = useStore((state: any) => state.user);
+  const staffUser = useStore((state: any) => state.staffUser);
   const logout = useStore((state: any) => state.logout);
+  const guestMode = useStore((state: any) => state.guestMode);
   const savedRoutes = useStore((state: any) => state.savedRoutes || []);
   const setSelectedStop = useStore((state: any) => state.setSelectedStop);
   const language = useStore((state: any) => state.language);
@@ -21,17 +23,10 @@ export default function Sidebar() {
 
   const t = translations[language] || translations.al;
 
-  const guestMode = useStore((state: any) => state.guestMode);
   const isAl = language === 'al';
   const isIt = language === 'it';
 
-  const activeUser = guestMode
-    ? {
-        name: isAl ? "Vizitor" : isIt ? "Ospite" : "Guest",
-        email: isAl ? "Hyni ose regjistrohuni" : isIt ? "Accedi o registrati" : "Sign in or register",
-        avatar: null
-      }
-    : user;
+  const activeUser = staffUser || user;
 
   const MENU = [
     { id: 'map', label: t.map, icon: mapOutline },
@@ -216,45 +211,47 @@ export default function Sidebar() {
 
         {/* User */}
         <div className="s-user">
-          <div className="s-avatar" style={{
-            background: guestMode ? 'rgba(245, 158, 11, 0.1)' : undefined,
-            border: guestMode ? '1px solid rgba(245, 158, 11, 0.2)' : undefined,
-            color: guestMode ? '#f59e0b' : undefined
-          }}>
-            {activeUser?.name?.charAt(0).toUpperCase() || 'V'}
-            {!guestMode && <div className="s-online" />}
+          <div className="s-avatar">
+            {guestMode ? (
+              <IonIcon icon={personOutline} style={{ fontSize: 16, color: '#fff' }} />
+            ) : (
+              activeUser?.name?.charAt(0).toUpperCase() || 'U'
+            )}
+            <div className="s-online" style={{ background: guestMode ? '#64748b' : '#10b981' }} />
           </div>
           <div className="s-user-info">
-            <span className="s-username">{activeUser?.name || 'Admin'}</span>
-            <span className="s-useremail">{activeUser?.email || 'admin@busal.al'}</span>
+            <span className="s-username">
+              {guestMode ? (language === 'al' ? 'Vizitor' : language === 'it' ? 'Ospite' : 'Guest') : (activeUser?.name || '')}
+            </span>
+            <span className="s-useremail">
+              {guestMode ? (language === 'al' ? 'Llogari Mysafire' : language === 'it' ? 'Account Ospite' : 'Guest Account') : (activeUser?.email || '')}
+            </span>
           </div>
-          <button
-            className="s-logout-btn"
-            onClick={() => {
-              useStore.getState().setGuestMode(false);
-              signOut({ callbackUrl: '/' });
-            }}
-            title={guestMode ? (isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register") : t.logout}
-            aria-label={guestMode ? (isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register") : t.logout}
-            style={guestMode ? {
-              color: '#10b981',
-              background: 'rgba(16, 185, 129, 0.1)'
-            } : {}}
-            onMouseEnter={(e) => {
-              if (guestMode) {
-                e.currentTarget.style.color = '#34d399';
-                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (guestMode) {
-                e.currentTarget.style.color = '#10b981';
-                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-              }
-            }}
-          >
-            <IonIcon icon={guestMode ? logInOutline : logOutOutline} style={{ fontSize: 15 }} />
-          </button>
+          {guestMode ? (
+            <button
+              className="s-login-btn"
+              onClick={() => {
+                useStore.getState().setGuestMode(false);
+                signOut({ redirect: false });
+              }}
+              title={language === 'al' ? 'Hyr' : 'Login'}
+              aria-label={language === 'al' ? 'Hyr' : 'Login'}
+            >
+              <IonIcon icon={logInOutline} style={{ fontSize: 16 }} />
+            </button>
+          ) : (
+            <button
+              className="s-logout-btn"
+              onClick={() => {
+                useStore.getState().logout();
+                signOut({ callbackUrl: '/' });
+              }}
+              title={t.logout}
+              aria-label={t.logout}
+            >
+              <IonIcon icon={logOutOutline} style={{ fontSize: 15 }} />
+            </button>
+          )}
         </div>
 
       </div>
@@ -416,6 +413,11 @@ export default function Sidebar() {
           padding: 5px; border-radius: 7px; display: flex; align-items: center; transition: 0.15s;
         }
         .s-logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .s-login-btn {
+          background: none; border: none; color: #10b981; cursor: pointer;
+          padding: 5px; border-radius: 7px; display: flex; align-items: center; transition: 0.15s;
+        }
+        .s-login-btn:hover { color: #34d399; background: rgba(16,185,129,0.1); }
       `}</style>
     </aside>
   );

@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { signOut } from 'next-auth/react';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
@@ -233,6 +235,9 @@ export default function MapView() {
   const setActiveTrip = useStore((s: any) => s.setActiveTrip);
   const setTripOriginCoords = useStore((s: any) => s.setTripOriginCoords);
   const setTripDestCoords = useStore((s: any) => s.setTripDestCoords);
+  const guestMode = useStore((s: any) => s.guestMode);
+  const setGuestMode = useStore((s: any) => s.setGuestMode);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const isUserLocation = useCallback((name: string, coords: any) => {
     if (!coords || !userLocation) return false;
@@ -562,7 +567,7 @@ export default function MapView() {
     // Default layers for tablet/mobile: Only stations
     if (typeof window !== 'undefined' && window.innerWidth <= 1180) {
       setShowRoutes(false);
-      setShowBuses(false);
+      setShowBuses(true);
       setShowStops(true);
     }
 
@@ -1727,8 +1732,12 @@ export default function MapView() {
                     if (tripFrom.trim().toLowerCase() === tripTo.trim().toLowerCase()) {
                       addNotification(t.trip_different_stations, 'error');
                     } else {
-                      await planTrip(tripFrom, tripTo);
-                      setIsSearching(false);
+                      if (guestMode) {
+                        setShowGuestModal(true);
+                      } else {
+                        await planTrip(tripFrom, tripTo);
+                        setIsSearching(false);
+                      }
                     }
                   }
                 }}
@@ -1743,12 +1752,16 @@ export default function MapView() {
                   if (tripFrom.trim().toLowerCase() === tripTo.trim().toLowerCase()) {
                     addNotification(t.trip_different_stations, 'error');
                   } else {
-                    setIsPlanning(true);
-                    setShowTripDetails(true);
-                    setTripSheetHeight('peek');
-                    await planTrip(tripFrom, tripTo);
-                    setIsPlanning(false);
-                    setIsSearching(false);
+                    if (guestMode) {
+                      setShowGuestModal(true);
+                    } else {
+                      setIsPlanning(true);
+                      setShowTripDetails(true);
+                      setTripSheetHeight('peek');
+                      await planTrip(tripFrom, tripTo);
+                      setIsPlanning(false);
+                      setIsSearching(false);
+                    }
                   }
                 }
               }}
@@ -3318,6 +3331,81 @@ export default function MapView() {
           </div>
         </>
       )}
+
+      {/* Guest Authentication Modal */}
+      <AnimatePresence>
+        {showGuestModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000,
+              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+            }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                width: '100%', maxWidth: '400px', background: '#111318', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                  {language === 'al' ? 'Kërkohet Llogari' : language === 'it' ? 'Registrazione Richiesta' : 'Account Required'}
+                </h3>
+                <button onClick={() => setShowGuestModal(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <IonIcon icon={closeOutline} style={{ fontSize: '20px' }} />
+                </button>
+              </div>
+
+              <div>
+                <p style={{ margin: '0 0 24px 0', fontSize: '15px', color: '#fff', fontWeight: '500', lineHeight: '1.5' }}>
+                  {language === 'al' 
+                    ? 'Planifikimi i udhëtimit është një tipar premium. Ju lutem hyni ose regjistrohuni për të vazhduar.' 
+                    : language === 'it'
+                    ? 'La pianificazione del viaggio è una funzionalità premium. Accedi o registrati per continuare.'
+                    : 'Trip planning is a premium feature. Please log in or sign up to continue.'}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      setShowGuestModal(false);
+                      setGuestMode(false);
+                      signOut({ redirect: false });
+                    }}
+                    style={{ 
+                      width: '100%', padding: '14px', background: '#ea580c', border: 'none', borderRadius: '14px', 
+                      color: '#fff', fontWeight: '700', fontSize: '15px', cursor: 'pointer', 
+                      boxShadow: '0 4px 12px rgba(234,88,12,0.3)', transition: 'all 0.2s' 
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f97316'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#ea580c'}
+                  >
+                    {language === 'al' ? 'Hyr ose Regjistrohu' : language === 'it' ? 'Accedi o Registrati' : 'Login or Sign Up'}
+                  </button>
+                  <button
+                    onClick={() => setShowGuestModal(false)}
+                    style={{ 
+                      width: '100%', padding: '14px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '14px', 
+                      color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: '15px', cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  >
+                    {language === 'al' ? 'Më vonë' : language === 'it' ? 'Più tardi' : 'Later'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx>{`
         .full-screen-map {

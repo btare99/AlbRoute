@@ -254,7 +254,6 @@ function LoginContent() {
   const [registrationPassword, setRegistrationPassword] = useState(''); // Store password for auto-login after verification
 
   const login = useStore((state: any) => state.login);
-  const setGuestMode = useStore((state: any) => state.setGuestMode);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language);
   const setLanguage = useStore((state: any) => state.setLanguage);
@@ -361,6 +360,9 @@ function LoginContent() {
         });
 
         if (!loginResult?.error) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('explicit_logout');
+          }
           addNotification(t.auth_account_created || 'Llogara u krijua me sukses!', 'success');
           window.location.reload();
         } else {
@@ -437,6 +439,9 @@ function LoginContent() {
         if (result?.error) {
           setError(t.auth_invalid_credentials);
         } else {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('explicit_logout');
+          }
           addNotification(t.auth_welcome, 'success');
           window.location.reload();
         }
@@ -491,6 +496,9 @@ function LoginContent() {
             setError(t.auth_invalid_credentials || 'Identifikimi dështoi.');
             setLoading(false);
           } else {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('explicit_logout');
+            }
             addNotification(t.auth_welcome, 'success');
             window.location.reload();
           }
@@ -498,6 +506,9 @@ function LoginContent() {
         } else {
           await Preferences.set({ key: 'google_login_pending', value: '1' });
         }
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('explicit_logout');
       }
       await signIn(provider.toLowerCase());
     } catch (err: any) {
@@ -918,18 +929,6 @@ function LoginContent() {
                 <button type="submit" className="white-capsule-btn" disabled={loading} style={{ marginTop: mode === 'register' ? '12px' : '0px' }}>
                   {loading ? '...' : (mode === 'login' ? t.auth_login : t.auth_register)} <IonIcon icon={arrowForwardOutline} style={{ fontSize: 18 }} />
                 </button>
-
-                {mode === 'login' && (
-                  <button 
-                    type="button" 
-                    onClick={() => setGuestMode(true)} 
-                    className="social-capsule-btn"
-                    style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
-                  >
-                    <IonIcon icon={personOutline} style={{ fontSize: 18 }} />
-                    {language === 'al' ? 'Hyni si Vizitor (Guest)' : language === 'it' ? 'Continua come Ospite' : 'Continue as Guest'}
-                  </button>
-                )}
               </form>
             )}
 
@@ -1086,9 +1085,6 @@ function LoginContent() {
                     Sign up
                   </button>
                 </p>
-                <button type="button" onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: '#f59e0b', fontWeight: '700', fontSize: '14px', padding: '4px', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fbbf24'} onMouseLeave={(e) => e.currentTarget.style.color = '#f59e0b'}>
-                  Vazhdo si Vizitor / Continue as Guest ➔
-                </button>
               </div>
             ) : mode === 'register' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
@@ -1098,17 +1094,42 @@ function LoginContent() {
                     Login
                   </button>
                 </p>
-                <button type="button" onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: '#f59e0b', fontWeight: '700', fontSize: '14px', padding: '4px', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fbbf24'} onMouseLeave={(e) => e.currentTarget.style.color = '#f59e0b'}>
-                  Vazhdo si Vizitor / Continue as Guest ➔
-                </button>
               </div>
             ) : null}
+
+            {/* Back to Guest Mode Link */}
+            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  useStore.getState().setGuestMode(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#10b981',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16,185,129,0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                {language === 'al' ? 'Vazhdo si vizitor' : language === 'it' ? 'Continua come ospite' : 'Continue as guest'}
+              </button>
+            </div>
 
             {/* Compact footer: location, version + links */}
             <p style={{ margin: '14px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.28)', display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
               <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Tirana, Shqipëri</span>
               <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
-              <button onClick={() => setGuestMode(true)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', cursor: 'pointer', padding: 0 }}>v1.0.6</button>
+              <span style={{ color: 'rgba(255,255,255,0.28)' }}>v1.0.6</span>
               <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
               <Link href="/privacy" className="hover-white-link" style={{ color: 'rgba(255,255,255,0.28)', textDecoration: 'underline' }}>Privacy</Link>
               <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>

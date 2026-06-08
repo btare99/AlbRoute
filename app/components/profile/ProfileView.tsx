@@ -26,6 +26,8 @@ export default function ProfileView() {
   const setView = useStore((state: any) => state.setView);
   const addNotification = useStore((state: any) => state.addNotification);
   const currentView = useStore((state: any) => state.currentView);
+  const guestMode = useStore((state: any) => state.guestMode);
+  const setGuestMode = useStore((state: any) => state.setGuestMode);
 
   const [avatarScale, setAvatarScale] = useState(currentView === 'profile' ? 0 : 1);
 
@@ -37,20 +39,12 @@ export default function ProfileView() {
     }
   }, [currentView]);
 
-  const guestMode = useStore((state: any) => state.guestMode);
-  const setGuestMode = useStore((state: any) => state.setGuestMode);
   const currentCoverIndex = useStore((state: any) => state.currentCoverIndex);
 
   const isAl = language === 'al';
   const isIt = language === 'it';
 
-  const activeUser = guestMode
-    ? {
-      name: isAl ? "Vizitor" : isIt ? "Ospite" : "Guest",
-      email: isAl ? "Hyni ose regjistrohuni" : isIt ? "Accedi o registrati" : "Sign in or register",
-      avatar: null
-    }
-    : (staffUser || user);
+  const activeUser = staffUser || user;
 
   const [activeModal, setActiveModal] = useState<'notifications' | 'help' | 'delete' | 'language' | 'logout' | 'about' | null>(null);
   const router = useRouter();
@@ -95,7 +89,7 @@ export default function ProfileView() {
   };
 
   const accountGroup = [
-    { icon: personOutline, label: isAl ? "Të dhënat personale" : isIt ? "Dati personali" : "Personal Data", sub: guestMode ? (isAl ? "Kliko për të parë përfitimet" : isIt ? "Clicca per vedere i vantaggi" : "Click to view benefits") : t.prof_edit_personal_info, action: () => setView('edit_profile') },
+    ...(!guestMode ? [{ icon: personOutline, label: isAl ? "Të dhënat personale" : isIt ? "Dati personali" : "Personal Data", sub: t.prof_edit_personal_info, action: () => setView('edit_profile') }] : []),
     { icon: globeOutline, label: t.prof_language, value: language === 'al' ? t.language_al : language === 'en' ? t.language_english : t.language_italiano, action: () => setActiveModal('language') },
     { icon: notificationsOutline, label: t.prof_notification_center, action: () => setActiveModal('notifications') },
   ];
@@ -103,8 +97,16 @@ export default function ProfileView() {
   const supportGroup = [
     { icon: helpCircleOutline, label: t.prof_help_center, action: () => setView('help') },
     { icon: shareOutline, label: t.share_app_label, action: handleShare },
-    guestMode
-      ? { icon: logInOutline, label: isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Sign In or Register", action: () => setGuestMode(false), isSuccessColor: true }
+    guestMode 
+      ? { 
+          icon: logInOutline, 
+          label: isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Login or Sign Up", 
+          action: () => {
+            setGuestMode(false);
+            signOut({ redirect: false });
+          }, 
+          isSuccess: true 
+        }
       : { icon: logOutOutline, label: t.logout, action: () => setActiveModal('logout'), isDestructive: true },
   ];
 
@@ -199,12 +201,14 @@ export default function ProfileView() {
             justifyContent: 'center',
             fontSize: '32px',
             fontWeight: '700',
-            color: guestMode ? '#f59e0b' : '#fff',
+            color: '#fff',
             overflow: 'hidden',
             boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
           }}>
             {activeUser?.avatar ? (
               <img src={activeUser.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
+            ) : guestMode ? (
+              <IonIcon icon={personOutline} style={{ fontSize: '40px', color: '#94a3b8' }} />
             ) : (
               activeUser?.name?.charAt(0) || 'U'
             )}
@@ -220,11 +224,17 @@ export default function ProfileView() {
         style={{ textAlign: 'center', marginTop: '55px', marginBottom: '24px', padding: '0 20px' }}
       >
         <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 4px 0' }}>
-          {activeUser?.name || 'Përdorues'}
+          {guestMode ? (language === 'al' ? 'Vizitor' : language === 'it' ? 'Ospite' : 'Guest') : (activeUser?.name || 'Përdorues')}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: 'rgba(255, 255, 255, 0.4)', fontSize: '13px' }}>
-          <IonIcon icon={locationOutline} style={{ fontSize: '14px', color: '#f59e0b' }} />
-          <span>{isAl ? "Tiranë, Shqipëri" : "Tirana, Albania"}</span>
+          {guestMode ? (
+            <span>{language === 'al' ? 'Llogari Mysafire' : language === 'it' ? 'Account Ospite' : 'Guest Account'}</span>
+          ) : (
+            <>
+              <IonIcon icon={locationOutline} style={{ fontSize: '14px', color: '#f59e0b' }} />
+              <span>{isAl ? "Tiranë, Shqipëri" : "Tirana, Albania"}</span>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -317,20 +327,20 @@ export default function ProfileView() {
               >
                 <div style={{
                   width: '38px', height: '38px', borderRadius: '11px',
-                  background: item.isDestructive ? 'rgba(239,68,68,0.08)' : item.isSuccessColor ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)',
-                  border: item.isDestructive ? '1px solid rgba(239,68,68,0.15)' : item.isSuccessColor ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                  background: item.isDestructive ? 'rgba(239,68,68,0.08)' : (item as any).isSuccess ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)',
+                  border: item.isDestructive ? '1px solid rgba(239,68,68,0.15)' : (item as any).isSuccess ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: item.isDestructive ? '#ef4444' : item.isSuccessColor ? '#10b981' : '#f59e0b',
+                  color: item.isDestructive ? '#ef4444' : (item as any).isSuccess ? '#10b981' : '#f59e0b',
                   flexShrink: 0
                 }}>
                   <IonIcon icon={item.icon} style={{ fontSize: '18px' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: item.isDestructive ? '#ef4444' : item.isSuccessColor ? '#10b981' : '#fff' }}>
+                  <span style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: item.isDestructive ? '#ef4444' : (item as any).isSuccess ? '#10b981' : '#fff' }}>
                     {item.label}
                   </span>
                 </div>
-                <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: item.isDestructive ? 'rgba(239,68,68,0.2)' : item.isSuccessColor ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.15)' }} />
+                <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: item.isDestructive ? 'rgba(239,68,68,0.2)' : (item as any).isSuccess ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.15)' }} />
               </button>
             ))}
           </div>
@@ -418,7 +428,7 @@ export default function ProfileView() {
                     </button>
                     <button
                       onClick={() => {
-                        useStore.getState().setGuestMode(false);
+                        useStore.getState().logout();
                         signOut({ callbackUrl: '/' });
                         setActiveModal(null);
                       }}
