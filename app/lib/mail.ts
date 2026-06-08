@@ -11,8 +11,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
   tls: {
-    // FIX #4: rejectUnauthorized vetëm në production — largojmë TLS failures në dev
-    rejectUnauthorized: process.env.NODE_ENV === 'production',
+    rejectUnauthorized: false,
   },
   // FIX #4: debug dhe logger vetëm në development, jo në production
   debug: process.env.NODE_ENV !== 'production',
