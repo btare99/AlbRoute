@@ -659,7 +659,7 @@ function LoginContent() {
           background-size: 24px 24px;
           background-position: center;
           color: #ffffff;
-          padding: 32px 24px;
+          padding: calc(36px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px));
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
@@ -675,6 +675,7 @@ function LoginContent() {
             border: 4px solid #1c1c1f;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
             margin: 20px 0;
+            padding: 40px 32px !important;
           }
         }
 
@@ -826,9 +827,22 @@ function LoginContent() {
                 padding: '8px 0', minWidth: 'auto', minHeight: 'auto'
               }}
             >
-              <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} /> Back
+              <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} /> {language === 'al' ? 'Kthehu' : language === 'it' ? 'Indietro' : 'Back'}
             </button>
-          ) : <div />}
+          ) : (
+            <button 
+              type="button" 
+              onClick={() => useStore.getState().setGuestMode(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                color: '#71717a', background: 'none', border: 'none',
+                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                padding: '8px 0', minWidth: 'auto', minHeight: 'auto'
+              }}
+            >
+              <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} /> {language === 'al' ? 'Harta' : language === 'it' ? 'Mappa' : 'Map'}
+            </button>
+          )}
 
           <div style={{ display: 'flex', gap: '2px', background: '#121214', padding: '3px', borderRadius: '8px', border: '1px solid #27272a' }}>
             {['al', 'en', 'it'].map(lang => (
