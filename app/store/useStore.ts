@@ -136,9 +136,44 @@ const getLegCoords = (leg: any): [number, number][] => {
 
 /** Get full shape for a route direction */
 const getFullShapeCoords = (routeId: string, direction: 'forward' | 'return'): [number, number][] => {
+  const route = BUS_ROUTES.find((r: any) => r.id === routeId);
+  if (!route) return [];
+
+  const stopIds = direction === 'forward' ? route.stops : (route.returnStops || route.stops);
+  const shape0 = (BUS_SHAPES[`${routeId}_0` as keyof typeof BUS_SHAPES] || []) as [number, number][];
+  const shape1 = (BUS_SHAPES[`${routeId}_1` as keyof typeof BUS_SHAPES] || []) as [number, number][];
+
+  if (!stopIds || stopIds.length < 2) {
+    return shape0;
+  }
+
+  const startStop = BUS_STOPS.find((s: any) => s.id === stopIds[0]);
+  const endStop = BUS_STOPS.find((s: any) => s.id === stopIds[stopIds.length - 1]);
+  if (!startStop || !endStop) {
+    return shape0;
+  }
+
+  let is0Forward = false;
+  if (shape0.length >= 2) {
+    const pStart = getProgressOnPolyline([startStop.lat, startStop.lng], shape0);
+    const pEnd = getProgressOnPolyline([endStop.lat, endStop.lng], shape0);
+    if (pStart < pEnd) is0Forward = true;
+  }
+
+  let is1Forward = false;
+  if (shape1.length >= 2) {
+    const pStart = getProgressOnPolyline([startStop.lat, startStop.lng], shape1);
+    const pEnd = getProgressOnPolyline([endStop.lat, endStop.lng], shape1);
+    if (pStart < pEnd) is1Forward = true;
+  }
+
+  if (is1Forward) return shape1;
+  if (is0Forward) return shape0;
+
+  // Fallback
   const shapeKey = direction === 'forward' ? `${routeId}_0` : `${routeId}_1`;
-  let coords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
-  if (coords.length === 0 && direction === 'forward') coords = (BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+  let coords: [number, number][] = (BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || []) as [number, number][];
+  if (coords.length === 0 && direction === 'forward') coords = ((BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] || []) as [number, number][]);
   return coords;
 };
 
