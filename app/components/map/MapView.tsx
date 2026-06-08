@@ -803,6 +803,43 @@ export default function MapView() {
     return () => { map.off('click', onMapClick); };
   }, [mapReady, setSelectedStop, selectingOnMap, language, setTripFrom, setTripTo, setIsSearching]);
 
+  // ── CLOSE PANELS ON CLICK OUTSIDE ──
+  useEffect(() => {
+    if (!selectedStop && !infoPanel) return;
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Do not close if the user clicked inside the stop info card or bus info card
+      if (target.closest('.stop-info-card') || target.closest('.bus-info-card')) {
+        return;
+      }
+
+      // Do not close if the click is on a map marker or cluster
+      if (
+        target.closest('.leaflet-marker-icon') || 
+        target.closest('.leaflet-interactive') ||
+        target.closest('.marker-cluster')
+      ) {
+        return;
+      }
+
+      setSelectedStop(null);
+      setInfoPanel(null);
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [selectedStop, infoPanel, setSelectedStop, setInfoPanel]);
+
   // ── CUSTOM PIN MARKERS FOR SELECTED LOCATION (WHEN NO ACTIVE TRIP IS SHOWN) ──
   useEffect(() => {
     const map = mapInstanceRef.current;
