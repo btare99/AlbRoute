@@ -9,6 +9,19 @@ const nextDir = path.join(__dirname, '..', '.next');
 
 console.log('--- Static Build Helper ---');
 
+// Detect if we are building on Vercel
+if (process.env.VERCEL === '1') {
+  console.log('Detected Vercel environment. Building standard dynamic web app with API routes...');
+  try {
+    execSync('next build', { stdio: 'inherit' });
+    console.log('Vercel build completed successfully.');
+  } catch (error) {
+    console.error('Vercel build failed:', error.message);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 // Clean .next cache folder to avoid type validation errors on moved api files
 if (fs.existsSync(nextDir)) {
   console.log('Cleaning .next cache directory...');
