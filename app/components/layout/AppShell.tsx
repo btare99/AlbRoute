@@ -318,44 +318,38 @@ export default function AppShell() {
 
           .main-area {
             height: 100%;
-            padding-bottom: calc(96px + env(safe-area-inset-bottom, 12px));
+            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
           }
 
           .main-area.android-safe {
-            padding-bottom: calc(112px + env(safe-area-inset-bottom, 24px));
+            padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
           }
 
-          /* Floating pill nav — Liquid Glass Style */
+          /* Standard full-width bottom navigation */
           .bottom-nav {
             display: flex;
             align-items: center;
             justify-content: space-around;
 
             position: fixed;
-            bottom: calc(20px + env(safe-area-inset-bottom, 12px));
-            left: 16px;
-            right: 16px;
-            height: 64px;
-            padding: 0 6px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(60px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
 
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
-            backdrop-filter: blur(28px) saturate(190%);
-            -webkit-backdrop-filter: blur(28px) saturate(190%);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 22px;
-            box-shadow:
-              0 12px 32px rgba(0, 0, 0, 0.5),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            background: #070b15;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
             z-index: 2000;
-            transition: bottom 0.3s ease;
           }
 
           .bottom-nav.android-safe {
-            /* Extra safety margin on Android devices to clear system navigation button overlaps */
-            bottom: calc(32px + env(safe-area-inset-bottom, 20px));
+            /* Extra safety margin on Android devices */
+            height: calc(72px + env(safe-area-inset-bottom, 8px));
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 8px));
           }
 
-          /* ── Individual tab button with internal glass capsule ─────────────── */
+          /* ── Individual tab button ─────────────── */
           .nav-btn {
             display: flex;
             flex-direction: column;
@@ -364,40 +358,15 @@ export default function AppShell() {
             gap: 2px;
             flex: 1;
             padding: 6px 0;
-            min-height: 48px;
-            min-width: 44px;
+            height: 100%;
 
             background: none;
             border: none;
             cursor: pointer;
-            border-radius: 16px;
-            transition: color 0.25s ease;
+            transition: color 0.2s ease;
             color: rgba(255, 255, 255, 0.45);
             -webkit-tap-highlight-color: transparent;
             position: relative;
-            z-index: 1;
-          }
-
-          .nav-btn::before {
-            content: '';
-            position: absolute;
-            top: 4px;
-            bottom: 4px;
-            left: 6px;
-            right: 6px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            z-index: -1;
-            opacity: 0;
-            transform: scale(0.85);
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
-          }
-
-          .nav-btn.active::before {
-            opacity: 1;
-            transform: scale(1);
           }
 
           .nav-btn:active {
@@ -412,11 +381,6 @@ export default function AppShell() {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-          }
-
-          .nav-btn.active .nav-icon {
-            transform: translateY(-1px) scale(1.05);
           }
 
           /* ── Label ─────────────────────────────── */
@@ -432,38 +396,25 @@ export default function AppShell() {
         /* ── Tablet-specific refinements (iPad/Android Tablets) ── */
         @media (min-width: 901px) and (max-width: 1180px) {
           .main-area {
-            padding-bottom: calc(112px + env(safe-area-inset-bottom, 12px));
+            padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
           }
 
           .main-area.android-safe {
-            padding-bottom: calc(128px + env(safe-area-inset-bottom, 24px));
+            padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
           }
 
           .bottom-nav {
-            left: 32px;
-            right: 32px;
-            bottom: calc(24px + env(safe-area-inset-bottom, 12px));
-            height: 72px;
-            padding: 0 16px;
-            border-radius: 28px;
+            height: calc(64px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
           }
 
           .bottom-nav.android-safe {
-            bottom: calc(36px + env(safe-area-inset-bottom, 20px));
+            height: calc(76px + env(safe-area-inset-bottom, 8px));
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 8px));
           }
 
           .nav-btn {
-            padding: 10px 0;
-            min-height: 56px;
-            min-width: 60px;
-          }
-
-          .nav-btn::before {
-            top: 6px;
-            bottom: 6px;
-            left: 12px;
-            right: 12px;
-            border-radius: 18px;
+            padding: 8px 0;
           }
 
           .nav-label {
