@@ -8,7 +8,7 @@ import { Capacitor } from "@capacitor/core";
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
   const originalFetch = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.111:3000'; // Fallback to local PC IP for testing
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.102:3000'; // Fallback to local PC IP for testing
     const localhostBase = 'http://localhost:3000';
     
     let finalInit = init;

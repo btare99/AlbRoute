@@ -2,7 +2,7 @@
 import { IonIcon } from '@/app/components/common/IonIcon';
 import { mapOutline, busOutline, ticketOutline, starOutline, personOutline, closeOutline, searchOutline, chevronForwardOutline, globeOutline, logOutOutline, settingsOutline, logInOutline } from 'ionicons/icons';
 import { useState, Fragment } from 'react';
-import { signOut } from "next-auth/react";
+import { safeSignOut } from '../../lib/auth-helpers';
 import useStore, { BUS_STOPS } from '../../store/useStore';
 import { translations } from '../../store/translations';
 
@@ -232,7 +232,7 @@ export default function Sidebar() {
               className="s-login-btn"
               onClick={() => {
                 useStore.getState().setGuestMode(false);
-                signOut({ redirect: false });
+                safeSignOut();
               }}
               title={language === 'al' ? 'Hyr' : 'Login'}
               aria-label={language === 'al' ? 'Hyr' : 'Login'}
@@ -244,7 +244,7 @@ export default function Sidebar() {
               className="s-logout-btn"
               onClick={() => {
                 useStore.getState().logout();
-                signOut({ callbackUrl: '/' });
+                safeSignOut();
               }}
               title={t.logout}
               aria-label={t.logout}

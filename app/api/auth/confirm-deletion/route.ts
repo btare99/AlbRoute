@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '../../../lib/mongodb';
+import { db } from '../../../lib/firebaseAdmin';
 import { sendEmail } from '../../../lib/mail';
-import { getUserModel } from '../../../lib/dynamicDb';
 import { auth } from '../../../auth';
 
 const DELETION_GRACE_DAYS = 30;
@@ -12,7 +11,7 @@ function gracePeriodMs() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth() as any;
+    const session = await auth();
     console.log('[confirm-deletion] Session:', session?.user?.email);
     
     if (!session?.user) {
@@ -43,41 +42,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await connectDB();
-    const User = getUserModel();
     const emailStr = email.toLowerCase().trim();
+    const usersRef = db.collection('users');
 
-    // ─── FIX #1: Find user and verify code ──────────────────────────────────────
-    const user = await User.findOne({
-      email: emailStr,
-      deletionConfirmationCode: code,
-      deletionConfirmationExpires: { $gt: new Date() }
-    });
+    // Find user and verify code
+    const userSnapshot = await usersRef
+      .where('email', '==', emailStr)
+      .where('deletionConfirmationCode', '==', code)
+      .limit(1)
+      .get();
 
-    if (!user) {
+    if (userSnapshot.empty) {
       return NextResponse.json(
         { message: 'Invalid or expired confirmation code' },
         { status: 400 }
       );
     }
 
-    // ─── FIX #2: Calculate deletion date ────────────────────────────────────────
+    const doc = userSnapshot.docs[0];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = doc.data() as Record<string, any>;
+    const nowIso = new Date().toISOString();
+
+    if (!user.deletionConfirmationExpires || user.deletionConfirmationExpires <= nowIso) {
+      return NextResponse.json(
+        { message: 'Invalid or expired confirmation code' },
+        { status: 400 }
+      );
+    }
+
+    // Calculate deletion date
     const scheduledDeletion = new Date(Date.now() + gracePeriodMs());
     const scheduledDeletionLabel = scheduledDeletion.toLocaleDateString();
 
-    // ─── FIX #3: Mark user for deletion ─────────────────────────────────────────
-    await User.findByIdAndUpdate(
-      user._id,
-      {
-        isMarkedForDeletion: true,
-        scheduledDeletionDate: scheduledDeletion,
-        deletionConfirmationCode: null,
-        deletionConfirmationExpires: null,
-      },
-      { new: true }
-    );
+    // Mark user for deletion
+    await doc.ref.update({
+      isMarkedForDeletion: true,
+      scheduledDeletionDate: scheduledDeletion.toISOString(),
+      deletionConfirmationCode: null,
+      deletionConfirmationExpires: null,
+    });
 
-    // ─── FIX #4: Send confirmation email ────────────────────────────────────────
+    // Send confirmation email
     await sendEmail({
       to: emailStr,
       subject: 'Account Deletion Confirmed - Urbani',

@@ -50,7 +50,8 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
       exit={{ opacity: 0 }}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(30px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '24px',
       }}
@@ -61,9 +62,12 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
         exit={{ scale: 0.9, y: 15 }}
         transition={{ type: 'spring', stiffness: 160, damping: 18 }}
         style={{
-          background: '#111', border: '0.5px solid rgba(255,255,255,0.1)',
+          background: 'rgba(20, 25, 40, 0.65)', border: '0.5px solid rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(40px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(190%)',
           borderRadius: '20px', padding: '24px', maxWidth: '320px', width: '100%',
           display: 'flex', flexDirection: 'column', gap: '16px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -352,11 +356,13 @@ export default function UserFavorites() {
           <motion.div 
             variants={itemVariants}
             style={{
-              background: 'linear-gradient(145deg, rgba(245, 158, 11, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              background: 'linear-gradient(145deg, rgba(245, 158, 11, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '24px',
               padding: '20px',
-              boxShadow: '0 12px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',

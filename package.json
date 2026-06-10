@@ -9,7 +9,8 @@
     "lint": "eslint",
     "static-build": "node scripts/build-static.js",
     "cap:sync": "npx cap sync",
-    "cap:open": "npx cap open android"
+    "cap:open": "npx cap open android",
+    "gps-receiver": "node scripts/gps-receiver.js"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.2",
@@ -37,6 +38,7 @@
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "face-api.js": "^0.22.2",
+    "firebase-admin": "^14.0.0",
     "framer-motion": "^12.38.0",
     "ionicons": "^8.0.13",
     "leaflet": "^1.9.4",

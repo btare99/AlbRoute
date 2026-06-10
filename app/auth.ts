@@ -3,14 +3,13 @@ import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
-import connectDB from "./lib/mongodb";
-import { getUserModel, getOperatorModel } from "./lib/dynamicDb";
-import { sendWelcomeEmail } from "./lib/mail"; // ✅ import statik
+import { db } from "./lib/firebaseAdmin";
+import { sendWelcomeEmail } from "./lib/mail";
 
 // ── Tipet ─────────────────────────────────────────────────────────────────────
 
 interface DbUser {
-  _id: unknown;
+  _id: string;
   name?: string;
   email: string;
   password?: string;
@@ -18,6 +17,7 @@ interface DbUser {
   phone?: string;
   savedLocations?: { home: string; work: string };
   travelHistory?: unknown[];
+  lastLogin?: string;
 }
 
 interface AuthUser {
@@ -42,7 +42,7 @@ interface ExtendedToken extends JWT {
 
 function buildAuthUser(dbUser: DbUser, role: string): AuthUser {
   return {
-    id: String(dbUser._id),
+    id: dbUser._id,
     name: dbUser.name ?? "",
     email: dbUser.email,
     role,
@@ -94,24 +94,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             const email = payload.email?.toLowerCase().trim();
             if (!email) return null;
 
-            await connectDB();
-            const UserModel = getUserModel();
-            let dbUser = await UserModel.findOne({ email }).lean<DbUser>();
-            let role = "user";
+            const usersRef = db.collection("users");
+            const snapshot = await usersRef.where("email", "==", email).limit(1).get();
+            let dbUser: DbUser;
+            let userId = "";
+            const role = "user";
 
-            if (!dbUser) {
-              const created = await UserModel.create({
+            if (snapshot.empty) {
+              const userDocRef = usersRef.doc();
+              userId = userDocRef.id;
+              dbUser = {
+                _id: userId,
                 name: payload.name ?? "",
                 email,
                 savedLocations: { home: "", work: "" },
                 travelHistory: [],
-                lastLogin: new Date(),
-              });
-              dbUser = created.toObject() as DbUser;
+                lastLogin: new Date().toISOString(),
+              };
+              await userDocRef.set(dbUser);
             } else {
-              await UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() }).exec().catch(() => {});
+              const doc = snapshot.docs[0];
+              userId = doc.id;
+              dbUser = { ...doc.data(), _id: userId } as DbUser;
+              await doc.ref.update({ lastLogin: new Date().toISOString() });
             }
-
             return buildAuthUser(dbUser, role);
           } catch (err) {
             console.error("[Auth] Google native authorize error:", err);
@@ -122,33 +128,63 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = (credentials?.email as string | undefined)?.toLowerCase().trim();
         const password = credentials?.password as string | undefined;
 
-        if (!email || !password) return null;
+        console.log("[AuthDebug] Authorize called with email:", email, "password provided:", !!password);
+
+        if (!email || !password) {
+          console.log("[AuthDebug] Missing email or password");
+          return null;
+        }
 
         try {
-          await connectDB();
-
-          const UserModel = getUserModel();
-          const OperatorModel = getOperatorModel();
-
-          let dbUser = await UserModel.findOne({ email }).lean<DbUser>();
+          const usersRef = db.collection("users");
+          const userSnapshot = await usersRef.where("email", "==", email).limit(1).get();
+          let dbUser: DbUser | null = null;
+          let userId = "";
           let role = "user";
 
-          if (!dbUser) {
-            dbUser = await OperatorModel.findOne({ email }).lean<DbUser>();
-            if (dbUser) role = dbUser.role ?? "operator";
+          if (!userSnapshot.empty) {
+            const doc = userSnapshot.docs[0];
+            userId = doc.id;
+            dbUser = { ...doc.data(), _id: userId } as DbUser;
+            console.log("[AuthDebug] Found user in 'users' collection. ID:", userId);
+          } else {
+            console.log("[AuthDebug] User not found in 'users', checking 'operators'...");
+            // Check operators
+            const operatorsRef = db.collection("operators");
+            const opSnapshot = await operatorsRef.where("email", "==", email).limit(1).get();
+            if (!opSnapshot.empty) {
+              const doc = opSnapshot.docs[0];
+              userId = doc.id;
+              dbUser = { ...doc.data(), _id: userId } as DbUser;
+              role = dbUser.role ?? "operator";
+              console.log("[AuthDebug] Found user in 'operators' collection. ID:", userId, "role:", role);
+            } else {
+              console.log("[AuthDebug] User not found in 'operators' either.");
+            }
           }
 
-          if (!dbUser?.password) return null;
+          if (!dbUser) {
+            console.log("[AuthDebug] No user found in either collection for email:", email);
+            return null;
+          }
 
+          if (!dbUser.password) {
+            console.log("[AuthDebug] User has no password set in database.");
+            return null;
+          }
+
+          console.log("[AuthDebug] Comparing passwords...");
           const passwordMatch = await bcrypt.compare(password, dbUser.password);
+          console.log("[AuthDebug] Password match result:", passwordMatch);
           if (!passwordMatch) return null;
 
           // Background update — non-blocking
-          UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() })
-            .exec()
-            .catch(() => { });
+          const targetRef = db.collection(role === "user" ? "users" : "operators").doc(userId);
+          targetRef.update({ lastLogin: new Date().toISOString() }).catch(() => {});
 
-          return buildAuthUser(dbUser, role);
+          const authUser = buildAuthUser(dbUser, role);
+          console.log("[AuthDebug] Authorization successful. Returning user:", authUser);
+          return authUser;
         } catch (err) {
           console.error("[Auth] Credentials authorize error:", err);
           return null;
@@ -160,7 +196,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
 
   callbacks: {
-    async jwt({ token, user, account }: { token: JWT; user?: any; account?: any }) {
+    async jwt({ token, user, account }: { token: JWT; user?: User; account?: Account | null }) {
       const extendedToken = token as ExtendedToken;
       if (user) {
         const authUser = user as unknown as AuthUser;
@@ -171,29 +207,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Google — sync ose krijo user në DB
         if (account?.provider === "google") {
           try {
-            await connectDB();
-            const UserModel = getUserModel();
+            const usersRef = db.collection("users");
+            const snapshot = await usersRef.where("email", "==", email).limit(1).get();
+            let dbUser: DbUser | null = null;
+            let userId = "";
 
-            let dbUser = await UserModel.findOne({ email }).lean<DbUser>();
-
-            if (!dbUser) {
-              const created = await UserModel.create({
+            if (snapshot.empty) {
+              const userDocRef = usersRef.doc();
+              userId = userDocRef.id;
+              dbUser = {
+                _id: userId,
                 name: user.name ?? "",
                 email,
                 savedLocations: { home: "", work: "" },
                 travelHistory: [],
-                lastLogin: new Date(),
-              });
-              dbUser = created.toObject() as DbUser;
+                lastLogin: new Date().toISOString(),
+              };
+              await userDocRef.set(dbUser);
             } else {
-              UserModel.findByIdAndUpdate(dbUser._id, { lastLogin: new Date() })
-                .exec()
-                .catch(() => { });
+              const doc = snapshot.docs[0];
+              userId = doc.id;
+              dbUser = { ...doc.data(), _id: userId } as DbUser;
+              await doc.ref.update({ lastLogin: new Date().toISOString() });
             }
 
-            extendedToken.id = String(dbUser!._id);
-            extendedToken.phone = dbUser!.phone ?? "";
-            extendedToken.role = dbUser!.role ?? "user";
+            extendedToken.id = userId;
+            extendedToken.phone = dbUser.phone ?? "";
+            extendedToken.role = dbUser.role ?? "user";
           } catch (err) {
             console.error("[Auth] Google sync error:", err);
           }
@@ -208,6 +248,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: JWT }) {
       const extendedToken = token as ExtendedToken;
       session.user = {

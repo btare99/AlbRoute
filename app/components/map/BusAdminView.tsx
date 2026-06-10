@@ -21,6 +21,10 @@ interface BusLocation {
   direction?: 'forward' | 'return';
   currentPointIdx?: number;
   updatedAt?: string;
+  licensePlate?: string;
+  busNumber?: string;
+  model?: string;
+  isRealGPS?: boolean;
 }
 
 // Load map dynamically to prevent SSR window reference issues
@@ -52,15 +56,28 @@ export default function BusAdminView() {
   // Form Fields
   const [busId, setBusId] = useState('Bus-01');
   const [selectedRouteId, setSelectedRouteId] = useState(BUS_ROUTES[0]?.id || '');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [placementCoords, setPlacementCoords] = useState<{ lat: number; lng: number } | null>(null);
+  
+  // Custom Metadata Fields
+  const [licensePlate, setLicensePlate] = useState('');
+  const [busNumber, setBusNumber] = useState('');
+  const [model, setModel] = useState('');
 
-  // Simulation states
-  const [simulatingBuses, setSimulatingBuses] = useState<Record<string, boolean>>({});
-  const simulationIntervalsRef = useRef<Record<string, any>>({});
+  // Auto-populate form fields when typing or selecting a bus ID that exists
+  useEffect(() => {
+    const existingBus = buses[busId.trim()];
+    if (existingBus) {
+      setSelectedRouteId(existingBus.routeId || '');
+      setLicensePlate(existingBus.licensePlate || '');
+      setBusNumber(existingBus.busNumber || '');
+      setModel(existingBus.model || '');
+    } else {
+      setLicensePlate('');
+      setBusNumber('');
+      setModel('');
+    }
+  }, [busId, buses]);
 
-  // Fetch all buses from MongoDB on mount
+  // Fetch all buses from database on mount
   const fetchBusesFromDb = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/buses');
@@ -85,8 +102,6 @@ export default function BusAdminView() {
 
     return () => {
       clearInterval(interval);
-      // Clear all simulations on unmount
-      Object.values(simulationIntervalsRef.current).forEach((simInterval) => clearInterval(simInterval));
     };
   }, [fetchBusesFromDb]);
 
@@ -95,56 +110,46 @@ export default function BusAdminView() {
     setTimeout(() => setMessage(null), 4000);
   };
 
-  // Handle map click
-  const handleMapClick = useCallback((lat: number, lng: number) => {
-    setLatitude(lat.toFixed(6));
-    setLongitude(lng.toFixed(6));
-    setPlacementCoords({ lat, lng });
-  }, []);
-
-  // Save/Update Bus in MongoDB
+  // Save/Update Bus in Database
   const handleSaveBus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!busId.trim()) {
       showStatus('Please enter a Bus ID', 'error');
       return;
     }
-    if (!latitude || !longitude) {
-      showStatus('Please click on the map or input coordinates', 'error');
-      return;
-    }
 
-    const latNum = parseFloat(latitude);
-    const lngNum = parseFloat(longitude);
-    if (isNaN(latNum) || isNaN(lngNum)) {
-      showStatus('Latitude and Longitude must be valid numbers', 'error');
-      return;
-    }
-
+    const exists = !!buses[busId.trim()];
     const route = BUS_ROUTES.find((r: any) => r.id === selectedRouteId);
     if (!route) {
       showStatus('Selected route is invalid', 'error');
       return;
     }
 
-    const busPayload = {
+    const busPayload: any = {
       id: busId.trim(),
       routeId: selectedRouteId,
       routeName: route.name,
       routeColor: route.color || '#3b82f6',
-      lat: latNum,
-      lng: lngNum,
       status: 'Aktiv',
       passengerLoad: 15 + Math.floor(Math.random() * 20),
       speed: 30 + Math.floor(Math.random() * 15),
       nextStop: 'Qendër',
       direction: 'forward' as const,
-      currentPointIdx: 0
+      currentPointIdx: 0,
+      licensePlate: licensePlate.trim(),
+      busNumber: busNumber.trim(),
+      model: model.trim(),
+      isRealGPS: true
     };
+
+    // Only set standard center coordinates as temporary fallback when registering a brand new bus
+    if (!exists) {
+      busPayload.lat = 41.3275;
+      busPayload.lng = 19.8187;
+    }
 
     setLoading(true);
     try {
-      const exists = !!buses[busPayload.id];
       const endpoint = '/api/admin/buses';
       const method = exists ? 'PUT' : 'POST';
 
@@ -155,8 +160,7 @@ export default function BusAdminView() {
       });
 
       if (res.ok) {
-        showStatus(`Bus ${busPayload.id} saved to MongoDB successfully!`, 'success');
-        setPlacementCoords(null);
+        showStatus(`Bus ${busPayload.id} saved successfully!`, 'success');
         fetchBusesFromDb();
       } else {
         const err = await res.json();
@@ -169,7 +173,7 @@ export default function BusAdminView() {
     }
   };
 
-  // Delete Bus from MongoDB
+  // Delete Bus from Database
   const handleDeleteBus = async (targetBusId: string) => {
     if (!confirm(`Are you sure you want to delete ${targetBusId} from database?`)) return;
 
@@ -178,19 +182,7 @@ export default function BusAdminView() {
         method: 'DELETE'
       });
       if (res.ok) {
-        showStatus(`Bus ${targetBusId} deleted from MongoDB`, 'success');
-        
-        // Stop simulation if running
-        if (simulationIntervalsRef.current[targetBusId]) {
-          clearInterval(simulationIntervalsRef.current[targetBusId]);
-          delete simulationIntervalsRef.current[targetBusId];
-          setSimulatingBuses((prev) => {
-            const next = { ...prev };
-            delete next[targetBusId];
-            return next;
-          });
-        }
-        
+        showStatus(`Bus ${targetBusId} deleted`, 'success');
         fetchBusesFromDb();
       } else {
         const err = await res.json();
@@ -198,87 +190,6 @@ export default function BusAdminView() {
       }
     } catch (err) {
       showStatus('Network error connecting to database API', 'error');
-    }
-  };
-
-  // Auto-Drive simulation along route shape
-  const toggleSimulation = (targetBusId: string) => {
-    const isRunning = simulatingBuses[targetBusId];
-
-    if (isRunning) {
-      clearInterval(simulationIntervalsRef.current[targetBusId]);
-      delete simulationIntervalsRef.current[targetBusId];
-      setSimulatingBuses((prev) => ({ ...prev, [targetBusId]: false }));
-      showStatus(`Stopped simulation for ${targetBusId}`, 'info');
-    } else {
-      const busData = buses[targetBusId];
-      if (!busData) return;
-
-      const routeId = busData.routeId;
-      const route = BUS_ROUTES.find((r: any) => r.id === routeId);
-      if (!route) {
-        showStatus(`Route shape not found for route: ${routeId}`, 'error');
-        return;
-      }
-
-      // Try to load shape coordinates
-      const shape0: [number, number][] = BUS_SHAPES[`${routeId}_0` as keyof typeof BUS_SHAPES] || [];
-      const mainShape: [number, number][] = (BUS_SHAPES[routeId as keyof typeof BUS_SHAPES] as [number, number][]) || [];
-      const coords = shape0.length > 0 ? shape0 : mainShape.length > 0 ? mainShape : null;
-
-      if (!coords || coords.length < 2) {
-        showStatus(`No shape polylines found for simulation of route ${routeId}`, 'error');
-        return;
-      }
-
-      let currentIdx = busData.currentPointIdx || 0;
-      let isReturn = busData.direction === 'return';
-
-      // Start client interval to push database coordinate updates every 4 seconds
-      const interval = setInterval(async () => {
-        let nextIdx = isReturn ? currentIdx - 1 : currentIdx + 1;
-
-        if (nextIdx >= coords.length) {
-          isReturn = true;
-          nextIdx = coords.length - 2;
-        } else if (nextIdx < 0) {
-          isReturn = false;
-          nextIdx = 1;
-        }
-
-        currentIdx = nextIdx;
-        const targetCoord = coords[currentIdx];
-        if (!targetCoord) return;
-
-        const nextStopName = route.stops && route.stops.length > 0
-          ? BUS_STOPS.find((s: any) => s.id === route.stops[Math.floor(Math.random() * route.stops.length)])?.name || 'Stacion'
-          : 'Stacion';
-
-        const updatePayload = {
-          id: targetBusId,
-          lat: targetCoord[0],
-          lng: targetCoord[1],
-          currentPointIdx: currentIdx,
-          direction: isReturn ? ('return' as const) : ('forward' as const),
-          speed: 30 + Math.floor(Math.random() * 15),
-          passengerLoad: 10 + Math.floor(Math.random() * 30),
-          nextStop: nextStopName
-        };
-
-        try {
-          await fetch('/api/admin/buses', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatePayload)
-          });
-        } catch (err) {
-          console.error(`Simulation update failed for ${targetBusId}:`, err);
-        }
-      }, 4000);
-
-      simulationIntervalsRef.current[targetBusId] = interval;
-      setSimulatingBuses((prev) => ({ ...prev, [targetBusId]: true }));
-      showStatus(`Started simulated drive for ${targetBusId} along Route ${routeId}`, 'success');
     }
   };
 
@@ -305,11 +216,7 @@ export default function BusAdminView() {
     }}>
       {/* Left Pane: Interactive Map */}
       <div style={{ flex: 1, height: '100%', position: 'relative' }}>
-        <BusAdminMap
-          buses={busList}
-          placementCoords={placementCoords}
-          onMapClick={handleMapClick}
-        />
+        <BusAdminMap buses={busList} />
         
         {/* Floating Back Button */}
         <button
@@ -337,7 +244,7 @@ export default function BusAdminView() {
           border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px',
           padding: '8px 16px', color: '#94a3b8', fontSize: '12px', pointerEvents: 'none'
         }}>
-          💡 Click on the map to select coordinates for a bus.
+          📡 Harta tregon vetëm pozicionet reale të autobusëve nga GPS.
         </div>
       </div>
 
@@ -394,11 +301,11 @@ export default function BusAdminView() {
           </h2>
 
           <div>
-            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Bus ID</label>
+            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Bus ID (SinoTrack ID)</label>
             <input
               value={busId}
               onChange={(e) => setBusId(e.target.value)}
-              placeholder="e.g. Bus-101"
+              placeholder="e.g. 9170258631"
               style={{
                 width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '13px', outline: 'none',
@@ -428,11 +335,11 @@ export default function BusAdminView() {
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Latitude</label>
+              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Targa (Plate)</label>
               <input
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
-                placeholder="41.3275"
+                value={licensePlate}
+                onChange={(e) => setLicensePlate(e.target.value)}
+                placeholder="e.g. TR 123 AB"
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '13px', outline: 'none',
@@ -441,11 +348,11 @@ export default function BusAdminView() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Longitude</label>
+              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Nr. Autobusi</label>
               <input
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
-                placeholder="19.8187"
+                value={busNumber}
+                onChange={(e) => setBusNumber(e.target.value)}
+                placeholder="e.g. Urbani 04"
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '13px', outline: 'none',
@@ -453,6 +360,27 @@ export default function BusAdminView() {
                 }}
               />
             </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '6px', fontWeight: '600' }}>Modeli i Urbanit</label>
+            <input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="e.g. Mercedes-Benz Citaro"
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '13px', outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div style={{
+            padding: '12px 14px', background: 'rgba(59, 130, 246, 0.05)', border: '1px dashed rgba(59, 130, 246, 0.2)',
+            borderRadius: '8px', fontSize: '11px', color: '#93c5fd', lineHeight: '1.4'
+          }}>
+            📡 Ky urban do të marrë koordinatat direkt nga pajisja fizike GPS SinoTrack (nuk ka vendosje manuale).
           </div>
 
           <button
@@ -465,7 +393,7 @@ export default function BusAdminView() {
               boxShadow: '0 4px 15px rgba(59,130,246,0.3)', marginTop: '8px'
             }}
           >
-            {loading ? 'Saving to MongoDB...' : buses[busId] ? 'Update Bus Location' : 'Create & Set Location'}
+            {loading ? 'Saving to Database...' : buses[busId] ? 'Update Bus Details' : 'Create & Register Bus'}
           </button>
         </form>
 
@@ -499,30 +427,16 @@ export default function BusAdminView() {
                 </div>
                 
                 {/* Coordinates & Route Details */}
-                <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
                   <div>Name: <strong>{bus.routeName}</strong></div>
+                  {bus.licensePlate && <div>Targa: <strong style={{ color: '#fff' }}>{bus.licensePlate}</strong></div>}
+                  {bus.busNumber && <div>Urbani Nr: <strong style={{ color: '#fff' }}>{bus.busNumber}</strong></div>}
+                  {bus.model && <div>Modeli: <strong>{bus.model}</strong></div>}
                   <div>Lat: {bus.lat.toFixed(5)} | Lng: {bus.lng.toFixed(5)}</div>
                 </div>
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  {/* Simulate button */}
-                  <button
-                    onClick={() => toggleSimulation(bus.id)}
-                    style={{
-                      flex: 1, padding: '7px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700',
-                      border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                      background: simulatingBuses[bus.id] ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-                      color: simulatingBuses[bus.id] ? '#10b981' : '#94a3b8',
-                      borderWidth: '1px', borderStyle: 'solid',
-                      borderColor: simulatingBuses[bus.id] ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.08)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                    }}
-                  >
-                    <IonIcon icon={simulatingBuses[bus.id] ? stopOutline : playOutline} style={{ fontSize: 12 }} />
-                    {simulatingBuses[bus.id] ? 'Auto-Driving' : 'Auto-Drive'}
-                  </button>
-
                   {/* Delete button */}
                   <button
                     onClick={() => handleDeleteBus(bus.id)}
@@ -536,6 +450,26 @@ export default function BusAdminView() {
                     <IonIcon icon={trashOutline} style={{ fontSize: 12 }} />
                     Delete
                   </button>
+
+                  {/* Quick Edit load button */}
+                  <button
+                    onClick={() => {
+                      setBusId(bus.id);
+                      setSelectedRouteId(bus.routeId || '');
+                      setLicensePlate(bus.licensePlate || '');
+                      setBusNumber(bus.busNumber || '');
+                      setModel(bus.model || '');
+                      showStatus(`Loaded bus ${bus.id} into editor`, 'info');
+                    }}
+                    style={{
+                      padding: '7px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700',
+                      background: 'rgba(59,130,246,0.06)', color: '#3b82f6',
+                      border: '1px solid rgba(59,130,246,0.12)', cursor: 'pointer', transition: 'all 0.2s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             ))}
@@ -545,7 +479,7 @@ export default function BusAdminView() {
                 textAlign: 'center', padding: '30px 20px', color: '#64748b', fontSize: '12px',
                 border: '1.5px dashed rgba(255,255,255,0.05)', borderRadius: '12px', lineHeight: '1.5'
               }}>
-                No active database buses found.<br />Click the map to select coordinates and add one.
+                No active database buses found.<br />Register a new bus using its SinoTrack ID to start.
               </div>
             )}
           </div>

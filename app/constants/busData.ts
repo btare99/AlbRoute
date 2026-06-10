@@ -3,7 +3,6 @@
 
 export const BUS_STOPS = [
   { id: 'ndre_mjeda', name: 'Ndre Mjeda', lat: 41.32381392093657, lng: 19.796618272968402 },
-  { id: 'ish_ekspozita_orar', name: 'Ish Ekspozita', lat: 41.3255, lng: 19.8145 },
   { id: 'vasil_shanto_antiorar', name: 'Vasil Shanto', lat: 41.320687204881224, lng: 19.805554735017974 },
   // Porcelani
   { id: 'biblioteka', name: 'Biblioteka Kombetare', lat: 41.328380772224, lng: 19.82098880092712 },
@@ -559,11 +558,11 @@ export const BUS_ROUTES = [
       'allias', 'kopshti_27_stop2', 'parafabrikatet_stop2', 'bajram_curri_stop2', 'shkolla_bashkuar_stop2',
       'mjekesia_stop2', 'qsut_stop2', 'tregu_5_maji_stop2', 'dispanseria_stop2', 'shkencat_natyres',
       'muzeu_kombetar', 'shallvaret_r', 'brigada_8', 'rruga_moskat', 'posta_8_stop2',
-      'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1',
+      'komuna_parisit_stop2', 'tish_daija', 'dhimiter_shuteriqi', 'qendra_kristal_1', 'selite',
       'mentor_xhemali_stop2', 'rexhep_pinari_stop2', 'kodra_diellit_2'
     ],
     returnStops: [
-      'kodra_diellit_2', 'rexhep_pinari_stop1', 'mentor_xhemali_stop1', 'rrapo_hekali', 'nenkalimi', 'qendra_kristal_2', 'prokop_mima',
+      'kodra_diellit_2', 'rexhep_pinari_stop1', 'mentor_xhemali_stop1', 'selite', 'rrapo_hekali', 'nenkalimi', 'qendra_kristal_2', 'prokop_mima',
       'lulishtja', 'stadiumi_dinamo', 'lulishte_cajupi', 'drejtoria_e_policise_b',
       'parku_rinia_r', 'pesembedhjete_kateshet', 'stacioni_i_trenit', 'shkencat_natyres',
       'dispanseria_stop1', 'tregu_5_maji_stop1', 'qsut_stop1', 'mjekesia_stop1', 'shkolla_bashkuar_stop1',
@@ -851,7 +850,7 @@ export const BUS_ROUTES = [
     id: 'L12', name: '12', label: 'Uzina Dinamo – Sharrë', color: '#99d19c',
     stops: [
       'uzina_dinamo', 'ura_paskuqanit', 'asllan_lala', 'nenstacioni_elektrik', 'rruga_besa',
-      'frigoriferi', 'siri_kodra_stop1', 'shkencat_natyres', 'banka_e_shqiperise', 'kisha_katolike',
+      'frigoriferi', 'siri_kodra_stop1', 'shkencat_natyres', 'banka_shqiperise_a', 'kisha_katolike',
       'poliklinika_9', 'ndre_mjeda', 'ura_teknologjike', 'tregu_a', 'kthesa_yzberisht_stop2',
       'misto_mame', 'ukt_stop2', 'mapo_stop2', 'kombinat_stop2', 'komisariati_6_stop2', 'varrezat_sharre_stop2',
       'kthesa_sharre_stop2', 'prush_stop2', 'fabrika_tullave_stop2', 'karburanti'

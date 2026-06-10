@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signOut } from "next-auth/react";
+import { safeSignOut } from '../../lib/auth-helpers';
 import useStore from '../../store/useStore';
 import {
   logOutOutline, chevronForwardOutline, notificationsOutline, shareOutline,
@@ -103,7 +103,7 @@ export default function ProfileView() {
           label: isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Login or Sign Up", 
           action: () => {
             setGuestMode(false);
-            signOut({ redirect: false });
+            safeSignOut();
           }, 
           isSuccess: true 
         }
@@ -115,7 +115,7 @@ export default function ProfileView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', position: 'relative' }}
     >
 
       {/* Curved Gradient Header (Cover) */}
@@ -194,8 +194,10 @@ export default function ProfileView() {
             width: '90px',
             height: '90px',
             borderRadius: '50%',
-            border: '4px solid var(--bg-dark)',
-            background: '#111318',
+            border: '4px solid rgba(10, 15, 26, 0.85)',
+            background: 'rgba(17, 19, 24, 0.7)',
+            backdropFilter: 'blur(20px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(160%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -203,7 +205,7 @@ export default function ProfileView() {
             fontWeight: '700',
             color: '#fff',
             overflow: 'hidden',
-            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
+            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.08)'
           }}>
             {activeUser?.avatar ? (
               <img src={activeUser.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
@@ -251,10 +253,13 @@ export default function ProfileView() {
             {isAl ? "Llogaria" : isIt ? "Account" : "Account"}
           </h3>
           <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.09)',
             borderRadius: '20px',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
           }}>
             {accountGroup.map((item, idx) => (
               <button
@@ -305,10 +310,13 @@ export default function ProfileView() {
             {isAl ? "Mbeshtetja & Cilësimet" : isIt ? "Supporto & Impostazioni" : "Support & Settings"}
           </h3>
           <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.09)',
             borderRadius: '20px',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
           }}>
             {supportGroup.map((item, idx) => (
               <button
@@ -358,7 +366,8 @@ export default function ProfileView() {
             transition={{ duration: 0.2 }}
             style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
-              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+              background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(30px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(30px) saturate(180%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
             }}>
             <motion.div
@@ -367,8 +376,13 @@ export default function ProfileView() {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25 }}
               style={{
-                width: '100%', maxWidth: '400px', background: '#111318', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                width: '100%', maxWidth: '400px',
+                background: 'rgba(20, 25, 40, 0.65)',
+                backdropFilter: 'blur(40px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(190%)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '24px', padding: '24px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)'
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
@@ -429,7 +443,7 @@ export default function ProfileView() {
                     <button
                       onClick={() => {
                         useStore.getState().logout();
-                        signOut({ callbackUrl: '/' });
+                        safeSignOut();
                         setActiveModal(null);
                       }}
                       style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}

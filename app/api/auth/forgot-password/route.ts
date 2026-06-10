@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import connectDB from '@/app/lib/mongodb';
-import { getUserModel, getOperatorModel } from '@/app/lib/dynamicDb';
+import { db } from '@/app/lib/firebaseAdmin';
 
 const SECURITY_MESSAGE = 'Nëse kjo llogari ekziston, një kod është dërguar.';
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
-
     const body = await request.json();
     const email = body?.email?.toLowerCase()?.trim();
 
@@ -19,52 +16,60 @@ export async function POST(request: Request) {
       );
     }
 
-    const User = getUserModel();
-    const Operator = getOperatorModel();
+    const usersRef = db.collection('users');
+    const operatorsRef = db.collection('operators');
 
     // Gjej userin dhe identifiko tipin
-    let user = await User.findOne({ email });
+    const userSnapshot = await usersRef.where('email', '==', email).limit(1).get();
     let isOperator = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let userDoc: Record<string, any> | null = null;
+    let userId = "";
 
-    if (!user) {
-      user = await Operator.findOne({ email });
-      if (user) isOperator = true; // ✅ Fix: vendoset vetëm nëse u gjet
+    if (!userSnapshot.empty) {
+      const doc = userSnapshot.docs[0];
+      userId = doc.id;
+      userDoc = doc.data();
+    } else {
+      const opSnapshot = await operatorsRef.where('email', '==', email).limit(1).get();
+      if (!opSnapshot.empty) {
+        const doc = opSnapshot.docs[0];
+        userId = doc.id;
+        userDoc = doc.data();
+        isOperator = true;
+      }
     }
 
-    if (!user) {
+    if (!userDoc) {
       return NextResponse.json({ message: SECURITY_MESSAGE });
     }
 
     // Gjenero token të sigurt për lidhjen e rivendosjes
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
     const resetLink = `${origin}/?resetToken=${encodeURIComponent(resetToken)}`;
 
     // Përditëso në mënyrë konsistente
-    const model = isOperator ? Operator : User;
-    await model.updateOne(
-      { _id: user._id },
-      {
-        $set: { resetToken, resetTokenExpires },
-        $unset: { resetCode: '' }
-      }
-    );
+    const targetRef = db.collection(isOperator ? 'operators' : 'users').doc(userId);
+    await targetRef.update({
+      resetToken,
+      resetTokenExpires,
+      resetCode: null
+    });
 
     // Dërgo email
     const { sendResetLinkEmail } = await import('@/app/lib/mail');
-    const emailSent = await sendResetLinkEmail(user.email, user.name || '', resetLink);
+    const emailSent = await sendResetLinkEmail(userDoc.email, userDoc.name || '', resetLink);
 
     if (!emailSent) {
-      // Log failure but do not reveal to client; return generic success for security
-      console.error('[Forgot Password] Failed to send reset link for', user.email);
-      // Keep the token in DB so admins can inspect, but do not expose failure to client
+      console.error('[Forgot Password] Failed to send reset link for', userDoc.email);
       return NextResponse.json({ message: SECURITY_MESSAGE });
     }
 
     return NextResponse.json({ message: 'Nëse kjo llogari ekziston, një email me lidhjen për rivendosje u dërgua.' });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Forgot Password Error:', error);
     return NextResponse.json(
       { error: 'Ndodhi një gabim i brendshëm.' },

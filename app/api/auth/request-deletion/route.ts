@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '../../../lib/mongodb';
+import { db } from '../../../lib/firebaseAdmin';
 import { sendDeletionConfirmationCode } from '../../../lib/mail';
 import { auth } from '../../../auth';
-import { getUserModel } from '../../../lib/dynamicDb';
 
 // ─── Helper: generate 6-digit confirmation code ────────────────────────────────
 
@@ -12,7 +11,7 @@ function generateConfirmationCode(): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth() as any;
+    const session = await auth() as { user?: { id?: string; email?: string | null; name?: string | null } } | null;
     
     if (!session?.user) {
       return NextResponse.json(
@@ -39,32 +38,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await connectDB();
-    const User = getUserModel();
+    if (!session.user.id) {
+      return NextResponse.json(
+        { message: 'User ID is missing from session' },
+        { status: 400 }
+      );
+    }
 
-    // ─── FIX #1: Generate 6-digit code dhe expiry (15 min) ──────────────────────
-    const confirmationCode = generateConfirmationCode();
-    const deletionConfirmationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const userRef = db.collection('users').doc(session.user.id);
+    const userDoc = await userRef.get();
 
-    // Update user — save confirmation code
-    const updatedUser = await User.findByIdAndUpdate(
-      session.user.id,
-      {
-        deletionConfirmationCode: confirmationCode,
-        deletionConfirmationExpires,
-        deletionRequestedAt: new Date(),
-      },
-      { new: true }
-    );
-
-    if (!updatedUser) {
+    if (!userDoc.exists) {
       return NextResponse.json(
         { message: 'User not found' },
         { status: 404 }
       );
     }
 
-    // ─── FIX #2: Send confirmation code email ──────────────────────────────────
+    const confirmationCode = generateConfirmationCode();
+    const deletionConfirmationExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+
+    // Update user — save confirmation code
+    await userRef.update({
+      deletionConfirmationCode: confirmationCode,
+      deletionConfirmationExpires,
+      deletionRequestedAt: new Date().toISOString(),
+    });
+
+    // Send confirmation code email
     const emailSent = await sendDeletionConfirmationCode(
       email.toLowerCase(),
       session.user.name || 'Udhëtar',
@@ -73,7 +74,6 @@ export async function POST(req: NextRequest) {
 
     if (!emailSent) {
       console.warn(`[RequestDeletion] Failed to send confirmation email to ${email}`);
-      // Allow user to proceed even if email fails
     }
 
     return NextResponse.json(

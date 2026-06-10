@@ -11,8 +11,6 @@ interface BusLocation {
 
 interface BusAdminMapProps {
   buses: Record<string, BusLocation>;
-  placementCoords: { lat: number; lng: number } | null;
-  onMapClick: (lat: number, lng: number) => void;
 }
 
 const animateMarker = (
@@ -43,12 +41,11 @@ const animateMarker = (
   marker._animationFrameId = requestAnimationFrame(step);
 };
 
-export default function BusAdminMap({ buses, placementCoords, onMapClick }: BusAdminMapProps) {
+export default function BusAdminMap({ buses }: BusAdminMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const LRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
-  const placementMarkerRef = useRef<any>(null);
 
   // Initialize Map
   useEffect(() => {
@@ -78,10 +75,6 @@ export default function BusAdminMap({ buses, placementCoords, onMapClick }: BusA
           attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        map.on('click', (e: any) => {
-          onMapClick(e.latlng.lat, e.latlng.lng);
-        });
-
         mapInstanceRef.current = map;
       } catch (err) {
         console.error('Failed to initialize Admin Map:', err);
@@ -103,46 +96,7 @@ export default function BusAdminMap({ buses, placementCoords, onMapClick }: BusA
         mapInstanceRef.current = null;
       }
     };
-  }, [onMapClick]);
-
-  // Update placement marker (where user clicked to add a bus)
-  useEffect(() => {
-    const L = LRef.current;
-    const map = mapInstanceRef.current;
-    if (!L || !map) return;
-
-    if (placementMarkerRef.current) {
-      map.removeLayer(placementMarkerRef.current);
-      placementMarkerRef.current = null;
-    }
-
-    if (placementCoords) {
-      const placementIcon = L.divIcon({
-        html: `
-          <div style="
-            width: 24px;
-            height: 24px;
-            background-color: #ef4444;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
-            animation: pulse-place 1s infinite alternate;
-          "></div>
-          <style>
-            @keyframes pulse-place {
-              from { transform: scale(0.9); }
-              to { transform: scale(1.15); }
-            }
-          </style>
-        `,
-        className: '',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-
-      placementMarkerRef.current = L.marker([placementCoords.lat, placementCoords.lng], { icon: placementIcon }).addTo(map);
-    }
-  }, [placementCoords]);
+  }, []);
 
   // Sync active bus markers
   useEffect(() => {

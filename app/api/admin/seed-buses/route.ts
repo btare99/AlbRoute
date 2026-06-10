@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectDB from '@/app/lib/mongodb';
-import { getBusModel } from '@/app/lib/dynamicDb';
+import { db } from '@/app/lib/firebaseAdmin';
 import { BUS_SHAPES } from '@/app/store/busShapes';
 
 const ALL_ROUTES = [
@@ -10,11 +9,20 @@ const ALL_ROUTES = [
 
 export async function GET() {
   try {
-    await connectDB();
-    const Bus = getBusModel();
+    const busesRef = db.collection('buses');
 
-    // 1. Delete existing buses
-    await Bus.deleteMany({});
+    // 1. Fetch existing buses to delete
+    const snapshot = await busesRef.get();
+    
+    // We will use batches to perform deletes and sets. 
+    // Firestore batch limit is 500 operations.
+    let batch = db.batch();
+    let opCount = 0;
+
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+      opCount++;
+    });
 
     const seededBuses = [];
 
@@ -55,11 +63,18 @@ export async function GET() {
         plate,
         brand: 'Mercedes-Benz',
         capacity: 60,
-        lastUpdate: new Date()
+        lastUpdate: new Date().toISOString()
       };
 
-      const newBus = new Bus(busDoc);
-      await newBus.save();
+      if (opCount >= 400) {
+        await batch.commit();
+        batch = db.batch();
+        opCount = 0;
+      }
+
+      const docRef = busesRef.doc(busDoc.id);
+      batch.set(docRef, busDoc);
+      opCount++;
       seededBuses.push(busDoc);
 
       // Create a second bus in the return direction (if we have shape coords and return points)
@@ -82,21 +97,35 @@ export async function GET() {
           plate: `AB ${randomDigits()} ${randomLetters()}`,
           brand: 'Mercedes-Benz',
           capacity: 60,
-          lastUpdate: new Date()
+          lastUpdate: new Date().toISOString()
         };
-        const newReturnBus = new Bus(returnBusDoc);
-        await newReturnBus.save();
+
+        if (opCount >= 400) {
+          await batch.commit();
+          batch = db.batch();
+          opCount = 0;
+        }
+
+        const returnDocRef = busesRef.doc(returnBusDoc.id);
+        batch.set(returnDocRef, returnBusDoc);
+        opCount++;
         seededBuses.push(returnBusDoc);
       }
     }
 
+    if (opCount > 0) {
+      await batch.commit();
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Seeded ${seededBuses.length} buses successfully.`,
+      message: `Seeded ${seededBuses.length} buses successfully in Firestore.`,
       buses: seededBuses
     });
-  } catch (error: any) {
-    console.error('Error seeding buses:', error);
-    return NextResponse.json({ success: false, error: error?.message || 'Failed to seed buses' }, { status: 500 });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'Failed to seed buses';
+    console.error('Error seeding buses in Firestore:', error);
+    return NextResponse.json({ success: false, error: errMsg }, { status: 500 });
   }
 }
+

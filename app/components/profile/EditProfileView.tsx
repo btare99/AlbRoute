@@ -580,7 +580,7 @@ export default function EditProfileView() {
             color: '#fff',
             overflow: 'hidden',
             position: 'relative',
-            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4)'
+            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6), 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.08)'
           }}>
             {form.avatar ? (
               <img src={form.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
@@ -657,7 +657,10 @@ export default function EditProfileView() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
             style={{
-              background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
+              background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.09)',
               padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
             }}
           >
@@ -725,7 +728,10 @@ export default function EditProfileView() {
           >
             {!isStaff && (
               <div style={{
-                background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
+                background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.09)',
                 padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
               }}>
                 <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -960,7 +966,10 @@ export default function EditProfileView() {
 
             {/* Save Button Container */}
             <div style={{
-              background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.07)',
+              background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.09)',
               padding: '20px', borderRadius: '24px', marginTop: isStaff ? '0' : 'auto'
             }}>
               <motion.button

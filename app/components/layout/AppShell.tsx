@@ -226,13 +226,13 @@ export default function AppShell() {
       />
 
       {/* Main content */}
-      <main className="main-area">
+      <main className={`main-area ${Capacitor.getPlatform() === 'android' ? 'android-safe' : ''}`}>
         {renderView()}
       </main>
 
       {/* Floating bottom nav — mobile only */}
       {!selectingOnMap && !selectedStop && !showTripDetails && (
-        <nav className="bottom-nav" aria-label="Main navigation">
+        <nav className={`bottom-nav ${Capacitor.getPlatform() === 'android' ? 'android-safe' : ''}`} aria-label="Main navigation">
           {MENU.map(({ id, label, icon: Icon }) => {
             const active = currentView === id ||
               (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
@@ -318,59 +318,105 @@ export default function AppShell() {
 
           .main-area {
             height: 100%;
-            padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(96px + env(safe-area-inset-bottom, 12px));
           }
 
-          /* Floating pill nav */
+          .main-area.android-safe {
+            padding-bottom: calc(112px + env(safe-area-inset-bottom, 24px));
+          }
+
+          /* Floating pill nav — Liquid Glass Style */
           .bottom-nav {
             display: flex;
             align-items: center;
             justify-content: space-around;
 
             position: fixed;
-            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            left: 12px;
-            right: 12px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 12px));
+            left: 16px;
+            right: 16px;
             height: 64px;
-            padding: 0 8px;
+            padding: 0 6px;
 
-            background: rgba(10, 14, 24, 0.82);
-            backdrop-filter: blur(20px) saturate(160%);
-            -webkit-backdrop-filter: blur(20px) saturate(160%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 22px;
             box-shadow:
-              0 4px 24px rgba(0, 0, 0, 0.45),
-              0 1px 0 rgba(255,255,255,0.05) inset;
+              0 12px 32px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
             z-index: 2000;
+            transition: bottom 0.3s ease;
           }
 
-          /* ── Individual tab button ─────────────── */
+          .bottom-nav.android-safe {
+            /* Extra safety margin on Android devices to clear system navigation button overlaps */
+            bottom: calc(32px + env(safe-area-inset-bottom, 20px));
+          }
+
+          /* ── Individual tab button with internal glass capsule ─────────────── */
           .nav-btn {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 3px;
+            justify-content: center;
+            gap: 2px;
             flex: 1;
-            padding: 8px 0;
-            min-height: 44px;
+            padding: 6px 0;
+            min-height: 48px;
             min-width: 44px;
 
             background: none;
             border: none;
             cursor: pointer;
-            border-radius: 14px;
-            transition: transform 0.15s ease, color 0.2s ease;
+            border-radius: 16px;
+            transition: color 0.25s ease;
             color: rgba(255, 255, 255, 0.45);
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 1;
+          }
+
+          .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 6px;
+            right: 6px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            z-index: -1;
+            opacity: 0;
+            transform: scale(0.85);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+          }
+
+          .nav-btn.active::before {
+            opacity: 1;
+            transform: scale(1);
           }
 
           .nav-btn:active {
-            transform: scale(0.92);
+            transform: scale(0.95);
           }
 
           .nav-btn.active {
             color: #f59e0b;
+          }
+
+          .nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+
+          .nav-btn.active .nav-icon {
+            transform: translateY(-1px) scale(1.05);
           }
 
           /* ── Label ─────────────────────────────── */
@@ -379,29 +425,45 @@ export default function AppShell() {
             font-weight: 600;
             letter-spacing: 0.02em;
             line-height: 1;
-            margin-top: 2px;
+            margin-top: 1px;
           }
         }
 
-        /* ── Tablet-specific refinements (iPad) ── */
+        /* ── Tablet-specific refinements (iPad/Android Tablets) ── */
         @media (min-width: 901px) and (max-width: 1180px) {
           .main-area {
-            padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(112px + env(safe-area-inset-bottom, 12px));
+          }
+
+          .main-area.android-safe {
+            padding-bottom: calc(128px + env(safe-area-inset-bottom, 24px));
           }
 
           .bottom-nav {
             left: 32px;
             right: 32px;
-            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            bottom: calc(24px + env(safe-area-inset-bottom, 12px));
             height: 72px;
-            padding: 0 24px;
+            padding: 0 16px;
             border-radius: 28px;
           }
 
+          .bottom-nav.android-safe {
+            bottom: calc(36px + env(safe-area-inset-bottom, 20px));
+          }
+
           .nav-btn {
-            padding: 12px 0;
+            padding: 10px 0;
             min-height: 56px;
             min-width: 60px;
+          }
+
+          .nav-btn::before {
+            top: 6px;
+            bottom: 6px;
+            left: 12px;
+            right: 12px;
+            border-radius: 18px;
           }
 
           .nav-label {

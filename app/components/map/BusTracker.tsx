@@ -306,8 +306,10 @@ export default function BusTracker() {
             {/* Route summary card */}
             <div style={{
               borderRadius: 24,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.08)',
               padding: '20px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
               display: 'flex',
@@ -402,7 +404,7 @@ export default function BusTracker() {
                     flexDirection: 'column',
                     gap: '20px',
                   }}>
-                    {/* Timeline connector bar (dashed modern style) */}
+                    {/* Single continuous connector line */}
                     <div style={{
                       position: 'absolute',
                       top: '8px',
@@ -420,7 +422,7 @@ export default function BusTracker() {
 
                       return (
                         <div key={`${sid}-${idx}`} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {/* Timeline dot node (Hollow circle masking the line behind it) */}
+                          {/* Timeline dot node — solid background masks the line behind it */}
                           <div style={{
                             position: 'absolute',
                             left: '-31px',
@@ -428,7 +430,7 @@ export default function BusTracker() {
                             width: '12px',
                             height: '12px',
                             borderRadius: '50%',
-                            background: '#0a0f1d', // Solid background matching the page theme
+                            background: '#0a0f1d',
                             border: `2px solid ${route.color}`,
                             display: 'flex',
                             alignItems: 'center',
@@ -544,11 +546,13 @@ export default function BusTracker() {
                       <div
                         key={bus.id || bus.busId || bus.plate || idx}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          border: isExpanded ? `1.5px solid ${route.color}50` : '1.5px solid rgba(255, 255, 255, 0.05)',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          backdropFilter: 'blur(40px) saturate(180%)',
+                          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                          border: isExpanded ? `1.5px solid ${route.color}50` : '1.5px solid rgba(255, 255, 255, 0.07)',
                           borderRadius: 20,
                           overflow: 'hidden',
-                          boxShadow: isExpanded ? '0 12px 30px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
+                          boxShadow: isExpanded ? `0 12px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)` : '0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.03)',
                           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                           marginBottom: 16,
                         }}
@@ -585,10 +589,12 @@ export default function BusTracker() {
                                     width: 6,
                                     height: 6,
                                     borderRadius: '50%',
-                                    background: bus.status === 'stopped' ? '#ff9f0a' : '#30d158',
+                                    background: bus.status === 'offline' ? '#8e8e93' : bus.status === 'stopped' ? '#ff9f0a' : '#30d158',
                                     display: 'inline-block'
                                   }} />
-                                  {bus.status === 'stopped'
+                                  {bus.status === 'offline'
+                                    ? (language === 'al' ? 'Jashtë linje' : language === 'it' ? 'Offline' : 'Offline')
+                                    : bus.status === 'stopped'
                                     ? (language === 'al' ? 'Ndaluar' : language === 'it' ? 'Fermato' : 'Stopped')
                                     : (language === 'al' ? 'Në lëvizje' : language === 'it' ? 'In movimento' : 'In motion')}
                                   <span>·</span>
@@ -671,7 +677,7 @@ export default function BusTracker() {
                                   flexDirection: 'column',
                                   gap: 20,
                                 }}>
-                                  {/* Timeline connector bar (dashed modern style) */}
+                                  {/* Full-length dashed connector line (upcoming stops) */}
                                   <div style={{
                                     position: 'absolute',
                                     top: 8,
@@ -682,7 +688,7 @@ export default function BusTracker() {
                                     zIndex: 1,
                                   }} />
 
-                                  {/* Highlighted active path segment (solid glowing line) */}
+                                  {/* Solid glowing line for passed stops */}
                                   <div style={{
                                     position: 'absolute',
                                     top: 8,
@@ -705,22 +711,24 @@ export default function BusTracker() {
                                     const isLast = idx === busStops.length - 1;
                                     const eta = etas.get(stop.id);
 
-                                    // Node styling - Hollow circle masking the line behind it
+                                    // Node styling
                                     let nodeBorder = '2px solid rgba(255, 255, 255, 0.25)';
-                                    let scale = 1;
                                     let leftOffset = 1;
                                     let dotSize = 12;
                                     let glow = 'none';
+                                    let dotBg = '#121829';
 
                                     if (isCurrent) {
                                       nodeBorder = `2.5px solid ${route.color}`;
                                       leftOffset = 0;
                                       dotSize = 14;
                                       glow = `0 0 10px ${route.color}`;
+                                      dotBg = '#121829';
                                     } else if (isPassed) {
                                       nodeBorder = `2px solid ${route.color}`;
-                                      leftOffset = 1;
-                                      dotSize = 12;
+                                      leftOffset = 2;
+                                      dotSize = 10;
+                                      dotBg = route.color;
                                     }
 
                                     return (
@@ -736,16 +744,15 @@ export default function BusTracker() {
                                           transition: 'opacity 0.2s',
                                         }}
                                       >
-                                        {/* Timeline dot (Hollow circular node masking the line underneath) */}
+                                        {/* Timeline dot — solid bg masks the line behind it */}
                                         <div style={{
                                           position: 'absolute',
                                           left: leftOffset,
                                           width: dotSize,
                                           height: dotSize,
                                           borderRadius: '50%',
-                                          background: '#121829', // Matches parent drawer background to block the connector line
+                                          background: dotBg,
                                           border: nodeBorder,
-                                          transform: `scale(${scale})`,
                                           display: 'flex',
                                           alignItems: 'center',
                                           justifyContent: 'center',

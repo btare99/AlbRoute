@@ -1,50 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '../../../lib/mongodb';
-import { getRouteModel, getOperatorModel, ALL_ROUTES } from '../../../lib/dynamicDb';
-
-type StaffCategory = 'Shoferet' | 'Faturinot';
-
-function getCategoryFromRole(role: string): StaffCategory | 'operator' {
-  if (role === 'driver') return 'Shoferet';
-  if (role === 'inspector') return 'Faturinot';
-  return 'operator';
-}
+import { db } from '../../../lib/firebaseAdmin';
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role');
     const routeId = searchParams.get('routeId');
 
-    // Operators come from Global DB
+    // Operators come from 'operators' collection
     if (role === 'operator') {
-      const Model = getOperatorModel();
-      const operators = await Model.find({}).lean();
+      const snapshot = await db.collection('operators').get();
+      const operators: Record<string, unknown>[] = [];
+      snapshot.forEach(doc => {
+        operators.push({ id: doc.id, ...doc.data() });
+      });
       return NextResponse.json(operators);
     }
 
-    const targetCategories: StaffCategory[] = role
-      ? [getCategoryFromRole(role) as StaffCategory]
-      : ['Shoferet', 'Faturinot'];
-
-    let allStaff: any[] = [];
-
+    // Drivers and Conductor/Inspectors come from 'staff' collection
+    let query: FirebaseFirestore.Query = db.collection('staff');
     if (routeId) {
-      for (const cat of targetCategories) {
-        const Model = getRouteModel(routeId, cat);
-        const staff = await Model.find({}).lean();
-        allStaff = [...allStaff, ...staff];
-      }
-    } else {
-      for (const id of ALL_ROUTES) {
-        for (const cat of targetCategories) {
-          const Model = getRouteModel(id, cat);
-          const staff = await Model.find({}).lean();
-          allStaff = [...allStaff, ...staff];
-        }
-      }
+      query = query.where('routeId', '==', routeId);
     }
+    if (role) {
+      query = query.where('role', '==', role);
+    }
+
+    const snapshot = await query.get();
+    const allStaff: Record<string, unknown>[] = [];
+    snapshot.forEach(doc => {
+      allStaff.push({ id: doc.id, ...doc.data() });
+    });
 
     return NextResponse.json(allStaff);
   } catch (error) {
@@ -55,23 +41,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const body = await request.json();
     const role = body.role;
 
     if (role === 'operator') {
-      const Model = getOperatorModel();
-      const newOp = new Model(body);
-      await newOp.save();
-      return NextResponse.json(newOp.toObject(), { status: 201 });
+      const opId = body.id || db.collection('operators').doc().id;
+      const newOp = { ...body, id: opId };
+      await db.collection('operators').doc(opId).set(newOp);
+      return NextResponse.json(newOp, { status: 201 });
     }
 
-    const routeId = body.routeId || '1A';
-    const cat = getCategoryFromRole(role) as StaffCategory;
-    const Model = getRouteModel(routeId, cat);
-    const newStaff = new Model(body);
-    await newStaff.save();
-    return NextResponse.json(newStaff.toObject(), { status: 201 });
+    const staffId = body.id || db.collection('staff').doc().id;
+    const newStaff = { ...body, id: staffId };
+    await db.collection('staff').doc(staffId).set(newStaff);
+    return NextResponse.json(newStaff, { status: 201 });
   } catch (error) {
     console.error('[Main Staff POST]', error);
     return NextResponse.json({ error: 'Failed to create staff' }, { status: 500 });
@@ -80,30 +63,32 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await dbConnect();
     const body = await request.json();
-    const { id, routeId, role, ...updateData } = body;
+    const { id, role, ...updateData } = body;
 
-    if (role === 'operator') {
-      const Model = getOperatorModel();
-      const updated = await Model.findOneAndUpdate(
-        { id },
-        { $set: updateData },
-        { new: true }
-      );
-      if (!updated) return NextResponse.json({ error: 'Operator not found' }, { status: 404 });
-      return NextResponse.json(updated.toObject());
+    if (!id) {
+      return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
-    const cat = getCategoryFromRole(role) as StaffCategory;
-    const Model = getRouteModel(routeId || '1A', cat);
-    const updated = await Model.findOneAndUpdate(
-      { id },
-      { $set: updateData },
-      { new: true }
-    );
-    if (!updated) return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
-    return NextResponse.json(updated.toObject());
+    if (role === 'operator') {
+      const docRef = db.collection('operators').doc(id);
+      const doc = await docRef.get();
+      if (!doc.exists) {
+        return NextResponse.json({ error: 'Operator not found' }, { status: 404 });
+      }
+      await docRef.update(updateData);
+      const updatedDoc = await docRef.get();
+      return NextResponse.json({ id, ...updatedDoc.data() });
+    }
+
+    const docRef = db.collection('staff').doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+    }
+    await docRef.update(updateData);
+    const updatedDoc = await docRef.get();
+    return NextResponse.json({ id, ...updatedDoc.data() });
   } catch (error) {
     console.error('[Main Staff PUT]', error);
     return NextResponse.json({ error: 'Failed to update staff' }, { status: 500 });
@@ -112,23 +97,20 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    await dbConnect();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    const routeId = searchParams.get('routeId') || '1A';
     const role = searchParams.get('role') || 'driver';
 
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    }
 
     if (role === 'operator') {
-      const Model = getOperatorModel();
-      await Model.findOneAndDelete({ id });
+      await db.collection('operators').doc(id).delete();
       return NextResponse.json({ message: 'Operator deleted' });
     }
 
-    const cat = getCategoryFromRole(role) as StaffCategory;
-    const Model = getRouteModel(routeId, cat);
-    await Model.findOneAndDelete({ id });
+    await db.collection('staff').doc(id).delete();
     return NextResponse.json({ message: 'Staff deleted' });
   } catch (error) {
     console.error('[Main Staff DELETE]', error);

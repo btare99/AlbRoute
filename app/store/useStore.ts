@@ -616,7 +616,7 @@ export interface StaffAccount {
   status: string;
 }
 
-const MAX_WALK_METERS_BASE = 800;
+const MAX_WALK_METERS_BASE = 1200;
 const MAX_WALK_METERS_LONG = 1600;
 const LONG_TRIP_THRESHOLD_M = 5000;
 const MAX_CANDIDATE_STOPS = 20;
@@ -745,23 +745,19 @@ function getCandidateStops(
   isOrigin: boolean,
 ): { stop: any; walkDist: number }[] {
   const radius = tripDistanceM > LONG_TRIP_THRESHOLD_M ? MAX_WALK_METERS_LONG : MAX_WALK_METERS_BASE;
-  const targetBearing = bearingDeg(coords, destination);
   const allNearby = getNearestStops(coords.lat, coords.lng, radius, MAX_CANDIDATE_STOPS * 2);
 
-  const filtered = allNearby.filter(item => {
-    // FIX 3: për destinacionin hiqe filtrin e këndit — merr të gjitha stacionet afër
-    if (!isOrigin) return true;
-    const diff = angleDiff(bearingDeg(coords, { lat: item.stop.lat, lng: item.stop.lng }), targetBearing);
-    return diff <= BEARING_TOLERANCE_DEG;
-  });
-
-  return filtered
+  // Removim i plotë i filtrit të këndit (bearing) edhe për origjinën. Përndryshe, në zona me pak stacione
+  // (si Selita ose Kodra e Diellit), stacioni i vetëm afërt mund të filtrohej nëse ishte "mbrapa" ose anash
+  // origjinës relative ndaj destinacionit, duke mos lejuar asnjë planifikim rruge.
+  return allNearby
     .reduce<{ stop: any; walkDist: number }[]>((acc, item) => {
       const tooClose = acc.some(s => haversineMeters(s.stop.lat, s.stop.lng, item.stop.lat, item.stop.lng) < 50);
       return tooClose ? acc : [...acc, item];
     }, [])
     .slice(0, MAX_CANDIDATE_STOPS);
 }
+
 
 function scoreRoute(opt: TripOption, liveBuses: LiveBus[]): number {
   const walkSec = (opt.walkDistMeters ?? 0) / 1.39;
@@ -1112,17 +1108,58 @@ const useStore = create<any>()(
           const res = await fetch('/api/buses');
           if (!res.ok) throw new Error(`Buses fetch failed (${res.status})`);
           const buses = await res.json();
-          if (Array.isArray(buses)) {
+          if (Array.isArray(buses) && buses.length > 0) {
             const normalized = buses.map((bus: any) => ({
               ...bus,
               routeId: bus.routeId && !bus.routeId.startsWith('L') ? `L${bus.routeId}` : bus.routeId
             }));
             set({ buses: normalized, busesLoading: false });
-          } else {
-            set({ busesLoading: false });
+            return;
           }
         } catch (error) {
-          console.error('Failed to fetch buses:', error);
+          console.warn('API fetch failed, using client-side simulation:', error);
+        }
+        // Fallback: generate simulated buses from BUS_ROUTES if no buses exist yet
+        const currentBuses = get().buses;
+        if (!Array.isArray(currentBuses) || currentBuses.length === 0) {
+          const simulated: any[] = [];
+          BUS_ROUTES.forEach((route: any) => {
+            const shape0 = BUS_SHAPES[`${route.id}_0` as keyof typeof BUS_SHAPES] as [number, number][] || [];
+            const shape1 = BUS_SHAPES[`${route.id}_1` as keyof typeof BUS_SHAPES] as [number, number][] || [];
+            const mainShape = BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][] || [];
+            const fwShape = shape0.length > 0 ? shape0 : mainShape;
+            const rvShape = shape1.length > 0 ? shape1 : (mainShape.length > 0 ? [...mainShape].reverse() : []);
+
+            // Create 1-2 buses per route
+            const busCount = Math.random() > 0.5 ? 2 : 1;
+            for (let b = 0; b < busCount; b++) {
+              const isReturn = b === 1;
+              const shape = isReturn ? rvShape : fwShape;
+              if (shape.length < 2) continue;
+              const startIdx = Math.floor(Math.random() * (shape.length * 0.8));
+              simulated.push({
+                id: `sim_${route.id}_${b}`,
+                routeId: route.id,
+                routeName: route.label || route.name,
+                routeColor: route.color,
+                direction: isReturn ? 'return' : 'forward',
+                lat: shape[startIdx]?.[0] ?? shape[0][0],
+                lng: shape[startIdx]?.[1] ?? shape[0][1],
+                currentPointIdx: startIdx,
+                status: 'moving',
+                speed: 30 + Math.random() * 15,
+                passengerLoad: Math.floor(Math.random() * 30) + 5,
+                waitingTicks: 0,
+                ticks: 0,
+                delay: 0,
+                nextStop: '',
+                currentStop: '',
+                lastUpdate: Date.now(),
+              });
+            }
+          });
+          set({ buses: simulated, busesLoading: false });
+        } else {
           set({ busesLoading: false });
         }
       },
@@ -1254,6 +1291,7 @@ const useStore = create<any>()(
         const isPeak = (hour >= 8 && hour <= 9) || (hour >= 16 && hour <= 18);
 
         const updated = buses.map((bus: any) => {
+          if (bus.isRealGPS) return bus;
           if (bus.waitingTicks > 0) return { ...bus, waitingTicks: bus.waitingTicks - 1, status: 'stopped' };
 
           const ticks = (bus.ticks || 0) + 1;

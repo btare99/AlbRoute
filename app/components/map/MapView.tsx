@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signOut } from 'next-auth/react';
+import { safeSignOut } from '../../lib/auth-helpers';
 import { BUS_SHAPES } from '../../store/busShapes';
 import { translations } from '../../store/translations';
 import useStore, { BUS_ROUTES, BUS_STOPS } from '../../store/useStore';
@@ -1428,11 +1428,14 @@ export default function MapView() {
       const load = bus.passengerLoad ?? 0;
       const loadPct = Math.min(100, Math.round((load / 50) * 100));
       const loadColor = load > 40 ? '#ef4444' : load > 25 ? '#f59e0b' : '#22c55e';
-      const opacity = isActive ? 1 : 0.18;
+      const isOffline = bus.status === 'offline';
+      const opacity = isActive ? (isOffline ? 0.6 : 1) : 0.18;
       const label = (bus.routeName || bus.routeId?.replace('L', '') || 'Bus').toString();
 
       const isNew = !renderedBusIdsRef.current.has(bus.id.toString());
       const animClass = isNew ? 'marker-enter' : '';
+
+      const pillBg = isOffline ? '#94a3b8' : bus.routeColor;
 
       // Marker pill
       const markerHtml = `
@@ -1441,7 +1444,7 @@ export default function MapView() {
         opacity:${opacity};transition:opacity 0.3s;
       ">
         <div class="${animClass}" style="
-          background:${bus.routeColor};color:#fff;
+          background:${pillBg};color:#fff;
           padding:5px 9px;border-radius:8px;
           font-size:11px;font-weight:700;letter-spacing:0.04em;
           white-space:nowrap;line-height:1;
@@ -1460,7 +1463,7 @@ export default function MapView() {
           width:0;height:0;
           border-left:5px solid transparent;
           border-right:5px solid transparent;
-          border-top:5px solid ${bus.routeColor};
+          border-top:5px solid ${pillBg};
           margin-top:-1px;
           filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25));
         "></div>
@@ -1471,6 +1474,18 @@ export default function MapView() {
       const loadLabel = load > 40 ? t.full : load > 25 ? t.medium : t.empty;
       const loadBadgeBg = load > 40 ? '#fef2f2' : load > 25 ? '#fffbeb' : '#f0fdf4';
       const loadBadgeColor = load > 40 ? '#dc2626' : load > 25 ? '#d97706' : '#16a34a';
+
+      const statusBadgeHtml = isOffline
+        ? `<span style="
+            font-size:9px;font-weight:700;letter-spacing:0.08em;
+            background:#f1f5f9;color:#64748b;
+            padding:3px 7px;border-radius:20px;
+          ">● ${language === 'al' ? 'JASHTË LINJE' : 'OFFLINE'}</span>`
+        : `<span style="
+            font-size:9px;font-weight:700;letter-spacing:0.08em;
+            background:#ecfdf5;color:#059669;
+            padding:3px 7px;border-radius:20px;
+          ">● ${t.live.toUpperCase()}</span>`;
 
       const tooltipHtml = `
       <div style="
@@ -1484,25 +1499,21 @@ export default function MapView() {
           <div style="display:flex;align-items:center;gap:7px">
             <div style="
               width:10px;height:10px;border-radius:50%;
-              background:${bus.routeColor};flex-shrink:0
+              background:${pillBg};flex-shrink:0
             "></div>
             <span style="font-size:13px;font-weight:700;color:#0f172a">${t.route_label} ${bus.routeName}</span>
           </div>
-          <span style="
-            font-size:9px;font-weight:700;letter-spacing:0.08em;
-            background:#ecfdf5;color:#059669;
-            padding:3px 7px;border-radius:20px;
-          ">● ${t.live.toUpperCase()}</span>
+          ${statusBadgeHtml}
         </div>
 
         <div style="display:flex;flex-direction:column;gap:6px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:11px;color:#64748b">${t.nextStop}</span>
-            <span style="font-size:11px;font-weight:600;color:#0f172a">${bus.nextStop || '—'}</span>
+            <span style="font-size:11px;font-weight:600;color:#0f172a">${isOffline ? '—' : (bus.nextStop || '—')}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:11px;color:#64748b">${t.speed}</span>
-            <span style="font-size:11px;font-weight:600;color:#0f172a">${Math.round(bus.speed)} km/h</span>
+            <span style="font-size:11px;font-weight:600;color:#0f172a">${isOffline ? 0 : Math.round(bus.speed)} km/h</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:11px;color:#64748b">${t.load}</span>
@@ -2791,35 +2802,38 @@ export default function MapView() {
                                   </div>
                                 </div>
 
-                                {/* Stops Timeline */}
-                                <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingLeft: '2px' }}>
-                                  {/* Inner dashed line */}
-                                  <div style={{
-                                    position: 'absolute',
-                                    left: '5px',
-                                    top: '12px',
-                                    bottom: '12px',
-                                    width: '1px',
-                                    borderLeft: `1px dashed ${color}55`,
-                                  }} />
+                                 {/* Stops Timeline */}
+                                 <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingLeft: '2px' }}>
+                                   {/* Single continuous connector line */}
+                                   <div style={{
+                                     position: 'absolute',
+                                     left: '5px',
+                                     top: '12px',
+                                     bottom: '12px',
+                                     width: '1px',
+                                     borderLeft: `1px dashed ${color}55`,
+                                     zIndex: 1,
+                                   }} />
 
-                                  {stopsToShow.map((stop: string, j: number) => {
-                                    const isFirst = j === 0;
-                                    const isLast = j === stopsToShow.length - 1;
-                                    const isTerminal = isFirst || isLast;
-                                    return (
-                                      <div key={`${leg.route?.id ?? i}-stop-${j}`} style={{ display: 'flex', gap: '12px', position: 'relative', zIndex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', height: '28px', flexShrink: 0 }}>
-                                          <div style={{
-                                            width: isTerminal ? '10px' : '6px',
-                                            height: isTerminal ? '10px' : '6px',
-                                            borderRadius: '50%',
-                                            background: isTerminal ? color : 'rgba(255,255,255,0.25)',
-                                            border: isTerminal ? `2px solid ${color}` : 'none',
-                                            boxShadow: isTerminal ? `0 0 8px ${color}80` : 'none',
-                                            transition: 'transform 0.2s',
-                                          }} />
-                                        </div>
+                                   {stopsToShow.map((stop: string, j: number) => {
+                                     const isFirst = j === 0;
+                                     const isLast = j === stopsToShow.length - 1;
+                                     const isTerminal = isFirst || isLast;
+                                     return (
+                                       <div key={`${leg.route?.id ?? i}-stop-${j}`} style={{ display: 'flex', gap: '12px', position: 'relative', zIndex: 1 }}>
+                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', height: '28px', flexShrink: 0 }}>
+                                           {/* Dot node — solid bg masks the line behind it */}
+                                           <div style={{
+                                             width: isTerminal ? '10px' : '6px',
+                                             height: isTerminal ? '10px' : '6px',
+                                             borderRadius: '50%',
+                                             background: isTerminal ? color : '#0a0f1a',
+                                             border: isTerminal ? `2px solid ${color}` : `1.5px solid rgba(255,255,255,0.25)`,
+                                             boxShadow: isTerminal ? `0 0 8px ${color}80` : 'none',
+                                             transition: 'transform 0.2s',
+                                             zIndex: 2,
+                                           }} />
+                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', minHeight: '28px', minWidth: 0, flex: 1 }}>
                                           <span style={{
                                             fontSize: '12px',
@@ -3159,7 +3173,22 @@ export default function MapView() {
                     }}>LIVE</span>
                   </div>
                   {closestBus ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                    <div
+                      onClick={() => {
+                        const bus = closestBus as any;
+                        // Close station panel
+                        setSelectedStop(null);
+                        setSheetHeight('peek');
+                        // Fly map to bus location
+                        if (bus.lat && bus.lng) {
+                          mapInstanceRef.current?.flyTo([bus.lat, bus.lng], 17, { duration: 1.2, easeLinearity: 0.35 });
+                        }
+                        // Show bus info panel
+                        setInfoPanel(bus);
+                        setSelectedBus(bus);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, cursor: 'pointer' }}
+                    >
                       <div style={{
                         width: 44,
                         height: 44,
@@ -3180,6 +3209,7 @@ export default function MapView() {
                           {t.arrival_time.replace('{count}', getStableArrivalTime(closestBus))}
                         </div>
                       </div>
+                      <IonIcon icon={chevronForwardOutline} style={{ fontSize: 16, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
                     </div>
                   ) : (
                     <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '10px 0', fontWeight: 500 }}>
@@ -3488,7 +3518,7 @@ export default function MapView() {
                     onClick={() => {
                       setShowGuestModal(false);
                       setGuestMode(false);
-                      signOut({ redirect: false });
+                      safeSignOut();
                     }}
                     style={{ 
                       width: '100%', padding: '14px', background: '#ea580c', border: 'none', borderRadius: '14px', 

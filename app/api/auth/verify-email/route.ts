@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import connectDB from '@/app/lib/mongodb';
-import { getUserModel } from '@/app/lib/dynamicDb';
+import { db } from '@/app/lib/firebaseAdmin';
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
     const { email, code } = await request.json();
 
     if (!email || !code) {
@@ -14,17 +12,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const User = getUserModel();
     const emailStr = email.toLowerCase().trim();
+    const usersRef = db.collection('users');
 
     // Kërko përdoruesin me kodin e verifikimit të emailit
-    const user = await User.findOne({
-      email: emailStr,
-      emailVerificationCode: code,
-      emailVerificationExpires: { $gt: new Date() }
-    });
+    const userSnapshot = await usersRef
+      .where('email', '==', emailStr)
+      .where('emailVerificationCode', '==', code)
+      .limit(1)
+      .get();
 
-    if (!user) {
+    if (userSnapshot.empty) {
+      return NextResponse.json(
+        { error: 'Kodi është i pasaktë ose ka skaduar.' },
+        { status: 400 }
+      );
+    }
+
+    const doc = userSnapshot.docs[0];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = doc.data() as Record<string, any>;
+    const nowIso = new Date().toISOString();
+
+    if (!user.emailVerificationExpires || user.emailVerificationExpires <= nowIso) {
       return NextResponse.json(
         { error: 'Kodi është i pasaktë ose ka skaduar.' },
         { status: 400 }
@@ -32,22 +42,18 @@ export async function POST(request: Request) {
     }
 
     // Përditëso përdoruesin — markoje si i verifikuar
-    await User.findByIdAndUpdate(
-      user._id,
-      {
-        isEmailVerified: true,
-        emailVerificationCode: null,
-        emailVerificationExpires: null,
-      },
-      { new: true }
-    );
+    await doc.ref.update({
+      isEmailVerified: true,
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Email-i u verifikua me sukses!',
       verified: true,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Email Verification Error:', error);
     return NextResponse.json(
       { error: 'Ndodhi një gabim gjatë verifikimit të email-it.' },
@@ -55,3 +61,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

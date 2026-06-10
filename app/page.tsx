@@ -48,7 +48,15 @@ export default function Page() {
       await useStore.getState().fetchBuses();
     }, 15000);
 
-    return () => clearInterval(pollInterval);
+    // Client-side bus movement simulation (moves buses along their routes)
+    const moveInterval = setInterval(() => {
+      useStore.getState().moveBuses();
+    }, 500);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearInterval(moveInterval);
+    };
   }, []);
 
   if (!hasMounted || status === "loading") {
