@@ -103,7 +103,6 @@ export default function ProfileView() {
           label: isAl ? "Hyr ose Regjistrohu" : isIt ? "Accedi o Registrati" : "Login or Sign Up", 
           action: () => {
             setGuestMode(false);
-            safeSignOut();
           }, 
           isSuccess: true 
         }

@@ -232,7 +232,6 @@ export default function Sidebar() {
               className="s-login-btn"
               onClick={() => {
                 useStore.getState().setGuestMode(false);
-                safeSignOut();
               }}
               title={language === 'al' ? 'Hyr' : 'Login'}
               aria-label={language === 'al' ? 'Hyr' : 'Login'}

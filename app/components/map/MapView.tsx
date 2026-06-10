@@ -3518,7 +3518,6 @@ export default function MapView() {
                     onClick={() => {
                       setShowGuestModal(false);
                       setGuestMode(false);
-                      safeSignOut();
                     }}
                     style={{ 
                       width: '100%', padding: '14px', background: '#ea580c', border: 'none', borderRadius: '14px', 
