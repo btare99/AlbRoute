@@ -3121,17 +3121,17 @@ export default function MapView() {
                     padding: '14px 20px',
                     width: '100%',
                     cursor: 'pointer',
-                    boxShadow: '0 8px 24px rgba(245, 158, 11, 0.4)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
                     transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     height: '54px'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(245, 158, 11, 0.55)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.35)';
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(245, 158, 11, 0.4)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
                   }}
                   onClick={() => {
                     setTripFrom(selectedStop.name);
