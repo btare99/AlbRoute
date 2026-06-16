@@ -335,80 +335,69 @@ export default function UserFavorites() {
                         }}
                       >
                         {/* Colored left accent stripe */}
-                        <div style={{ width: '4px', background: r.color, flexShrink: 0, borderRadius: '4px 0 0 4px' }} />
-                        <div style={{ flex: 1, padding: '13px 12px 12px 14px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-                          {/* Top row: badge + info + delete */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{
-                              width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
-                              background: r.color, boxShadow: `0 4px 14px ${r.color}50`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontWeight: '900', fontSize: '13px', color: '#fff',
-                            }}>
-                              {r.id}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {r.name}
-                              </p>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px', flexWrap: 'wrap' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                                  background: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.15)',
-                                  boxShadow: activeBusesCount > 0 ? '0 0 6px #10b981' : 'none' }} />
-                                <span style={{ fontSize: '11px', fontWeight: '600', color: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.3)' }}>
-                                  {activeBusesCount > 0 ? `${activeBusesCount} Live` : t.fav_no_active}
+                        <div style={{ width: '3px', background: r.color, flexShrink: 0 }} />
+
+                        {/* Single compact row */}
+                        <div style={{ flex: 1, padding: '11px 10px 11px 13px', display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
+                          {/* Badge */}
+                          <div style={{
+                            width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                            background: r.color, boxShadow: `0 3px 10px ${r.color}45`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: '900', fontSize: '12px', color: '#fff',
+                          }}>
+                            {r.id}
+                          </div>
+
+                          {/* Text info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {r.name}
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                              <div style={{
+                                width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
+                                background: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.15)',
+                                boxShadow: activeBusesCount > 0 ? '0 0 5px #10b981' : 'none',
+                              }} />
+                              <span style={{ fontSize: '10px', fontWeight: '600', color: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.3)' }}>
+                                {activeBusesCount > 0 ? `${activeBusesCount} Live` : t.fav_no_active}
+                              </span>
+                              {(r.stops?.length ?? 0) > 0 && (
+                                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)', fontWeight: '500' }}>
+                                  · {r.stops?.length} {language === 'al' ? 'stac.' : 'stops'}
                                 </span>
-                                {(r.stops?.length ?? 0) > 0 && (
-                                  <>
-                                    <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '10px' }}>·</span>
-                                    <span style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.3)' }}>
-                                      {r.stops?.length} {language === 'al' ? 'stacione' : 'stops'}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
+                              )}
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: r.id, label: r.name, type: 'route' }); }}
-                              style={{
-                                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
-                                background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.12)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: '#ef4444', cursor: 'pointer',
-                              }}
-                            >
-                              <IonIcon icon={closeOutline} style={{ fontSize: 12 }} />
-                            </button>
                           </div>
-                          {/* Action row */}
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              onClick={() => toggleNotify(r.id, r.name)}
-                              style={{
-                                height: '32px', borderRadius: '9px', padding: '0 12px', fontFamily: 'inherit',
-                                background: notified[r.id] ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.03)',
-                                border: `1px solid ${notified[r.id] ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.07)'}`,
-                                color: notified[r.id] ? '#f59e0b' : 'rgba(255,255,255,0.35)',
-                                display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
-                                fontSize: '11px', fontWeight: '700',
-                              }}
-                            >
-                              <IonIcon icon={notified[r.id] ? notificationsOutline : notificationsOffOutline} style={{ fontSize: 13 }} />
-                              <span>{notified[r.id] ? (language === 'al' ? 'Aktiv' : 'On') : (language === 'al' ? 'Njoftime' : 'Notify')}</span>
-                            </button>
-                            <button
-                              onClick={() => { setSelectedRoute(r.id); setView('tracker'); }}
-                              style={{
-                                flex: 1, height: '32px', borderRadius: '9px', fontFamily: 'inherit',
-                                background: `${r.color}18`, border: `1px solid ${r.color}35`,
-                                color: r.color, fontSize: '12px', fontWeight: '800',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                              }}
-                            >
-                              <IonIcon icon={arrowForwardOutline} style={{ fontSize: 12 }} />
-                              <span>{t.fav_track}</span>
-                            </button>
-                          </div>
+
+                          {/* Track button */}
+                          <button
+                            onClick={() => { setSelectedRoute(r.id); setView('tracker'); }}
+                            style={{
+                              height: '30px', borderRadius: '8px', padding: '0 10px', fontFamily: 'inherit',
+                              background: `${r.color}20`, border: `1px solid ${r.color}40`,
+                              color: r.color, fontSize: '11px', fontWeight: '800',
+                              display: 'flex', alignItems: 'center', gap: '4px',
+                              cursor: 'pointer', flexShrink: 0,
+                            }}
+                          >
+                            <IonIcon icon={arrowForwardOutline} style={{ fontSize: 11 }} />
+                            <span>{t.fav_track}</span>
+                          </button>
+
+                          {/* Delete button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: r.id, label: r.name, type: 'route' }); }}
+                            style={{
+                              width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
+                              background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.12)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#ef4444', cursor: 'pointer',
+                            }}
+                          >
+                            <IonIcon icon={closeOutline} style={{ fontSize: 11 }} />
+                          </button>
                         </div>
                       </motion.div>
                     );
