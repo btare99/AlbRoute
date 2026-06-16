@@ -303,55 +303,52 @@ export default function BusTracker() {
             transition={{ duration: 0.35 }}
             style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}
           >
-            {/* Route summary card */}
+            {/* Route summary card — minimal */}
             <div style={{
-              borderRadius: 24,
+              borderRadius: 18,
               background: 'rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(40px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              padding: '20px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Route color pill */}
                 <div style={{
-                  width: 46, height: 46, borderRadius: 14,
+                  width: 40, height: 40, borderRadius: 12,
                   background: route.color,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: '900', color: '#fff',
-                  boxShadow: `0 6px 16px ${route.color}35`,
+                  fontWeight: '900', fontSize: 13, color: '#fff',
+                  flexShrink: 0,
                 }}>
                   {route.name}
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#fff' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
                     {route.label}
-                  </h3>
-                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-                    {route.stops.length} {language === 'al' ? 'stacione' : 'stations'} · ~{route.stops.length * 3} min
-                  </p>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
+                    {route.stops.length} {language === 'al' ? 'stacione' : 'stations'}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                {/* Save button */}
-                <button
-                  onClick={toggleFavorite}
-                  style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: isSaved ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)',
-                    border: isSaved ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid rgba(255,255,255,0.05)',
-                    color: isSaved ? '#f59e0b' : 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <IonIcon icon={starOutline} style={{ fontSize: 15 }} />
-                </button>
-              </div>
+              {/* Save button */}
+              <button
+                onClick={toggleFavorite}
+                style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: isSaved ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)',
+                  border: isSaved ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid rgba(255,255,255,0.06)',
+                  color: isSaved ? '#f59e0b' : 'rgba(255,255,255,0.35)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <IonIcon icon={starOutline} style={{ fontSize: 14 }} />
+              </button>
             </div>
 
             {/* UNIFIED INTERACTIVE TIMELINE / BUS LIST VIEW */}

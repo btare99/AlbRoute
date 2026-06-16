@@ -3948,10 +3948,10 @@ export default function MapView() {
             opacity: 0 !important;
           }
           .stop-info-card.sheet-peek {
-            transform: translateY(calc(100% - 280px)) !important;
+            transform: translateY(calc(100% - 280px - env(safe-area-inset-bottom, 0px))) !important;
           }
           .stop-info-card.sheet-half {
-            transform: translateY(calc(100% - 460px)) !important;
+            transform: translateY(calc(100% - 460px - env(safe-area-inset-bottom, 0px))) !important;
           }
           .stop-info-card.sheet-full {
             transform: translateY(0) !important;
