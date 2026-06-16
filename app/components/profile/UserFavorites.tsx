@@ -44,72 +44,58 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
   t: Record<string, string>;
 }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      onClick={onCancel}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(30px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
+        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        paddingBottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      <motion.div 
-        initial={{ scale: 0.9, y: 15 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 15 }}
-        transition={{ type: 'spring', stiffness: 160, damping: 18 }}
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+        onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'rgba(20, 25, 40, 0.65)', border: '0.5px solid rgba(255,255,255,0.12)',
-          backdropFilter: 'blur(40px) saturate(190%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(190%)',
-          borderRadius: '20px', padding: '24px', maxWidth: '320px', width: '100%',
+          background: '#111827',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: '20px',
+          padding: '20px 16px 16px',
+          width: 'calc(100% - 32px)',
+          maxWidth: '360px',
           display: 'flex', flexDirection: 'column', gap: '16px',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'rgba(239,68,68,0.1)', border: '0.5px solid rgba(239,68,68,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <IonIcon icon={alertCircleOutline} style={{ fontSize: 18, color: '#ef4444' }} />
-          </div>
-          <div>
-            <p style={{ fontSize: '13px', fontWeight: '600', color: '#fff', margin: 0 }}>
-              {t.fav_confirm_title || 'Fshi nga të preferuarat?'}
-            </p>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0' }}>
-              {label}
-            </p>
-          </div>
-        </div>
+        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#fff', textAlign: 'center', lineHeight: 1.4 }}>
+          {t.fav_confirm_title || 'Fshi nga të preferuarat?'}{' '}
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>{label}</span>
+        </p>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={onCancel}
             style={{
-              flex: 1, padding: '10px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              transition: 'background 0.15s',
+              flex: 1, height: '44px', borderRadius: '12px', fontFamily: 'inherit',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '700', cursor: 'pointer',
             }}
           >
-            <IonIcon icon={closeOutline} style={{ fontSize: 14, marginRight: 6 }} />
             {t.fav_cancel || 'Anulo'}
           </button>
           <button
             onClick={onConfirm}
             style={{
-              flex: 1, padding: '10px', borderRadius: '10px',
-              background: 'rgba(239,68,68,0.12)', border: '0.5px solid rgba(239,68,68,0.3)',
-              color: '#ef4444', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              transition: 'background 0.15s',
+              flex: 1, height: '44px', borderRadius: '12px', fontFamily: 'inherit',
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.22)',
+              color: '#ef4444', fontSize: '14px', fontWeight: '700', cursor: 'pointer',
             }}
           >
-            <IonIcon icon={trashOutline} style={{ fontSize: 14, marginRight: 6 }} />
             {t.fav_delete || 'Fshi'}
           </button>
         </div>
