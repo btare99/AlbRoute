@@ -1670,6 +1670,16 @@ const useStore = create<any>()(
         savedRoutes: state.savedRoutes.filter((r: any) => r.id !== routeId)
       })),
 
+      // ── Saved Stops ──
+      savedStops: [],
+      saveStop: (stop: any) => set((state: any) => ({
+        savedStops: state.savedStops.find((s: any) => String(s.id) === String(stop.id))
+          ? state.savedStops : [...state.savedStops, { id: stop.id, name: stop.name }]
+      })),
+      removeSavedStop: (stopId: string | number) => set((state: any) => ({
+        savedStops: state.savedStops.filter((s: any) => String(s.id) !== String(stopId))
+      })),
+
       // ── Recent Route ──
       recentRouteId: null,
       setRecentRouteId: (routeId: string) => set({ recentRouteId: routeId }),

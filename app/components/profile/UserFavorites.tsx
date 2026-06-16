@@ -272,7 +272,7 @@ export default function UserFavorites() {
           style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
         >
 
-          {/* SECTION 2: LINJAT E PREFERUARA (Horizontal Swipe Carousel) */}
+          {/* SECTION 2: LINJAT E PREFERUARA (Vertical full-width cards) */}
           <motion.div variants={itemVariants}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
               <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
@@ -303,10 +303,7 @@ export default function UserFavorites() {
                 </button>
               </div>
             ) : (
-              <div style={{
-                display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px',
-                scrollbarWidth: 'none', margin: '0 -20px', paddingLeft: '20px', paddingRight: '20px'
-              } as any}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <AnimatePresence mode="popLayout">
                   {savedRoutes.map((route) => {
                     const r = BUS_ROUTES.find((x: any) => x.id === route.id) || route;
@@ -315,104 +312,103 @@ export default function UserFavorites() {
                       <motion.div
                         key={r.id}
                         layout
-                        initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: -20 }}
-                        transition={{ type: 'spring', stiffness: 140, damping: 15 }}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -16, scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                         style={{
-                          flexShrink: 0,
-                          width: '150px',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          border: '1px solid rgba(255, 255, 255, 0.05)',
-                          borderRadius: '24px',
-                          padding: '18px 16px 16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '12px',
-                          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                           position: 'relative',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                          background: 'rgba(255,255,255,0.025)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          borderRadius: '18px',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'stretch',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                          e.currentTarget.style.borderColor = `${r.color}50`;
-                          e.currentTarget.style.boxShadow = `0 12px 30px ${r.color}20, 0 8px 20px rgba(0,0,0,0.2)`;
+                          (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)';
+                          (e.currentTarget as HTMLDivElement).style.borderColor = `${r.color}40`;
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'none';
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
-                          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                          (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.025)';
+                          (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)';
                         }}
                       >
-                        {/* Delete small floating button */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: r.id, label: r.name, type: 'route' }); }}
-                          style={{
-                            position: 'absolute', top: '10px', right: '10px',
-                            width: '24px', height: '24px', borderRadius: '50%',
-                            background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#ef4444', cursor: 'pointer', zIndex: 5,
-                          }}
-                        >
-                          <IonIcon icon={closeOutline} style={{ fontSize: 11 }} />
-                        </button>
-
-                        {/* Route Badge in Card */}
-                        <div style={{
-                          width: '40px', height: '40px', borderRadius: '12px',
-                          background: r.color,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: '900', fontSize: '14px', color: '#fff',
-                          boxShadow: `0 4px 15px ${r.color}40`,
-                        }}>
-                          {r.id}
-                        </div>
-
-                        <div style={{ flex: 1, minWidth: 0, marginTop: '4px' }}>
-                          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {r.name}
-                          </h4>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
+                        {/* Colored left accent stripe */}
+                        <div style={{ width: '4px', background: r.color, flexShrink: 0, borderRadius: '4px 0 0 4px' }} />
+                        <div style={{ flex: 1, padding: '13px 12px 12px 14px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
+                          {/* Top row: badge + info + delete */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{
-                              width: '5px', height: '5px', borderRadius: '50%',
-                              background: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.2)',
-                              boxShadow: activeBusesCount > 0 ? '0 0 6px #10b981' : 'none'
-                            }} />
-                            <span style={{ fontSize: '10px', color: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
-                              {activeBusesCount > 0 ? `${activeBusesCount} Live` : t.fav_no_active}
-                            </span>
+                              width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                              background: r.color, boxShadow: `0 4px 14px ${r.color}50`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontWeight: '900', fontSize: '13px', color: '#fff',
+                            }}>
+                              {r.id}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {r.name}
+                              </p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px', flexWrap: 'wrap' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                  background: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.15)',
+                                  boxShadow: activeBusesCount > 0 ? '0 0 6px #10b981' : 'none' }} />
+                                <span style={{ fontSize: '11px', fontWeight: '600', color: activeBusesCount > 0 ? '#10b981' : 'rgba(255,255,255,0.3)' }}>
+                                  {activeBusesCount > 0 ? `${activeBusesCount} Live` : t.fav_no_active}
+                                </span>
+                                {(r.stops?.length ?? 0) > 0 && (
+                                  <>
+                                    <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '10px' }}>·</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.3)' }}>
+                                      {r.stops?.length} {language === 'al' ? 'stacione' : 'stops'}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setPendingDelete({ id: r.id, label: r.name, type: 'route' }); }}
+                              style={{
+                                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                                background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#ef4444', cursor: 'pointer',
+                              }}
+                            >
+                              <IonIcon icon={closeOutline} style={{ fontSize: 12 }} />
+                            </button>
                           </div>
-                        </div>
-
-                        {/* Interactive Bottom Actions */}
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                          <button
-                            onClick={() => toggleNotify(r.id, r.name)}
-                            style={{
-                              flex: 1, height: '28px', borderRadius: '6px',
-                              background: notified[r.id] ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)',
-                              border: `1px solid ${notified[r.id] ? '#f59e0b30' : 'rgba(255,255,255,0.05)'}`,
-                              color: notified[r.id] ? '#f59e0b' : 'rgba(255,255,255,0.4)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            }}
-                          >
-                            <IonIcon icon={notified[r.id] ? notificationsOutline : notificationsOffOutline} style={{ fontSize: 12 }} />
-                          </button>
-                          <button
-                            onClick={() => { setSelectedRoute(r.id); setView('tracker'); }}
-                            style={{
-                              flex: 2, height: '28px', borderRadius: '6px',
-                              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                              color: 'rgba(255,255,255,0.8)', fontSize: '10px', fontWeight: '800',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
-                            }}
-                          >
-                            <IonIcon icon={arrowForwardOutline} style={{ fontSize: 10 }} />
-                            <span>{t.fav_track}</span>
-                          </button>
+                          {/* Action row */}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => toggleNotify(r.id, r.name)}
+                              style={{
+                                height: '32px', borderRadius: '9px', padding: '0 12px', fontFamily: 'inherit',
+                                background: notified[r.id] ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.03)',
+                                border: `1px solid ${notified[r.id] ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                                color: notified[r.id] ? '#f59e0b' : 'rgba(255,255,255,0.35)',
+                                display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
+                                fontSize: '11px', fontWeight: '700',
+                              }}
+                            >
+                              <IonIcon icon={notified[r.id] ? notificationsOutline : notificationsOffOutline} style={{ fontSize: 13 }} />
+                              <span>{notified[r.id] ? (language === 'al' ? 'Aktiv' : 'On') : (language === 'al' ? 'Njoftime' : 'Notify')}</span>
+                            </button>
+                            <button
+                              onClick={() => { setSelectedRoute(r.id); setView('tracker'); }}
+                              style={{
+                                flex: 1, height: '32px', borderRadius: '9px', fontFamily: 'inherit',
+                                background: `${r.color}18`, border: `1px solid ${r.color}35`,
+                                color: r.color, fontSize: '12px', fontWeight: '800',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                              }}
+                            >
+                              <IonIcon icon={arrowForwardOutline} style={{ fontSize: 12 }} />
+                              <span>{t.fav_track}</span>
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     );
