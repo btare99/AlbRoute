@@ -3104,7 +3104,7 @@ export default function MapView() {
               </div>
 
               {/* Depart from here button (Placed above Closest Bus for visibility in peek state) */}
-              <div style={{ marginBottom: 24, flexShrink: 0 }}>
+              <div className="depart-btn-wrapper" style={{ marginBottom: 24, flexShrink: 0 }}>
                 <button
                   className="view-details-btn"
                   style={{
@@ -3957,6 +3957,9 @@ export default function MapView() {
             transform: translateY(0) !important;
             border-top-left-radius: 0 !important;
             border-top-right-radius: 0 !important;
+          }
+          .depart-btn-wrapper {
+            margin-bottom: 80px !important;
           }
         }
         @media (min-width: 1181px) {
