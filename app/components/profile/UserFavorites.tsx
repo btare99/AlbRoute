@@ -187,7 +187,7 @@ export default function UserFavorites() {
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}>
 
       <style jsx>{`
         @keyframes pulse {
@@ -257,14 +257,12 @@ export default function UserFavorites() {
       {/* Main dashboard body */}
       <div 
         style={{
-          flex: 1,
           padding: '20px',
           paddingTop: '20px',
           display: 'flex',
           flexDirection: 'column',
           gap: '24px',
-          overflowY: 'auto',
-          paddingBottom: '30px'
+          paddingBottom: 'calc(80px + max(24px, calc(16px + env(safe-area-inset-bottom, 12px))))'
         }}
       >
         <motion.div

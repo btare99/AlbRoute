@@ -226,14 +226,14 @@ export default function AppShell() {
       />
 
       {/* Main content */}
-      <main className={`main-area ${Capacitor.getPlatform() === 'android' ? 'android-safe' : ''}`}>
+      <main className="main-area">
         {renderView()}
       </main>
 
       {/* Floating bottom nav — mobile only */}
       {!selectingOnMap && !selectedStop && !showTripDetails && (
-        <nav className={`bottom-nav ${Capacitor.getPlatform() === 'android' ? 'android-safe' : ''}`} aria-label="Main navigation">
-          {MENU.map(({ id, label, icon: Icon }) => {
+        <nav className="bottom-nav" aria-label="Main navigation">
+          {MENU.map(({ id, icon: Icon }) => {
             const active = currentView === id ||
               (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
             return (
@@ -244,9 +244,8 @@ export default function AppShell() {
                 aria-current={active ? 'page' : undefined}
               >
                 <span className="nav-icon">
-                  <IonIcon icon={Icon} style={{ fontSize: 20, color: 'currentColor' }} />
+                  <IonIcon icon={Icon} style={{ fontSize: 24, color: 'currentColor' }} />
                 </span>
-                <span className="nav-label">{label}</span>
               </button>
             );
           })}
@@ -318,55 +317,72 @@ export default function AppShell() {
 
           .main-area {
             height: 100%;
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: 0; /* Let content (like Map) stretch fully to the bottom behind the glass bar */
           }
 
-          .main-area.android-safe {
-            padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-          }
-
-          /* Standard full-width bottom navigation */
+          /* Floating pill nav — Premium Dark Acrylic Style (Island) */
           .bottom-nav {
             display: flex;
             align-items: center;
             justify-content: space-around;
 
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(60px + env(safe-area-inset-bottom, 0px));
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* Using CSS max() and calc() with insets to dynamically position safely on all Android/iOS/Web platforms */
+            bottom: max(24px, calc(16px + env(safe-area-inset-bottom, 12px)));
+            left: 16px;
+            right: 16px;
+            height: 64px;
+            padding: 4px; /* Uniform 4px padding on all sides to establish consistent spacing */
 
-            background: #070b15;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 20, 32, 0.52); /* Darker slate-grey glass for strong contrast over MapView */
+            backdrop-filter: blur(24px) saturate(180%); /* Snappy blur that diffuses MapView details nicely */
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.16); /* Crisp, bright outer border to cleanly define the bar shape over the map */
+            border-radius: 32px;
+            box-shadow:
+              0 16px 40px rgba(0, 0, 0, 0.65), /* Deep shadow to float the nav bar off MapView layers */
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
             z-index: 2000;
+            transition: bottom 0.3s ease;
           }
 
-          .bottom-nav.android-safe {
-            /* Extra safety margin on Android devices */
-            height: calc(72px + env(safe-area-inset-bottom, 8px));
-            padding-bottom: calc(8px + env(safe-area-inset-bottom, 8px));
-          }
 
-          /* ── Individual tab button ─────────────── */
+          /* ── Individual tab button with internal active pill capsule ─────────────── */
           .nav-btn {
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
             flex: 1;
-            padding: 6px 0;
             height: 100%;
 
             background: none;
             border: none;
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition: color 0.25s ease;
             color: rgba(255, 255, 255, 0.45);
             -webkit-tap-highlight-color: transparent;
             position: relative;
+            z-index: 1;
+          }
+
+          .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.14); /* Slightly higher opacity active capsule for clear focus state */
+            border-radius: 28px; /* Concentrically matches outer border radius curve (32px - 4px padding) */
+            z-index: -1;
+            opacity: 0;
+            transform: scale(0.85);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+          }
+
+          .nav-btn.active::before {
+            opacity: 1;
+            transform: scale(1);
           }
 
           .nav-btn:active {
@@ -374,52 +390,70 @@ export default function AppShell() {
           }
 
           .nav-btn.active {
-            color: #f59e0b;
+            color: #ffffff; /* Pure white active icon, matching mockup */
+            animation: activeShake 0.45s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+          }
+
+          @keyframes activeShake {
+            0% {
+              transform: scale(0.92);
+            }
+            25% {
+              transform: scale(1.05) translateX(-2.5px) rotate(-2deg);
+            }
+            50% {
+              transform: scale(0.98) translateX(1.5px) rotate(1.5deg);
+            }
+            75% {
+              transform: scale(1.01) translateX(-0.5px) rotate(-0.5deg);
+            }
+            100% {
+              transform: scale(1) translateX(0) rotate(0);
+            }
           }
 
           .nav-icon {
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
           }
 
-          /* ── Label ─────────────────────────────── */
-          .nav-label {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            line-height: 1;
-            margin-top: 1px;
+          .nav-btn.active .nav-icon {
+            transform: scale(1.05);
           }
         }
 
         /* ── Tablet-specific refinements (iPad/Android Tablets) ── */
         @media (min-width: 901px) and (max-width: 1180px) {
           .main-area {
-            padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-          }
-
-          .main-area.android-safe {
-            padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: 0; /* Fully stretch to the bottom on tablet too */
           }
 
           .bottom-nav {
-            height: calc(64px + env(safe-area-inset-bottom, 0px));
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-          }
-
-          .bottom-nav.android-safe {
-            height: calc(76px + env(safe-area-inset-bottom, 8px));
-            padding-bottom: calc(8px + env(safe-area-inset-bottom, 8px));
+            left: 40px;
+            right: 40px;
+            /* Using CSS max() on tablet to safely position bottom navigation */
+            bottom: max(32px, calc(20px + env(safe-area-inset-bottom, 16px)));
+            height: 72px;
+            padding: 6px; /* Uniform 6px padding on tablet to match proportion */
+            border-radius: 36px;
+            background: rgba(15, 20, 32, 0.52); /* Darker slate-grey glass for tablet */
+            backdrop-filter: blur(24px) saturate(180%); /* Moderate blur for tablet */
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.16); /* Bright border for tablet */
           }
 
           .nav-btn {
-            padding: 8px 0;
+            height: 100%;
           }
 
-          .nav-label {
-            font-size: 11px;
-            font-weight: 700;
+          .nav-btn::before {
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 30px; /* Concentrically matches outer border radius curve (36px - 6px padding) */
           }
         }
       `}</style>

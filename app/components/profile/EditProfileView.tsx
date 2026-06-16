@@ -27,7 +27,10 @@ import {
   bagHandleOutline,
   leafOutline,
   navigateOutline,
-  busOutline
+  busOutline,
+  chevronForwardOutline,
+  eyeOutline,
+  eyeOffOutline
 } from 'ionicons/icons';
 import { translations } from '../../store/translations';
 import { useEffect, useRef } from 'react';
@@ -164,7 +167,59 @@ export default function EditProfileView() {
   const isIt = language === 'it';
 
   const [isSaving, setIsSaving] = useState(false);
+  const [currentSubView, setCurrentSubView] = useState<'menu' | 'credentials' | 'locations' | 'password'>('menu');
 
+  // Password fields
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      addNotification(isAl ? 'Të gjitha fushat janë të detyrueshme.' : isIt ? 'Tutti i campi sono obbligatori.' : 'All fields are required.', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      addNotification(t.edit_passwords_dont_match || 'New passwords do not match.', 'error');
+      return;
+    }
+    if (newPassword.length < 6) {
+      addNotification(t.edit_password_too_short || 'Password must be at least 6 characters.', 'error');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const response = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: activeUser.id || activeUser._id,
+          currentPassword,
+          newPassword
+        })
+      });
+      const result = await response.json();
+      if (response.ok) {
+        addNotification(t.edit_password_updated || 'Password updated successfully!', 'success');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setCurrentSubView('menu');
+      } else {
+        addNotification(result.error || 'Gabim gjatë ndryshimit të fjalëkalimit.', 'error');
+      }
+    } catch (error) {
+      console.error('Password update error:', error);
+      addNotification(t.edit_conn_error || 'Gabim lidhjeje.', 'error');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
 
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [phoneOnly, setPhoneOnly] = useState('');
@@ -471,7 +526,7 @@ export default function EditProfileView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+      style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
     >
 
       {/* Curved Gradient Header (Cover) */}
@@ -481,7 +536,7 @@ export default function EditProfileView() {
         transition={{ type: 'spring', stiffness: 100, damping: 15 }}
         style={{
           position: 'relative',
-          height: '170px',
+          height: 'calc(170px + env(safe-area-inset-top, 0px))',
           overflow: 'visible',
           boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
           zIndex: 10,
@@ -510,7 +565,7 @@ export default function EditProfileView() {
           {/* Back Button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setView('profile')}
+            onClick={() => currentSubView === 'menu' ? setView('profile') : setCurrentSubView('menu')}
             style={{
               width: '36px', height: '36px', borderRadius: '10px',
               background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
@@ -530,7 +585,10 @@ export default function EditProfileView() {
               color: '#fff', fontSize: '18px', fontWeight: '800',
               letterSpacing: '0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.15)'
             }}>
-              {t.edit_credentials}
+              {currentSubView === 'menu' ? (isAl ? "Të dhënat e mia" : isIt ? "I miei dati" : "My Data") :
+               currentSubView === 'credentials' ? (isAl ? "Ndrysho Kredencialet" : isIt ? "Modifica Credenziali" : "Edit Credentials") :
+               currentSubView === 'locations' ? (isAl ? "Lokacionet e Mia" : isIt ? "I miei luoghi" : "Saved Locations") :
+               (isAl ? "Ndrysho Fjalëkalimin" : isIt ? "Cambia Password" : "Change Password")}
             </span>
           </div>
         </div>
@@ -631,7 +689,7 @@ export default function EditProfileView() {
       </motion.div>
 
       {/* Content scroll area */}
-      <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px', marginTop: '60px' }}>
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: 'calc(80px + max(24px, calc(16px + env(safe-area-inset-bottom, 12px))))', marginTop: '60px' }}>
 
         {/* User name & email labels (moved below overlapping avatar) */}
         <motion.div
@@ -645,93 +703,213 @@ export default function EditProfileView() {
         </motion.div>
 
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '24px',
-          alignItems: 'start'
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px'
         }}>
+          {currentSubView === 'menu' && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 100, damping: 16 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                width: '100%'
+              }}
+            >
+              {[
+                {
+                  icon: personOutline,
+                  label: isAl ? "Të dhënat Personale" : isIt ? "Dati Personali" : "Personal Credentials",
+                  sub: isAl ? "Ndrysho emrin, email-in dhe numrin e telefonit" : isIt ? "Modifica nome, email e numero di telefono" : "Change name, email, and phone number",
+                  action: () => setCurrentSubView('credentials')
+                },
+                ...(!isStaff ? [{
+                  icon: locationOutline,
+                  label: isAl ? "Lokacionet e Mia" : isIt ? "I miei luoghi" : "Saved Locations",
+                  sub: isAl ? "Shtëpia, puna dhe vende të tjera të shpeshta" : isIt ? "Casa, lavoro e altri luoghi frequenti" : "Home, work, and other frequent places",
+                  action: () => setCurrentSubView('locations')
+                }] : []),
+                {
+                  icon: lockClosedOutline,
+                  label: isAl ? "Ndrysho Fjalëkalimin" : isIt ? "Cambia Password" : "Change Password",
+                  sub: isAl ? "Përditëso fjalëkalimin e llogarisë tuaj" : isIt ? "Aggiorna la password del tuo account" : "Update your account password",
+                  action: () => setCurrentSubView('password')
+                },
+                {
+                  icon: trashOutline,
+                  label: isAl ? "Fshi Llogarinë" : isIt ? "Elimina Account" : "Delete Account",
+                  sub: isAl ? "Fshirja e përhershme e llogarisë tuaj" : isIt ? "Eliminazione permanente del tuo account" : "Permanently delete your account",
+                  action: () => setView('delete_account'),
+                  isDestructive: true
+                }
+              ].map((item, idx, arr) => (
+                <button
+                  key={idx}
+                  onClick={item.action}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '16px',
+                    background: 'rgba(255,255,255,0.03)',
+                    backdropFilter: 'blur(40px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '20px',
+                    padding: '18px 20px', cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    outline: 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.borderColor = item.isDestructive ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                  }}
+                >
+                  <div style={{
+                    width: '42px', height: '42px', borderRadius: '12px',
+                    background: item.isDestructive ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+                    border: item.isDestructive ? '1px solid rgba(239,68,68,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: item.isDestructive ? '#ef4444' : '#ea580c',
+                    flexShrink: 0
+                  }}>
+                    <IonIcon icon={item.icon} style={{ fontSize: '20px' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: '15px', fontWeight: '700', color: item.isDestructive ? '#ef4444' : '#fff' }}>{item.label}</span>
+                    <span style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.sub}
+                    </span>
+                  </div>
+                  <IonIcon icon={chevronForwardOutline} style={{ fontSize: '16px', color: item.isDestructive ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.2)' }} />
+                </button>
+              ))}
+            </motion.div>
+          )}
 
-          {/* Left Column: Personal Info */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.35 }}
-            style={{
-              background: 'rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(40px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '0.5px solid rgba(255,255,255,0.09)',
-              padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
-            }}
-          >
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={personOutline} style={{ fontSize: 16, color: '#475569' }} /> {t.edit_personal_info}
-            </h3>
-
-            <div>
-              <label style={labelStyle}>{t.edit_full_name}</label>
-              <input
-                className="profile-input"
-                style={inputStyle}
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Email</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  className="profile-input"
-                  style={{ ...inputStyle, paddingLeft: '40px' }}
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                />
-                <div className="input-icon-container" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', marginTop: '3px', transition: 'color 0.2s' }}>
-                  <IonIcon icon={mailOutline} style={{ fontSize: 16 }} />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label style={labelStyle}>{t.phone_number}</label>
-              <PhoneInput
-                country={selectedCountry}
-                setCountry={setSelectedCountry}
-                phone={phoneOnly}
-                setPhone={setPhoneOnly}
-                t={t}
-              />
-            </div>
-
-            {/* Security Info (Inside Left Col) */}
-            <div style={{
-              marginTop: '10px', padding: '16px', borderRadius: '16px',
-              background: 'rgba(59,130,246,0.03)', border: '0.5px solid rgba(59,130,246,0.1)',
-              display: 'flex', gap: '12px', alignItems: 'center'
-            }}>
-              <IonIcon icon={lockClosedOutline} style={{ fontSize: 14, color: '#475569' }} />
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: 1.5 }}>
-                {t.security_notice}
-              </p>
-            </div>
-
-
-          </motion.div>
-
-          {/* Right Column: Locations & Action */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 16, delay: 0.45 }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
-          >
-            {!isStaff && (
+          {currentSubView === 'credentials' && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 100, damping: 16 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}
+            >
               <div style={{
                 background: 'rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(40px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '0.5px solid rgba(255,255,255,0.09)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
+                padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
+              }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IonIcon icon={personOutline} style={{ fontSize: 16, color: '#ea580c' }} /> {t.edit_personal_info}
+                </h3>
+
+                <div>
+                  <label style={labelStyle}>{t.edit_full_name}</label>
+                  <input
+                    className="profile-input"
+                    style={inputStyle}
+                    value={form.name}
+                    onChange={e => setForm({ ...form, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Email</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      className="profile-input"
+                      style={{ ...inputStyle, paddingLeft: '40px' }}
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                    />
+                    <div className="input-icon-container" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', marginTop: '3px', transition: 'color 0.2s' }}>
+                      <IonIcon icon={mailOutline} style={{ fontSize: 16 }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>{t.phone_number}</label>
+                  <PhoneInput
+                    country={selectedCountry}
+                    setCountry={setSelectedCountry}
+                    phone={phoneOnly}
+                    setPhone={setPhoneOnly}
+                    t={t}
+                  />
+                </div>
+
+                {/* Security Info (Inside Left Col) */}
+                <div style={{
+                  marginTop: '10px', padding: '16px', borderRadius: '16px',
+                  background: 'rgba(59,130,246,0.03)', border: '0.5px solid rgba(59,130,246,0.1)',
+                  display: 'flex', gap: '12px', alignItems: 'center'
+                }}>
+                  <IonIcon icon={lockClosedOutline} style={{ fontSize: 14, color: '#475569' }} />
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: 0, lineHeight: 1.5 }}>
+                    {t.security_notice}
+                  </p>
+                </div>
+              </div>
+
+              {/* Save Button Card */}
+              <div style={{
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
+                padding: '20px', borderRadius: '24px'
+              }}>
+                <motion.button
+                  whileTap={isSaving ? {} : { scale: 0.98 }}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '14px',
+                    background: isSaving ? 'rgba(255,255,255,0.05)' : '#fff',
+                    color: isSaving ? 'rgba(255,255,255,0.2)' : '#000',
+                    border: 'none', fontWeight: '700', fontSize: '14px',
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    transition: 'all 0.2s',
+                    boxShadow: isSaving ? 'none' : '0 8px 24px rgba(255,255,255,0.15)'
+                  }}
+                >
+                  {isSaving ? (
+                    <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  ) : (
+                    <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
+                  )}
+                </motion.button>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
+                  {t.edit_changes_applied_immediate}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {currentSubView === 'locations' && !isStaff && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 100, damping: 16 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}
+            >
+              <div style={{
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
                 padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
               }}>
                 <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -962,58 +1140,172 @@ export default function EditProfileView() {
                   </AnimatePresence>
                 </div>
               </div>
-            )}
 
-            {/* Save Button Container */}
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(40px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '0.5px solid rgba(255,255,255,0.09)',
-              padding: '20px', borderRadius: '24px', marginTop: isStaff ? '0' : 'auto'
-            }}>
-              <motion.button
-                whileTap={isSaving ? {} : { scale: 0.98 }}
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  width: '100%', padding: '14px', borderRadius: '14px',
-                  background: isSaving ? 'rgba(255,255,255,0.05)' : '#fff',
-                  color: isSaving ? 'rgba(255,255,255,0.2)' : '#000',
-                  border: 'none', fontWeight: '700', fontSize: '14px',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  transition: 'all 0.2s',
-                  boxShadow: isSaving ? 'none' : '0 8px 24px rgba(255,255,255,0.15)'
-                }}
-              >
-                {isSaving ? (
-                  <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                ) : (
-                  <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
-                )}
-              </motion.button>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
-                {t.edit_changes_applied_immediate}
-              </p>
-            </div>
+              {/* Save Button Card */}
+              <div style={{
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
+                padding: '20px', borderRadius: '24px'
+              }}>
+                <motion.button
+                  whileTap={isSaving ? {} : { scale: 0.98 }}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '14px',
+                    background: isSaving ? 'rgba(255,255,255,0.05)' : '#fff',
+                    color: isSaving ? 'rgba(255,255,255,0.2)' : '#000',
+                    border: 'none', fontWeight: '700', fontSize: '14px',
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    transition: 'all 0.2s',
+                    boxShadow: isSaving ? 'none' : '0 8px 24px rgba(255,255,255,0.15)'
+                  }}
+                >
+                  {isSaving ? (
+                    <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  ) : (
+                    <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
+                  )}
+                </motion.button>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: '12px', padding: '0 10px' }}>
+                  {t.edit_changes_applied_immediate}
+                </p>
+              </div>
+            </motion.div>
+          )}
 
-            {/* Delete Account Button */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setView('delete_account')}
-              style={{
-                width: '100%', padding: '14px', borderRadius: '14px',
-                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: '#ef4444', fontWeight: '600', fontSize: '14px', marginTop: '12px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                transition: 'all 0.2s'
-              }}
-              className="delete-account-btn"
+          {currentSubView === 'password' && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 100, damping: 16 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}
             >
-              <IonIcon icon={trashOutline} style={{ fontSize: 16 }} /> Delete Account
-            </motion.button>
-          </motion.div>
+              <div style={{
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
+                padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '20px'
+              }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IonIcon icon={lockClosedOutline} style={{ fontSize: 16, color: '#ea580c' }} /> {t.edit_change_password}
+                </h3>
+
+                {/* Current Password */}
+                <div>
+                  <label style={labelStyle}>{t.edit_current_password}</label>
+                  <div style={{ position: 'relative', marginTop: '6px' }}>
+                    <input
+                      type={showCurrentPass ? 'text' : 'password'}
+                      className="profile-input"
+                      style={{ ...inputStyle, marginTop: 0, paddingRight: '46px' }}
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                      style={{
+                        position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center'
+                      }}
+                    >
+                      <IonIcon icon={showCurrentPass ? eyeOffOutline : eyeOutline} style={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label style={labelStyle}>{t.edit_new_password}</label>
+                  <div style={{ position: 'relative', marginTop: '6px' }}>
+                    <input
+                      type={showNewPass ? 'text' : 'password'}
+                      className="profile-input"
+                      style={{ ...inputStyle, marginTop: 0, paddingRight: '46px' }}
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      style={{
+                        position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center'
+                      }}
+                    >
+                      <IonIcon icon={showNewPass ? eyeOffOutline : eyeOutline} style={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label style={labelStyle}>{t.edit_confirm_new_password}</label>
+                  <div style={{ position: 'relative', marginTop: '6px' }}>
+                    <input
+                      type={showConfirmPass ? 'text' : 'password'}
+                      className="profile-input"
+                      style={{ ...inputStyle, marginTop: 0, paddingRight: '46px' }}
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                      style={{
+                        position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                        background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center'
+                      }}
+                    >
+                      <IonIcon icon={showConfirmPass ? eyeOffOutline : eyeOutline} style={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Password Button Container */}
+              <div style={{
+                background: 'rgba(255,255,255,0.03)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                border: '0.5px solid rgba(255,255,255,0.09)',
+                padding: '20px', borderRadius: '24px'
+              }}>
+                <motion.button
+                  whileTap={isUpdatingPassword ? {} : { scale: 0.98 }}
+                  onClick={handleUpdatePassword}
+                  disabled={isUpdatingPassword}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: '14px',
+                    background: isUpdatingPassword ? 'rgba(255,255,255,0.05)' : '#fff',
+                    color: isUpdatingPassword ? 'rgba(255,255,255,0.2)' : '#000',
+                    border: 'none', fontWeight: '700', fontSize: '14px',
+                    cursor: isUpdatingPassword ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    transition: 'all 0.2s',
+                    boxShadow: isUpdatingPassword ? 'none' : '0 8px 24px rgba(255,255,255,0.15)'
+                  }}
+                >
+                  {isUpdatingPassword ? (
+                    <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  ) : (
+                    <><IonIcon icon={saveOutline} style={{ fontSize: 16 }} /> {t.edit_save_changes}</>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         <style jsx>{`

@@ -14,6 +14,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   output: process.env.IS_CAPACITOR === 'true' ? 'export' : undefined,
+  allowedDevOrigins: ['192.168.0.103', '172.20.10.2', 'localhost:3000', '192.168.0.102'],
   images: {
     unoptimized: true,
   },

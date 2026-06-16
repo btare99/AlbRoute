@@ -96,13 +96,13 @@ export default function HelpView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+      style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
     >
 
       {/* Curved Gradient Header (Cover) */}
       <div style={{
         position: 'relative',
-        height: '170px',
+        height: 'calc(170px + env(safe-area-inset-top, 0px))',
         overflow: 'visible',
         boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
         zIndex: 10,
@@ -162,7 +162,7 @@ export default function HelpView() {
       </div>
 
       {/* Content scroll area */}
-      <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '30px', marginTop: '20px' }}>
+      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: 'calc(80px + max(24px, calc(16px + env(safe-area-inset-bottom, 12px))))', marginTop: '20px' }}>
 
         {/* Seksionet */}
         {sections.map((section, sIdx) => (

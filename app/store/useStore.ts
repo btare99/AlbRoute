@@ -1231,33 +1231,67 @@ const useStore = create<any>()(
         }
       },
       watchId: null as string | null,
+      trackingIntervalId: null as any,
+      trackingRefCount: 0,
       startTracking: async () => {
+        const currentCount = get().trackingRefCount || 0;
+        set({ trackingRefCount: currentCount + 1 });
+        if (currentCount > 0) {
+          return;
+        }
+
         if (get().geolocationPermissionDenied || get().watchId) return;
         const onPosition = (lat: number, lng: number) => set({ userLocation: { lat, lng } });
         const onError = (err: any) => {
           const msg = String(err?.message || err?.code || '').toLowerCase();
           if (msg.includes('permission') || err?.code === 1) { set({ geolocationPermissionDenied: true }); return; }
         };
+
+        // 1. Watch position stream with zero cached location age
         if (Capacitor.isNativePlatform()) {
           try {
             const id = await Geolocation.watchPosition({ enableHighAccuracy: true }, (pos, err) => {
               if (err) return onError(err);
               if (pos?.coords) onPosition(pos.coords.latitude, pos.coords.longitude);
             });
-            set({ watchId: id }); return;
+            set({ watchId: id });
           } catch { }
-        }
-        if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
           const id = navigator.geolocation.watchPosition(
             (pos) => onPosition(pos.coords.latitude, pos.coords.longitude),
             onError,
-            { enableHighAccuracy: true, timeout: 60000, maximumAge: 600000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
           set({ watchId: id });
         }
+
+        // 2. Active polling interval to force GPS retrieval every 5 seconds when in motion
+        const intervalId = setInterval(async () => {
+          try {
+            const pos = await get().getCurrentPosition({ enableHighAccuracy: true, timeout: 4000, maximumAge: 0 });
+            if (pos?.coords) {
+              onPosition(pos.coords.latitude, pos.coords.longitude);
+            }
+          } catch (e) {
+            // Ignore temporary position fetch timeout or errors in background tracking
+          }
+        }, 5000);
+
+        set({ trackingIntervalId: intervalId });
       },
       stopTracking: async () => {
-        const { watchId } = get();
+        const currentCount = get().trackingRefCount || 0;
+        const nextCount = Math.max(0, currentCount - 1);
+        set({ trackingRefCount: nextCount });
+        if (nextCount > 0) {
+          return;
+        }
+
+        const { watchId, trackingIntervalId } = get();
+        if (trackingIntervalId) {
+          clearInterval(trackingIntervalId);
+          set({ trackingIntervalId: null });
+        }
         if (!watchId) return;
         if (Capacitor.isNativePlatform()) { try { await Geolocation.clearWatch({ id: watchId }); } catch { } }
         else if (typeof navigator !== 'undefined') navigator.geolocation.clearWatch(watchId as number);

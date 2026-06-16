@@ -1,6 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 // Parse .env.local manually to load Google Client ID if available
 let googleClientId = process.env.NEXTAUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || '';
@@ -18,10 +19,30 @@ try {
   console.warn('Could not parse .env.local in capacitor.config.ts:', e);
 }
 
+const isProduction = process.env.IS_CAPACITOR === 'true';
+
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '172.20.10.2'; // Fallback
+}
+
 const config: CapacitorConfig = {
   appId: 'al.busal.urbani',
   appName: 'Urbani Im',
   webDir: 'out',
+  ...(!isProduction ? {
+    server: {
+      url: `http://${getLocalIP()}:3000`,
+      cleartext: true
+    }
+  } : {}),
   plugins: {
     CapacitorHttp: {
       enabled: true,

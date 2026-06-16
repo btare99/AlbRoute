@@ -258,7 +258,7 @@ export default function Sidebar() {
       <style jsx>{`
         /* Header */
         .s-header {
-          padding: 18px 16px 14px;
+          padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 14px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -350,7 +350,7 @@ export default function Sidebar() {
 
         /* Footer */
         .s-footer {
-          padding: 14px 12px;
+          padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px));
           border-top: 1px solid rgba(255,255,255,0.06);
           display: flex; flex-direction: column; gap: 10px;
         }

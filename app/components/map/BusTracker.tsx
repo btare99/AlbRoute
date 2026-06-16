@@ -120,7 +120,7 @@ export default function BusTracker() {
       color: '#fff',
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
       overflowY: 'auto',
-      paddingBottom: 110,
+      paddingBottom: 'calc(80px + max(24px, calc(16px + env(safe-area-inset-bottom, 12px))))',
       position: 'relative'
     }}>
       <style jsx>{`

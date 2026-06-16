@@ -868,7 +868,7 @@ export const BUS_ROUTES = [
   {
     id: 'L13A', name: '13A', label: 'Tirana e Re Orar', color: '#ba68c8',
     stops: [
-      'muzeu_kombetar', 'parku_rinia', 'piramida2', 'libri_universitar_stop2', 'stadiumi_dinamo_stop2',
+      'muzeu_kombetar', 'parku_rinia', 'piramida2', 'libri_universitar_stop2', 'posta_8_stop2', 'stadiumi_dinamo_stop2',
       'vasil_shanto_stop1', 'pallati_me_shigjeta_stop1', 'teodor_keko_stop1', 'kristaq_dollaku_stop1',
       'nexho_konomi', 'kristaq_mone', 'lumi_lane_a', 'sheshi_shqiponja_a', 'blloku_gintash_a',
       'pallatet_arabe_a', 'ana_komena', 'asllan_rusi_r_a', 'don_bosko', 'harry_fultz',

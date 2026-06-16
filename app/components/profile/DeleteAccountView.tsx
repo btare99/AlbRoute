@@ -159,7 +159,7 @@ export default function DeleteAccountView() {
     }}>
       {/* Header */}
       <div style={{
-        padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px',
+        padding: 'calc(20px + env(safe-area-inset-top, 0px)) 24px 20px 24px', display: 'flex', alignItems: 'center', gap: '12px',
         borderBottom: '0.5px solid rgba(255,255,255,0.06)'
       }}>
         <button
@@ -232,7 +232,7 @@ export default function DeleteAccountView() {
       )}
 
       {/* Content */}
-      <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, padding: '24px', paddingBottom: 'calc(80px + max(24px, calc(16px + env(safe-area-inset-bottom, 12px))))', display: 'flex', flexDirection: 'column' }}>
         {step === 'email' ? (
           <>
             {/* Warning */}

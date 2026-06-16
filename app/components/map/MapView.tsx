@@ -1118,8 +1118,8 @@ export default function MapView() {
 
     if (activeTrip) {
       // 1. Draw Custom Address/Street Pin Markers (Nisja & Destinacioni)
-      const isCustomFrom = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.from?.toLowerCase().trim());
-      const isFromUserLoc = isUserLocation(activeTrip.from, tripOriginCoords);
+      const isCustomFrom = activeTrip.from ? !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.from?.toLowerCase().trim()) : false;
+      const isFromUserLoc = isUserLocation(activeTrip.from || '', tripOriginCoords);
       const shouldDrawFrom = isCustomFrom || activeTrip.legs[0]?.isWalking;
       if (shouldDrawFrom && tripOriginCoords && !isFromUserLoc) {
         const fromHtml = `
@@ -1137,8 +1137,8 @@ export default function MapView() {
         routeLinesRef.current.push({ line: fromMarker, routeId: 'custom_origin_pin' });
       }
 
-      const isCustomTo = !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.to?.toLowerCase().trim());
-      const isToUserLoc = isUserLocation(activeTrip.to, tripDestCoords);
+      const isCustomTo = activeTrip.to ? !BUS_STOPS.some((s: any) => s.name?.toLowerCase().trim() === activeTrip.to?.toLowerCase().trim()) : false;
+      const isToUserLoc = isUserLocation(activeTrip.to || '', tripDestCoords);
       const shouldDrawTo = isCustomTo || activeTrip.legs[activeTrip.legs.length - 1]?.isWalking;
       if (shouldDrawTo && tripDestCoords && !isToUserLoc) {
         const toHtml = `
@@ -1319,7 +1319,7 @@ export default function MapView() {
   useEffect(() => {
     const map = mapInstanceRef.current;
     const L = LRef.current;
-    if (!map || !L || !mapReady) return;
+    if (!map || !L || !mapReady || !userLocation) return;
 
     const currentHeading = userLocation.heading ?? deviceHeading ?? 0;
     const showArrow = userLocation.heading !== null || deviceHeading !== null;

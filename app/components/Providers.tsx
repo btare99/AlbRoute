@@ -8,50 +8,59 @@ import { Capacitor } from "@capacitor/core";
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
   const originalFetch = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.102:3000'; // Fallback to local PC IP for testing
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.103:3000'; // Fallback to local PC IP for testing
     const localhostBase = 'http://localhost:3000';
     
+    const mapUrl = (urlStr: string): string => {
+      // 1. Relative path starting with /
+      if (urlStr.startsWith('/')) {
+        return `${apiBase}${urlStr}`;
+      }
+      // 2. localhost dev server base
+      if (urlStr.startsWith(localhostBase)) {
+        return urlStr.replace(localhostBase, apiBase);
+      }
+      // 3. Current window location origin (e.g., capacitor://localhost or http://localhost)
+      if (window.location.origin && urlStr.startsWith(window.location.origin)) {
+        return urlStr.replace(window.location.origin, apiBase);
+      }
+      // 4. Hardcoded capacitor iOS origin
+      const capIOS = 'capacitor://localhost';
+      if (urlStr.startsWith(capIOS)) {
+        return urlStr.replace(capIOS, apiBase);
+      }
+      // 5. Hardcoded capacitor Android origin (avoid matching localhost:3000 or similar ports)
+      const capAndroid = 'http://localhost';
+      if (urlStr.startsWith(capAndroid) && !urlStr.startsWith('http://localhost:')) {
+        return urlStr.replace(capAndroid, apiBase);
+      }
+      return urlStr;
+    };
+
     let finalInit = init;
     if (typeof input === 'string') {
-      if (input.startsWith('/')) {
-        input = `${apiBase}${input}`;
+      const mapped = mapUrl(input);
+      if (mapped !== input || input.startsWith(apiBase)) {
+        input = mapped;
         finalInit = { ...init, credentials: 'include' };
-      } else if (input.startsWith(localhostBase)) {
-        input = input.replace(localhostBase, apiBase);
-        finalInit = { ...init, credentials: 'include' };
-      } else if (input.startsWith(apiBase)) {
+      }
+    } else if (input instanceof URL) {
+      const mapped = mapUrl(input.href);
+      if (mapped !== input.href || input.href.startsWith(apiBase)) {
+        input = new URL(mapped);
         finalInit = { ...init, credentials: 'include' };
       }
     } else if (input instanceof Request) {
       const url = input.url;
-      if (url.startsWith('/')) {
-        input = new Request(`${apiBase}${url}`, input);
-        input = new Request(input, { credentials: 'include' });
-      } else if (url.startsWith(window.location.origin)) {
-        const relativePath = url.substring(window.location.origin.length);
-        if (relativePath.startsWith('/')) {
-          input = new Request(`${apiBase}${relativePath}`, input);
-          input = new Request(input, { credentials: 'include' });
-        }
-      } else if (url.startsWith(localhostBase)) {
-        const relativePath = url.substring(localhostBase.length);
-        input = new Request(`${apiBase}${relativePath}`, input);
+      const mapped = mapUrl(url);
+      if (mapped !== url) {
+        input = new Request(mapped, input);
         input = new Request(input, { credentials: 'include' });
       } else if (url.startsWith(apiBase)) {
         input = new Request(input, { credentials: 'include' });
       }
-    } else if (input instanceof URL) {
-      if (input.pathname.startsWith('/')) {
-        input = new URL(`${apiBase}${input.pathname}${input.search}`);
-        finalInit = { ...init, credentials: 'include' };
-      } else if (input.href.startsWith(localhostBase)) {
-        const relativePath = input.href.substring(localhostBase.length);
-        input = new URL(`${apiBase}${relativePath}`);
-        finalInit = { ...init, credentials: 'include' };
-      } else if (input.href.startsWith(apiBase)) {
-        finalInit = { ...init, credentials: 'include' };
-      }
     }
+    
     return originalFetch(input, finalInit);
   };
 }
