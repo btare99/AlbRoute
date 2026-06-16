@@ -74,8 +74,7 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
         }}
       >
         <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#fff', textAlign: 'center', lineHeight: 1.4 }}>
-          {t.fav_confirm_title || 'Fshi nga të preferuarat?'}{' '}
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>{label}</span>
+          {t.fav_confirm_title || 'Fshi nga të preferuarat?'}
         </p>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
