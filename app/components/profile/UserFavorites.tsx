@@ -53,15 +53,15 @@ function ConfirmModal({ label, onConfirm, onCancel, t }: {
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        paddingBottom: 'calc(28px + env(safe-area-inset-bottom, 0px))',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px',
       }}
     >
       <motion.div
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+        initial={{ scale: 0.94, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.94, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#111827',
