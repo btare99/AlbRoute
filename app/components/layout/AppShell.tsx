@@ -42,6 +42,7 @@ export default function AppShell() {
   const selectingOnMap = useStore((state: any) => state.selectingOnMap);
   const selectedStop = useStore((state: any) => state.selectedStop);
   const showTripDetails = useStore((state: any) => state.showTripDetails);
+  const showBottomNav = useStore((state: any) => state.showBottomNav);
   const fetchBuses = useStore((state: any) => state.fetchBuses);
   const addNotification = useStore((state: any) => state.addNotification);
   const networkStatus = useStore((state: any) => state.networkStatus);
@@ -165,6 +166,32 @@ export default function AppShell() {
     return () => clearInterval(interval);
   }, []);
 
+  // ─── Scroll-to-Hide Bottom Navigation ───
+  useEffect(() => {
+    let lastScrollY = 0;
+    const handleScrollCapture = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target || typeof target.scrollTop === 'undefined') return;
+
+      const currentScrollY = target.scrollTop;
+      
+      // Scrolling down past threshold of 50px
+      if (currentScrollY > lastScrollY + 10 && currentScrollY > 50) {
+        useStore.getState().setShowBottomNav(false);
+      } 
+      // Scrolling up
+      else if (currentScrollY < lastScrollY - 10) {
+        useStore.getState().setShowBottomNav(true);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScrollCapture, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScrollCapture, { capture: true });
+    };
+  }, [currentView]);
+
   const MENU = [
     { id: 'map', label: t.map, icon: mapOutline },
     { id: 'tracker', label: t.live_buses, icon: busOutline },
@@ -231,26 +258,24 @@ export default function AppShell() {
       </main>
 
       {/* Floating bottom nav — mobile only */}
-      {!selectingOnMap && !selectedStop && !showTripDetails && (
-        <nav className="bottom-nav" aria-label="Main navigation">
-          {MENU.map(({ id, icon: Icon }) => {
-            const active = currentView === id ||
-              (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
-            return (
-              <button
-                key={id}
-                onClick={() => setView(id)}
-                className={`nav-btn ${active ? 'active' : ''}`}
-                aria-current={active ? 'page' : undefined}
-              >
-                <span className="nav-icon">
-                  <IonIcon icon={Icon} style={{ fontSize: 24, color: 'currentColor' }} />
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      )}
+      <nav className={`bottom-nav ${(selectingOnMap || selectedStop || showTripDetails || !showBottomNav) ? 'bottom-nav-hidden' : ''}`} aria-label="Main navigation">
+        {MENU.map(({ id, icon: Icon }) => {
+          const active = currentView === id ||
+            (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
+          return (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              className={`nav-btn ${active ? 'active' : ''}`}
+              aria-current={active ? 'page' : undefined}
+            >
+              <span className="nav-icon">
+                <IonIcon icon={Icon} style={{ fontSize: 24, color: 'currentColor' }} />
+              </span>
+            </button>
+          );
+        })}
+      </nav>
 
       <style jsx>{`
         /* ── Offline Banner ───────────────────────── */
@@ -344,6 +369,9 @@ export default function AppShell() {
               inset 0 1px 0 rgba(255, 255, 255, 0.15);
             z-index: 2000;
             transition: bottom 0.3s ease;
+          }
+          .bottom-nav-hidden {
+            bottom: -100px !important;
           }
 
 
