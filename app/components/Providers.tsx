@@ -8,7 +8,13 @@ import { Capacitor } from "@capacitor/core";
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
   const originalFetch = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.103:3000'; // Fallback to local PC IP for testing
+    const apiBase = (() => {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      if (origin && !origin.startsWith('capacitor://') && !origin.startsWith('http://localhost') && !origin.includes('://127.0.0.1')) {
+        return origin;
+      }
+      return process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.0.102:3000';
+    })();
     const localhostBase = 'http://localhost:3000';
     
     const mapUrl = (urlStr: string): string => {
