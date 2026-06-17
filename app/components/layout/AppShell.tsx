@@ -258,7 +258,13 @@ export default function AppShell() {
       </main>
 
       {/* Floating bottom nav — mobile only */}
-      <nav className={`bottom-nav ${(selectingOnMap || selectedStop || showTripDetails || !showBottomNav) ? 'bottom-nav-hidden' : ''}`} aria-label="Main navigation">
+      <nav className={`bottom-nav ${
+        (selectingOnMap || selectedStop || showTripDetails)
+          ? 'bottom-nav-hidden'
+          : !showBottomNav
+            ? 'bottom-nav-shrunk'
+            : ''
+      }`} aria-label="Main navigation">
         {MENU.map(({ id, icon: Icon }) => {
           const active = currentView === id ||
             (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
@@ -368,10 +374,15 @@ export default function AppShell() {
               0 16px 40px rgba(0, 0, 0, 0.65), /* Deep shadow to float the nav bar off MapView layers */
               inset 0 1px 0 rgba(255, 255, 255, 0.15);
             z-index: 2000;
-            transition: bottom 0.3s ease;
+            transition: bottom 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
           }
           .bottom-nav-hidden {
             bottom: -100px !important;
+            opacity: 0 !important;
+          }
+          .bottom-nav-shrunk {
+            transform: scale(0.8) !important;
+            opacity: 0.55 !important;
           }
 
 
