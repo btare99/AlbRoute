@@ -96,7 +96,7 @@ export default function HelpView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}
+      style={{ height: '100%', overflowY: 'auto', background: 'var(--bg-dark)', position: 'relative' }}
     >
 
       {/* Curved Gradient Header (Cover) */}

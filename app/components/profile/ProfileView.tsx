@@ -114,7 +114,7 @@ export default function ProfileView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'transparent', position: 'relative' }}
+      style={{ height: '100%', overflowY: 'auto', background: 'transparent', position: 'relative' }}
     >
 
       {/* Curved Gradient Header (Cover) */}

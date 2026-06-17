@@ -172,7 +172,7 @@ export default function UserFavorites() {
   };
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)', position: 'relative' }}>
+    <div style={{ height: '100%', overflowY: 'auto', background: 'var(--bg-dark)', position: 'relative' }}>
 
       <style jsx>{`
         @keyframes pulse {
