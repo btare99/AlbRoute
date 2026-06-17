@@ -166,22 +166,58 @@ export default function AppShell() {
     return () => clearInterval(interval);
   }, []);
 
-  // ─── Scroll-to-Hide Bottom Navigation ───
+  // ─── Scroll-to-Shrink Bottom Navigation (Progressive) ───
   useEffect(() => {
     let lastScrollY = 0;
+    let p = 0; // shrink progress (0 = normal, 1 = fully shrunk)
+
+    // Reset styles to normal when changing view or state
+    const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
+    if (bottomNav) {
+      bottomNav.style.transform = 'scale(1)';
+      bottomNav.style.opacity = '1';
+    }
+
     const handleScrollCapture = (e: Event) => {
+      // Don't apply scroll effects if we are in map selection or sheets are open
+      const store = useStore.getState();
+      if (store.selectingOnMap || store.selectedStop || store.showTripDetails) {
+        return;
+      }
+
       const target = e.target as HTMLElement;
       if (!target || typeof target.scrollTop === 'undefined') return;
 
       const currentScrollY = target.scrollTop;
-      
-      // Scrolling down past threshold of 50px
-      if (currentScrollY > lastScrollY + 10 && currentScrollY > 50) {
-        useStore.getState().setShowBottomNav(false);
+      const delta = currentScrollY - lastScrollY;
+
+      // Handle resetting when back at the top
+      if (currentScrollY <= 5) {
+        p = 0;
+        const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
+        if (bottomNav) {
+          bottomNav.style.transform = 'scale(1)';
+          bottomNav.style.opacity = '1';
+        }
       } 
-      // Scrolling up
-      else if (currentScrollY < lastScrollY - 10) {
-        useStore.getState().setShowBottomNav(true);
+      // Progressive scaling on actual scroll gestures
+      else if (Math.abs(delta) > 0.5) {
+        if (delta > 0) {
+          // Scrolling down: progressively shrink (fully shrunk at 100px scroll)
+          p = Math.min(1, p + delta / 100);
+        } else {
+          // Scrolling up: progressively restore (fully restored at 80px scroll)
+          p = Math.max(0, p + delta / 80);
+        }
+
+        const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
+        if (bottomNav) {
+          const scale = 1 - (p * 0.08); // goes from 1 to 0.92 (subtle shrink)
+          const opacity = 1 - (p * 0.25); // goes from 1 to 0.75 (subtle opacity fade)
+          
+          bottomNav.style.transform = `scale(${scale})`;
+          bottomNav.style.opacity = `${opacity}`;
+        }
       }
       lastScrollY = currentScrollY;
     };
@@ -190,7 +226,7 @@ export default function AppShell() {
     return () => {
       window.removeEventListener('scroll', handleScrollCapture, { capture: true });
     };
-  }, [currentView]);
+  }, [currentView, selectingOnMap, selectedStop, showTripDetails]);
 
   const MENU = [
     { id: 'map', label: t.map, icon: mapOutline },
@@ -258,13 +294,7 @@ export default function AppShell() {
       </main>
 
       {/* Floating bottom nav — mobile only */}
-      <nav className={`bottom-nav ${
-        (selectingOnMap || selectedStop || showTripDetails)
-          ? 'bottom-nav-hidden'
-          : !showBottomNav
-            ? 'bottom-nav-shrunk'
-            : ''
-      }`} aria-label="Main navigation">
+      <nav className={`bottom-nav ${(selectingOnMap || selectedStop || showTripDetails) ? 'bottom-nav-hidden' : ''}`} aria-label="Main navigation">
         {MENU.map(({ id, icon: Icon }) => {
           const active = currentView === id ||
             (id === 'profile' && (currentView === 'edit_profile' || currentView === 'help' || currentView === 'feedback' || currentView === 'delete_account'));
@@ -379,10 +409,7 @@ export default function AppShell() {
           .bottom-nav-hidden {
             bottom: -100px !important;
             opacity: 0 !important;
-          }
-          .bottom-nav-shrunk {
-            transform: scale(0.8) !important;
-            opacity: 0.55 !important;
+            transform: none !important;
           }
 
 
