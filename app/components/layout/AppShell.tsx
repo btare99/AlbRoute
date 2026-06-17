@@ -212,8 +212,8 @@ export default function AppShell() {
 
         const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
         if (bottomNav) {
-          const scale = 1 - (p * 0.08); // goes from 1 to 0.92 (subtle shrink)
-          const opacity = 1 - (p * 0.25); // goes from 1 to 0.75 (subtle opacity fade)
+          const scale = 1 - (p * 0.12); // goes from 1 to 0.88 (a bit smaller shrink)
+          const opacity = 1 - (p * 0.3); // goes from 1 to 0.70 (slightly more transparent)
           
           bottomNav.style.transform = `scale(${scale})`;
           bottomNav.style.opacity = `${opacity}`;
