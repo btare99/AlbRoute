@@ -2,6 +2,7 @@ import NextAuth, { type Account, type User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import Apple from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { db } from "./lib/firebaseAdmin";
 import { sendWelcomeEmail } from "./lib/mail";
@@ -70,6 +71,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorization: {
         params: { prompt: "consent", access_type: "offline", response_type: "code" },
       },
+    }),
+
+    Apple({
+      clientId: process.env.APPLE_CLIENT_ID ?? "",
+      clientSecret: process.env.APPLE_CLIENT_SECRET ?? "",
     }),
 
     Credentials({
@@ -204,8 +210,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const email = user.email?.toLowerCase() ?? "";
 
-        // Google — sync ose krijo user në DB
-        if (account?.provider === "google") {
+        // Google / Apple — sync ose krijo user në DB
+        if (account?.provider === "google" || account?.provider === "apple") {
           try {
             const usersRef = db.collection("users");
             const snapshot = await usersRef.where("email", "==", email).limit(1).get();
@@ -234,8 +240,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             extendedToken.id = userId;
             extendedToken.phone = dbUser.phone ?? "";
             extendedToken.role = dbUser.role ?? "user";
+            extendedToken.savedLocations = dbUser.savedLocations ?? { home: "", work: "" };
+            extendedToken.travelHistory = dbUser.travelHistory ?? [];
           } catch (err) {
-            console.error("[Auth] Google sync error:", err);
+            console.error(`[Auth] ${account.provider} sync error:`, err);
           }
         }
 
