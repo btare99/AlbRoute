@@ -275,5 +275,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
   pages: { signIn: "/", error: "/" },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET ?? "default-secret-placeholder-for-albroute-production",
 });

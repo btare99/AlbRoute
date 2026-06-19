@@ -45,6 +45,16 @@ function getFirebaseApp() {
 
 export const db = new Proxy({} as Firestore, {
   get(target, prop) {
+    if (
+      prop === 'then' ||
+      prop === 'toJSON' ||
+      prop === 'constructor' ||
+      typeof prop === 'symbol' ||
+      (typeof prop === 'string' && prop.startsWith('$$'))
+    ) {
+      return undefined;
+    }
+
     const firebaseApp = getFirebaseApp();
     if (!firebaseApp) {
       throw new Error('Firebase Admin SDK is not initialized. Please check your environment variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).');
@@ -62,6 +72,16 @@ export const db = new Proxy({} as Firestore, {
 
 export const auth = new Proxy({} as Auth, {
   get(target, prop) {
+    if (
+      prop === 'then' ||
+      prop === 'toJSON' ||
+      prop === 'constructor' ||
+      typeof prop === 'symbol' ||
+      (typeof prop === 'string' && prop.startsWith('$$'))
+    ) {
+      return undefined;
+    }
+
     const firebaseApp = getFirebaseApp();
     if (!firebaseApp) {
       throw new Error('Firebase Admin SDK is not initialized. Please check your environment variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY).');
