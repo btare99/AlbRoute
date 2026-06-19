@@ -2,7 +2,8 @@
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 console.log('--- starting sinotrack gps tcp receiver ---');
 
@@ -49,8 +50,8 @@ if (!projectId || !clientEmail || !privateKey) {
 
 // 3. Initialize Firebase Admin SDK
 try {
-  admin.initializeApp({
-    credential: admin.credential.cert({
+  initializeApp({
+    credential: cert({
       projectId,
       clientEmail,
       privateKey,
@@ -62,7 +63,7 @@ try {
   process.exit(1);
 }
 
-const db = admin.firestore();
+const db = getFirestore();
 
 // Port to listen on (SinoTrack standard is 5013 for text/H02 protocol)
 const PORT = process.env.GPS_PORT || 5013;
@@ -156,7 +157,7 @@ const server = net.createServer((socket) => {
           lng: gpsData.lng,
           speed: gpsData.speed,
           heading: gpsData.heading,
-          lastUpdate: admin.firestore.FieldValue.serverTimestamp(),
+          lastUpdate: FieldValue.serverTimestamp(),
           isRealGPS: true,         // Tells AlbRoute to bypass client/server simulation
           status: 'Aktiv'          // Ensure it's active so it is fetched by the app
         }, { merge: true });

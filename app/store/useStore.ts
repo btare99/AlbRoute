@@ -1033,7 +1033,7 @@ const useStore = create<any>()(
       checkoutPackage: null,
       isSidebarOpen: false,
       showStops: true,
-      showRoutes: true,
+      showRoutes: false,
       showBuses: true,
       showBottomNav: true,
       setView: (v: any) => set({ currentView: v, isSidebarOpen: false, showBottomNav: true }),

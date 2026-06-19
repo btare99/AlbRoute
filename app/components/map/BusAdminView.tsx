@@ -62,18 +62,31 @@ export default function BusAdminView() {
   const [busNumber, setBusNumber] = useState('');
   const [model, setModel] = useState('');
 
+  // Ruajmë ID-në e fundit të populluar për të shmangur mbishkrimin e fushave gjatë polling-ut
+  const populatedBusIdRef = useRef('');
+
   // Auto-populate form fields when typing or selecting a bus ID that exists
   useEffect(() => {
-    const existingBus = buses[busId.trim()];
+    const trimmedId = busId.trim();
+    if (trimmedId === populatedBusIdRef.current) return;
+    
+    const existingBus = buses[trimmedId];
     if (existingBus) {
-      setSelectedRouteId(existingBus.routeId || '');
+      if (existingBus.routeId) {
+        setSelectedRouteId(existingBus.routeId);
+      }
       setLicensePlate(existingBus.licensePlate || '');
       setBusNumber(existingBus.busNumber || '');
       setModel(existingBus.model || '');
+      populatedBusIdRef.current = trimmedId;
     } else {
-      setLicensePlate('');
-      setBusNumber('');
-      setModel('');
+      // Nëse ndryshojmë ID-në në një që nuk ekziston, pastrojmë fushat vetëm një herë
+      if (populatedBusIdRef.current !== '') {
+        setLicensePlate('');
+        setBusNumber('');
+        setModel('');
+        populatedBusIdRef.current = '';
+      }
     }
   }, [busId, buses]);
 

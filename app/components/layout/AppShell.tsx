@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import Sidebar from './Sidebar';
@@ -19,6 +19,7 @@ import { mapOutline, busOutline, personOutline, heartOutline } from 'ionicons/ic
 import { translations } from '../../store/translations';
 import SwipeDismissView from './SwipeDismissView';
 import dynamic from 'next/dynamic';
+import OnboardingView from './OnboardingView';
 
 const BusAdminView = dynamic(() => import('../map/BusAdminView'), {
   ssr: false,
@@ -35,6 +36,7 @@ const BusAdminView = dynamic(() => import('../map/BusAdminView'), {
 
 export default function AppShell() {
   const { data: session, status } = useSession();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const currentView = useStore((state: any) => state.currentView);
   const setView = useStore((state: any) => state.setView);
   const isSidebarOpen = useStore((state: any) => state.isSidebarOpen);
@@ -48,6 +50,31 @@ export default function AppShell() {
   const networkStatus = useStore((state: any) => state.networkStatus);
   const t = translations[language] || translations.al;
   const googleLoginHandled = useRef(false);
+
+  // Check if onboarding needs to be shown on mount
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const { value } = await Preferences.get({ key: 'onboarding_completed' });
+        if (value !== 'true') {
+          setShowOnboarding(true);
+        }
+      } catch (error) {
+        console.warn('Failed to check onboarding status:', error);
+        setShowOnboarding(true);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
+  const handleOnboardingComplete = async () => {
+    try {
+      await Preferences.set({ key: 'onboarding_completed', value: 'true' });
+    } catch (error) {
+      console.warn('Failed to save onboarding status:', error);
+    }
+    setShowOnboarding(false);
+  };
 
   // ─── Sync Session with Store + Google Welcome ───
   useEffect(() => {
@@ -312,6 +339,10 @@ export default function AppShell() {
           );
         })}
       </nav>
+
+      {showOnboarding && (
+        <OnboardingView onComplete={handleOnboardingComplete} language={language} />
+      )}
 
       <style jsx>{`
         /* ── Offline Banner ───────────────────────── */
