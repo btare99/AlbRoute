@@ -188,15 +188,13 @@ export default function ProfileView() {
             transformOrigin: 'center'
           }}
         >
-          {/* Circular Container with Background Color Border */}
+          {/* Circular Container with Solid Border & Solid Background */}
           <div style={{
             width: '90px',
             height: '90px',
             borderRadius: '50%',
-            border: '4px solid rgba(10, 15, 26, 0.85)',
-            background: 'rgba(17, 19, 24, 0.7)',
-            backdropFilter: 'blur(20px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+            border: '4px solid var(--bg-dark)',
+            background: '#111318',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
