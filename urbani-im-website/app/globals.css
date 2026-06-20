@@ -334,3 +334,42 @@ body::before {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Animated Bus Components & Utilities */
+@keyframes wheel-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.wheel-rotating {
+  animation: wheel-spin 1s linear infinite;
+}
+
+@keyframes bus-text-flip {
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1); }
+  50.1% { transform: scaleX(-1); }
+  100% { transform: scaleX(-1); }
+}
+
+.animated-bus-text {
+  animation: bus-text-flip 25s linear infinite;
+  transform-origin: 60px 24px;
+}
+
+@keyframes bus-route-flip {
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1); }
+  50.1% { transform: scaleX(-1); }
+  100% { transform: scaleX(-1); }
+}
+
+.animated-bus-route-text {
+  animation: bus-route-flip 25s linear infinite;
+  transform-origin: 22px 14px;
+}
+
+.bg-dashed-road {
+  background-image: repeating-linear-gradient(90deg, #f97316, #f97316 16px, transparent 16px, transparent 32px);
+}
+

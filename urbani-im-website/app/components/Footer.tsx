@@ -18,8 +18,113 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-900 text-slate-300 pt-16 pb-8 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+    <footer className="bg-slate-900 text-slate-300 pb-8 border-t border-slate-850 relative">
+      {/* Moving Bus Animation Banner */}
+      <div className="w-full h-16 bg-slate-950 border-b border-slate-850/60 relative overflow-hidden flex items-center">
+        {/* Road Center Line (dashed orange line) */}
+        <div className="absolute bottom-3 left-0 w-full h-[2px] bg-dashed-road opacity-20" />
+        {/* Road edge lines */}
+        <div className="absolute bottom-11 left-0 w-full h-[1px] bg-slate-800/40" />
+        <div className="absolute bottom-1 left-0 w-full h-[1px] bg-slate-800/40" />
+        
+        {/* Animated Bus Wrapper */}
+        <div 
+          className="absolute bottom-2.5 w-[120px] h-[45px] z-10" 
+          style={{ animation: 'bus-move 25s linear infinite' }}
+        >
+          <svg viewBox="0 0 120 45" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible">
+            <defs>
+              <linearGradient id="busGrad" x1="0" y1="0" x2="120" y2="45" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#f97316" />
+                <stop offset="100%" stopColor="#ea580c" />
+              </linearGradient>
+              <linearGradient id="windowGrad" x1="0" y1="0" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#1e293b" />
+                <stop offset="100%" stopColor="#0f172a" />
+              </linearGradient>
+            </defs>
+            
+            {/* Bus shadow */}
+            <ellipse cx="60" cy="41" rx="50" ry="3" fill="#020617" opacity="0.6" />
+
+            {/* Main body chassis */}
+            <rect x="10" y="8" width="100" height="28" rx="6" fill="url(#busGrad)" stroke="#f97316" strokeWidth="1" />
+            
+            {/* Sleek bottom skirt */}
+            <path d="M 10 30 L 110 30 L 108 36 L 12 36 Z" fill="#0f172a" />
+            
+            {/* Wheel arches */}
+            <circle cx="28" cy="36" r="7.5" fill="#090d16" />
+            <circle cx="88" cy="36" r="7.5" fill="#090d16" />
+            
+            {/* Windows area */}
+            <rect x="14" y="12" width="92" height="11" rx="2.5" fill="url(#windowGrad)" />
+            
+            {/* Window dividers */}
+            <line x1="32" y1="12" x2="32" y2="23" stroke="#ea580c" strokeWidth="0.8" opacity="0.3" />
+            <line x1="52" y1="12" x2="52" y2="23" stroke="#ea580c" strokeWidth="0.8" opacity="0.3" />
+            <line x1="72" y1="12" x2="72" y2="23" stroke="#ea580c" strokeWidth="0.8" opacity="0.3" />
+            <line x1="92" y1="12" x2="92" y2="23" stroke="#ea580c" strokeWidth="0.8" opacity="0.3" />
+
+            {/* Brand Text "Urbani Im" */}
+            <text 
+              x="60" 
+              y="24" 
+              textAnchor="middle" 
+              fill="#ffffff" 
+              fontSize="7.5" 
+              fontWeight="900" 
+              fontFamily="system-ui, -apple-system, sans-serif" 
+              letterSpacing="0.2"
+              className="animated-bus-text"
+            >
+              Urbani Im
+            </text>
+            
+            {/* Headlight and glow */}
+            <rect x="10" y="27" width="2" height="4" rx="0.5" fill="#fef08a" />
+            <circle cx="10" cy="29" r="2.5" fill="#ffffff" opacity="0.8" />
+            
+            {/* Taillight */}
+            <rect x="108" y="27" width="2" height="4" rx="0.5" fill="#f87171" />
+
+            {/* LED Route indicator */}
+            <rect x="16" y="9.5" width="12" height="4" rx="0.8" fill="#020617" />
+            <text 
+              x="22" 
+              y="13" 
+              textAnchor="middle" 
+              fill="#fbbf24" 
+              fontSize="3" 
+              fontWeight="900"
+              fontFamily="system-ui, -apple-system, sans-serif"
+              className="animated-bus-route-text"
+            >
+              L1
+            </text>
+            
+            {/* Front door */}
+            <rect x="94" y="16" width="12" height="20" rx="1" fill="#0f172a" opacity="0.5" stroke="#f97316" strokeWidth="0.5" />
+            <line x1="100" y1="16" x2="100" y2="36" stroke="#f97316" strokeWidth="0.5" opacity="0.5" />
+
+            {/* Wheels (rotating) */}
+            <g className="wheel-rotating" style={{ transformOrigin: '28px 36px' }}>
+              <circle cx="28" cy="36" r="6" fill="#1e293b" stroke="#f97316" strokeWidth="1.2" />
+              <circle cx="28" cy="36" r="2.2" fill="#e2e8f0" />
+              <line x1="28" y1="30" x2="28" y2="42" stroke="#475569" strokeWidth="0.8" />
+              <line x1="22" y1="36" x2="34" y2="36" stroke="#475569" strokeWidth="0.8" />
+            </g>
+            <g className="wheel-rotating" style={{ transformOrigin: '88px 36px' }}>
+              <circle cx="88" cy="36" r="6" fill="#1e293b" stroke="#f97316" strokeWidth="1.2" />
+              <circle cx="88" cy="36" r="2.2" fill="#e2e8f0" />
+              <line x1="88" y1="30" x2="88" y2="42" stroke="#475569" strokeWidth="0.8" />
+              <line x1="82" y1="36" x2="94" y2="36" stroke="#475569" strokeWidth="0.8" />
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10 pt-16">
         {/* Column 1: Info & Brand */}
         <div className="flex flex-col gap-4">
           <Link href="/" className="flex items-center gap-2 group text-decoration-none">
