@@ -232,34 +232,71 @@ const IllustrationWelcome = ({ accent }: { accent: string }) => (
       {/* Bus Group (Bouncing anim) */}
       <g className="bus-body-group">
         {/* Shadow under the bus */}
-        <ellipse cx="140" cy="164" rx="55" ry="5" fill="#030712" opacity="0.6" />
+        <ellipse cx="140" cy="164" rx="58" ry="6" fill="#030712" opacity="0.7" />
         
-        {/* Main chassis */}
-        <rect x="80" y="80" width="120" height="74" rx="16" fill={accent} opacity="0.95" />
-        <rect x="80" y="80" width="120" height="74" rx="16" stroke="rgba(255,255,255,0.2)" strokeWidth="1" fill="none" />
+        {/* Main chassis with a sleek premium gradient */}
+        <defs>
+          <linearGradient id="busBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={accent} />
+            <stop offset="100%" stopColor="#1e293b" />
+          </linearGradient>
+          <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#1e293b" />
+          </linearGradient>
+        </defs>
+
+        {/* Outer body (Chassis) */}
+        <rect x="75" y="76" width="130" height="78" rx="14" fill="url(#busBodyGrad)" />
+        <rect x="75" y="76" width="130" height="78" rx="14" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" fill="none" />
         
-        {/* Windshield & Windows */}
-        <rect x="90" y="92" width="28" height="20" rx="4" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-        <rect x="126" y="92" width="28" height="20" rx="4" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-        <rect x="162" y="92" width="28" height="20" rx="4" fill="#0f172a" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        {/* Sleek Bottom Skirt/Bumper (dark accent) */}
+        <path d="M 75 140 L 205 140 L 201 154 L 79 154 Z" fill="#0f172a" opacity="0.9" />
         
+        {/* Wheel Arches (cutouts) */}
+        <path d="M 94 154 A 14 14 0 0 1 122 154 Z" fill="#03060f" />
+        <path d="M 158 154 A 14 14 0 0 1 186 154 Z" fill="#03060f" />
+
+        {/* Modern Panoramic Glass area */}
+        <rect x="80" y="86" width="120" height="28" rx="8" fill="url(#glassGrad)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+        
+        {/* Individual window dividers (vertical thin stripes) */}
+        <line x1="110" y1="86" x2="110" y2="114" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+        <line x1="145" y1="86" x2="145" y2="114" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+        <line x1="175" y1="86" x2="175" y2="114" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+
         {/* Passenger silhouettes */}
-        <circle cx="104" cy="104" r="5" fill="rgba(255,255,255,0.15)" />
-        <path d="M96 112 C96 109, 112 109, 112 112" fill="rgba(255,255,255,0.15)" />
-        <circle cx="140" cy="104" r="5" fill="rgba(255,255,255,0.15)" />
-        <path d="M132 112 C132 109, 148 109, 148 112" fill="rgba(255,255,255,0.15)" />
+        <circle cx="95" cy="98" r="4.5" fill="rgba(255,255,255,0.12)" />
+        <path d="M88 106 C88 103, 102 103, 102 106" fill="rgba(255,255,255,0.12)" />
+        <circle cx="127" cy="98" r="4.5" fill="rgba(255,255,255,0.12)" />
+        <path d="M120 106 C120 103, 134 103, 134 106" fill="rgba(255,255,255,0.12)" />
+        <circle cx="160" cy="98" r="4.5" fill="rgba(255,255,255,0.12)" />
+        <path d="M153 106 C153 103, 167 103, 167 106" fill="rgba(255,255,255,0.12)" />
 
-        {/* Dynamic headlight glows */}
-        <path d="M80 134 L62 144 L68 124 Z" fill="rgba(255,255,255,0.18)" className="beam-glow" />
-        <rect x="75" y="126" width="8" height="12" rx="3" fill="#ffffff" className="headlight" />
-        <circle cx="79" cy="132" r="3" fill="#ffedd5" />
+        {/* Headlight (Left edge, front face profile) */}
+        <path d="M75 130 L55 142 L62 120 Z" fill="rgba(255,255,255,0.22)" className="beam-glow" />
+        <rect x="71" y="122" width="6" height="14" rx="2" fill="#ffffff" className="headlight" />
+        <circle cx="74" cy="129" r="2.5" fill="#fff" />
+        
+        {/* Taillight (Right edge, back face profile) */}
+        <rect x="203" y="124" width="3" height="12" rx="1" fill="#ef4444" opacity="0.9" />
 
-        {/* Door line */}
-        <rect x="146" y="116" width="22" height="38" rx="2" fill="#0f172a" opacity="0.3" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        {/* Sleek Passenger Door */}
+        <rect x="180" y="112" width="20" height="42" rx="3" fill="#0f172a" opacity="0.4" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <line x1="190" y1="112" x2="190" y2="154" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
 
-        {/* Route panel */}
-        <rect x="86" y="84" width="26" height="12" rx="3" fill="#030712" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" />
-        <text x="99" y="93" textAnchor="middle" fill={accent} fontSize="8" fontWeight="800" letterSpacing="0.5">L15</text>
+        {/* Sleek Front Side Mirror */}
+        <path d="M 77 94 C 70 94, 68 98, 68 104" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        <rect x="65" y="104" width="5" height="10" rx="1.5" fill="#0f172a" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+
+        {/* Brand Text "Urbani Im" on the bus side */}
+        <text x="135" y="132" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="900" letterSpacing="0.5" fontFamily="Inter, sans-serif" opacity="0.95">Urbani Im</text>
+        {/* Decorative stripe below the text */}
+        <rect x="95" y="136" width="80" height="1.5" rx="0.7" fill="#ffffff" opacity="0.3" />
+
+        {/* Route Panel (LED indicator on the front top) */}
+        <rect x="82" y="80" width="36" height="10" rx="2" fill="#030712" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+        <text x="100" y="88" textAnchor="middle" fill="#f59e0b" fontSize="6.5" fontWeight="900" letterSpacing="0.2">TIRANA 1</text>
       </g>
 
       {/* Rotating Wheels (outside group to not inherit translation pivot changes easily, placed statically but timed) */}
