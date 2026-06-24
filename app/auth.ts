@@ -1,4 +1,4 @@
-import NextAuth, { type Account, type User } from "next-auth";
+import NextAuth, { type Account, type User, CredentialsSignin } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -6,6 +6,10 @@ import Apple from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { db } from "./lib/firebaseAdmin";
 import { sendWelcomeEmail } from "./lib/mail";
+
+export class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified";
+}
 
 // ── Tipet ─────────────────────────────────────────────────────────────────────
 
@@ -19,6 +23,7 @@ interface DbUser {
   savedLocations?: { home: string; work: string };
   travelHistory?: unknown[];
   lastLogin?: string;
+  isEmailVerified?: boolean;
 }
 
 interface AuthUser {
@@ -116,13 +121,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 savedLocations: { home: "", work: "" },
                 travelHistory: [],
                 lastLogin: new Date().toISOString(),
+                isEmailVerified: true,
               };
               await userDocRef.set(dbUser);
             } else {
               const doc = snapshot.docs[0];
               userId = doc.id;
               dbUser = { ...doc.data(), _id: userId } as DbUser;
-              await doc.ref.update({ lastLogin: new Date().toISOString() });
+              await doc.ref.update({ 
+                lastLogin: new Date().toISOString(),
+                isEmailVerified: true,
+              });
             }
             return buildAuthUser(dbUser, role);
           } catch (err) {
@@ -184,6 +193,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           console.log("[AuthDebug] Password match result:", passwordMatch);
           if (!passwordMatch) return null;
 
+          // Block login if email is not verified
+          if (role === "user" && dbUser.isEmailVerified === false) {
+            console.log("[AuthDebug] Email not verified for user:", email);
+            throw new EmailNotVerifiedError();
+          }
+
           // Background update — non-blocking
           const targetRef = db.collection(role === "user" ? "users" : "operators").doc(userId);
           targetRef.update({ lastLogin: new Date().toISOString() }).catch(() => {});
@@ -228,13 +243,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 savedLocations: { home: "", work: "" },
                 travelHistory: [],
                 lastLogin: new Date().toISOString(),
+                isEmailVerified: true,
               };
               await userDocRef.set(dbUser);
             } else {
               const doc = snapshot.docs[0];
               userId = doc.id;
               dbUser = { ...doc.data(), _id: userId } as DbUser;
-              await doc.ref.update({ lastLogin: new Date().toISOString() });
+              await doc.ref.update({ 
+                lastLogin: new Date().toISOString(),
+                isEmailVerified: true,
+              });
             }
 
             extendedToken.id = userId;

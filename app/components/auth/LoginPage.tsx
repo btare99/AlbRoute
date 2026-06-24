@@ -378,6 +378,29 @@ function LoginContent() {
     }
   };
 
+  const handleResendVerificationCode = async () => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: registrationEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || t.auth_code_sent || 'Kodi i ri u dërgua me sukses!');
+      } else {
+        setError(data.error || 'Dështoi dërgimi i kodit.');
+      }
+    } catch {
+      setError(t.auth_server_error || 'Ndodhi një gabim në server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -437,7 +460,19 @@ function LoginContent() {
         });
 
         if (result?.error) {
-          setError(t.auth_invalid_credentials);
+          if (result.code === 'email_not_verified') {
+            // Pasaktësia e fjalëkalimit nuk është problem nëse kemi këtë kod gabimi sepse
+            // error hidhet vetëm nëse fjalëkalimi është i saktë por email është i paverifikuar.
+            setRegistrationEmail(email.toLowerCase());
+            setRegistrationPassword(password);
+            setOtp(['', '', '', '', '', '']); // Reset OTP fields
+            setCode('');
+            setMode('verify-registration');
+            setSuccess(t.auth_code_sent || 'Kodi i verifikimit u dërgua në email-in tuaj.');
+            setError('');
+          } else {
+            setError(t.auth_invalid_credentials);
+          }
         } else {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('explicit_logout');
@@ -455,7 +490,7 @@ function LoginContent() {
         const data = await res.json();
 
         if (res.ok) {
-          // ─── FIX #1: Store credentials and show verification screen ─────────────
+          // ─── Store credentials and show verification screen ─────────────
           setRegistrationEmail(email.toLowerCase());
           setRegistrationPassword(password);
           setOtp(['', '', '', '', '', '']); // Reset OTP fields
@@ -1025,8 +1060,14 @@ function LoginContent() {
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
-                  <button type="button" style={{ background: 'none', border: 'none', color: '#71717a', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }} className="hover-white-link">
-                    Dërgoje kodin sërish
+                  <button 
+                    type="button" 
+                    onClick={handleResendVerificationCode}
+                    disabled={loading}
+                    style={{ background: 'none', border: 'none', color: '#71717a', fontSize: '13px', fontWeight: '500', cursor: loading ? 'default' : 'pointer', transition: 'color 0.2s' }} 
+                    className="hover-white-link"
+                  >
+                    {loading ? '...' : (language === 'al' ? 'Dërgoje kodin sërish' : language === 'it' ? 'Rinvia codice' : 'Resend code')}
                   </button>
                 </div>
 
