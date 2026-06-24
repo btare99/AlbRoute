@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   transpilePackages: ['leaflet'],
+  serverExternalPackages: ['firebase-admin'],
   turbopack: {},
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
