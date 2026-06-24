@@ -318,6 +318,7 @@ export const translations: Record<string, any> = {
     edit_delete: "Fshi",
     start_route: "Nis udhëtimin",
     route_started: "Udhëtimi nisi! Paç udhëtim të mbarë. 🚀",
+    preview_route: "Shiko paraprakisht",
   },
   en: {
     // ── General ──
@@ -638,6 +639,7 @@ export const translations: Record<string, any> = {
     edit_delete: "Delete",
     start_route: "Start your route",
     route_started: "Route started! Have a nice trip. 🚀",
+    preview_route: "Preview route",
   },
   it: {
     // ── General ──
@@ -956,5 +958,6 @@ export const translations: Record<string, any> = {
     edit_delete: "Elimina",
     start_route: "Inizia il tuo percorso",
     route_started: "Percorso iniziato! Buon viaggio. 🚀",
+    preview_route: "Anteprima percorso",
   }
 };

@@ -25,6 +25,9 @@ interface Leg {
   alightAt: string;
   walkingDist?: number;
   walkingTime?: number;
+  boardNodeId?: string;
+  alightNodeId?: string;
+  stopIds?: string[];
 }
 
 
@@ -218,6 +221,8 @@ export default function MapView() {
   const setView = useStore((s: any) => s.setView);
   const selectedStop = useStore((s: any) => s.selectedStop);
   const activeTrip = useStore((s: any) => s.activeTrip);
+  const showTripDetails = useStore((s: any) => s.showTripDetails);
+  const setShowTripDetails = useStore((s: any) => s.setShowTripDetails);
   const tripOriginCoords = useStore((s: any) => s.tripOriginCoords);
   const tripDestCoords = useStore((s: any) => s.tripDestCoords);
   const fetchUserLocation = useStore((s: any) => s.fetchUserLocation);
@@ -239,6 +244,11 @@ export default function MapView() {
   const setGuestMode = useStore((s: any) => s.setGuestMode);
   const [showGuestModal, setShowGuestModal] = useState(false);
 
+  const [activePreviewLegIndex, setActivePreviewLegIndex] = useState<number | null>(null);
+  const [activeNavigationActive, setActiveNavigationActive] = useState(false);
+  const [currentNavLegIndex, setCurrentNavLegIndex] = useState(0);
+  const previewHighlightLineRef = useRef<L.Polyline[]>([]);
+
   const isUserLocation = useCallback((name: string, coords: any) => {
     if (!coords || !userLocation) return false;
     const cleanName = name ? name.toLowerCase() : '';
@@ -250,7 +260,158 @@ export default function MapView() {
     return isNameMatch || isCoordsMatch;
   }, [userLocation]);
 
+  const isFromUserLoc = useMemo(() => {
+    if (!activeTrip) return false;
+    return isUserLocation(activeTrip.from || tripFrom || tripOriginName || '', tripOriginCoords);
+  }, [activeTrip, tripFrom, tripOriginName, tripOriginCoords, isUserLocation]);
+
   const [walkingShapes, setWalkingShapes] = useState<Record<string, [number, number][]>>({});
+
+  const getPreviewLegCoords = useCallback((leg: Leg, idx: number): [number, number][] => {
+    if (leg.isWalking) {
+      const bStop = leg.boardNodeId ? BUS_STOPS.find((s: any) => s.id === leg.boardNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+      const aStop = leg.alightNodeId ? BUS_STOPS.find((s: any) => s.id === leg.alightNodeId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
+
+      let startLat = bStop ? bStop.lat : null;
+      let startLng = bStop ? bStop.lng : null;
+      let destLat = aStop ? aStop.lat : null;
+      let destLng = aStop ? aStop.lng : null;
+
+      if (idx === 0 && tripOriginCoords) {
+        startLat = tripOriginCoords.lat;
+        startLng = tripOriginCoords.lng;
+      }
+
+      if (activeTrip && idx === activeTrip.legs.length - 1 && tripDestCoords) {
+        destLat = tripDestCoords.lat;
+        destLng = tripDestCoords.lng;
+      }
+
+      if (startLat !== null && startLng !== null && destLat !== null && destLng !== null) {
+        return (walkingShapes[`walk_${idx}`] || [
+          [startLat, startLng],
+          [destLat, destLng]
+        ]) as [number, number][];
+      }
+      return [];
+    }
+
+    const route = leg.route;
+    if (!route) return [];
+
+    let boardStopId = leg.stopIds ? leg.stopIds[0] : null;
+    let alightStopId = leg.stopIds ? leg.stopIds[leg.stopIds.length - 1] : null;
+
+    const boardStop = boardStopId ? BUS_STOPS.find((s: any) => s.id === boardStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.boardAt?.toLowerCase().trim());
+    const alightStop = alightStopId ? BUS_STOPS.find((s: any) => s.id === alightStopId) : BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === leg.alightAt?.toLowerCase().trim());
+
+    let legCoords: [number, number][] = [];
+    let sliced = false;
+
+    if (boardStop && alightStop) {
+      const dirs = ['0', '1'];
+      for (const dir of dirs) {
+        const shapeKey = `${route.id}_${dir}`;
+        let shapeCoords: [number, number][] = BUS_SHAPES[shapeKey as keyof typeof BUS_SHAPES] || [];
+        if (shapeCoords.length === 0 && dir === '0') shapeCoords = (BUS_SHAPES[route.id as keyof typeof BUS_SHAPES] as [number, number][]) || [];
+
+        if (shapeCoords.length > 0) {
+          let boardIdx = 0, alightIdx = 0;
+          let minDistBoard = Infinity, minDistAlight = Infinity;
+
+          shapeCoords.forEach((pt, idx) => {
+            const db = Math.pow(pt[0] - boardStop.lat, 2) + Math.pow(pt[1] - boardStop.lng, 2);
+            if (db < minDistBoard) { minDistBoard = db; boardIdx = idx; }
+
+            const da = Math.pow(pt[0] - alightStop.lat, 2) + Math.pow(pt[1] - alightStop.lng, 2);
+            if (da < minDistAlight) { minDistAlight = da; alightIdx = idx; }
+          });
+
+          if (boardIdx <= alightIdx) {
+            legCoords = shapeCoords.slice(boardIdx, alightIdx + 1);
+            sliced = true;
+            break;
+          } else if (Math.abs(boardIdx - alightIdx) > 0) {
+            legCoords = shapeCoords.slice(alightIdx, boardIdx + 1).reverse();
+            sliced = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!sliced || legCoords.length < 2) {
+      if (leg.stopIds) {
+        legCoords = leg.stopIds.map((id: string) => {
+          const st = BUS_STOPS.find((s: any) => s.id === id);
+          return st ? [st.lat, st.lng] : null;
+        }).filter(Boolean) as [number, number][];
+      } else {
+        legCoords = leg.stops.map((name: string) => {
+          const st = BUS_STOPS.find((s: any) => s.name?.toLowerCase().trim() === name?.toLowerCase().trim());
+          return st ? [st.lat, st.lng] : null;
+        }).filter(Boolean) as [number, number][];
+      }
+    }
+
+    return legCoords;
+  }, [walkingShapes, tripOriginCoords, tripDestCoords, activeTrip]);
+
+  useEffect(() => {
+    if (!activeTrip || !showTripDetails) {
+      setActivePreviewLegIndex(null);
+      setActiveNavigationActive(false);
+      setCurrentNavLegIndex(0);
+    }
+  }, [activeTrip, showTripDetails]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const L = LRef.current;
+    if (!map || !L || !mapReady) return;
+
+    if (previewHighlightLineRef.current) {
+      previewHighlightLineRef.current.forEach(line => line.remove());
+      previewHighlightLineRef.current = [];
+    }
+
+    if (activePreviewLegIndex === null || !activeTrip || !activeTrip.legs) return;
+
+    const leg = activeTrip.legs[activePreviewLegIndex];
+    if (!leg) return;
+
+    const coords = getPreviewLegCoords(leg, activePreviewLegIndex);
+    if (coords && coords.length >= 2) {
+      const bounds = L.latLngBounds(coords);
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17, animate: true });
+
+      const activeGlow = L.polyline(coords, {
+        color: '#38bdf8',
+        weight: 16,
+        opacity: 0.4,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(map);
+
+      const activeLine = L.polyline(coords, {
+        color: '#06b6d4',
+        weight: 8,
+        opacity: 1,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(map);
+
+      previewHighlightLineRef.current = [activeGlow, activeLine];
+    }
+  }, [activePreviewLegIndex, activeTrip, getPreviewLegCoords, mapReady]);
+
+  useEffect(() => {
+    if (activeNavigationActive && mapInstanceRef.current && userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+      mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 18, { animate: true });
+    }
+  }, [activeNavigationActive, userLocation]);
   const [isSearching, setIsSearching] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
@@ -631,8 +792,6 @@ export default function MapView() {
     }
   }, [selectedStop]);
 
-  const showTripDetails = useStore((s: any) => s.showTripDetails);
-  const setShowTripDetails = useStore((s: any) => s.setShowTripDetails);
   const [tripSheetHeight, setTripSheetHeight] = useState<'peek' | 'full'>('peek');
   const [isPlanning, setIsPlanning] = useState(false);
   const [showAllStops, setShowAllStops] = useState<{ [key: number]: boolean }>({});
@@ -2466,7 +2625,7 @@ export default function MapView() {
       </div>
 
       {/* ── TRIP DETAILS PANEL ── */}
-      {showTripDetails && (isPlanning || activeTrip) && (
+      {showTripDetails && (isPlanning || activeTrip) && activePreviewLegIndex === null && !activeNavigationActive && (
         <SwipeDismissView
           direction="vertical"
           isFixed={false}
@@ -2619,50 +2778,96 @@ export default function MapView() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => {
-                    addNotification(t.route_started, 'success');
-                    if (mapInstanceRef.current && userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
-                      mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 17, { animate: true });
-                    }
-                    setTripSheetHeight('peek');
-                  }}
-                  style={{
-                    width: '100%',
-                    height: '52px',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '16px',
-                    color: '#ffffff',
-                    fontWeight: '800',
-                    fontSize: '15px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
-                    marginBottom: '24px',
-                    transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.35)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.25)';
-                  }}
-                  onMouseDown={(e) => {
-                    e.currentTarget.style.transform = 'scale(0.98)';
-                  }}
-                  onMouseUp={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }}
-                >
-                  <IonIcon icon={playOutline} style={{ fontSize: '18px', color: '#fff' }} />
-                  {t.start_route}
-                </button>
+                {isFromUserLoc ? (
+                  <button
+                    onClick={() => {
+                      addNotification(t.route_started, 'success');
+                      if (mapInstanceRef.current && userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+                        mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 18, { animate: true });
+                      }
+                      setActiveNavigationActive(true);
+                      setCurrentNavLegIndex(0);
+                      setTripSheetHeight('peek');
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '52px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '16px',
+                      color: '#ffffff',
+                      fontWeight: '800',
+                      fontSize: '15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.25)',
+                      marginBottom: '24px',
+                      transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.35)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.25)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.98)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                  >
+                    <IonIcon icon={playOutline} style={{ fontSize: '18px', color: '#fff' }} />
+                    {t.start_route}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setActivePreviewLegIndex(0);
+                      setTripSheetHeight('peek');
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '52px',
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '16px',
+                      color: '#ffffff',
+                      fontWeight: '800',
+                      fontSize: '15px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(59, 130, 246, 0.25)',
+                      marginBottom: '24px',
+                      transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.25)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.98)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                  >
+                    <IonIcon icon={compassOutline} style={{ fontSize: '18px', color: '#fff' }} />
+                    {t.preview_route}
+                  </button>
+                )}
 
                 <div style={{ fontSize: '10px', fontWeight: '800', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
                   {t.step_by_step}
@@ -2892,6 +3097,170 @@ export default function MapView() {
 
           </div>
         </SwipeDismissView>
+      )}
+
+      {/* ── PREVIEW HUD OVERLAY ── */}
+      {activePreviewLegIndex !== null && activeTrip && activeTrip.legs && (
+        <div className="preview-hud-container glass-panel animate-slide-up">
+          {/* Header */}
+          <div className="preview-hud-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="preview-pulse-dot" />
+              <span style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: '#38bdf8', letterSpacing: '0.05em' }}>
+                {t.preview_route}
+              </span>
+            </div>
+            <button className="preview-exit-btn" onClick={() => setActivePreviewLegIndex(null)}>
+              <IonIcon icon={closeOutline} style={{ fontSize: 18 }} />
+            </button>
+          </div>
+
+          {/* Step Information Card */}
+          <div className="preview-step-card">
+            {(() => {
+              const leg = activeTrip.legs[activePreviewLegIndex];
+              if (!leg) return null;
+              const color = leg.isWalking ? '#10b981' : (leg.route?.color || '#3b82f6');
+              return (
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%',
+                    background: leg.isWalking ? 'rgba(16, 185, 129, 0.15)' : `${color}20`,
+                    border: `2px solid ${color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    boxShadow: `0 0 10px ${color}30`
+                  }}>
+                    {leg.isWalking ? (
+                      <IonIcon icon={walkOutline} style={{ fontSize: 18, color: '#10b981' }} />
+                    ) : (
+                      <IonIcon icon={busOutline} style={{ fontSize: 18, color }} />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: '700', marginBottom: '2px' }}>
+                      {language === 'al' ? `HAPI ${activePreviewLegIndex + 1} NGA ${activeTrip.legs.length}` : `STEP ${activePreviewLegIndex + 1} OF ${activeTrip.legs.length}`}
+                    </div>
+                    <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#fff', margin: 0 }}>
+                      {leg.isWalking 
+                        ? `${t.walk_transfer || 'Eci / Ndërrim'}: ${leg.boardAt} ➔ ${leg.alightAt}`
+                        : `Nisu me ${leg.route?.name || 'Autobus'} nga ${leg.boardAt}`}
+                    </h4>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: '4px 0 0', lineHeight: '1.4' }}>
+                      {leg.isWalking 
+                        ? t.walking_notice.replace('{dist}', leg.walkingDist?.toString() || '0').replace('{time}', leg.walkingTime?.toString() || '0')
+                        : `Udhëto për ${leg.stops?.length || 0} stacione deri në stacionin ${leg.alightAt}.`}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Navigation arrows/buttons */}
+          <div className="preview-hud-controls">
+            <button 
+              disabled={activePreviewLegIndex === 0}
+              onClick={() => setActivePreviewLegIndex(prev => prev !== null ? Math.max(0, prev - 1) : null)}
+              className="preview-control-btn"
+              style={{ opacity: activePreviewLegIndex === 0 ? 0.4 : 1 }}
+            >
+              <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} />
+              <span>Para</span>
+            </button>
+            <button 
+              disabled={activePreviewLegIndex === activeTrip.legs.length - 1}
+              onClick={() => setActivePreviewLegIndex(prev => prev !== null ? Math.min(activeTrip.legs.length - 1, prev + 1) : null)}
+              className="preview-control-btn next"
+              style={{ opacity: activePreviewLegIndex === activeTrip.legs.length - 1 ? 0.4 : 1 }}
+            >
+              <span>Pas</span>
+              <IonIcon icon={chevronForwardOutline} style={{ fontSize: 18 }} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ACTIVE NAVIGATION HUD OVERLAY ── */}
+      {activeNavigationActive && activeTrip && activeTrip.legs && (
+        <div className="nav-hud-container">
+          {/* Top Next Turn Banner */}
+          <div className="nav-top-banner glass-panel">
+            {(() => {
+              const leg = activeTrip.legs[currentNavLegIndex];
+              if (!leg) return null;
+              const color = leg.isWalking ? '#10b981' : (leg.route?.color || '#3b82f6');
+              return (
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '50%',
+                    background: leg.isWalking ? 'rgba(16, 185, 129, 0.2)' : `${color}35`,
+                    border: `2px solid ${color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    boxShadow: `0 0 15px ${color}50`
+                  }}>
+                    {leg.isWalking ? (
+                      <IonIcon icon={walkOutline} style={{ fontSize: 22, color: '#10b981' }} />
+                    ) : (
+                      <IonIcon icon={busOutline} style={{ fontSize: 22, color }} />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      NAVIGIM AKTIV
+                    </div>
+                    <h4 style={{ fontSize: '16px', fontWeight: '900', color: '#fff', margin: 0 }}>
+                      {leg.isWalking 
+                        ? `Eci drejt stacionit ${leg.alightAt}`
+                        : `Nisu me linjën ${leg.route?.name || ''} te stacioni ${leg.boardAt}`}
+                    </h4>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Bottom Control Sheet */}
+          <div className="nav-bottom-panel glass-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '700' }}>DESTINACIONI</span>
+                <span style={{ fontSize: '14px', fontWeight: '800', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{activeTrip.to}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button 
+                  disabled={currentNavLegIndex === 0}
+                  onClick={() => setCurrentNavLegIndex(prev => Math.max(0, prev - 1))}
+                  className="nav-step-arrow-btn"
+                  style={{ opacity: currentNavLegIndex === 0 ? 0.3 : 1 }}
+                >
+                  <IonIcon icon={chevronBackOutline} style={{ fontSize: 18 }} />
+                </button>
+                <span style={{ fontSize: '13px', fontWeight: '800', color: '#fff', display: 'flex', alignItems: 'center' }}>
+                  {currentNavLegIndex + 1}/{activeTrip.legs.length}
+                </span>
+                <button 
+                  disabled={currentNavLegIndex === activeTrip.legs.length - 1}
+                  onClick={() => setCurrentNavLegIndex(prev => Math.min(activeTrip.legs.length - 1, prev + 1))}
+                  className="nav-step-arrow-btn"
+                  style={{ opacity: currentNavLegIndex === activeTrip.legs.length - 1 ? 0.3 : 1 }}
+                >
+                  <IonIcon icon={chevronForwardOutline} style={{ fontSize: 18 }} />
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setActiveNavigationActive(false);
+                addNotification("Navigimi u ndërpre", "info");
+              }}
+              className="nav-stop-btn"
+            >
+              <IonIcon icon={closeOutline} style={{ fontSize: 18 }} />
+              Mbyll Navigimin
+            </button>
+          </div>
+        </div>
       )}
 
       {infoPanel && (
@@ -3973,6 +4342,170 @@ export default function MapView() {
             opacity: 1 !important;
             margin-bottom: 24px !important;
           }
+        }
+
+        /* ── PREVIEW HUD & NAV HUD ── */
+        .preview-hud-container {
+          position: absolute;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 95%;
+          max-width: 500px;
+          z-index: 1100;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          animation: slideUpHUD 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUpHUD {
+          from { transform: translate(-50%, 100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .preview-hud-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .preview-pulse-dot {
+          width: 8px;
+          height: 8px;
+          background: #38bdf8;
+          border-radius: 50%;
+          box-shadow: 0 0 8px #38bdf8;
+          animation: preview-pulse 2s infinite;
+        }
+
+        .preview-exit-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .preview-exit-btn:hover {
+          background: rgba(255,255,255,0.12);
+          color: #fff;
+        }
+
+        .preview-step-card {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px;
+          padding: 12px;
+        }
+
+        .preview-hud-controls {
+          display: flex;
+          gap: 10px;
+        }
+
+        .preview-control-btn {
+          flex: 1;
+          height: 40px;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.05);
+          color: #fff;
+          font-weight: 700;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .preview-control-btn:hover:not(:disabled) {
+          background: rgba(255,255,255,0.1);
+        }
+        .preview-control-btn.next {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          border: none;
+          box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        .preview-control-btn.next:hover:not(:disabled) {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        /* Active Navigation HUD */
+        .nav-hud-container {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1100;
+        }
+        .nav-top-banner {
+          position: absolute;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 95%;
+          max-width: 500px;
+          padding: 16px;
+          pointer-events: auto;
+          animation: slideDownHUD 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideDownHUD {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .nav-bottom-panel {
+          position: absolute;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 95%;
+          max-width: 500px;
+          padding: 16px;
+          pointer-events: auto;
+          display: flex;
+          flex-direction: column;
+          animation: slideUpHUD 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .nav-step-arrow-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .nav-stop-btn {
+          width: 100%;
+          height: 46px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: #fff;
+          font-weight: 800;
+          font-size: 14px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          transition: all 0.2s;
+        }
+        .nav-stop-btn:hover {
+          opacity: 0.95;
+          transform: translateY(-1px);
         }
       `}</style>
     </div>
