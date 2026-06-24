@@ -18,8 +18,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  transpilePackages: ['leaflet'],
-  serverExternalPackages: ['firebase-admin'],
+  transpilePackages: ['leaflet', 'firebase-admin', 'jwks-rsa', 'jose'],
   turbopack: {},
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
